@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { fade } from 'svelte/transition'
     import { Button, Chart, Dropdown, DropdownItem } from 'flowbite-svelte';
     import { Select, Label } from 'flowbite-svelte';
     import DonutChart from '@lib/components/DonutChart.svelte'
@@ -25,7 +26,7 @@
         }
 </script>
 
-<div class="flex flex-col bg-slate-100 rounded-lg">
+<div in:fade={{delay: 500}} out:fade class="flex flex-col bg-slate-100 rounded-lg">
     <div class="grid grid-cols-12 auto-cols-max gap-4">
         <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 bg-white rounded-[20px]">
             <div class="flex justify-between items-center w-full">

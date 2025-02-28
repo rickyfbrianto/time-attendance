@@ -21,7 +21,7 @@
         <Sidebar/>
         <div class="flex flex-col h-full w-full">
             <Header/>
-            <div class="p-4">
+            <div class="p-4 overflow-y-scroll overflow-x-hidden">
                 {@render children()}
             </div>
         </div>
