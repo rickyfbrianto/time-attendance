@@ -1,0 +1,54 @@
+<script lang="ts">
+    import { Button, Chart, Dropdown, DropdownItem } from 'flowbite-svelte';
+    import { Select, Label } from 'flowbite-svelte';
+    import DonutChart from '@lib/components/DonutChart.svelte'
+
+    let selected = ""
+    
+    const data = [
+        {name:"year", value:"This Year"},
+        {name:"month", value:"This Month"},
+        {name:"date", value:"This Date"},
+    ]
+
+    const data2 = {nama:"Ricky", umur:29}
+    const temp = (({nama, umur}) => ({nama}))(data2)
+    
+    const dataChart = {
+        label:"Hello",
+        data: [
+            {series:2, colors:"#1D2D44", labels:"Perjalanan Dinas"},
+            {series:12, colors:"#F7CE5B", labels:"Lembur"},
+            {series:0, colors:"#A0B3C1", labels:"Cuti"},
+            {series:1, colors:"#E71D36", labels:"Sakit"}
+            ]
+        }
+</script>
+
+<div class="flex flex-col bg-slate-100 rounded-lg">
+    <div class="grid grid-cols-12 auto-cols-max gap-4">
+        <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 bg-white rounded-[20px]">
+            <div class="flex justify-between items-center w-full">
+                <span class="font-poppins text-[16px]">Report 1</span>
+                <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
+            </div>
+
+            <DonutChart {dataChart} />
+        </div>
+        <div class="col-start-1 col-end-13 order-3 md:order-2 md:col-start-4 md:col-end-9 flex items-center p-4 gap-4 bg-white rounded-[20px]">
+            <span class="font-poppins text-[16px]">Report 2</span>
+            
+            <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />
+        </div>
+        <div class="order-2 md:order-3 col-start-6 col-end-13 md:col-start-9 md:col-end-13 flex items-center p-4 gap-4 bg-white rounded-[20px]">
+            <span class="font-poppins text-[16px]">Report 3</span>
+            
+            <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />
+        </div>
+    </div>
+    {#snippet head(d:string)}
+        <div class="flex bg-red-400 p-4">
+            <span>Hallo {d}</span>        
+        </div>
+    {/snippet}
+</div>

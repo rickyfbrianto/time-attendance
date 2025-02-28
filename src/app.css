@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+@plugin '@tailwindcss/forms';
+
+@plugin 'flowbite/plugin';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-50: #fff5f2;
+  --color-primary-100: #fff1ee;
+  --color-primary-200: #ffe4de;
+  --color-primary-300: #ffd5cc;
+  --color-primary-400: #ffbcad;
+  --color-primary-500: #fe795d;
+  --color-primary-600: #ef562f;
+  --color-primary-700: #eb4f27;
+  --color-primary-800: #cc4522;
+  --color-primary-900: #a5371b;
+}
+
+:root{
+    --ukuran1: 2rem;
+    --ukuran2: 2.5rem;
+    --ukuran3: 3rem;
+    --ukuran4: 3.5rem;
+    --ukuran5: 4rem;
+    --ukuran6: 4.5rem;
+    --ukuran7: 5rem;
+    --ukuran8: 5.5rem;
+    --ukuran9: 6rem;
+    --ukuran10: 6.5rem;
+    --ukuran11: 7rem;
+    --ukuran12: 7.5rem;
+    --ukuran13: 8rem;
+    --ukuran14: 8.5rem;
+    --ukuran15: 9rem;
+    --ukuran16: 9.5rem;
+    --ukuran17: 10rem;
+    --ukuran18: 10.5rem;
+    --ukuran19: 11rem;
+    --ukuran20: 11.5rem;
+    --ukuran21: 12rem;
+    --ukuran22: 12.5rem;
+    --ukuran23: 13rem;
+    --ukuran24: 13.5rem;
+    --ukuran25: 14rem;
+    --ukuran26: 14.5rem;
+    --ukuran27: 15rem;
+    --ukuran28: 15.5rem;
+    --ukuran29: 16rem;
+    --ukuran30: 16.5rem;
+
+    --warna-base: #F0EBD8;
+    --warna-base2: #add;
+}
+
+@source "../node_modules/flowbite-svelte/dist";
