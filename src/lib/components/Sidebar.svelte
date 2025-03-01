@@ -10,9 +10,10 @@
     const data = [
         {id:1, link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
         {id:2, link:"/absen", title:"Check In/Out", icon: GalleryHorizontalEnd},
-        {id:3, link:"/lembur", title:"Lembur", icon: Hourglass},
-        {id:4, link:"/cuti", title:"Cuti", icon: TicketsPlane},
-        {id:5, link:"/dinas", title:"SPPD", icon: Plane},
+        {id:3, link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
+        {id:4, link:"/lembur", title:"Lembur", icon: Hourglass},
+        {id:5, link:"/cuti", title:"Cuti", icon: TicketsPlane},
+        {id:6, link:"/dinas", title:"SPPD", icon: Plane},
     ]
 </script>
 
