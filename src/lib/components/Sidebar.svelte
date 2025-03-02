@@ -1,12 +1,13 @@
 <script>
-    import { GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from 'lucide-svelte'
+    import { ShieldUser, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from 'lucide-svelte'
     import usercowo from '@lib/assets/user-man.svg'
     import usercewe from '@lib/assets/user-woman.svg'
     import {appstore} from '@lib/store/appstore'
-    import {slide, fade, fly} from 'svelte/transition'
+    import {fly} from 'svelte/transition'
 	import { quadIn, quintOut } from 'svelte/easing';
-	import { Avatar, Tooltip } from 'flowbite-svelte';
-    
+	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
+	import { flip } from 'svelte/animate';
+
     const data = [
         {id:1, link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
         {id:2, link:"/absen", title:"Check In/Out", icon: GalleryHorizontalEnd},
@@ -14,11 +15,13 @@
         {id:4, link:"/lembur", title:"Lembur", icon: Hourglass},
         {id:5, link:"/cuti", title:"Cuti", icon: TicketsPlane},
         {id:6, link:"/dinas", title:"SPPD", icon: Plane},
+        {id:0, link:"/admin", title:"Admin", icon: ShieldUser},
     ]
+    let defaultModal = $state(false)
 </script>
 
 {#if $appstore.showSidebar}
-<div transition:slide={{duration: 500, easing: quadIn}} class="flex flex-col bg-[var(--warna-base)] px-3 min-w-[16rem]">
+<div transition:fly={{x: "-200px", easing: quadIn}} class="flex flex-col bg-[var(--warna-base)] px-3 min-w-[16rem]">
     <a class="flex items-center justify-center gap-3 mt-[1rem]" href="/">
         <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 37.9166C29.8951 37.9166 37.9166 29.8951 37.9166 20C37.9166 10.1049 29.8951 2.08331 20 2.08331C10.1049 2.08331 2.08331 10.1049 2.08331 20C2.08331 29.8951 10.1049 37.9166 20 37.9166Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
@@ -42,12 +45,22 @@
     </div>
 
     <div class="flex flex-col mb-10 px-4">
-        <Avatar src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
+        <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
         <Tooltip>Tjoa Ricky Febrianto</Tooltip>
         <span class="text-[16px] text-[#112D4E] font-[900] ">Tjoa Ricky Febrianto</span>
         <span class="text-[12px] text-[#1D2D44] self-start">202207</span>
         <span class="text-[12px] text-[#1D2D44]">Staff IT Development</span>
         <span class="text-[12px] text-[#1D2D44]">ricky@sagatrade.co.id</span>
     </div>
+
+    <Modal title="My Account" bind:open={defaultModal} autoclose>
+        <div class="flex flex-col gap-3 items-center">
+            <Avatar src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
+            <span class="text-[16px] text-[#112D4E] font-[900] ">Tjoa Ricky Febrianto</span>
+            <span class="text-[12px] text-[#1D2D44]">202207</span>
+            <span class="text-[12px] text-[#1D2D44]">Staff IT Development</span>
+            <span class="text-[12px] text-[#1D2D44]">ricky@sagatrade.co.id</span>
+        </div>
+    </Modal>
 </div>
 {/if}

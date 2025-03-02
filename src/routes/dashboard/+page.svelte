@@ -11,12 +11,9 @@
         {name:"month", value:"This Month"},
         {name:"date", value:"This Date"},
     ]
-
-    const data2 = {nama:"Ricky", umur:29}
-    const temp = (({nama, umur}) => ({nama}))(data2)
     
     const dataChart = {
-        label:"Hello",
+        label:"Days",
         data: [
             {series:2, colors:"#1D2D44", labels:"Perjalanan Dinas"},
             {series:12, colors:"#F7CE5B", labels:"Lembur"},
@@ -26,7 +23,7 @@
         }
 </script>
 
-<div in:fade={{delay: 500}} out:fade class="flex flex-col bg-slate-100 rounded-lg">
+<main in:fade={{delay:500}} out:fade class="flex flex-col rounded-lg">
     <div class="grid grid-cols-12 auto-cols-max gap-4">
         <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 bg-white rounded-[20px]">
             <div class="flex justify-between items-center w-full">
@@ -52,4 +49,4 @@
             <span>Hallo {d}</span>        
         </div>
     {/snippet}
-</div>
+</main>
