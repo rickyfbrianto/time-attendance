@@ -23,7 +23,7 @@
         }
 </script>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col rounded-lg">
+<main in:fade={{delay:500}} out:fade class="flex flex-col rounded-lg">    
     <div class="grid grid-cols-12 auto-cols-max gap-4">
         <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 bg-white rounded-[20px]">
             <div class="flex justify-between items-center w-full">

@@ -1,7 +1,10 @@
-import {json} from '@sveltejs/kit'
+import {error, json} from '@sveltejs/kit'
 import { PrismaClient } from '@prisma/client'
+import { checkFieldKosong, prismaErrorHandler } from '@lib/utils'
 
 const prisma = new PrismaClient()
+
+
 
 export async function GET() {
     const req = await prisma.employee.findMany({
@@ -17,7 +20,20 @@ export async function GET() {
 }
 
 export async function POST ({request}){
-    const data = await request.json()
+    try {
+        const data = await request.json()
+        const {isError, errorCount} = checkFieldKosong(data)
+        if(isError){
+            error(500,  `${errorCount} input masih kosong`)
+        }
 
-    return json({...data, status:"ok"})
+        await prisma.employee.create({
+            data:{...data}
+        })
+    
+        return json({message:"Data successfully saved"})
+    } catch (err) {
+        console.log(err)
+        error(500, {message: prismaErrorHandler(err)})
+    }
 }

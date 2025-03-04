@@ -2,7 +2,7 @@
 CREATE TABLE `employee` (
     `payroll` VARCHAR(8) NOT NULL,
     `profile_id` VARCHAR(50) NULL,
-    `cardNo` VARCHAR(100) NOT NULL,
+    `card_no` VARCHAR(100) NOT NULL,
     `name` VARCHAR(250) NOT NULL,
     `password` VARCHAR(250) NOT NULL,
     `jabatan` VARCHAR(100) NOT NULL,
@@ -22,6 +22,7 @@ CREATE TABLE `profile` (
     `profile_id` VARCHAR(50) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `description` VARCHAR(255) NOT NULL,
+    `level` ENUM('0', '1', '2', '3', '4', '5', '6', '7', '8', '9') NOT NULL,
     `user_hrd` BOOLEAN NOT NULL,
     `delegation` BOOLEAN NOT NULL,
     `access_sppd` VARCHAR(4) NOT NULL,

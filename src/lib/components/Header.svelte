@@ -11,5 +11,5 @@
         </button>
         <a href="/">Home</a>
     </div>
-	<span>Ha</span>
+	<a href="/auth/signin">Login</a>
 </div>

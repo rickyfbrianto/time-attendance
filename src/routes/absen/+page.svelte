@@ -42,7 +42,7 @@
 
     const formSubmit = (e:SubmitEvent) =>{
         e.preventDefault()
-        console.log(formState.answer)
+        
     }
 </script>
 

@@ -2,10 +2,11 @@
     import {fade} from 'svelte/transition'
     import { FireOutline } from 'flowbite-svelte-icons';
     import { Tabs, TabItem, Button, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
-    import InputForm from '@lib/components/InputForm.svelte'
+    import MyInput from '@lib/components/MyInput.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban} from 'lucide-svelte'
+    import {Plus, RefreshCw, Save, Ban, CircleAlert} from 'lucide-svelte'
     import MyButton from '@lib/components/MyButton.svelte'
+	// import { hashPassword } from '@lib/utils';
         
     const fieldProfile = $state([
         { type:"text", name:"nama", title:"Nama Lengkap", required:true},
@@ -51,18 +52,25 @@
     }
 
     const fieldUser = $state([
-        { type:"text", name:"nama", title:"Nama Lengkap", required:true},
+        { type:"text", name:"payroll", title:"Payroll", required:true},
+        { type:"text", name:"profile_id", title:"Profile ID", required:true},
+        { type:"text", name:"card_no", title:"Card No", required:true},
+        { type:"text", name:"name", title:"Nama Lengkap", required:true},
         { type:"password", name:"password", title:"Password", required:true, password:true},
-        { type:"date", name:"Tanggal Lahir", title:"Tanggal Lahir", required:true},
-        { type:"range", name:"umur", title:"Umur", required:true},
+        { type:"text", name:"jabatan", title:"Jabatan", required:true},
+        { type:"text", name:"department", title:"Dept", required:true},
+        { type:"text", name:"location", title:"Location", required:true},
+        { type:"text", name:"phone", title:"Phone", required:true},
         { type:"email", name:"email", title:"Email", required:true},
+        { type:"text", name:"signature", title:"Signature"},
     ])
 
     const formUserState = $state({
         answer: fieldUser.map(val => ({[val.name]:""})).reduce((acc, obj) => {
             return { ...acc, ...obj };
         }, {}),
-        error:"",
+        success:"",
+        error: "",
         refresh:false,
         add:false
     })
@@ -79,20 +87,25 @@
         try {
             const req = await axios.post('/admin/user', formUserState.answer)
             const res = await req.data
-        } catch (error) {
-            
+            formUserState.error = ""
+            formUserState.success = res.message
+        } catch (error: any) {
+            formUserState.error = error.response.data.message
         }
     }
 </script>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
+    <!-- {#await hashPassword('123') then val}
+    {val}
+    {/await} -->
     <Tabs class='bg-white'>
         <TabItem open title="Profile">
-            <div class="flex flex-col gap-2">                
-                <!-- <Toast>
+            <div class="flex flex-col gap-2">
+                <Toast>
                     <FireOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
                     Set yourself free.
-                </Toast> -->
+                </Toast>
 
                 <div class="flex gap-2 my-2">
                     <MyButton onclick={()=> formProfileState.refresh = true}><RefreshCw size={16}/></MyButton>
@@ -101,9 +114,9 @@
 
                 {#if formProfileState.add}
                     <form transition:fade={{duration:500}} method="POST" onsubmit={formProfileSubmit} class='flex flex-col gap-2 p-4 border border-slate-300 rounded-lg bg-white'>
-                        <div class="flex flex-col gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {#each fieldProfile as form}
-                                <InputForm {...form} bind:value={formProfileState.answer[form.name]} className=""/>
+                                <MyInput {...form} bind:value={formProfileState.answer[form.name]} className=""/>
                             {/each}
                         </div>
                         {JSON.stringify(formProfileState.answer)}
@@ -155,10 +168,15 @@
         </TabItem>
         <TabItem title="User">
             <div class="flex flex-col gap-2">                
-                <!-- <Toast>
-                    <FireOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
-                    Set yourself free.
-                </Toast> -->
+                {#if formUserState.error}
+                        <Toast color="red">
+                            <svelte:fragment slot="icon">
+                                <CircleAlert />
+                                <span class="sr-only">Warning icon</span>
+                            </svelte:fragment>
+                            {formUserState.error}
+                        </Toast>
+                {/if}
 
                 <div class="flex gap-2 my-2">
                     <MyButton onclick={()=> formUserState.refresh = true}><RefreshCw size={16}/></MyButton>
@@ -168,8 +186,8 @@
                 {#if formUserState.add}
                     <form transition:fade={{duration:500}} method="POST" onsubmit={formUserSubmit} class='flex flex-col gap-2 p-4 border border-slate-300 rounded-lg bg-white'>
                         <div class="flex flex-col gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {#each fieldProfile as form}
-                                <InputForm {...form} bind:value={formUserState.answer[form.name]} className=""/>
+                            {#each fieldUser as form}
+                                <MyInput {...form} bind:value={formUserState.answer[form.name]} className=""/>
                             {/each}
                         </div>
                         {JSON.stringify(formUserState.answer)}
