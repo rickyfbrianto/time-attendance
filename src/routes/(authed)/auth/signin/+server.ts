@@ -9,20 +9,18 @@ export async function POST({ cookies, request, locals}){
 
         const prisma = new PrismaClient()
         const data = await prisma.employee.findUnique({
-            where:{
-                payroll
-            },
-            select:{password:true}
+            select:{payroll:true, password:true},
+            where:{ payroll },
         })
 
         if(data){
-            if(password === decryptData(data?.password || "", import.meta.env.VITE_KEY)){
+            if(password === decryptData(data.password, import.meta.env.VITE_KEY)){
                 const token = jwt.sign({payroll}, import.meta.env.VITE_TOKEN, { expiresIn: '1h' })
                 cookies.set("token", token, {
                     path:"/",
                     httpOnly:true
                 })
-                return json({"message":"Data berhasil disimpan", token})
+                return json({"message":"Login berhasil", token})
             }else{
                 throw new Error('Login gagal, password salah')
             }

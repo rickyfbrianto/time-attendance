@@ -1,29 +1,8 @@
-import { redirect, type Handle } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken'
+import { sequence } from '@sveltejs/kit/hooks';
+// import { handle as authHandle } from './hooks/auth.server.js';
+import { handle as adminHandle } from '@lib/hooks/admin.server.js';
 
-export const handle: Handle = async ({ event, resolve }) => {
-    const prisma = new PrismaClient()
-    // const session = event.cookies.get(import.meta.env.VITE_TOKEN);
-    const token = event.cookies.get('token');
-    
-    if(token){
-        const jwt_payroll = jwt.verify(token, import.meta.env.VITE_TOKEN)
-        
-        const user = await prisma.employee.findUnique({
-            where:{payroll: jwt_payroll.payroll}
-        })
-        console.log(jwt_payroll)
-        console.log(user)
-        
-        // if(redirectTo){
-            //     redirect(302, `/${redirectTo.slice(1)}`)
-            // }
-    }else{
-        console.log('tidak ada session')
-        redirect(302, `/auth/signin`)
-    }
-    
-
-    return await resolve(event);
-};
+export const handle = sequence(
+//   authHandle,   // Jalankan hook autentikasi terlebih dahulu
+  // adminHandle   // Kemudian jalankan hook admin
+);

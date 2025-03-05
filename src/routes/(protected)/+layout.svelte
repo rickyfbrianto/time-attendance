@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '../app.css';
+	import '../../app.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
     import {appstore} from '@lib/store/appstore'

@@ -116,7 +116,6 @@
                                 <MyInput {...form} bind:value={formProfileState.answer[form.name]} className=""/>
                             {/each}
                         </div>
-                        {JSON.stringify(formProfileState.answer)}
                         <div class="flex self-start gap-2">
                             <MyButton onclick={()=>formProfileState.add = false}><Ban /></MyButton>
                             <MyButton type={'submit'}><Save /></MyButton>
@@ -187,7 +186,6 @@
                                 <MyInput {...form} bind:value={formUserState.answer[form.name]} className=""/>
                             {/each}
                         </div>
-                        {JSON.stringify(formUserState.answer)}
                         <div class="flex self-start gap-2">
                             <MyButton onclick={()=>formUserState.add = false}><Ban /></MyButton>
                             <MyButton type={'submit'}><Save /></MyButton>
@@ -211,28 +209,38 @@
                             </TableBodyRow>
                         </TableBody>
                     {:then val: any}
-                        <TableBody tableBodyClass="divide-y">
-                            {#each val.data as item, i}
-                                <TableBodyRow onclick={() => toggleRow(i)}>
-                                    {#each Object.entries(item) as [key, value]}
-                                        <TableBodyCell>{value}</TableBodyCell>
-                                    {/each}
-                                </TableBodyRow>
-                                {#if openRow.includes(i)}
-                                    <TableBodyRow>
-                                        <TableBodyCell colspan={Object.keys(item).length}>
-                                            <div class="flex">
-                                                <!-- {#await getAbsenById(item['id'])}
-                                                <span>Loading data...</span>
-                                                {:then val}
-                                                <span>{val.title}</span>                                                
-                                                {/await} -->
-                                            </div>
-                                        </TableBodyCell>
+                        {#if val.data}
+                            <TableBody tableBodyClass="divide-y">
+                                {#each val.data as item, i}
+                                    <TableBodyRow onclick={() => toggleRow(i)}>
+                                        {#each Object.entries(item) as [key, value]}
+                                            <TableBodyCell>{value}</TableBodyCell>
+                                        {/each}
                                     </TableBodyRow>
-                                {/if}
-                            {/each}
-                        </TableBody>
+                                    {#if openRow.includes(i)}
+                                        <TableBodyRow>
+                                            <TableBodyCell colspan={Object.keys(item).length}>
+                                                <div class="flex">
+                                                    <!-- {#await getAbsenById(item['id'])}
+                                                    <span>Loading data...</span>
+                                                    {:then val}
+                                                    <span>{val.title}</span>                                                
+                                                    {/await} -->
+                                                </div>
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/if}
+                                {/each}
+                            </TableBody>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                <TableBodyRow>
+                                    <TableBodyCell colspan={5}>
+                                        <span>Tidak ada data</span>
+                                    </TableBodyCell>
+                                </TableBodyRow>
+                            </TableBody>
+                        {/if}
                     {/await}
                 </Table>
             </div>

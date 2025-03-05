@@ -6,7 +6,12 @@
 	import { decryptData, encryptData } from '@lib/utils';
 	import { Alert, Toast } from 'flowbite-svelte';
     import {CircleAlert} from 'lucide-svelte'
+    import { goto } from '$app/navigation';
 
+    import { page } from '$app/stores'
+    const redirectTo = $page.url.searchParams.get('redirectTo')
+    console.log(redirectTo)
+    
     const fieldLogin = [
         {type:"text", name:"payroll", title:"Payrol", placeholder:"", required: true},
         {type:"password", name:"password", title:"Password", placeholder:"", required: true, password:true},
@@ -15,17 +20,24 @@
     let formLoginState = $state({
         answer: fieldLogin.map((item) => ({[item.name]:""})).reduce((acc, item) => ({...acc, ...item}), {}),
         error:"",
-        success:""
+        success:"",
+        loading:false
     })
     
     const formLoginSubmit = async (e:SubmitEvent) =>{
         e.preventDefault()
         try {    
-            const req = await axios.post('signin', formLoginState.answer)
+            formLoginState.loading = true
+            const req = await axios.post('/auth/signin', formLoginState.answer)
             const res = await req.data
+            formLoginState.loading = false
             formLoginState.error = ""
             formLoginState.success = res.message
+            setTimeout(()=>{
+                goto(redirectTo ? `${redirectTo}` : '/')
+            }, 1000)
         } catch (error: any) {
+            formLoginState.loading = false
             formLoginState.error = error.response.data.message
             formLoginState.success = ""
         }
@@ -40,11 +52,14 @@
                 <MyInput {...field} bind:value={formLoginState.answer[field.name]}/>
                 {/each}
                 <MyButton className='font-poppins self-start' type={'submit'}>Signin</MyButton>
-                {#if formLoginState.error}
+                {#if formLoginState.error || formLoginState.success}
                     <Alert border color="red" class='flex gap-2 items-center'>
                         <CircleAlert size={16}/>
-                        {formLoginState.error}
+                        {formLoginState.error || formLoginState.success}
                     </Alert>
+                {/if}
+                {#if formLoginState.loading}
+                <span>Sedang memverifikasi login</span>
                 {/if}
             </div>
         </form>

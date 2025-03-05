@@ -20,6 +20,7 @@ export async function GET() {
 export async function POST ({request}){
     try {
         const data = await request.json()
+        console.log(data)
         const {isError, errorCount} = checkFieldKosong(data)
         if(isError){
             error(500,  `${errorCount} input masih kosong`)
@@ -33,6 +34,7 @@ export async function POST ({request}){
     
         return json({message:"Data successfully saved"})
     } catch (err) {
+        console.log(err)
         error(500, {message: prismaErrorHandler(err)})
     }
 }

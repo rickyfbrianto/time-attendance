@@ -1,9 +1,19 @@
 <script>
     import {AlignJustify} from 'lucide-svelte'
     import { appstore } from "@lib/store/appstore";
+	import axios from 'axios';
+	import { Alert } from 'flowbite-svelte';
+	import { redirect } from '@sveltejs/kit';
+	import { goto } from '$app/navigation';
 
-    const handleLogout = () => {
-        
+    let logoutState = $state("")
+    const handleLogout = async () => {
+        const req = await axios.post('/auth/signout')
+        const res = await req.data
+        logoutState = res.message
+        setTimeout(()=>{
+            goto('/auth/signin')
+        }, 1000)
     }
 </script>
 
@@ -14,7 +24,11 @@
         </button>
         <a href="/">Home</a>
     </div>
-	<a href="/auth/signin">Login</a>
     <button onclick={handleLogout}>Logout</button>
-	<a href="/auth/signin">Login</a>
+    {#if logoutState}
+        <Alert>
+            {logoutState}
+        </Alert>
+    {/if}
+	<!-- <a href="/auth/signin">Login</a> -->
 </div>
