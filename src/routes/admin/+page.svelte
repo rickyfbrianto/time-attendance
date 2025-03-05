@@ -6,8 +6,7 @@
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, CircleAlert} from 'lucide-svelte'
     import MyButton from '@lib/components/MyButton.svelte'
-	// import { hashPassword } from '@lib/utils';
-        
+
     const fieldProfile = $state([
         { type:"text", name:"nama", title:"Nama Lengkap", required:true},
         { type:"password", name:"password", title:"Password", required:true, password:true},
@@ -51,6 +50,7 @@
         }
     }
 
+    // user
     const fieldUser = $state([
         { type:"text", name:"payroll", title:"Payroll", required:true},
         { type:"text", name:"profile_id", title:"Profile ID", required:true},
@@ -84,7 +84,7 @@
 
     const formUserSubmit = async (e:SubmitEvent) =>{
         e.preventDefault()
-        try {
+        try {    
             const req = await axios.post('/admin/user', formUserState.answer)
             const res = await req.data
             formUserState.error = ""
@@ -96,9 +96,6 @@
 </script>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
-    <!-- {#await hashPassword('123') then val}
-    {val}
-    {/await} -->
     <Tabs class='bg-white'>
         <TabItem open title="Profile">
             <div class="flex flex-col gap-2">

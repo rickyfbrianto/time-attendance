@@ -1,16 +1,21 @@
 import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
-// import bcrypt from 'bcrypt'
-
-export function handleLoginRequest (e : RequestEvent, pesan: string = "You need to login first"){
-    const {pathname, search} = e.url
-    const redirectTo = pathname + search
-    return '/login?redirectTo=' + encodeURIComponent(redirectTo) + "&pesan=" + encodeURIComponent(pesan)
-}
+import CryptoJS from "crypto-js";
 
 interface PesanProps{
     message: string;
     id?: string;
+}
+
+interface EncryptedData {
+    iv: string;
+    encrypted: string;
+}
+
+export function handleLoginRedirect (e : RequestEvent, pesan: string = "You need to login first"){
+    const {pathname, search} = e.url
+    const redirectTo = pathname + search
+    return '/login?redirectTo=' + encodeURIComponent(redirectTo) + "&pesan=" + encodeURIComponent(pesan)
 }
 
 export function checkFieldKosong(data:any){
@@ -27,16 +32,44 @@ export function checkFieldKosong(data:any){
     return {isError, errors, errorCount}
 }
 
-// export async function hashPassword(password:string){
-//     const salt = await bcrypt.genSalt(10)
-//     const passwordHash = await bcrypt.hash(password, salt)
-//     return passwordHash
-// }
+export function encryptDynamic(value:string, secretKey:string):EncryptedData {    
+    const iv = CryptoJS.lib.WordArray.random(128/8); //iv untuk generate acak setiap value meskipun nilainya sama
+    
+    const encrypted = CryptoJS.AES.encrypt(value, secretKey, {
+      iv,      // Tambahkan IV
+      mode: CryptoJS.mode.CBC,  // Mode enkripsi
+      padding: CryptoJS.pad.Pkcs7  // Padding standar
+    });
 
-// export async function comparePassword(userPassword:string, hashPassword:string){
-//     const result = await bcrypt.compare(userPassword, hashPassword)
-//     return result
-// }
+    return {
+        iv: iv.toString(),
+        encrypted: encrypted.toString()
+    };
+}
+
+export function decryptDynamic(encryptedObj:EncryptedData, secretKey:string):string {
+    const iv = CryptoJS.enc.Hex.parse(encryptedObj.iv);
+    
+    const decrypted = CryptoJS.AES.decrypt(encryptedObj.encrypted , secretKey, {
+        iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+
+    return decrypted.toString(CryptoJS.enc.Utf8);
+}
+
+export function encryptData(value:string, secretKey:string):string {       
+    const encrypted = CryptoJS.AES.encrypt(value, secretKey);
+
+    return encrypted.toString()
+}
+
+export function decryptData(value:string, secretKey:string):string {    
+    const decrypted = CryptoJS.AES.decrypt(value , secretKey);
+
+    return decrypted.toString(CryptoJS.enc.Utf8);
+}
 
 export function prismaErrorHandler(error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {

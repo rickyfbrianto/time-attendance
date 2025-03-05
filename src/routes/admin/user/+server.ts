@@ -1,10 +1,8 @@
 import {error, json} from '@sveltejs/kit'
 import { PrismaClient } from '@prisma/client'
-import { checkFieldKosong, prismaErrorHandler } from '@lib/utils'
+import { checkFieldKosong, prismaErrorHandler, encryptData } from '@lib/utils'
 
 const prisma = new PrismaClient()
-
-
 
 export async function GET() {
     const req = await prisma.employee.findMany({
@@ -28,12 +26,13 @@ export async function POST ({request}){
         }
 
         await prisma.employee.create({
-            data:{...data}
+            data:{...data,
+                password: encryptData(data.password, import.meta.env.VITE_KEY)
+            }
         })
     
         return json({message:"Data successfully saved"})
     } catch (err) {
-        console.log(err)
         error(500, {message: prismaErrorHandler(err)})
     }
 }
