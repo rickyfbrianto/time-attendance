@@ -37,7 +37,7 @@
             </button>
             <BreadcrumbItem href="/dashboard" home>Dashboard</BreadcrumbItem>
             {#each pathname as val}
-                <BreadcrumbItem href={val}>{val}</BreadcrumbItem>
+                <BreadcrumbItem class='capitalize' href={val}>{val}</BreadcrumbItem>
             {/each}
         </Breadcrumb>
     </div>

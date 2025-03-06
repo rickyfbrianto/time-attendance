@@ -6,25 +6,25 @@
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban } from 'lucide-svelte'
     import MyButton from '@lib/components/MyButton.svelte'
+    import {ListAccess, ListLevel} from '@lib/utils'
 
-    const fieldProfile = $state([
-        { type:"text", name:"nama", title:"Nama Lengkap", required:true},
-        { type:"password", name:"password", title:"Password", required:true, password:true},
-        { type:"date", name:"Tanggal Lahir", title:"Tanggal Lahir", required:true},
-        { type:"range", name:"umur", title:"Umur", required:true},
-        { type:"email", name:"email", title:"Email", required:true},
-    ])
-
-    const listProfileAccess = [
-        {value:"C", name:"Create"},
-        {value:"R", name:"Read"},
-        {value:"U", name:"Update"},
-        {value:"D", name:"Delete"},
-    ]
-    const listProfileLevel = [
-        {value:"0", name:"0"},
-        {value:"1", name:"1"},
-    ]
+    interface ProfileProps {
+        profile_id: string;
+        name: string;
+        description: string;
+        level: string;
+        user_hrd: boolean;
+        delegation: boolean;
+        access_sppd: string;
+        access_skpd: string;
+        access_attendance: string;
+        access_spl: string;
+        access_srl: string;
+        access_cuti: string;
+        access_calendar: string;
+        access_user: string;
+        access_profile: string;
+    }
         
     let formProfileState = $state({
         answer: {},
@@ -135,8 +135,8 @@
                             <!-- {#each fieldProfile as form}
                                 <MyInput {...form} bind:value={formProfileState.answer[form.name]} className=""/>
                             {/each} -->
-
-                            <MyInput type='hidden' rows={4} name="profile_id" bind:value={formProfileState.answer.profile_id}/>
+                            
+                            <input type='hidden' name="profile_id" bind:value={formProfileState.answer.profile_id}/>
                             <div class="flex gap-4">
                                 <div class="flex flex-col gap-4 flex-1">
                                     <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
@@ -148,49 +148,48 @@
                             
                             <div class="flex flex-col gap-2">
                                 <Label for='level'>Level</Label>
-                                <Select name='level' items={listProfileLevel} bind:value={formProfileState.answer.level} />
+                                <Select name='level' items={ListLevel} bind:value={formProfileState.answer.level} />
                             </div>
-                            
                             
                             <div class="flex flex-col gap-2">
                                 <Label>Access SPPD</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_sppd} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_sppd} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access SKPD</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_skpd} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_skpd} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access Attendance</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_attendance} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_attendance} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access SPL</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_spl} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_spl} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access SRL</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_srl} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_srl} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access Cuti</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_cuti} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_cuti} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access Calendar</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_calendar} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_calendar} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access User</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_user} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_user} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access User</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_user} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_user} />
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Label>Access Profile</Label>
-                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_profile} />
+                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_profile} />
                             </div>
                         </div>
                         {JSON.stringify(formProfileState.answer)}
@@ -252,6 +251,12 @@
                                 {/if}
                             {/each}
                         </TableBody> 
+                    {:catch val}
+                    <TableBody tableBodyClass="divide-y">
+                    <TableBodyRow>
+                        <TableBodyCell colspan={6}>Error: {val.message}</TableBodyCell>
+                    </TableBodyRow>
+                    </TableBody>
                     {/await}
                 </TableSearch>
             </div>

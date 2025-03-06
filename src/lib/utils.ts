@@ -12,6 +12,27 @@ interface EncryptedData {
     encrypted: string;
 }
 
+export const ListAccess = [
+    {value:"C", name:"Create"},
+    {value:"R", name:"Read"},
+    {value:"U", name:"Update"},
+    {value:"D", name:"Delete"},
+]
+
+export const ListLevel = [
+    {value:"L0", name:"0"},
+    {value:"L1", name:"1"},
+    {value:"L2", name:"2"},
+    {value:"L3", name:"3"},
+    {value:"L4", name:"4"},
+    {value:"L5", name:"5"},
+    {value:"L6", name:"6"},
+    {value:"L7", name:"7"},
+    {value:"L8", name:"8"},
+    {value:"L9", name:"9"},
+    {value:"L10", name:"10"},
+]
+
 export function handleLoginRedirect (e : RequestEvent, pesan: string = "You need to login first"){
     const {pathname, search} = e.url
     const redirectTo = pathname + search

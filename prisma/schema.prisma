@@ -55,4 +55,5 @@ enum profile_level {
   L7 @map("7")
   L8 @map("8")
   L9 @map("9")
+  L10 @map("10")
 }
