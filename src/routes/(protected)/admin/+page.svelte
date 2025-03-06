@@ -1,10 +1,10 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { FireOutline } from 'flowbite-svelte-icons';
-    import { Tabs, TabItem, Button, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
+    import { DotsVerticalOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
+    import { Tabs, TabItem, Button, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox } from 'flowbite-svelte';
     import MyInput from '@lib/components/MyInput.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban, CircleAlert} from 'lucide-svelte'
+    import {Plus, RefreshCw, Save, Ban } from 'lucide-svelte'
     import MyButton from '@lib/components/MyButton.svelte'
 
     const fieldProfile = $state([
@@ -15,13 +15,25 @@
         { type:"email", name:"email", title:"Email", required:true},
     ])
 
-    const formProfileState = $state({
-        answer: fieldProfile.map(val => ({[val.name]:""})).reduce((acc, obj) => {
-            return { ...acc, ...obj };
-        }, {}),
+    const listProfileAccess = [
+        {value:"C", name:"Create"},
+        {value:"R", name:"Read"},
+        {value:"U", name:"Update"},
+        {value:"D", name:"Delete"},
+    ]
+    const listProfileLevel = [
+        {value:"0", name:"0"},
+        {value:"1", name:"1"},
+    ]
+        
+    let formProfileState = $state({
+        answer: {},
         error:"",
+        search:"",
         refresh:false,
-        add:false
+        add:false,
+        actionTable: false,
+        selectedId :""
     })
 
     const getDataProfile = $derived(async(ref:boolean)=>{
@@ -33,6 +45,12 @@
 
     const formProfileSubmit = async (e:SubmitEvent) =>{
         e.preventDefault()
+        console.log(formProfileState.answer)
+        Object.entries(formProfileState.answer).forEach(val=>{
+            if(typeof val[1] === 'object'){
+                formProfileState.answer[val[0]] = val[1].join("")
+            }
+        })
         try {
             const req = await axios.post('/admin/profile', formProfileState.answer)
             const res = await req.data
@@ -41,8 +59,8 @@
         }
     }
     
-    let openRow: number[] = $state([]) 
-    const toggleRow = (i: number) => {
+    let openRow: string[] = $state([]) 
+    const toggleRow = (i: string) => {
         if(openRow.includes(i)){
             openRow = openRow.filter((item) => item !== i)
         } else {
@@ -99,10 +117,12 @@
     <Tabs class='bg-white'>
         <TabItem open title="Profile">
             <div class="flex flex-col gap-2">
-                <Toast>
-                    <FireOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
-                    Set yourself free.
-                </Toast>
+                {#if formProfileState.error}
+                    <Toast color="red">
+                        <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
+                        {formProfileState.error}
+                    </Toast>
+                {/if}
 
                 <div class="flex gap-2 my-2">
                     <MyButton onclick={()=> formProfileState.refresh = true}><RefreshCw size={16}/></MyButton>
@@ -111,11 +131,69 @@
 
                 {#if formProfileState.add}
                     <form transition:fade={{duration:500}} method="POST" onsubmit={formProfileSubmit} class='flex flex-col gap-2 p-4 border border-slate-300 rounded-lg bg-white'>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {#each fieldProfile as form}
+                        <div class="flex flex-col gap-4">
+                            <!-- {#each fieldProfile as form}
                                 <MyInput {...form} bind:value={formProfileState.answer[form.name]} className=""/>
-                            {/each}
+                            {/each} -->
+
+                            <MyInput type='hidden' rows={4} name="profile_id" bind:value={formProfileState.answer.profile_id}/>
+                            <div class="flex gap-4">
+                                <div class="flex flex-col gap-4 flex-1">
+                                    <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
+                                    <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
+                                    <Checkbox bind:checked={formProfileState.answer.delegation as unknown as boolean}>Delegation</Checkbox>
+                                </div>
+                                <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2">
+                                <Label for='level'>Level</Label>
+                                <Select name='level' items={listProfileLevel} bind:value={formProfileState.answer.level} />
+                            </div>
+                            
+                            
+                            <div class="flex flex-col gap-2">
+                                <Label>Access SPPD</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_sppd} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access SKPD</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_skpd} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access Attendance</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_attendance} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access SPL</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_spl} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access SRL</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_srl} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access Cuti</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_cuti} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access Calendar</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_calendar} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access User</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_user} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access User</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_user} />
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label>Access Profile</Label>
+                                <MultiSelect size="md" items={listProfileAccess} bind:value={formProfileState.answer.access_profile} />
+                            </div>
                         </div>
+                        {JSON.stringify(formProfileState.answer)}
                         <div class="flex self-start gap-2">
                             <MyButton onclick={()=>formProfileState.add = false}><Ban /></MyButton>
                             <MyButton type={'submit'}><Save /></MyButton>
@@ -123,14 +201,20 @@
                     </form>
                 {/if}
 
+                <div class="flex gap-2 mb-4">
+                    <MyInput type='text' name='search' bind:value={formProfileState.search} />
+                    <!-- <button onclick={search} color="blue">Cari</button> -->
+                    <!-- <button onclick={resetSearch} color="gray">Reset</button> -->
+                </div>
+                
                 <TableSearch class="rounded-lg" hoverable={true}>
                     <TableHead class="bg-slate-200" >
-                        <TableHeadCell sort={(a:{profile_id:string}, b:{profile_id:string}) => a.profile_id.localeCompare(b.profile_id)}>Profile ID</TableHeadCell>
                         <TableHeadCell defaultSort>Name</TableHeadCell>
                         <TableHeadCell>Description</TableHeadCell>
                         <TableHeadCell>Level</TableHeadCell>
                         <TableHeadCell>User HRD</TableHeadCell>
                         <TableHeadCell>Delegation</TableHeadCell>
+                        <TableHeadCell>#</TableHeadCell>
                     </TableHead>
 
                     {#await getDataProfile(formProfileState.refresh)}
@@ -139,15 +223,25 @@
                                 <TableBodyCell colspan={6}>Loading data</TableBodyCell>
                             </TableBodyRow>
                         </TableBody>
-                    {:then val: any}
+                    {:then val}
                         <TableBody tableBodyClass="divide-y">
                             {#each val.data as itemdata, i}
-                                <TableBodyRow onclick={() => toggleRow(i)}>
-                                    {#each Object.entries(itemdata) as [key, value]}
-                                        <TableBodyCell>{value}</TableBodyCell>
-                                    {/each}
+                                <TableBodyRow>
+                                    <TableBodyCell>{itemdata.name}</TableBodyCell>
+                                    <TableBodyCell>{itemdata.description}</TableBodyCell>
+                                    <TableBodyCell>{itemdata.level}</TableBodyCell>
+                                    <TableBodyCell>{itemdata.user_hrd}</TableBodyCell>
+                                    <TableBodyCell>{itemdata.delegation}</TableBodyCell>
+                                    <TableBodyCell>
+                                        <DotsVerticalOutline class="dark:text-white" onclick={()=> formProfileState.selectedId = itemdata.profile_id}/>
+                                        <Dropdown triggeredBy={formProfileState.selectedId} placement="left">
+                                            <DropdownItem onclick={()=> {toggleRow(itemdata.profile_id)}}>Detail</DropdownItem>
+                                            <DropdownItem onclick={()=> console.log(itemdata.profile_id)}>Edit</DropdownItem>
+                                            <DropdownItem>Hapus</DropdownItem>
+                                        </Dropdown>
+                                    </TableBodyCell>
                                 </TableBodyRow>
-                                {#if openRow.includes(i)}
+                                {#if openRow.includes(itemdata.profile_id)}
                                     <TableBodyRow>
                                         <TableBodyCell colspan={6} class="p-0">
                                             <div class="px-2 py-3" transition:fade={{ duration: 300 }}>
@@ -165,13 +259,10 @@
         <TabItem title="User">
             <div class="flex flex-col gap-2">                
                 {#if formUserState.error}
-                        <Toast color="red">
-                            <svelte:fragment slot="icon">
-                                <CircleAlert />
-                                <span class="sr-only">Warning icon</span>
-                            </svelte:fragment>
-                            {formUserState.error}
-                        </Toast>
+                    <Toast color="red">
+                        <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
+                        {formUserState.error}
+                    </Toast>
                 {/if}
 
                 <div class="flex gap-2 my-2">

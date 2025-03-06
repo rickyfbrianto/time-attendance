@@ -1,5 +1,7 @@
-import {json} from '@sveltejs/kit'
+import {error, json} from '@sveltejs/kit'
 import { PrismaClient } from '@prisma/client'
+import { checkFieldKosong, prismaErrorHandler } from '@lib/utils'
+import { nanoid } from 'nanoid'
 
 const prisma = new PrismaClient()
 
@@ -18,7 +20,22 @@ export async function GET() {
 }
 
 export async function POST ({request}){
-    const data = await request.json()
+    try {
+        const data = await request.json()
+        const {isError, errorCount} = checkFieldKosong(data)
+        if(isError){
+            error(500,  `${errorCount} input masih kosong`)
+        }
 
-    return json({...data, status:"ok"})
+        await prisma.profile.create({
+            data:{...data,
+                profile_id: nanoid()
+            }
+        })
+    
+        return json({message:"Data successfully saved"})
+    } catch (err) {
+        console.log(err)
+        error(500, {message: prismaErrorHandler(err)})
+    }
 }

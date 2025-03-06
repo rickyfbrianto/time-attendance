@@ -3,7 +3,6 @@
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
     import {appstore} from '@lib/store/appstore'
-    // import {} from '@better-auth'
     
 	let { children } = $props()
 
@@ -18,11 +17,11 @@
 
 <svelte:window bind:innerWidth={$appstore.appWidth}/>
 
-<div class="flex h-screen bg-gray-100">
+<div class="relative flex h-screen bg-gray-100">
     <Sidebar/>
-    <div class="flex flex-col h-full w-full">
+    <div class="flex flex-col flex-1">
         <Header/>
-        <div class="p-4 overflow-y-scroll overflow-x-hidden">
+        <div style="scrollbar-width: none;" class="p-4 overflow-y-scroll overflow-x-hidden">
             {@render children()}
         </div>
     </div>

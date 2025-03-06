@@ -39,6 +39,8 @@
 		"classnames": "^2.5.1",
 		"crypto-js": "^4.2.0",
 		"jsonwebtoken": "^9.0.2",
-		"lucide-svelte": "^0.476.0"
+		"lucide-svelte": "^0.476.0",
+		"nanoid": "^5.1.2",
+		"uuid": "^11.1.0"
 	}
 }

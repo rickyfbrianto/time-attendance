@@ -20,7 +20,6 @@ export async function GET() {
 export async function POST ({request}){
     try {
         const data = await request.json()
-        console.log(data)
         const {isError, errorCount} = checkFieldKosong(data)
         if(isError){
             error(500,  `${errorCount} input masih kosong`)

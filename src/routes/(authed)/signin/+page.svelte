@@ -4,8 +4,8 @@
     import {fade} from 'svelte/transition'
 	import axios from 'axios';
 	import { decryptData, encryptData } from '@lib/utils';
-	import { Alert, Toast } from 'flowbite-svelte';
-    import {CircleAlert} from 'lucide-svelte'
+	import { Alert, Toast, Spinner  } from 'flowbite-svelte';
+    import {CircleAlert, Check} from 'lucide-svelte'
     import { goto } from '$app/navigation';
 
     import { page } from '$app/stores'
@@ -28,7 +28,7 @@
         e.preventDefault()
         try {    
             formLoginState.loading = true
-            const req = await axios.post('/auth/signin', formLoginState.answer)
+            const req = await axios.post('/signin', formLoginState.answer)
             const res = await req.data
             formLoginState.loading = false
             formLoginState.error = ""
@@ -44,25 +44,35 @@
     }
 </script>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4 container">
-    <div class="flex flex-col">
-        <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto self-start gap-2 p-4 border border-slate-300 rounded-lg bg-white w-[25rem]'>
-            <div class="flex flex-col gap-4">
-                {#each fieldLogin as field}
-                <MyInput {...field} bind:value={formLoginState.answer[field.name]}/>
-                {/each}
-                <MyButton className='font-poppins self-start' type={'submit'}>Signin</MyButton>
-                {#if formLoginState.error || formLoginState.success}
-                    <Alert border color="red" class='flex gap-2 items-center'>
-                        <CircleAlert size={16}/>
-                        {formLoginState.error || formLoginState.success}
-                    </Alert>
-                {/if}
-                {#if formLoginState.loading}
-                <span>Sedang memverifikasi login</span>
-                {/if}
-            </div>
-        </form>
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg container border border-slate-300 rounded-lg">
+    <div class="flex p-6 bg-slate-800 rounded-t-lg">
+        <span class='text-white'>Login</span>
     </div>
-        
+    
+    <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 w-[25rem]'>
+        <div class="flex flex-col gap-4">
+            {#each fieldLogin as field}
+                <MyInput {...field} bind:value={formLoginState.answer[field.name]}/>
+            {/each}
+            <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
+            {#if formLoginState.loading}
+            <div class="flex gap-2 items-center p-2 bg-slate-100 rounded-lg">
+                <Spinner color="gray" size={5}/>
+                <span class='text-muted text-[.9rem]'>Sedang verifikasi login</span>
+            </div>
+            {/if}
+            {#if formLoginState.error}
+                <Alert border color="red" class='flex gap-2 items-center'>
+                    <CircleAlert size={16}/>
+                    {formLoginState.error}
+                </Alert>
+            {/if}
+            {#if formLoginState.success}
+                <Alert border color="green" class='flex gap-2 items-center'>
+                    <Check size={16}/>
+                    {formLoginState.success}
+                </Alert>
+            {/if}
+        </div>
+    </form>        
 </main>
