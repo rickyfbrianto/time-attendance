@@ -33,6 +33,7 @@ export const ListLevel = [
     {value:"L10", name:"10"},
 ]
 
+
 export function handleLoginRedirect (e : RequestEvent, pesan: string = "You need to login first"){
     const {pathname, search} = e.url
     const redirectTo = pathname + search

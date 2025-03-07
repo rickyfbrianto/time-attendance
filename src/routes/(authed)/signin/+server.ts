@@ -15,12 +15,12 @@ export async function POST({ cookies, request, locals}){
 
         if(data){
             if(password === decryptData(data.password, import.meta.env.VITE_KEY)){
-                const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: '1h' })
+                locals.user = payroll
+                const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: '1d' })
                 cookies.set("token", token, {
                     path:"/",
                     httpOnly:true
                 })
-                locals.user = payroll
                 return json({"message":"Login berhasil", token})
             }else{
                 throw new Error('Login gagal, password salah')

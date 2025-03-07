@@ -1,33 +1,53 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
     import { DotsVerticalOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
-    import { Tabs, TabItem, Button, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox } from 'flowbite-svelte';
     import MyInput from '@lib/components/MyInput.svelte'
+    import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban } from 'lucide-svelte'
-    import MyButton from '@lib/components/MyButton.svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
-
+    
     interface ProfileProps {
-        profile_id: string;
-        name: string;
-        description: string;
-        level: string;
-        user_hrd: boolean;
-        delegation: boolean;
-        access_sppd: string;
-        access_skpd: string;
-        access_attendance: string;
-        access_spl: string;
-        access_srl: string;
-        access_cuti: string;
-        access_calendar: string;
-        access_user: string;
-        access_profile: string;
+        answer:{
+            profile_id: string;
+            name: string;
+            description: string;
+            level: string;
+            user_hrd: boolean;
+            delegation: boolean;
+            access_sppd: string;
+            access_skpd: string;
+            access_attendance: string;
+            access_spl: string;
+            access_srl: string;
+            access_cuti: string;
+            access_calendar: string;
+            access_user: string;
+            access_profile: string;
+        }
+        error:string; search:string; refresh:boolean; add:boolean; actionTable:boolean; selectedId:string
+        [key:string] : string | boolean | {};
     }
-        
-    let formProfileState = $state({
-        answer: {},
+    
+    let formProfileState = $state<ProfileProps>({
+        answer: {
+            profile_id: "",
+            name: "",
+            description: "",
+            level: "",
+            user_hrd: false,
+            delegation: false,
+            access_sppd: "",
+            access_skpd: "",
+            access_attendance: "",
+            access_spl: "",
+            access_srl: "",
+            access_cuti: "",
+            access_calendar: "",
+            access_user: "",
+            access_profile: "",
+        },
         error:"",
         search:"",
         refresh:false,
@@ -39,13 +59,11 @@
     const getDataProfile = $derived(async(ref:boolean)=>{
         formProfileState.refresh = false
         const req = await fetch('/admin/profile')
-        const result = await req.json()
-        return result
+        return await req.json()
     })
 
     const formProfileSubmit = async (e:SubmitEvent) =>{
         e.preventDefault()
-        console.log(formProfileState.answer)
         Object.entries(formProfileState.answer).forEach(val=>{
             if(typeof val[1] === 'object'){
                 formProfileState.answer[val[0]] = val[1].join("")
@@ -96,8 +114,7 @@
     let getDataUser = $derived(async(ref:boolean)=>{
         formUserState.refresh = false
         const req = await fetch('/admin/user')
-        const result = await req.json()
-        return result
+        return await req.json()
     })
 
     const formUserSubmit = async (e:SubmitEvent) =>{
@@ -137,7 +154,7 @@
                             {/each} -->
                             
                             <input type='hidden' name="profile_id" bind:value={formProfileState.answer.profile_id}/>
-                            <div class="flex gap-4">
+                            <div class="flex flex-col md:flex-row gap-4">
                                 <div class="flex flex-col gap-4 flex-1">
                                     <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
                                     <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
@@ -202,8 +219,8 @@
 
                 <div class="flex gap-2 mb-4">
                     <MyInput type='text' name='search' bind:value={formProfileState.search} />
-                    <!-- <button onclick={search} color="blue">Cari</button> -->
-                    <!-- <button onclick={resetSearch} color="gray">Reset</button> -->
+                    <MyButton>Cari</MyButton>
+                    <MyButton>Reset</MyButton>
                 </div>
                 
                 <TableSearch class="rounded-lg" hoverable={true}>

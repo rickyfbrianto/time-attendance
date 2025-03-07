@@ -3,7 +3,7 @@
     import classNames from 'classnames'
     import {fade} from 'svelte/transition'
 	import { Label } from 'flowbite-svelte';
-    let {type, name, title = '', className = "", rows=2,
+    let {type, title = '', name = "", className = "", rows=2,
         required = false, value = $bindable(), password = false, placeholder = ``} = $props()
     const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[1px] border-slate-300 bg-white px-3`, className)
 

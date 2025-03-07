@@ -6,7 +6,7 @@
     import {fly} from 'svelte/transition'
 	import { quadIn, quintOut } from 'svelte/easing';
 	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
-	import { flip } from 'svelte/animate';
+	import MyButton from '@lib/components/MyButton.svelte'
 
     const data = [
         {id:1, link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
@@ -54,7 +54,8 @@
     </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>
-        <div class="flex flex-col gap-3 items-center">
+        <div class="relative flex flex-col gap-3 items-center">
+            <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton>
             <Avatar src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
             <span class="text-[16px] text-[#112D4E] font-[900] ">Tjoa Ricky Febrianto</span>
             <span class="text-[12px] text-[#1D2D44]">202207</span>

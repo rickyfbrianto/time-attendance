@@ -3,14 +3,13 @@
 	import MyButton from '@/MyButton.svelte';
     import {fade} from 'svelte/transition'
 	import axios from 'axios';
-	import { decryptData, encryptData } from '@lib/utils';
 	import { Alert, Toast, Spinner  } from 'flowbite-svelte';
     import {CircleAlert, Check} from 'lucide-svelte'
     import { goto } from '$app/navigation';
 
     import { page } from '$app/stores'
     const redirectTo = $page.url.searchParams.get('redirectTo')
-    console.log(redirectTo)
+    const message = $page.url.searchParams.get('message')
     
     const fieldLogin = [
         {type:"text", name:"payroll", title:"Payrol", placeholder:"", required: true},
@@ -19,7 +18,7 @@
 
     let formLoginState = $state({
         answer: fieldLogin.map((item) => ({[item.name]:""})).reduce((acc, item) => ({...acc, ...item}), {}),
-        error:"",
+        error: message,
         success:"",
         loading:false
     })
@@ -50,6 +49,18 @@
     </div>
     
     <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 w-[25rem]'>
+        {#if formLoginState.error}
+            <Alert border color="red" class='flex gap-2 items-center'>
+                <CircleAlert size={16}/>
+                {formLoginState.error}
+            </Alert>
+        {/if}
+        {#if formLoginState.success}
+            <Alert border color="green" class='flex gap-2 items-center'>
+                <Check size={16}/>
+                {formLoginState.success}
+            </Alert>
+        {/if}
         <div class="flex flex-col gap-4">
             {#each fieldLogin as field}
                 <MyInput {...field} bind:value={formLoginState.answer[field.name]}/>
@@ -60,18 +71,6 @@
                 <Spinner color="gray" size={5}/>
                 <span class='text-muted text-[.9rem]'>Sedang verifikasi login</span>
             </div>
-            {/if}
-            {#if formLoginState.error}
-                <Alert border color="red" class='flex gap-2 items-center'>
-                    <CircleAlert size={16}/>
-                    {formLoginState.error}
-                </Alert>
-            {/if}
-            {#if formLoginState.success}
-                <Alert border color="green" class='flex gap-2 items-center'>
-                    <Check size={16}/>
-                    {formLoginState.success}
-                </Alert>
             {/if}
         </div>
     </form>        

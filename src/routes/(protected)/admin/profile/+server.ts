@@ -7,14 +7,14 @@ const prisma = new PrismaClient()
 
 export async function GET() {
     const req = await prisma.profile.findMany({
-        select:{
-            profile_id:true,
-            name:true,
-            description:true,
-            level:true,
-            user_hrd:true,
-            delegation:true
-        }
+        // select:{
+        //     profile_id:true,
+        //     name:true,
+        //     description:true,
+        //     level:true,
+        //     user_hrd:true,
+        //     delegation:true
+        // }
     })
     return json({data:req})
 }

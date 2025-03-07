@@ -31,4 +31,8 @@
     :global(p, span, a, input, button, label){
         font-family: "Poppins", sans-serif;
     }
+    :global(#MyButton){
+        font-size: .9rem;
+        font-family: "Poppins", sans-serif;
+    }
 </style>
