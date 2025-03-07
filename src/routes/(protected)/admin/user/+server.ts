@@ -8,10 +8,11 @@ export async function GET() {
     const req = await prisma.employee.findMany({
         select:{
             payroll:true,
-            profile_id:true,
-            card_no:true,
             name:true,
-            department:true
+            jabatan:true,
+            department:true,
+            location:true,
+            email:true
         }
     })
     return json({data:req})

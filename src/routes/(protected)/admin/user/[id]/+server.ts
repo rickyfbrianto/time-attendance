@@ -5,8 +5,8 @@ const prisma = new PrismaClient()
 
 export async function GET({params}){
     const {id} = await params
-    const req = await prisma.profile.findUnique({
-        where:{profile_id:id}
+    const req = await prisma.employee.findUnique({
+        where:{payroll:id}
     })
     return json(req)
 }

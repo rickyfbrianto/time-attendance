@@ -3,9 +3,9 @@
     import classNames from 'classnames'
     import {fade} from 'svelte/transition'
 	import { Label } from 'flowbite-svelte';
-    let {type, title = '', name = "", className = "", rows=2,
+    let {type, title = '', name = "", className = "", rows=2, disabled = false,
         required = false, value = $bindable(), password = false, placeholder = ``} = $props()
-    const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[1px] border-slate-300 bg-white px-3`, className)
+    const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[1px] border-slate-300 bg-white`, className)
 
     let showText = $state(false)
     const sizeIcon = 18
@@ -15,12 +15,13 @@
     <Label for={name}>{title}</Label>
     <div class={myClass}>
         {#if type == "textarea"}
-            <textarea class='w-full border-0 outline-none ring-0 px-0 py-[.5rem]' {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
+            <textarea class='w-full rounded-lg border-0 outline-none ring-0 ps-3' {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
         {:else}
-            <input class="w-full border-0 outline-none ring-0 px-0 py-[.5rem]" id={name} {name} {required} {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
+            <input class="w-full rounded-lg border-0 outline-none ring-0 ps-3" id={name} {name} {disabled} {required} 
+            {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
         {/if}
         {#if password}
-            <button type="button" transition:fade onclick={()=> showText = !showText}>
+            <button class='pe-3' type="button" transition:fade onclick={()=> showText = !showText}>
                 {#if showText} <EyeClosed size={sizeIcon} /> {:else} <Eye size={sizeIcon}/>{/if}
             </button>
         {/if}

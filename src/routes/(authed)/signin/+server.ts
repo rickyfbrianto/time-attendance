@@ -1,4 +1,4 @@
-import { encryptData, decryptData } from '@lib/utils'
+import { decryptData } from '@lib/utils'
 import {error, json} from '@sveltejs/kit'
 import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken';

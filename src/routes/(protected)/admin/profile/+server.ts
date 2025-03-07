@@ -24,18 +24,17 @@ export async function POST ({request}){
         const data = await request.json()
         const {isError, errorCount} = checkFieldKosong(data)
         if(isError){
-            error(500,  `${errorCount} input masih kosong`)
+            error(500,  {message:`${errorCount} input masih kosong`})
         }
 
         await prisma.profile.create({
             data:{...data,
-                profile_id: nanoid()
+                profile_id: nanoid(10)
             }
         })
     
         return json({message:"Data successfully saved"})
     } catch (err) {
-        console.log(err)
         error(500, {message: prismaErrorHandler(err)})
     }
 }

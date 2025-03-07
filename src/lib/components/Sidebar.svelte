@@ -14,7 +14,7 @@
         {id:3, link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
         {id:4, link:"/lembur", title:"Lembur", icon: Hourglass},
         {id:5, link:"/cuti", title:"Cuti", icon: TicketsPlane},
-        {id:6, link:"/dinas", title:"SPPD", icon: Plane},
+        {id:6, link:"/dinas", title:"Dinas", icon: Plane},
         {id:0, link:"/admin", title:"Admin", icon: ShieldUser},
     ]
     let defaultModal = $state(false)

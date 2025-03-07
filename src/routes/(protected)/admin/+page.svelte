@@ -5,32 +5,11 @@
     import MyInput from '@lib/components/MyInput.svelte'
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban } from 'lucide-svelte'
+    import {Plus, RefreshCw, Save, Ban, Pencil, Trash } from 'lucide-svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
-    
-    interface ProfileProps {
-        answer:{
-            profile_id: string;
-            name: string;
-            description: string;
-            level: string;
-            user_hrd: boolean;
-            delegation: boolean;
-            access_sppd: string;
-            access_skpd: string;
-            access_attendance: string;
-            access_spl: string;
-            access_srl: string;
-            access_cuti: string;
-            access_calendar: string;
-            access_user: string;
-            access_profile: string;
-        }
-        error:string; search:string; refresh:boolean; add:boolean; actionTable:boolean; selectedId:string
-        [key:string] : string | boolean | {};
-    }
-    
-    let formProfileState = $state<ProfileProps>({
+	import MyLoading from '@/MyLoading.svelte';
+
+    let formProfileState = $state({
         answer: {
             profile_id: "",
             name: "",
@@ -48,33 +27,55 @@
             access_user: "",
             access_profile: "",
         },
+        success:"",
         error:"",
         search:"",
+        loading:false,
         refresh:false,
         add:false,
-        actionTable: false,
-        selectedId :""
+        edit:false,
     })
 
-    const getDataProfile = $derived(async(ref:boolean)=>{
+    let getDataProfile = $derived(async(ref:boolean)=>{
         formProfileState.refresh = false
         const req = await fetch('/admin/profile')
         return await req.json()
     })
-
-    const formProfileSubmit = async (e:SubmitEvent) =>{
-        e.preventDefault()
-        Object.entries(formProfileState.answer).forEach(val=>{
-            if(typeof val[1] === 'object'){
-                formProfileState.answer[val[0]] = val[1].join("")
-            }
-        })
+    
+    const formProfileEdit = async (id:string) =>{
         try {
+            formProfileState.loading = true
+            const req = await axios.get(`/admin/profile/${id}`)
+            formProfileState.answer = {...await req.data}
+            formProfileState.edit = true
+            formProfileState.add = false
+            formProfileState.loading = false
+        } catch (error) {
+            formProfileState.loading = false
+        
+        }
+    }
+    
+    const formProfileSubmit = async () =>{
+        try {
+            Object.entries(formProfileState.answer).forEach(val=>{
+                if(typeof val[1] === 'object'){
+                    formProfileState.answer[val[0]] = val[1].join("")
+                }
+            })
             const req = await axios.post('/admin/profile', formProfileState.answer)
             const res = await req.data
         } catch (error) {
             
         }
+    }
+
+    const formProfileBatal = () =>{
+        Object.entries(formProfileState.answer).forEach(val=>{
+            formProfileState.answer[val[0]] = (typeof val[1] == "boolean" ? false : "")
+        })
+        formProfileState.add = false
+        formProfileState.edit = false
     }
     
     let openRow: string[] = $state([]) 
@@ -87,28 +88,27 @@
     }
 
     // user
-    const fieldUser = $state([
-        { type:"text", name:"payroll", title:"Payroll", required:true},
-        { type:"text", name:"profile_id", title:"Profile ID", required:true},
-        { type:"text", name:"card_no", title:"Card No", required:true},
-        { type:"text", name:"name", title:"Nama Lengkap", required:true},
-        { type:"password", name:"password", title:"Password", required:true, password:true},
-        { type:"text", name:"jabatan", title:"Jabatan", required:true},
-        { type:"text", name:"department", title:"Dept", required:true},
-        { type:"text", name:"location", title:"Location", required:true},
-        { type:"text", name:"phone", title:"Phone", required:true},
-        { type:"email", name:"email", title:"Email", required:true},
-        { type:"text", name:"signature", title:"Signature"},
-    ])
-
     const formUserState = $state({
-        answer: fieldUser.map(val => ({[val.name]:""})).reduce((acc, obj) => {
-            return { ...acc, ...obj };
-        }, {}),
+        answer:{
+            payroll:"",
+            profile_id:"",
+            card_no:"",
+            name:"",
+            password:"",
+            jabatan:"",
+            department:"",
+            location:"",
+            phone:"",
+            email:"",
+            signature:"",
+        },
         success:"",
-        error: "",
+        error:"",
+        search:"",
+        loading:false,
         refresh:false,
-        add:false
+        add:false,
+        edit:false,
     })
 
     let getDataUser = $derived(async(ref:boolean)=>{
@@ -117,8 +117,21 @@
         return await req.json()
     })
 
-    const formUserSubmit = async (e:SubmitEvent) =>{
-        e.preventDefault()
+    const formUserEdit = async (id:string) =>{
+        try {
+            formUserState.loading = true
+            const req = await axios.get(`/admin/user/${id}`)
+            formUserState.answer = {...await req.data}
+            formUserState.edit = true
+            formUserState.add = false
+            formUserState.loading = false
+        } catch (error) {
+            formUserState.loading = false
+        
+        }
+    }
+    
+    const formUserSubmit = async () =>{
         try {    
             const req = await axios.post('/admin/user', formUserState.answer)
             const res = await req.data
@@ -126,14 +139,23 @@
             formUserState.success = res.message
         } catch (error: any) {
             formUserState.error = error.response.data.message
+            formUserState.success = ""
         }
+    }
+
+    const formUserBatal = () =>{
+        Object.entries(formUserState.answer).forEach(val=>{
+            formUserState.answer[val[0]] = (typeof val[1] == "string" ? "" : "")
+        })
+        formUserState.add = false
+        formUserState.edit = false
     }
 </script>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
-        <TabItem open title="Profile">
-            <div class="flex flex-col gap-2">
+        <TabItem title="Profile">
+            <div class="flex flex-col gap-5">
                 {#if formProfileState.error}
                     <Toast color="red">
                         <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
@@ -141,33 +163,37 @@
                     </Toast>
                 {/if}
 
-                <div class="flex gap-2 my-2">
+                <div class="flex gap-2">
                     <MyButton onclick={()=> formProfileState.refresh = true}><RefreshCw size={16}/></MyButton>
-                    <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                    {#if formProfileState.add || formProfileState.edit}
+                        <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
+                        <MyButton onclick={formProfileSubmit}><Save size={16}/></MyButton>
+                    {:else}
+                        <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                    {/if}
                 </div>
 
-                {#if formProfileState.add}
-                    <form transition:fade={{duration:500}} method="POST" onsubmit={formProfileSubmit} class='flex flex-col gap-2 p-4 border border-slate-300 rounded-lg bg-white'>
-                        <div class="flex flex-col gap-4">
-                            <!-- {#each fieldProfile as form}
-                                <MyInput {...form} bind:value={formProfileState.answer[form.name]} className=""/>
-                            {/each} -->
-                            
-                            <input type='hidden' name="profile_id" bind:value={formProfileState.answer.profile_id}/>
-                            <div class="flex flex-col md:flex-row gap-4">
-                                <div class="flex flex-col gap-4 flex-1">
-                                    <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
-                                    <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
-                                    <Checkbox bind:checked={formProfileState.answer.delegation as unknown as boolean}>Delegation</Checkbox>
-                                </div>
-                                <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
+                {#if formProfileState.loading}
+                    <MyLoading message="Get user data"/>
+                {/if}
+                {#if formProfileState.add || formProfileState.edit}
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white'>                       
+                        <input type='hidden' name="profile_id" disabled={formProfileState.edit} bind:value={formProfileState.answer.profile_id}/>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="flex flex-col gap-4 flex-1">
+                                <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
+                                <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
+                                <Checkbox bind:checked={formProfileState.answer.delegation as unknown as boolean}>Delegation</Checkbox>
                             </div>
-                            
-                            <div class="flex flex-col gap-2">
-                                <Label for='level'>Level</Label>
-                                <Select name='level' items={ListLevel} bind:value={formProfileState.answer.level} />
-                            </div>
-                            
+                            <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <Label for='level'>Level</Label>
+                            <Select name='level' items={ListLevel} bind:value={formProfileState.answer.level} />
+                        </div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div class="flex flex-col gap-2">
                                 <Label>Access SPPD</Label>
                                 <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_sppd} />
@@ -209,11 +235,6 @@
                                 <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_profile} />
                             </div>
                         </div>
-                        {JSON.stringify(formProfileState.answer)}
-                        <div class="flex self-start gap-2">
-                            <MyButton onclick={()=>formProfileState.add = false}><Ban /></MyButton>
-                            <MyButton type={'submit'}><Save /></MyButton>
-                        </div>
                     </form>
                 {/if}
 
@@ -223,7 +244,7 @@
                     <MyButton>Reset</MyButton>
                 </div>
                 
-                <TableSearch class="rounded-lg" hoverable={true}>
+                <Table class="rounded-lg" hoverable={true}>
                     <TableHead class="bg-slate-200" >
                         <TableHeadCell defaultSort>Name</TableHeadCell>
                         <TableHeadCell>Description</TableHeadCell>
@@ -241,7 +262,7 @@
                         </TableBody>
                     {:then val}
                         <TableBody tableBodyClass="divide-y">
-                            {#each val.data as itemdata, i}
+                            {#each val.data as itemdata}
                                 <TableBodyRow>
                                     <TableBodyCell>{itemdata.name}</TableBodyCell>
                                     <TableBodyCell>{itemdata.description}</TableBodyCell>
@@ -249,12 +270,8 @@
                                     <TableBodyCell>{itemdata.user_hrd}</TableBodyCell>
                                     <TableBodyCell>{itemdata.delegation}</TableBodyCell>
                                     <TableBodyCell>
-                                        <DotsVerticalOutline class="dark:text-white" onclick={()=> formProfileState.selectedId = itemdata.profile_id}/>
-                                        <Dropdown triggeredBy={formProfileState.selectedId} placement="left">
-                                            <DropdownItem onclick={()=> {toggleRow(itemdata.profile_id)}}>Detail</DropdownItem>
-                                            <DropdownItem onclick={()=> console.log(itemdata.profile_id)}>Edit</DropdownItem>
-                                            <DropdownItem>Hapus</DropdownItem>
-                                        </Dropdown>
+                                        <MyButton onclick={()=> formProfileEdit(itemdata.profile_id)}><Pencil size={12} /></MyButton>
+                                        <MyButton onclick={()=> formProfileEdit(itemdata.profile_id)}><Trash size={12} /></MyButton>
                                     </TableBodyCell>
                                 </TableBodyRow>
                                 {#if openRow.includes(itemdata.profile_id)}
@@ -275,11 +292,11 @@
                     </TableBodyRow>
                     </TableBody>
                     {/await}
-                </TableSearch>
+                </Table>
             </div>
         </TabItem>
         <TabItem title="User">
-            <div class="flex flex-col gap-2">                
+            <div class="flex flex-col gap-5">                
                 {#if formUserState.error}
                     <Toast color="red">
                         <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
@@ -287,62 +304,68 @@
                     </Toast>
                 {/if}
 
-                <div class="flex gap-2 my-2">
+                <div class="flex gap-2">
                     <MyButton onclick={()=> formUserState.refresh = true}><RefreshCw size={16}/></MyButton>
-                    <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
+                    {#if formUserState.add || formUserState.edit}
+                        <MyButton onclick={formUserBatal}><Ban size={16}/></MyButton>
+                        <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
+                    {:else}
+                        <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
+                    {/if}
                 </div>
 
-                {#if formUserState.add}
-                    <form transition:fade={{duration:500}} method="POST" onsubmit={formUserSubmit} class='flex flex-col gap-2 p-4 border border-slate-300 rounded-lg bg-white'>
-                        <div class="flex flex-col gap-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {#each fieldUser as form}
-                                <MyInput {...form} bind:value={formUserState.answer[form.name]} className=""/>
-                            {/each}
-                        </div>
-                        <div class="flex self-start gap-2">
-                            <MyButton onclick={()=>formUserState.add = false}><Ban /></MyButton>
-                            <MyButton type={'submit'}><Save /></MyButton>
-                        </div>
+                {#if formUserState.loading}
+                    <MyLoading message="Get user data"/>
+                {/if}
+                {#if formUserState.add || formUserState.edit}
+                    <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg bg-white'>
+                        <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
+                        <MyInput type='text' title='Profile ID' name="profile_id" bind:value={formUserState.answer.profile_id}/>
+                        <MyInput type='text' title='Card Number' name="card_no" bind:value={formUserState.answer.card_no}/>
+                        <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
+                        <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
+                        <MyInput type='text' title='Jabatan' name="jabatan" bind:value={formUserState.answer.jabatan}/>
+                        <MyInput type='text' title='Department' name="department" bind:value={formUserState.answer.department}/>
+                        <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
+                        <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
+                        <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
+                        <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/>
                     </form>
                 {/if}
 
                 <Table class="rounded-lg" hoverable={true}>
                     <TableHead class="bg-slate-200" >                        
                         <TableHeadCell>Payroll</TableHeadCell>
-                        <TableHeadCell>Profile ID</TableHeadCell>
-                        <TableHeadCell>Card No</TableHeadCell>
-                        <TableHeadCell>Name</TableHeadCell>
+                        <TableHeadCell>Nama</TableHeadCell>
+                        <TableHeadCell>Jabatan</TableHeadCell>
                         <TableHeadCell>Department</TableHeadCell>
+                        <TableHeadCell>Location</TableHeadCell>
+                        <TableHeadCell>Email</TableHeadCell>
+                        <TableHeadCell>#</TableHeadCell>
                     </TableHead>
 
                     {#await getDataUser(formUserState.refresh)}
                         <TableBody tableBodyClass="divide-y">
                             <TableBodyRow>
-                                <TableBodyCell colspan={6}>Loading data</TableBodyCell>
+                                <TableBodyCell colspan={7}>Loading data</TableBodyCell>
                             </TableBodyRow>
                         </TableBody>
                     {:then val: any}
                         {#if val.data}
                             <TableBody tableBodyClass="divide-y">
-                                {#each val.data as item, i}
-                                    <TableBodyRow onclick={() => toggleRow(i)}>
-                                        {#each Object.entries(item) as [key, value]}
-                                            <TableBodyCell>{value}</TableBodyCell>
-                                        {/each}
+                                {#each val.data as itemdata}
+                                    <TableBodyRow>
+                                        <TableBodyCell>{itemdata.payroll}</TableBodyCell>
+                                        <TableBodyCell>{itemdata.name}</TableBodyCell>
+                                        <TableBodyCell>{itemdata.jabatan}</TableBodyCell>
+                                        <TableBodyCell>{itemdata.department}</TableBodyCell>
+                                        <TableBodyCell>{itemdata.location}</TableBodyCell>
+                                        <TableBodyCell>{itemdata.email}</TableBodyCell>
+                                        <TableBodyCell>
+                                            <MyButton onclick={()=> formUserEdit(itemdata.payroll)}><Pencil size={12} /></MyButton>
+                                            <MyButton onclick={()=> formUserEdit(itemdata.payroll)}><Trash size={12} /></MyButton>
+                                        </TableBodyCell>
                                     </TableBodyRow>
-                                    {#if openRow.includes(i)}
-                                        <TableBodyRow>
-                                            <TableBodyCell colspan={Object.keys(item).length}>
-                                                <div class="flex">
-                                                    <!-- {#await getAbsenById(item['id'])}
-                                                    <span>Loading data...</span>
-                                                    {:then val}
-                                                    <span>{val.title}</span>                                                
-                                                    {/await} -->
-                                                </div>
-                                            </TableBodyCell>
-                                        </TableBodyRow>
-                                    {/if}
                                 {/each}
                             </TableBody>
                         {:else}

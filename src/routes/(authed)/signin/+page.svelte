@@ -3,11 +3,12 @@
 	import MyButton from '@/MyButton.svelte';
     import {fade} from 'svelte/transition'
 	import axios from 'axios';
-	import { Alert, Toast, Spinner  } from 'flowbite-svelte';
+	import { Alert, Spinner  } from 'flowbite-svelte';
     import {CircleAlert, Check} from 'lucide-svelte'
     import { goto } from '$app/navigation';
 
     import { page } from '$app/stores'
+	import MyLoading from '@/MyLoading.svelte';
     const redirectTo = $page.url.searchParams.get('redirectTo')
     const message = $page.url.searchParams.get('message')
     
@@ -61,17 +62,14 @@
                 {formLoginState.success}
             </Alert>
         {/if}
+        {#if formLoginState.loading}
+            <MyLoading message="Login verification"/>
+        {/if}
         <div class="flex flex-col gap-4">
             {#each fieldLogin as field}
                 <MyInput {...field} bind:value={formLoginState.answer[field.name]}/>
             {/each}
             <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
-            {#if formLoginState.loading}
-            <div class="flex gap-2 items-center p-2 bg-slate-100 rounded-lg">
-                <Spinner color="gray" size={5}/>
-                <span class='text-muted text-[.9rem]'>Sedang verifikasi login</span>
-            </div>
-            {/if}
         </div>
     </form>        
 </main>
