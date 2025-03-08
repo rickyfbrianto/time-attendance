@@ -1,5 +1,5 @@
 <script>
-    import { ShieldUser, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from 'lucide-svelte'
+    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from 'lucide-svelte'
     import usercowo from '@lib/assets/user-man.svg'
     import usercewe from '@lib/assets/user-woman.svg'
     import {appstore} from '@lib/store/appstore'
@@ -7,10 +7,10 @@
 	import { quadIn, quintOut } from 'svelte/easing';
 	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
 	import MyButton from '@lib/components/MyButton.svelte'
-
+    
     const data = [
         {id:1, link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
-        {id:2, link:"/absen", title:"Check In/Out", icon: GalleryHorizontalEnd},
+        {id:2, link:"/absen", title:"Check In/Out", icon: Clock8},
         {id:3, link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
         {id:4, link:"/lembur", title:"Lembur", icon: Hourglass},
         {id:5, link:"/cuti", title:"Cuti", icon: TicketsPlane},

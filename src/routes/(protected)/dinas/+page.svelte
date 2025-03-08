@@ -5,13 +5,16 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
+        <TabItem open title="Dashboard">
+            <span>Dashboard Page</span>
+        </TabItem>
         <TabItem title="SPPD">
-            <div class="flex flex-col gap-5">
+            <div class="flex flex-col gap-4">
                 
             </div>
         </TabItem>
         <TabItem title="SKPD">
-            <div class="flex flex-col gap-5">
+            <div class="flex flex-col gap-4">
 
             </div>
         </TabItem>

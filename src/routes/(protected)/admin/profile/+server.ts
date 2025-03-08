@@ -1,7 +1,7 @@
 import {error, json} from '@sveltejs/kit'
 import { PrismaClient } from '@prisma/client'
 import { checkFieldKosong, prismaErrorHandler } from '@lib/utils'
-import { nanoid } from 'nanoid'
+import { v4 as uuid4 } from 'uuid'
 
 const prisma = new PrismaClient()
 
@@ -16,7 +16,7 @@ export async function GET() {
         //     delegation:true
         // }
     })
-    return json({data:req})
+    return json(req)
 }
 
 export async function POST ({request}){
@@ -29,12 +29,19 @@ export async function POST ({request}){
 
         await prisma.profile.create({
             data:{...data,
-                profile_id: nanoid(10)
+                profile_id: uuid4()
             }
+        }).then(()=>{
+            return json({message:"Data successfully saved"})
         })
     
-        return json({message:"Data successfully saved"})
     } catch (err) {
+        console.log(err)
         error(500, {message: prismaErrorHandler(err)})
     }
+}
+
+export async function DELETE ({params}){
+    const id = await params.id
+    return json({id})
 }

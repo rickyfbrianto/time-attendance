@@ -9,7 +9,7 @@
     let pathname:string[] = $state([])
     
     $effect(()=>{
-        pathname = page.url.pathname.split('/').map(val => val).filter(v => v && v != 'dashboard')
+        pathname = page.url.pathname.split('/').filter(v => v && v != 'dashboard')
     })
 
     let logoutState = $state({

@@ -15,7 +15,7 @@ export async function GET() {
             email:true
         }
     })
-    return json({data:req})
+    return json(req)
 }
 
 export async function POST ({request}){

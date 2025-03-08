@@ -1,17 +1,19 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
     import { DotsVerticalOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox, Span } from 'flowbite-svelte';
     import MyInput from '@lib/components/MyInput.svelte'
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban, Pencil, Trash } from 'lucide-svelte'
+    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search } from 'lucide-svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
+    // import { createColumnHelper, createTable, getCoreRowModel, type ColumnDef, type RowData, type TableOptions, type TableOptionsResolved} from '@tanstack/table-core'
+    import { createColumnHelper, createSvelteTable, getCoreRowModel } from '$lib/table';
 
     let formProfileState = $state({
         answer: {
-            profile_id: "",
+            profile_id: "id",
             name: "",
             description: "",
             level: "",
@@ -40,6 +42,33 @@
         formProfileState.refresh = false
         const req = await fetch('/admin/profile')
         return await req.json()
+    })
+
+    interface TableProps{
+        id:number;
+        nama:string;
+        umur:number
+    }
+    
+    // const data: TableOptions<TableProps>[] = [
+        // const data = [
+    const data = [
+        {id:1, nama:"rere", umur:29},
+        {id:2, nama:"dede", umur:39},
+        {id:3, nama:"dea", umur:21},
+    ]
+
+    const colHelp = createColumnHelper<TableProps>()
+    const col = [
+        colHelp.accessor('id', {header: "ID"}),
+        colHelp.accessor('nama', {header: "Nama"}),
+        colHelp.accessor('umur', {header: "Umur"}),
+    ]
+        
+    let profileTable = createSvelteTable({
+        data,
+        columns:col,
+        getCoreRowModel: getCoreRowModel(),
     })
     
     const formProfileEdit = async (id:string) =>{
@@ -150,12 +179,39 @@
         formUserState.add = false
         formUserState.edit = false
     }
+
+// console.log(profileTable.getHeaderGroups())    
 </script>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
+        <TabItem open title="Dashboard">
+            <span>Admin Page</span>
+            <Table>
+
+
+                <TableHead class="bg-slate-200" >
+                    {#each profileTable.getHeaderGroups() as headerGroup}
+                        {#each headerGroup.headers as header}
+                            <TableHeadCell>{header.column.columnDef.header}</TableHeadCell>
+                        {/each}
+                    {/each}
+                </TableHead>
+                <TableBody tableBodyClass="divide-y">
+
+                    {#each profileTable.getRowModel().rows as row}
+                        <TableBodyRow>
+                            {#each row.getVisibleCells() as cell}
+                                <TableBodyCell>{cell.getValue()}</TableBodyCell>
+                            {/each}
+                        </TableBodyRow>
+                    {/each}
+                </TableBody>                
+            </Table>
+
+        </TabItem>
         <TabItem title="Profile">
-            <div class="flex flex-col gap-5">
+            <div class="flex flex-col gap-4">
                 {#if formProfileState.error}
                     <Toast color="red">
                         <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
@@ -227,10 +283,6 @@
                                 <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_user} />
                             </div>
                             <div class="flex flex-col gap-2">
-                                <Label>Access User</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_user} />
-                            </div>
-                            <div class="flex flex-col gap-2">
                                 <Label>Access Profile</Label>
                                 <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_profile} />
                             </div>
@@ -238,10 +290,9 @@
                     </form>
                 {/if}
 
-                <div class="flex gap-2 mb-4">
+                <div class="flex gap-2">
                     <MyInput type='text' name='search' bind:value={formProfileState.search} />
-                    <MyButton>Cari</MyButton>
-                    <MyButton>Reset</MyButton>
+                    <MyButton className='bg-white'><Search size={16} /></MyButton>
                 </div>
                 
                 <Table class="rounded-lg" hoverable={true}>
@@ -262,7 +313,7 @@
                         </TableBody>
                     {:then val}
                         <TableBody tableBodyClass="divide-y">
-                            {#each val.data as itemdata}
+                            {#each val as itemdata}
                                 <TableBodyRow>
                                     <TableBodyCell>{itemdata.name}</TableBodyCell>
                                     <TableBodyCell>{itemdata.description}</TableBodyCell>
@@ -296,7 +347,7 @@
             </div>
         </TabItem>
         <TabItem title="User">
-            <div class="flex flex-col gap-5">                
+            <div class="flex flex-col gap-4">                
                 {#if formUserState.error}
                     <Toast color="red">
                         <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
@@ -351,9 +402,9 @@
                             </TableBodyRow>
                         </TableBody>
                     {:then val: any}
-                        {#if val.data}
+                        {#if val}
                             <TableBody tableBodyClass="divide-y">
-                                {#each val.data as itemdata}
+                                {#each val as itemdata}
                                     <TableBodyRow>
                                         <TableBodyCell>{itemdata.payroll}</TableBodyCell>
                                         <TableBodyCell>{itemdata.name}</TableBodyCell>

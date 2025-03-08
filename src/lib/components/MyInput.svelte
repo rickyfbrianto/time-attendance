@@ -12,7 +12,9 @@
 </script>
 
 <div class="flex flex-col flex-1 gap-2">
+    {#if title}
     <Label for={name}>{title}</Label>
+    {/if}
     <div class={myClass}>
         {#if type == "textarea"}
             <textarea class='w-full rounded-lg border-0 outline-none ring-0 ps-3' {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
