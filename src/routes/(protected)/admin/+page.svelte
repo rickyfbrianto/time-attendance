@@ -8,8 +8,11 @@
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search } from 'lucide-svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
+    import myData from '$lib/assets/MOCK_DATA.json'
     // import { createColumnHelper, createTable, getCoreRowModel, type ColumnDef, type RowData, type TableOptions, type TableOptionsResolved} from '@tanstack/table-core'
-    import { createColumnHelper, createSvelteTable, getCoreRowModel } from '$lib/table';
+    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, getSortedRowModel, getFilteredRowModel, getPaginationRowModel, type SortDirection } from '$lib/table';
+	import { v4 as uuidv4 } from 'uuid';
+	import { writable } from 'svelte/store';
 
     let formProfileState = $state({
         answer: {
@@ -44,33 +47,27 @@
         return await req.json()
     })
 
-    interface TableProps{
-        id:number;
-        nama:string;
-        umur:number
+    let tablePagination = $state({
+        pageIndex: 1, //initial page index
+        pageSize: 10, //default page size
+    })
+
+    function getSortSymbol(isSorted:boolean | SortDirection) {
+        return isSorted ? (isSorted === "asc" ? "⬆️" : "⬇️") : "-"
     }
     
-    // const data: TableOptions<TableProps>[] = [
-        // const data = [
-    const data = [
-        {id:1, nama:"rere", umur:29},
-        {id:2, nama:"dede", umur:39},
-        {id:3, nama:"dea", umur:21},
-    ]
-
-    const colHelp = createColumnHelper<TableProps>()
-    const col = [
-        colHelp.accessor('id', {header: "ID"}),
-        colHelp.accessor('nama', {header: "Nama"}),
-        colHelp.accessor('umur', {header: "Umur"}),
-    ]
-        
     let profileTable = createSvelteTable({
-        data,
-        columns:col,
+        data:getDataProfile(formProfileState.refresh),
+        columns:[
+            {accessorKey:""}
+        ],
         getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel:getSortedRowModel(),
+        initialState:{
+            pagination:{...tablePagination}
+        },
     })
-    
+
     const formProfileEdit = async (id:string) =>{
         try {
             formProfileState.loading = true
@@ -84,7 +81,7 @@
         
         }
     }
-    
+
     const formProfileSubmit = async () =>{
         try {
             Object.entries(formProfileState.answer).forEach(val=>{
@@ -179,36 +176,47 @@
         formUserState.add = false
         formUserState.edit = false
     }
-
-// console.log(profileTable.getHeaderGroups())    
 </script>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
         <TabItem open title="Dashboard">
-            <span>Admin Page</span>
+            <!-- <span>Admin Page</span>
             <Table>
-
-
                 <TableHead class="bg-slate-200" >
                     {#each profileTable.getHeaderGroups() as headerGroup}
-                        {#each headerGroup.headers as header}
-                            <TableHeadCell>{header.column.columnDef.header}</TableHeadCell>
-                        {/each}
+                        <tr>
+                            {#each headerGroup.headers as header}
+                                <th>
+                                    {#if !header.isPlaceholder}
+                                        <button onclick={()=>{header.column.getToggleSortingHandler()}}>
+                                            <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+                                            <span>
+                                                {getSortSymbol(header.column.getIsSorted())}
+                                            </span>
+                                        </button>
+                                    {/if}
+                                </th>
+                            {/each}
+                        </tr>
                     {/each}
                 </TableHead>
-                <TableBody tableBodyClass="divide-y">
-
+                <tbody>
                     {#each profileTable.getRowModel().rows as row}
-                        <TableBodyRow>
+                        <tr>
                             {#each row.getVisibleCells() as cell}
-                                <TableBodyCell>{cell.getValue()}</TableBodyCell>
+                                <td>
+                                    <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+                                </td>
                             {/each}
-                        </TableBodyRow>
+                        </tr>
                     {/each}
-                </TableBody>                
+                </tbody>                
             </Table>
-
+            <MyButton onclick={()=>profileTable.setPageIndex(0)}>First</MyButton>
+            <MyButton onclick={()=>profileTable.previousPage()}>Prev</MyButton>
+            <MyButton onclick={()=>profileTable.nextPage()}>Next</MyButton>
+            <MyButton onclick={()=>profileTable.setPageIndex(profileTable.getPageCount() -1)}>Last</MyButton> -->
         </TabItem>
         <TabItem title="Profile">
             <div class="flex flex-col gap-4">
