@@ -10,7 +10,7 @@ datasource db {
 model employee {
   payroll       String   @id @db.VarChar(8)
   profile_id    String?  @db.VarChar(50)
-  user_id_mesin String   @db.VarChar(6)
+  user_id_mesin String?   @db.VarChar(6)
   name          String   @db.VarChar(250)
   password      String   @db.VarChar(250)
   jabatan       String   @db.VarChar(100)

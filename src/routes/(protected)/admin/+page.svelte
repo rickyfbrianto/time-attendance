@@ -8,11 +8,8 @@
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search } from 'lucide-svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
-    import myData from '$lib/assets/MOCK_DATA.json'
-    // import { createColumnHelper, createTable, getCoreRowModel, type ColumnDef, type RowData, type TableOptions, type TableOptionsResolved} from '@tanstack/table-core'
-    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, getSortedRowModel, getFilteredRowModel, getPaginationRowModel, type SortDirection } from '$lib/table';
-	import { v4 as uuidv4 } from 'uuid';
-	import { writable } from 'svelte/store';
+	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
+	import { getParams } from '@lib/data/api';
 
     let formProfileState = $state({
         answer: {
@@ -41,32 +38,29 @@
         edit:false,
     })
 
-    let getDataProfile = $derived(async(ref:boolean)=>{
-        formProfileState.refresh = false
-        const req = await fetch('/admin/profile')
-        return await req.json()
-    })
-
-    let tablePagination = $state({
-        pageIndex: 1, //initial page index
-        pageSize: 10, //default page size
-    })
-
-    function getSortSymbol(isSorted:boolean | SortDirection) {
-        return isSorted ? (isSorted === "asc" ? "⬆️" : "⬇️") : "-"
+    async function fetchData(state: State| string) {
+        try {
+            const req = await fetch(`/admin/profile?${getParams(state)}`);
+            if (!req.ok) throw new Error('Gagal mengambil data');
+            const res = await req.json()
+            return res
+        } catch (err:any) {
+            console.log(err.message)
+        }
     }
-    
-    let profileTable = createSvelteTable({
-        data:getDataProfile(formProfileState.refresh),
-        columns:[
-            {accessorKey:""}
-        ],
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel:getSortedRowModel(),
-        initialState:{
-            pagination:{...tablePagination}
-        },
+
+    $effect(()=>{
+        // fetchData("")
     })
+
+    let tableProfile = new TableHandler([], {rowsPerPage: 5})
+    tableProfile.load(async(state: State)=>{
+        console.log(state.sort)
+        const tes = await fetchData(state)
+        return tes
+    })
+    const tableSearch = tableProfile.createSearch()
+    tableProfile.invalidate()
 
     const formProfileEdit = async (id:string) =>{
         try {
@@ -212,11 +206,7 @@
                         </tr>
                     {/each}
                 </tbody>                
-            </Table>
-            <MyButton onclick={()=>profileTable.setPageIndex(0)}>First</MyButton>
-            <MyButton onclick={()=>profileTable.previousPage()}>Prev</MyButton>
-            <MyButton onclick={()=>profileTable.nextPage()}>Next</MyButton>
-            <MyButton onclick={()=>profileTable.setPageIndex(profileTable.getPageCount() -1)}>Last</MyButton> -->
+            </Table> -->
         </TabItem>
         <TabItem title="Profile">
             <div class="flex flex-col gap-4">
@@ -227,14 +217,27 @@
                     </Toast>
                 {/if}
 
-                <div class="flex gap-2">
-                    <MyButton onclick={()=> formProfileState.refresh = true}><RefreshCw size={16}/></MyButton>
-                    {#if formProfileState.add || formProfileState.edit}
-                        <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
-                        <MyButton onclick={formProfileSubmit}><Save size={16}/></MyButton>
-                    {:else}
-                        <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
-                    {/if}
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between">
+                        <div class="flex gap-2">
+                            <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
+                            {#if formProfileState.add || formProfileState.edit}
+                                <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
+                                <MyButton onclick={formProfileSubmit}><Save size={16}/></MyButton>
+                            {:else}
+                                <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                            {/if}
+                        </div>
+                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
+                            {#each [5, 10, 20, 50] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableSearch.value}/>
+                        <MyButton onclick={()=>tableSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                    </div>
                 </div>
 
                 {#if formProfileState.loading}
@@ -297,61 +300,33 @@
                         </div>
                     </form>
                 {/if}
-
-                <div class="flex gap-2">
-                    <MyInput type='text' name='search' bind:value={formProfileState.search} />
-                    <MyButton className='bg-white'><Search size={16} /></MyButton>
-                </div>
                 
-                <Table class="rounded-lg" hoverable={true}>
-                    <TableHead class="bg-slate-200" >
-                        <TableHeadCell defaultSort>Name</TableHeadCell>
-                        <TableHeadCell>Description</TableHeadCell>
-                        <TableHeadCell>Level</TableHeadCell>
-                        <TableHeadCell>User HRD</TableHeadCell>
-                        <TableHeadCell>Delegation</TableHeadCell>
-                        <TableHeadCell>#</TableHeadCell>
-                    </TableHead>
+                <!-- <div class="flex flex-1 bg-white"> -->
+                    <Datatable table={tableProfile}>
+                        <Table hoverable={true} striped={true}>
+                            <TableHead class="bg-slate-500" >
+                                <ThSort table={tableProfile} field="profile_id"><TableHeadCell>Profile ID</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            </TableHead>
 
-                    {#await getDataProfile(formProfileState.refresh)}
-                        <TableBody tableBodyClass="divide-y">
-                            <TableBodyRow>
-                                <TableBodyCell colspan={6}>Loading data</TableBodyCell>
-                            </TableBodyRow>
-                        </TableBody>
-                    {:then val}
-                        <TableBody tableBodyClass="divide-y">
-                            {#each val as itemdata}
-                                <TableBodyRow>
-                                    <TableBodyCell>{itemdata.name}</TableBodyCell>
-                                    <TableBodyCell>{itemdata.description}</TableBodyCell>
-                                    <TableBodyCell>{itemdata.level}</TableBodyCell>
-                                    <TableBodyCell>{itemdata.user_hrd}</TableBodyCell>
-                                    <TableBodyCell>{itemdata.delegation}</TableBodyCell>
-                                    <TableBodyCell>
-                                        <MyButton onclick={()=> formProfileEdit(itemdata.profile_id)}><Pencil size={12} /></MyButton>
-                                        <MyButton onclick={()=> formProfileEdit(itemdata.profile_id)}><Trash size={12} /></MyButton>
-                                    </TableBodyCell>
-                                </TableBodyRow>
-                                {#if openRow.includes(itemdata.profile_id)}
+                            <TableBody tableBodyClass="divide-y">
+                                {#each tableProfile.rows as row}
                                     <TableBodyRow>
-                                        <TableBodyCell colspan={6} class="p-0">
-                                            <div class="px-2 py-3" transition:fade={{ duration: 300 }}>
-                                                <ImagePlaceholder />
-                                            </div>
+                                        <TableBodyCell>{row.profile_id}</TableBodyCell>
+                                        <TableBodyCell>{row.name}</TableBodyCell>
+                                        <TableBodyCell>{row.description}</TableBodyCell>
+                                        <TableBodyCell>
+                                            <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
+                                            <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Trash size={12} /></MyButton>
                                         </TableBodyCell>
                                     </TableBodyRow>
-                                {/if}
-                            {/each}
-                        </TableBody> 
-                    {:catch val}
-                    <TableBody tableBodyClass="divide-y">
-                    <TableBodyRow>
-                        <TableBodyCell colspan={6}>Error: {val.message}</TableBodyCell>
-                    </TableBodyRow>
-                    </TableBody>
-                    {/await}
-                </Table>
+                                {/each}
+                            </TableBody>
+                        </Table>
+                    </Datatable>
+                <!-- </div> -->
             </div>
         </TabItem>
         <TabItem title="User">
