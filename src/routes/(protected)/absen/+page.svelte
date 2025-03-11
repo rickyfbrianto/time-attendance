@@ -12,6 +12,9 @@
         {type:"text", name:"payrol", title:"Payrol", placeholder:"Payrol"},
     ]
 
+    let {data} = $props()
+    console.log(data.data)
+
     const formState = $state({
         answer: {},
         error:""
@@ -46,20 +49,7 @@
     }
 </script>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
-    <Modal title="Terms of Service" bind:open={modalTambah} autoclose={false} size="xl">
-        <form onsubmit={formSubmit} class="grid grid-cols-2 gap-4">                
-            {#each formStatic as {name, title, placeholder, type}}
-                <div class="flex flex-col gap-2 flex-1/2">
-                    <Label>{title}</Label>
-                    <input id={name} {name} {type} {placeholder} bind:value={formState.answer[name]}
-                    class="p-2 rounded-lg outline-none border-slate-200"/>
-                </div>
-            {/each}
-            <button type="submit" class="bg-green-400">Save</button>
-        </form>
-    </Modal>
-    
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">    
     <Tabs>
         <TabItem open title="My Absent">
             <div class="flex gap-2">

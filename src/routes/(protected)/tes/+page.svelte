@@ -7,7 +7,7 @@
     const table = new TableHandler(data.data, {rowsPerPage: 10, })
 
     const fetchData = async ()=>{
-        const req = await fetch('/admin/profile')
+        const req = await fetch('/api/admin/profile')
         return await req.json()
     }
 </script>

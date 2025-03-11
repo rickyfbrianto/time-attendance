@@ -10,3 +10,15 @@ export async function GET({params}){
     })
     return json(req)
 }
+
+export async function DELETE({params}){
+    try {
+        const {id} = await params
+        await prisma.profile.delete({
+            where:{profile_id:id}
+        })
+        return json({ message: "Data successfully deleted" });
+    } catch (error) {
+        
+    }
+}

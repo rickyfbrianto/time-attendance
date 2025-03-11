@@ -1,16 +1,20 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { DotsVerticalOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox, Span } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge } from 'flowbite-svelte';
     import MyInput from '@lib/components/MyInput.svelte'
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search } from 'lucide-svelte'
+    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from 'lucide-svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
 
+    const rowsPerPage = 10
+
+    let tableProfile = $state(new TableHandler([], {rowsPerPage}))
+    let tableProfileSearch = tableProfile.createSearch()
+    
     let formProfileState = $state({
         answer: {
             profile_id: "id",
@@ -31,62 +35,51 @@
         },
         success:"",
         error:"",
-        search:"",
         loading:false,
         refresh:false,
         add:false,
         edit:false,
     })
-
-    async function fetchData(state: State| string) {
-        try {
-            const req = await fetch(`/admin/profile?${getParams(state)}`);
-            if (!req.ok) throw new Error('Gagal mengambil data');
-            const res = await req.json()
-            return res
-        } catch (err:any) {
-            console.log(err.message)
-        }
-    }
-
-    $effect(()=>{
-        // fetchData("")
-    })
-
-    let tableProfile = new TableHandler([], {rowsPerPage: 5})
-    tableProfile.load(async(state: State)=>{
-        console.log(state.sort)
-        const tes = await fetchData(state)
-        return tes
-    })
-    const tableSearch = tableProfile.createSearch()
-    tableProfile.invalidate()
-
+        
     const formProfileEdit = async (id:string) =>{
         try {
             formProfileState.loading = true
-            const req = await axios.get(`/admin/profile/${id}`)
+            const req = await axios.get(`/api/admin/profile/${id}`)
             formProfileState.answer = {...await req.data}
             formProfileState.edit = true
             formProfileState.add = false
             formProfileState.loading = false
         } catch (error) {
             formProfileState.loading = false
-        
         }
     }
 
     const formProfileSubmit = async () =>{
         try {
+            formProfileState.error = ""
+            formProfileState.loading = true
             Object.entries(formProfileState.answer).forEach(val=>{
                 if(typeof val[1] === 'object'){
                     formProfileState.answer[val[0]] = val[1].join("")
                 }
             })
-            const req = await axios.post('/admin/profile', formProfileState.answer)
-            const res = await req.data
-        } catch (error) {
-            
+
+            if(formProfileState.add){
+                const req = await axios.post('/api/admin/profile', formProfileState.answer)
+                const res = await req.data
+                formProfileState.success = res.message
+            }else if(formProfileState.edit){
+                const req = await axios.put('/api/admin/profile', formProfileState.answer)
+                const res = await req.data
+                formProfileState.success = res.message
+            }
+        } catch (error: any) {
+            formProfileState.error = error.message
+            formProfileState.success = ""
+        } finally {
+            formProfileState.loading = false
+            tableProfile.invalidate()
+            formProfileBatal()
         }
     }
 
@@ -96,6 +89,22 @@
         })
         formProfileState.add = false
         formProfileState.edit = false
+    }
+    
+    const formProfileDelete = async (id: string) =>{
+        try {
+            formProfileState.error = ""
+            formProfileState.loading = true
+            const req = await axios.delete(`/api/admin/profile/${id}`)
+            const res = await req.data
+            formProfileState.success = res.message
+        } catch (error) {
+            formProfileState.error = ""
+            formProfileState.success = ""
+        }finally{
+            tableProfile.invalidate()
+            formProfileState.loading = false
+        }
     }
     
     let openRow: string[] = $state([]) 
@@ -108,11 +117,14 @@
     }
 
     // user
+    let tableUser = $state(new TableHandler([], {rowsPerPage}))
+    let tableUserSearch = tableProfile.createSearch()
+    
     const formUserState = $state({
         answer:{
             payroll:"",
             profile_id:"",
-            card_no:"",
+            user_id_mesin:"",
             name:"",
             password:"",
             jabatan:"",
@@ -124,42 +136,46 @@
         },
         success:"",
         error:"",
-        search:"",
         loading:false,
         refresh:false,
         add:false,
         edit:false,
     })
 
-    let getDataUser = $derived(async(ref:boolean)=>{
-        formUserState.refresh = false
-        const req = await fetch('/admin/user')
-        return await req.json()
-    })
-
     const formUserEdit = async (id:string) =>{
         try {
             formUserState.loading = true
-            const req = await axios.get(`/admin/user/${id}`)
+            const req = await axios.get(`/api/admin/user/${id}`)
             formUserState.answer = {...await req.data}
             formUserState.edit = true
             formUserState.add = false
             formUserState.loading = false
         } catch (error) {
-            formUserState.loading = false
-        
+            formUserState.loading = false 
         }
     }
     
     const formUserSubmit = async () =>{
-        try {    
-            const req = await axios.post('/admin/user', formUserState.answer)
-            const res = await req.data
+        try {
             formUserState.error = ""
-            formUserState.success = res.message
+            formUserState.loading = true
+            if(formUserState.add){
+                const req = await axios.post('/api/admin/user', formUserState.answer)
+                const res = await req.data
+                formUserState.success = res.message
+            }
+            if(formUserState.edit){
+                const req = await axios.put('/api/admin/user', formUserState.answer)
+                const res = await req.data
+                formUserState.success = res.message
+            }
         } catch (error: any) {
-            formUserState.error = error.response.data.message
+            formUserState.error = error.message
             formUserState.success = ""
+        } finally {
+            formUserState.loading = false
+            tableUser.invalidate()
+            formUserBatal()
         }
     }
 
@@ -170,78 +186,99 @@
         formUserState.add = false
         formUserState.edit = false
     }
+
+    const formUserDelete = async (id: string) =>{
+        try {
+            formUserState.error = ""
+            formUserState.loading = true
+            const req = await axios.delete(`/api/admin/user/${id}`)
+            const res = await req.data
+            formUserState.success = res.message
+        } catch (error) {
+            formUserState.error = ""
+            formUserState.success = ""
+        }finally{
+            tableUser.invalidate()
+            formUserState.loading = false
+        }
+    }
+
+    $effect(()=>{
+        tableProfile.load(async(state: State) => {
+            try {
+                const req = await fetch(`/api/admin/profile?${getParams(state)}`);
+                if (!req.ok) throw new Error('Gagal mengambil data');
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+
+        tableUser.load(async(state: State) => {
+            try {
+                const req = await fetch(`/api/admin/user?${getParams(state)}`);
+                if (!req.ok) throw new Error('Gagal mengambil data');
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+    })
+    tableProfile.invalidate()
+    tableUser.invalidate()
 </script>
+
+<svelte:head>
+    <title>Admin Page</title>
+</svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
         <TabItem open title="Dashboard">
-            <!-- <span>Admin Page</span>
-            <Table>
-                <TableHead class="bg-slate-200" >
-                    {#each profileTable.getHeaderGroups() as headerGroup}
-                        <tr>
-                            {#each headerGroup.headers as header}
-                                <th>
-                                    {#if !header.isPlaceholder}
-                                        <button onclick={()=>{header.column.getToggleSortingHandler()}}>
-                                            <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
-                                            <span>
-                                                {getSortSymbol(header.column.getIsSorted())}
-                                            </span>
-                                        </button>
-                                    {/if}
-                                </th>
-                            {/each}
-                        </tr>
-                    {/each}
-                </TableHead>
-                <tbody>
-                    {#each profileTable.getRowModel().rows as row}
-                        <tr>
-                            {#each row.getVisibleCells() as cell}
-                                <td>
-                                    <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
-                                </td>
-                            {/each}
-                        </tr>
-                    {/each}
-                </tbody>                
-            </Table> -->
+            
         </TabItem>
         <TabItem title="Profile">
-            <div class="flex flex-col gap-4">
-                {#if formProfileState.error}
+            <div class="flex flex-col gap-4">                
+                {#if formProfileState.error || formProfileState.success}
                     <Toast color="red">
-                        <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
-                        {formProfileState.error}
+                        {#if formProfileState.error}
+                        <Ban size={16} color="#d41c08" />
+                        {:else}
+                        <Check size={16} color="#08d42a" />
+                        {/if}
+                        {formProfileState.error || formProfileState.success}
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between">
-                        <div class="flex gap-2">
-                            <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
+                <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                    <div class="flex justify-between gap-2">
+                        <div class="flex gap-2">                        
                             {#if formProfileState.add || formProfileState.edit}
                                 <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
-                                <MyButton onclick={formProfileSubmit}><Save size={16}/></MyButton>
+                                <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
                             {:else}
                                 <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
                             {/if}
                         </div>
                         <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
-                            {#each [5, 10, 20, 50] as option}
+                            {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableSearch.value}/>
-                        <MyButton onclick={()=>tableSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableProfileSearch.value}/>
+                        <MyButton onclick={()=>tableProfileSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
                 </div>
 
                 {#if formProfileState.loading}
-                    <MyLoading message="Get user data"/>
+                    <MyLoading message="Get profile data"/>
                 {/if}
                 {#if formProfileState.add || formProfileState.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white'>                       
@@ -301,51 +338,93 @@
                     </form>
                 {/if}
                 
-                <!-- <div class="flex flex-1 bg-white"> -->
-                    <Datatable table={tableProfile}>
-                        <Table hoverable={true} striped={true}>
-                            <TableHead class="bg-slate-500" >
-                                <ThSort table={tableProfile} field="profile_id"><TableHeadCell>Profile ID</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
-                            </TableHead>
+                <Datatable table={tableProfile}>
+                    <Table>
+                        <TableHead class="bg-slate-500" >
+                            <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                            <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
+                            <ThSort table={tableProfile} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
+                            <ThSort table={tableProfile} field="delegation"><TableHeadCell>Delegation</TableHeadCell></ThSort>
+                            <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                        </TableHead>
 
-                            <TableBody tableBodyClass="divide-y">
+                        <TableBody tableBodyClass="divide-y">
+                            {#if tableProfile.rows.length > 0}
                                 {#each tableProfile.rows as row}
                                     <TableBodyRow>
-                                        <TableBodyCell>{row.profile_id}</TableBodyCell>
                                         <TableBodyCell>{row.name}</TableBodyCell>
                                         <TableBodyCell>{row.description}</TableBodyCell>
+                                        <TableBodyCell>{row.level}</TableBodyCell>
+                                        <TableBodyCell>{row.delegation}</TableBodyCell>
                                         <TableBodyCell>
                                             <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
-                                            <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Trash size={12} /></MyButton>
+                                            <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
                                         </TableBodyCell>
                                     </TableBodyRow>
                                 {/each}
-                            </TableBody>
-                        </Table>
-                    </Datatable>
-                <!-- </div> -->
+                            {:else}
+                                <TableBodyRow>
+                                    <TableBodyCell colspan={4}>
+                                        {#if tableProfile.isLoading}Loading {:else}No data available{/if}
+                                    </TableBodyCell>
+                                </TableBodyRow>
+                            {/if}
+                        </TableBody>
+                    </Table>
+                    {#if tableProfile.rows.length > 0}
+                        <div class="flex justify-between items-center gap-2 mt-3">
+                            <p class='text-muted self-end text-[.9rem]'>
+                                Showing {tableProfile.rowCount.start} to {tableProfile.rowCount.end} of {tableProfile.rowCount.total} rows
+                                <Badge color="dark" border>Page {tableProfile.currentPage}</Badge>
+                            </p>
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableProfile.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                <MyButton onclick={()=> tableProfile.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                {#each tableProfile.pages as page}
+                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableProfile.setPage(page)} type="button">{page}</MyButton>
+                                {/each}
+                                <MyButton onclick={()=> tableProfile.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                <MyButton onclick={()=> tableProfile.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            </div>
+                        </div>
+                    {/if}
+                </Datatable>
             </div>
         </TabItem>
         <TabItem title="User">
             <div class="flex flex-col gap-4">                
-                {#if formUserState.error}
+                {#if formUserState.error || formUserState.success}
                     <Toast color="red">
-                        <ExclamationCircleOutline slot="icon" class="w-6 h-6 text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200" />
-                        {formUserState.error}
+                        {#if formUserState.error}
+                        <Ban size={16} color="#d41c08" />
+                        {:else}
+                        <Check size={16} color="#08d42a" />
+                        {/if}
+                        {formUserState.error || formUserState.success}
                     </Toast>
                 {/if}
 
-                <div class="flex gap-2">
-                    <MyButton onclick={()=> formUserState.refresh = true}><RefreshCw size={16}/></MyButton>
-                    {#if formUserState.add || formUserState.edit}
-                        <MyButton onclick={formUserBatal}><Ban size={16}/></MyButton>
-                        <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
-                    {:else}
-                        <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
-                    {/if}
+                <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                    <div class="flex justify-between gap-2">
+                        <div class="flex gap-2">                        
+                            {#if formUserState.add || formUserState.edit}
+                                <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
+                                <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
+                            {:else}
+                                <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
+                            {/if}
+                        </div>
+                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableUserSearch.value}/>
+                        <MyButton onclick={()=>tableUserSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableUser.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
                 </div>
 
                 {#if formUserState.loading}
@@ -355,9 +434,11 @@
                     <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg bg-white'>
                         <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
                         <MyInput type='text' title='Profile ID' name="profile_id" bind:value={formUserState.answer.profile_id}/>
-                        <MyInput type='text' title='Card Number' name="card_no" bind:value={formUserState.answer.card_no}/>
+                        <MyInput type='text' title='Card Number' name="user_id_mesin" bind:value={formUserState.answer.user_id_mesin}/>
                         <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
+                        {#if formUserState.add}
                         <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
+                        {/if}
                         <MyInput type='text' title='Jabatan' name="jabatan" bind:value={formUserState.answer.jabatan}/>
                         <MyInput type='text' title='Department' name="department" bind:value={formUserState.answer.department}/>
                         <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
@@ -367,52 +448,61 @@
                     </form>
                 {/if}
 
-                <Table class="rounded-lg" hoverable={true}>
-                    <TableHead class="bg-slate-200" >                        
-                        <TableHeadCell>Payroll</TableHeadCell>
-                        <TableHeadCell>Nama</TableHeadCell>
-                        <TableHeadCell>Jabatan</TableHeadCell>
-                        <TableHeadCell>Department</TableHeadCell>
-                        <TableHeadCell>Location</TableHeadCell>
-                        <TableHeadCell>Email</TableHeadCell>
-                        <TableHeadCell>#</TableHeadCell>
-                    </TableHead>
+                <Datatable table={tableUser}>
+                    <Table>
+                        <TableHead class="bg-slate-500" >
+                            <ThSort table={tableUser} field="payroll"><TableHeadCell>Profile ID</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field="jabatan"><TableHeadCell>Jabatan</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field="department"><TableHeadCell>Department</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field="location"><TableHeadCell>Location</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field="email"><TableHeadCell>Email</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                        </TableHead>
 
-                    {#await getDataUser(formUserState.refresh)}
                         <TableBody tableBodyClass="divide-y">
-                            <TableBodyRow>
-                                <TableBodyCell colspan={7}>Loading data</TableBodyCell>
-                            </TableBodyRow>
-                        </TableBody>
-                    {:then val: any}
-                        {#if val}
-                            <TableBody tableBodyClass="divide-y">
-                                {#each val as itemdata}
+                            {#if tableUser.rows.length > 0}
+                                {#each tableUser.rows as row}
                                     <TableBodyRow>
-                                        <TableBodyCell>{itemdata.payroll}</TableBodyCell>
-                                        <TableBodyCell>{itemdata.name}</TableBodyCell>
-                                        <TableBodyCell>{itemdata.jabatan}</TableBodyCell>
-                                        <TableBodyCell>{itemdata.department}</TableBodyCell>
-                                        <TableBodyCell>{itemdata.location}</TableBodyCell>
-                                        <TableBodyCell>{itemdata.email}</TableBodyCell>
+                                        <TableBodyCell>{row.payroll}</TableBodyCell>
+                                        <TableBodyCell>{row.name}</TableBodyCell>
+                                        <TableBodyCell>{row.jabatan}</TableBodyCell>
+                                        <TableBodyCell>{row.department}</TableBodyCell>
+                                        <TableBodyCell>{row.location}</TableBodyCell>
+                                        <TableBodyCell>{row.email}</TableBodyCell>
                                         <TableBodyCell>
-                                            <MyButton onclick={()=> formUserEdit(itemdata.payroll)}><Pencil size={12} /></MyButton>
-                                            <MyButton onclick={()=> formUserEdit(itemdata.payroll)}><Trash size={12} /></MyButton>
+                                            <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
+                                            <MyButton onclick={()=> formUserDelete(row.payroll)}><Trash size={12} /></MyButton>
                                         </TableBodyCell>
                                     </TableBodyRow>
                                 {/each}
-                            </TableBody>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
+                            {:else}
                                 <TableBodyRow>
-                                    <TableBodyCell colspan={5}>
-                                        <span>Tidak ada data</span>
+                                    <TableBodyCell colspan={7}>
+                                        {#if tableUser.isLoading}Loading {:else}No data available{/if}
                                     </TableBodyCell>
                                 </TableBodyRow>
-                            </TableBody>
-                        {/if}
-                    {/await}
-                </Table>
+                            {/if}
+                        </TableBody>
+                    </Table>
+                    {#if tableUser.rows.length > 0}
+                    <div class="flex justify-between items-center gap-2 mt-3">
+                        <p class='text-muted self-end text-[.9rem]'>
+                            Showing {tableUser.rowCount.start} to {tableUser.rowCount.end} of {tableUser.rowCount.total} rows
+                            <Badge color="dark" border>Page {tableUser.currentPage}</Badge>
+                        </p>
+                        <div class="flex gap-2">
+                            <MyButton onclick={()=> tableUser.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                            <MyButton onclick={()=> tableUser.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                            {#each tableUser.pages as page}
+                                <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableUser.setPage(page)} type="button">{page}</MyButton>
+                            {/each}
+                            <MyButton onclick={()=> tableUser.setPage('next')}><ChevronRight size={16} /></MyButton>
+                            <MyButton onclick={()=> tableUser.setPage('last')}><ChevronLast size={16} /></MyButton>
+                        </div>
+                    </div>
+                    {/if}
+                </Datatable>
             </div>
         </TabItem>
     </Tabs>
