@@ -2,13 +2,13 @@
     import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from 'lucide-svelte'
     import usercowo from '@lib/assets/user-man.svg'
     import usercewe from '@lib/assets/user-woman.svg'
-    import {appstore} from '@lib/store/appstore'
     import {fly} from 'svelte/transition'
 	import { quadIn, quintOut } from 'svelte/easing';
 	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
 	import MyButton from '@lib/components/MyButton.svelte'
+    import {appstore, userStore} from '@lib/store/appstore'
     
-    const data = [
+    const linkSidebar = [
         {id:1, link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
         {id:2, link:"/absen", title:"Check In/Out", icon: Clock8},
         {id:3, link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
@@ -36,7 +36,7 @@
     </a>
 
     <div class="flex flex-col flex-1 gap-y-2 mt-8">
-        {#each data as {id, link, title, icon}}
+        {#each linkSidebar as {link, title, icon}}
             <a href={link} class="flex items-center bg-white py-2 px-3 rounded-lg gap-2">
                 <svelte:component this={icon} size=14 />
                 <span class="text-[.9rem]">{title}</span>
@@ -47,10 +47,10 @@
     <div class="flex flex-col mb-10 px-4">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
         <Tooltip>Tjoa Ricky Febrianto</Tooltip>
-        <span class="text-[16px] text-[#112D4E] font-[900] ">Tjoa Ricky Febrianto</span>
-        <span class="text-[12px] text-[#1D2D44] self-start">202207</span>
-        <span class="text-[12px] text-[#1D2D44]">Staff IT Development</span>
-        <span class="text-[12px] text-[#1D2D44]">ricky@sagatrade.co.id</span>
+        <span class="text-[16px] text-[#112D4E] font-[900] ">{$userStore?.name ??""}</span>
+        <span class="text-[12px] text-[#1D2D44] self-start">{$userStore?.payroll ??""}</span>
+        <span class="text-[12px] text-[#1D2D44]">{$userStore?.jabatan ??""}</span>
+        <span class="text-[12px] text-[#1D2D44]">{$userStore?.email ??""}</span>
     </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>

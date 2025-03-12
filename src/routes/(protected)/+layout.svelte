@@ -2,10 +2,10 @@
 	import '../../app.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
-    import {appstore} from '@lib/store/appstore'
+    import {appstore, userStore} from '@lib/store/appstore'
     
-	let { children } = $props()
-
+	let { children, data } = $props()
+    
     $effect(()=>{
         if($appstore.appWidth < 768 && $appstore.showSidebar == true){
             appstore.update(state => ({...state, showSidebar:false}))

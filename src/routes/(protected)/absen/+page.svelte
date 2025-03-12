@@ -3,23 +3,10 @@
     import { Tabs, TabItem } from 'flowbite-svelte';
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Button, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
     import {dataSample} from '@lib/store/appstore'
-
-    let modalTambah = $state(false)
+	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from 'lucide-svelte';
+	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
+    import MyButton from '@lib/components/MyButton.svelte'
     
-    const formStatic = [
-        {type:"text", name:"nama", title:"Nama"},
-        {type:"date", name:"status", title:"Status", placeholder:"Masukkan Tanggal"},
-        {type:"text", name:"payrol", title:"Payrol", placeholder:"Payrol"},
-    ]
-
-    let {data} = $props()
-    console.log(data.data)
-
-    const formState = $state({
-        answer: {},
-        error:""
-    })
-
     let openRow: number[] = $state([]) 
     const toggleRow = (i: number) => {
         if(openRow.includes(i)){
@@ -29,75 +16,100 @@
         }
     }
 
-    let getAbsen = $state(async () =>{
-        const req = await fetch(`/api/absen`)
-        const res = await req.json()
-        return res
-    })
-    let allAbsen = $derived(getAbsen())
-    
-    let id = $state(1)
-    const getAbsenById = $state(async (id:number) =>{
-        const req = await fetch(`/api/absen/${id}`)
-        const res = await req.json()
-        return res
-    })
+    let tableAbsen = new TableHandler([], {rowsPerPage: 10})
+    let tableAbsenSearch = tableAbsen.createSearch()
 
-    const formSubmit = (e:SubmitEvent) =>{
-        e.preventDefault()
-        
-    }
+    $effect(()=>{
+        tableAbsen.load(async (state: State) => {
+            try {
+                const req = await fetch('/api/absen')
+                if (!req.ok) throw new Error('Gagal mengambil data');
+                const res = await req.json()
+                state.setTotalRows(res.length)
+                return res
+            } catch (error) {
+                
+            }
+        })
+    })
+    
+    $effect(()=>{
+        tableAbsen.invalidate()
+    })
 </script>
+
+<svelte:head>
+    <title>Check In & Out</title>
+</svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">    
     <Tabs>
         <TabItem open title="My Absent">
-            <div class="flex gap-2">
-                <Button onclick={()=> getAbsen()}>Refresh Table</Button>
-                <Button onclick={() => (modalTambah = true)}>Tambah</Button>
-            </div>
-            <Table class="bg-black" hoverable={true} filter={(item:string, searchTerm:string) => item.title.toLowerCase().includes(searchTerm.toLowerCase())}>
-                <caption class="text-lg font-semibold text-left text-gray-900 bg-white dark:text-white dark:bg-gray-800">
-                    <p class="mt-1 text-sm font-normal text-gray-500 dark:text-gray-400">Browse a list of Flowbite products designed to help you work and play, stay organized, get answers, keep in touch, grow your business, and more.</p>
-                </caption>
-                <TableHead class="bg-slate-200" >
-                    <TableHeadCell>User ID</TableHeadCell>
-                    <TableHeadCell defaultSort sort={(a:{maker:string}, b:{maker:string}) => a.maker.localeCompare(b.maker)}>ID</TableHeadCell>
-                    <TableHeadCell>Title</TableHeadCell>
-                    <TableHeadCell sort={(a:{id:number}, b:{id:number}) => a.id - b.id}>Completed</TableHeadCell>
-                </TableHead>
+            <div class="flex flex-col gap-4">                
+                <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                    <div class="flex justify-between gap-2">
+                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableAbsenSearch.value}/>
+                        <MyButton onclick={()=>tableAbsenSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableAbsen}><RefreshCw size={16}/></MyButton>
+                    </div>
+                </div>
+                
+                <Datatable table={tableAbsen}>
+                    <Table>
+                        <TableHead class="bg-slate-500" >
+                            <ThSort table={tableAbsen} field="name"><TableHeadCell>Payroll</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
+                        </TableHead>
 
-                {#await allAbsen}
-                    <TableBody tableBodyClass="divide-y">
-                        <TableBodyRow>
-                            <TableBodyCell colspan={4}>Loading data</TableBodyCell>
-                        </TableBodyRow>
-                    </TableBody>
-                {:then val}
-                    <TableBody tableBodyClass="divide-y">
-                        {#each val as item, i}
-                            <TableBodyRow onclick={() => toggleRow(i)}>
-                                {#each Object.entries(item) as [key, value]}
-                                    <TableBodyCell>{value}</TableBodyCell>
+                        <TableBody tableBodyClass="divide-y">
+                            {#if tableAbsen.rows.length > 0}
+                                {#each tableAbsen.rows as row}
+                                    <TableBodyRow>
+                                        <TableBodyCell>{row.payroll}</TableBodyCell>
+                                        <TableBodyCell>{row.name}</TableBodyCell>
+                                        <TableBodyCell>{row.tanggal}</TableBodyCell>
+                                        <TableBodyCell>{row.check_in || "-"}</TableBodyCell>
+                                        <TableBodyCell>{row.check_out || "-"}</TableBodyCell>
+                                    </TableBodyRow>
                                 {/each}
-                            </TableBodyRow>
-                            {#if openRow.includes(i)}
+                            {:else}
                                 <TableBodyRow>
-                                    <TableBodyCell colspan={Object.keys(item).length}>
-                                        <div class="flex">
-                                            {#await getAbsenById(item['id'])}
-                                            <span>Loading data...</span>
-                                            {:then val}
-                                            <span>{val.title}</span>                                                
-                                            {/await}
-                                        </div>
+                                    <TableBodyCell colspan={4}>
+                                        {#if tableAbsen.isLoading}Loading {:else}No data available{/if}
                                     </TableBodyCell>
                                 </TableBodyRow>
                             {/if}
-                        {/each}
-                    </TableBody>
-                {/await}
-            </Table>
+                        </TableBody>
+                    </Table>
+                    {#if tableAbsen.rows.length > 0}
+                        <div class="flex justify-between items-center gap-2 mt-3">
+                            <p class='text-muted self-end text-[.9rem]'>
+                                Showing {tableAbsen.rowCount.start} to {tableAbsen.rowCount.end} of {tableAbsen.rowCount.total} rows
+                                <Badge color="dark">Page {tableAbsen.currentPage}</Badge>
+                            </p>
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableAbsen.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                <MyButton onclick={()=> tableAbsen.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                {#each tableAbsen.pages as page}
+                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableAbsen.setPage(page)} type="button">{page}</MyButton>
+                                {/each}
+                                <MyButton onclick={()=> tableAbsen.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                <MyButton onclick={()=> tableAbsen.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            </div>
+                        </div>
+                    {/if}
+                </Datatable>
+            </div>
         </TabItem>
         <TabItem title="Departement">
             <Table class="bg-black" hoverable={true} filter={(item:string, searchTerm:string) => item.maker.toLowerCase().includes(searchTerm.toLowerCase())}>

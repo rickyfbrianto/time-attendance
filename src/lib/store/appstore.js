@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 
 export const appstore = writable({
 	showSidebar: true,
-	appWidth:0
+	appWidth: 0,
 });
 
 export const dataSample = writable([
@@ -11,3 +11,5 @@ export const dataSample = writable([
 	{ id: 3, maker: "Volvo", type: "FGH", make: 2019 },
 	{ id: 4, maker: "Saab", type: "IJK", make: 2020 },
 ]);
+
+export const userStore = writable();

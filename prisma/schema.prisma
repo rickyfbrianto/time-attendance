@@ -8,21 +8,23 @@ datasource db {
 }
 
 model employee {
-  payroll       String   @id @db.VarChar(8)
-  profile_id    String?  @db.VarChar(50)
-  user_id_mesin String?   @db.VarChar(6)
-  name          String   @db.VarChar(250)
-  password      String   @db.VarChar(250)
-  jabatan       String   @db.VarChar(100)
-  department    String   @db.VarChar(4)
-  location      String   @db.VarChar(100)
-  phone         String   @db.VarChar(13)
-  email         String   @unique(map: "Employee_Email_key") @db.VarChar(100)
-  signature     String   @db.VarChar(250)
-  profile       profile? @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  payroll                                       String       @id @db.VarChar(8)
+  profile_id                                    String?      @db.VarChar(50)
+  user_id_mesin                                 String?      @unique(map: "user_id_mesin") @db.VarChar(6)
+  name                                          String       @db.VarChar(250)
+  password                                      String       @db.VarChar(250)
+  jabatan                                       String       @db.VarChar(100)
+  department                                    String       @db.VarChar(4)
+  location                                      String       @db.VarChar(100)
+  phone                                         String       @db.VarChar(13)
+  email                                         String       @unique(map: "Employee_Email_key") @db.VarChar(100)
+  signature                                     String       @db.VarChar(250)
+  attendance_attendance_createdByToemployee     attendance[] @relation("attendance_createdByToemployee")
+  attendance_attendance_user_id_mesinToemployee attendance?  @relation("attendance_user_id_mesinToemployee")
+  check_io                                      check_io[]
+  profile                                       profile?     @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
-  @@index([user_id_mesin], map: "user_id_mesin")
 }
 
 model profile {
@@ -44,20 +46,33 @@ model profile {
   employee          employee[]
 }
 
-model attendance {
-  attendance_id String   @id @db.VarChar(40)
-  check_io_id   String   @db.VarChar(40)
-  payroll       String   @db.VarChar(8)
-  waktu         DateTime @db.DateTime(0)
-  type          String   @db.VarChar(50)
-  description   String   @db.VarChar(255)
-  attachment    String?  @db.Text
+model check_io {
+  check_io_id   String    @id @db.VarChar(40)
+  user_id_mesin String?   @db.VarChar(6)
+  waktu         DateTime  @db.DateTime(0)
+  type          String    @db.VarChar(50)
+  createdAt     DateTime  @default(now()) @db.DateTime(0)
+  employee      employee? @relation(fields: [user_id_mesin], references: [user_id_mesin], map: "Check_io_user_id_mesin_fkey")
 
-  @@index([check_io_id], map: "check_io_id")
-  @@index([payroll], map: "payroll")
+  @@index([user_id_mesin], map: "Check_io_user_id_mesin_fkey")
 }
 
-model check_io {
+model attendance {
+  attendance_id                               String    @id @db.VarChar(40)
+  user_id_mesin                               String?   @unique(map: "user_id_mesin") @db.VarChar(6)
+  waktu                                       DateTime  @db.DateTime(0)
+  type                                        String    @db.VarChar(50)
+  description                                 String    @db.VarChar(255)
+  attachment                                  String?   @db.Text
+  createdBy                                   String?   @db.VarChar(8)
+  createdAt                                   DateTime  @default(now()) @db.DateTime(0)
+  employee_attendance_createdByToemployee     employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
+  employee_attendance_user_id_mesinToemployee employee? @relation("attendance_user_id_mesinToemployee", fields: [user_id_mesin], references: [user_id_mesin], map: "Attendance_user_id_mesin_fkey")
+
+  @@index([createdBy], map: "createdBy")
+}
+
+model temp_check_io {
   check_io_id   String   @id @db.VarChar(40)
   user_id_mesin String   @db.VarChar(6)
   waktu         DateTime @db.DateTime(0)

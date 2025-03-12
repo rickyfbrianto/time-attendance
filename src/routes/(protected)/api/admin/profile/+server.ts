@@ -25,26 +25,14 @@ export async function GET({url}){
         },
         where:{
             OR:[
-                {profile_id:{contains: search}},
+                {description:{contains: search}},
                 {name:{contains: search}}
             ]
         },
         orderBy:{[sort]: order}
     })
 
-    const totalItems = await prisma.profile.count({
-        where:{
-            OR:[
-                {profile_id:{contains: search}},
-                {name:{contains: search}}
-            ]
-        },
-    })
-
-    return json({
-        items,
-        totalItems,
-    })
+    return json(items)
 }
 
 export async function POST({ request }) {

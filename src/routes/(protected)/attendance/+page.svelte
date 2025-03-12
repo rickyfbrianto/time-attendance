@@ -14,6 +14,10 @@
     ]
 </script>
 
+<svelte:head>
+    <title>Attendance</title>
+</svelte:head>
+
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4 gap-4">
     <div class="flex flex-wrap justify-between bg-white rounded-lg p-4 gap-4 border border-slate-200">
         <div class="flex items-center gap-2">

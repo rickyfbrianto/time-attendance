@@ -3,7 +3,7 @@ import {error, json} from '@sveltejs/kit'
 import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken';
 
-export async function POST({ cookies, request, locals}){
+export async function POST({ cookies, request}){
     try {
         let {payroll, password} = await request.json()
 
@@ -15,7 +15,6 @@ export async function POST({ cookies, request, locals}){
 
         if(data){
             if(password === decryptData(data.password, import.meta.env.VITE_KEY)){
-                locals.user = payroll
                 const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: '1d' })
                 cookies.set("token", token, {
                     path:"/",

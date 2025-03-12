@@ -1,5 +1,4 @@
 import { sequence } from '@sveltejs/kit/hooks';
-// import { handle as authHandle } from './hooks/auth.server.js';
 import { handle as adminHandle } from '@lib/hooks/admin.server.js';
 import { redirect, type Handle } from '@sveltejs/kit';
 import jwt, { decode } from 'jsonwebtoken'
@@ -9,7 +8,6 @@ import { PrismaClient } from '@prisma/client';
 //   adminHandle   // Kemudian jalankan hook admin
 // );
 
-
 export const handle: Handle = async ({event, resolve}) =>{
     const token = event.cookies.get('token')
     if(token){
@@ -17,7 +15,11 @@ export const handle: Handle = async ({event, resolve}) =>{
             if(decoded){
                 const prisma = new PrismaClient()
                 const data = await prisma.employee.findUnique({
-                    where:{payroll: decoded.payroll}
+                    where:{payroll: decoded.payroll},
+                    include:{
+                        profile:true
+                    },
+                    omit:{password:true}
                 })
                 event.locals.user = data
                 return await resolve(event)

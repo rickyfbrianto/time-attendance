@@ -27,20 +27,7 @@ export async function GET({url}){
         orderBy:{[sort]: order}
     })
 
-    const totalItems = await prisma.employee.count({
-        where:{
-            OR:[
-                {payroll:{contains: search}},
-                {name:{contains: search}},
-                {jabatan:{contains: search}},
-            ]
-        },
-    })
-
-    return json({
-        items,
-        totalItems,
-    })
+    return json(items)
 }
 
 export async function POST({ request }) {
@@ -84,14 +71,3 @@ export async function PUT({ request }) {
     }
 }
 
-export async function DELETE({request}){
-    try {
-        const {id} = await request
-        return json({id})
-        await prisma.employee.delete({
-            where:{payroll}
-        })
-    } catch (error) {
-        
-    }
-}

@@ -208,28 +208,30 @@
             try {
                 const req = await fetch(`/api/admin/profile?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
+                const res = await req.json()
+                state.setTotalRows(res.length)
+                return res
             } catch (err:any) {
                 console.log(err.message)
             }
         })
-
+    
         tableUser.load(async(state: State) => {
             try {
                 const req = await fetch(`/api/admin/user?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
+                const res = await req.json()
+                state.setTotalRows(res.length)
+                return res
             } catch (err:any) {
                 console.log(err.message)
             }
         })
     })
-    tableProfile.invalidate()
-    tableUser.invalidate()
+    $effect(()=>{
+        tableProfile.invalidate()
+        tableUser.invalidate()
+    })
 </script>
 
 <svelte:head>
