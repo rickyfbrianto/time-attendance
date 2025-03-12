@@ -22,7 +22,7 @@ export const handle: Handle = async ({event, resolve}) =>{
         })
     }
     
-    const data = await prisma.employee.findUnique({
+    const data = await prisma.employee.findFirst({
         select:{
             name:true,
             payroll:true,

@@ -18,6 +18,8 @@
         {id:0, link:"/admin", title:"Admin", icon: ShieldUser},
     ]
     let defaultModal = $state(false)
+
+    let TheIcon = $derived(linkSidebar)
 </script>
 
 {#if $appstore.showSidebar}
@@ -36,9 +38,10 @@
     </a>
 
     <div class="flex flex-col flex-1 gap-y-2 mt-8">
-        {#each linkSidebar as {link, title, icon}}
+        <!-- {#each linkSidebar as {link, title, icon}} -->
+        {#each linkSidebar as {link, title, icon: Icon}}
             <a href={link} class="flex items-center bg-white py-2 px-3 rounded-lg gap-2">
-                <svelte:component this={icon} size=14 />
+                <Icon size=14/>
                 <span class="text-[.9rem]">{title}</span>
             </a>
         {/each}

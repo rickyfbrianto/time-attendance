@@ -9,6 +9,7 @@
 	import MyInput from '@/MyInput.svelte';
 	import { pecahArray } from '@lib/utils';
     import SveltyPicker from 'svelty-picker'
+	import axios from 'axios';
 
     const headerData = [
         {type:"total", title:"Total Att", value:18, icon: SquareArrowUpRight, link:""},
@@ -54,30 +55,30 @@
 
     const formAttendanceSubmit = async () =>{
         try {
-            formProfileState.error = ""
-            formProfileState.loading = true
-            Object.entries(formProfileState.answer).forEach(val=>{
+            formAttendance.error = ""
+            formAttendance.loading = true
+            Object.entries(formAttendance.answer).forEach(val=>{
                 if(typeof val[1] === 'object'){
-                    formProfileState.answer[val[0]] = val[1].join("")
+                    formAttendance.answer[val[0]] = val[1].join("")
                 }
             })
 
-            if(formProfileState.add){
-                const req = await axios.post('/api/admin/profile', formProfileState.answer)
+            if(formAttendance.add){
+                const req = await axios.post('/api/attendance', formAttendance.answer)
                 const res = await req.data
-                formProfileState.success = res.message
-            }else if(formProfileState.edit){
-                const req = await axios.put('/api/admin/profile', formProfileState.answer)
+                formAttendance.success = res.message
+            }else if(formAttendance.edit){
+                const req = await axios.put('/api/admin/profile', formAttendance.answer)
                 const res = await req.data
-                formProfileState.success = res.message
+                formAttendance.success = res.message
             }
         } catch (error: any) {
-            formProfileState.error = error.message
-            formProfileState.success = ""
+            formAttendance.error = error.message
+            formAttendance.success = ""
         } finally {
-            formProfileState.loading = false
-            tableProfile.invalidate()
-            formProfileBatal()
+            formAttendance.loading = false
+            tableAttendance.invalidate()
+            formAttendanceBatal()
         }
     }
 
@@ -116,12 +117,12 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-4 ">
-            {#each headerData as {type, title, value, icon, link}}
+            {#each headerData as {type, title, value, icon: Icon, link}}
                 <a href={link} class="border border-slate-200 px-4 py-2 rounded-lg min-w-[8rem] md:min-w-[12rem] overflow-hidden overflow-ellipsis whitespace-nowrap">
-                    <span class="text-[.9rem] font-semibold font-light">{title}</span>
+                    <span class="text-[.9rem] font-semibold">{title}</span>
                     <div class="flex justify-between items-center gap-1">
                         <span class='text-[1.4rem]'>{value}</span>
-                        <svelte:component this={icon} size={20} />
+                        <Icon size={20}/>
                     </div>
                 </a>
             {/each}
@@ -178,24 +179,18 @@
                     <MyLoading message="Get profile data"/>
                 {/if}
                 {#if formAttendance.add || formAttendance.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white'>                       
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white' enctype="multipart/form-data">
                         <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
                         <MyInput type='text' title='User Id Mesin' name="user_id_mesin" bind:value={formAttendance.answer.user_id_mesin}/>
-                        
+                        <MyInput type='datetime' title='Waktu' name="Waktu" bind:value={formAttendance.answer.waktu}/>
                         
                         <div class="flex flex-col gap-2">
-                            <Label for='level'>Waktu</Label>
-                            <SveltyPicker bind:value={formAttendance.answer.waktu}/>
-                            <!-- <Datepicker bind:value={formAttendance.answer.waktu} /> -->
+                            <Label>Type</Label>
+                            <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />
                         </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <div class="flex flex-col gap-2">
-                                <Label>Type</Label>
-                                <Select size="md" items={listType} bind:value={formAttendance.answer.type} />
-                            </div>
-                        </div>
+
                         <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
+                        <MyInput type='file' title='Attachment' bind:value={formAttendance.answer.attachment} />
                         {JSON.stringify(formAttendance.answer)}
                     </form>
                 {/if}
