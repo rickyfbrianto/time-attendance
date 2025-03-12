@@ -112,3 +112,8 @@ export function prismaErrorHandler(error: any) {
     }
     return 'Terjadi kesalahan server'
 }
+
+export function pecahArray(value : string, check:string){
+    let temp = value.split('')
+    return temp.includes(check)
+}

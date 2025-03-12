@@ -4,6 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"o": "vite dev -- --open",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -43,6 +44,7 @@
 		"jsonwebtoken": "^9.0.2",
 		"lucide-svelte": "^0.476.0",
 		"nanoid": "^5.1.2",
+		"svelty-picker": "^6.1.5",
 		"uuid": "^11.1.0"
 	}
 }

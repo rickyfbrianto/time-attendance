@@ -3,8 +3,13 @@
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
     import {appstore, userStore} from '@lib/store/appstore'
+	import type { LayoutProps } from './$types';
+
+    let {children, data} :LayoutProps = $props()
     
-	let { children, data } = $props()
+    $effect(()=>{
+        userStore.set(data.user)
+    })
     
     $effect(()=>{
         if($appstore.appWidth < 768 && $appstore.showSidebar == true){

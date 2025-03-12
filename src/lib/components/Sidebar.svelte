@@ -46,21 +46,22 @@
 
     <div class="flex flex-col mb-10 px-4">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
-        <Tooltip>Tjoa Ricky Febrianto</Tooltip>
-        <span class="text-[16px] text-[#112D4E] font-[900] ">{$userStore?.name ??""}</span>
-        <span class="text-[12px] text-[#1D2D44] self-start">{$userStore?.payroll ??""}</span>
-        <span class="text-[12px] text-[#1D2D44]">{$userStore?.jabatan ??""}</span>
-        <span class="text-[12px] text-[#1D2D44]">{$userStore?.email ??""}</span>
+        <Tooltip>{$userStore?.name || ""}</Tooltip>
+        <span class="text-[16px] text-[#112D4E] font-[900] ">{$userStore?.name || ""}</span>
+        <span class="text-[12px] text-[#1D2D44] self-start">{$userStore?.payroll ||""}</span>
+        <span class="text-[12px] text-[#1D2D44]">{$userStore?.jabatan ||""}</span>
+        <span class="text-[12px] text-[#1D2D44]">{$userStore?.email ||""}</span>
     </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>
         <div class="relative flex flex-col gap-3 items-center">
             <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton>
             <Avatar src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
-            <span class="text-[16px] text-[#112D4E] font-[900] ">Tjoa Ricky Febrianto</span>
-            <span class="text-[12px] text-[#1D2D44]">202207</span>
-            <span class="text-[12px] text-[#1D2D44]">Staff IT Development</span>
-            <span class="text-[12px] text-[#1D2D44]">ricky@sagatrade.co.id</span>
+
+            <span class="text-[16px] text-[#112D4E] font-[900] ">{$userStore?.name || ""}</span>
+            <span class="text-[12px] text-[#1D2D44]">{$userStore?.payroll ||""}</span>
+            <span class="text-[12px] text-[#1D2D44]">{$userStore?.jabatan ||""}</span>
+            <span class="text-[12px] text-[#1D2D44]">{$userStore?.email ||""}</span>
         </div>
     </Modal>
 </div>
