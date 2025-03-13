@@ -3,7 +3,6 @@ import { handle as adminHandle } from '@lib/hooks/admin.server.js';
 import { redirect, type Handle } from '@sveltejs/kit';
 import jwt, { decode } from 'jsonwebtoken'
 import { PrismaClient } from '@prisma/client';
-import { RouteOff } from 'lucide-svelte';
 // export const handle = sequence(
 //   authHandle,   // Jalankan hook autentikasi terlebih dahulu
 //   adminHandle   // Kemudian jalankan hook admin
@@ -24,14 +23,16 @@ export const handle: Handle = async ({event, resolve}) =>{
     
     const data = await prisma.employee.findFirst({
         select:{
-            name:true,
             payroll:true,
-            jabatan:true,
+            name:true,
+            position:true,
             email:true,
             profile:true
         },
         where:{payroll},
     })
+    
+    console.log(data)
     
     event.locals.user = data
     return await resolve(event)

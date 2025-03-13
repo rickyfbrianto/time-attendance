@@ -4,7 +4,7 @@
     import {fade} from 'svelte/transition'
 	import axios from 'axios';
 	import { Alert, Spinner  } from 'flowbite-svelte';
-    import {CircleAlert, Check} from 'lucide-svelte'
+    import {CircleAlert, Check} from '@lucide/svelte'
     import { goto } from '$app/navigation';
 
     import { page } from '$app/stores'
@@ -28,13 +28,13 @@
         e.preventDefault()
         try {    
             formLoginState.loading = true
-            // const req = await axios.post('/signin', formLoginState.answer)
-            // const res = await req.data
-            const req = await fetch('/signin', {
-                method:"POST",
-                body:JSON.stringify(formLoginState.answer)
-            })
-            const res = await req.json()
+            const req = await axios.post('/signin', formLoginState.answer)
+            const res = await req.data
+            // const req = await fetch('/signin', {
+            //     method:"POST",
+            //     body:JSON.stringify(formLoginState.answer)
+            // })
+            // const res = await req.json()
             formLoginState.loading = false
             formLoginState.error = ""
             formLoginState.success = res.message

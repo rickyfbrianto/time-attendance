@@ -3,8 +3,8 @@
     import { Tabs, TabItem } from 'flowbite-svelte';
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Button, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
     import {dataSample} from '@lib/store/appstore'
-	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from 'lucide-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
+	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '@lib/components/MyButton.svelte'
     
     let openRow: number[] = $state([]) 

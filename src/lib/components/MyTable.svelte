@@ -2,7 +2,7 @@
 	import { Datatable, TableHandler, ThSort } from "@vincjo/datatables/server";
 	import MyButton from "./MyButton.svelte";
 	import { getParams } from "@lib/data/api";
-	import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Pencil, Search, Trash } from "lucide-svelte";
+	import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Pencil, Search, Trash } from "@lucide/svelte";
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Badge } from 'flowbite-svelte';
 
     let {action} = $props()

@@ -1,9 +1,9 @@
 <script>
-    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from 'lucide-svelte'
+    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from '@lucide/svelte'
     import usercowo from '@lib/assets/user-man.svg'
     import usercewe from '@lib/assets/user-woman.svg'
-    import {fly} from 'svelte/transition'
-	import { quadIn, quintOut } from 'svelte/easing';
+    import { fly } from 'svelte/transition'
+	import { quadIn } from 'svelte/easing';
 	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
 	import MyButton from '@lib/components/MyButton.svelte'
     import {appstore, userStore} from '@lib/store/appstore'
@@ -18,8 +18,6 @@
         {id:0, link:"/admin", title:"Admin", icon: ShieldUser},
     ]
     let defaultModal = $state(false)
-
-    let TheIcon = $derived(linkSidebar)
 </script>
 
 {#if $appstore.showSidebar}

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Eye, EyeClosed} from 'lucide-svelte'
+    import {Eye, EyeClosed} from '@lucide/svelte'
     import classNames from 'classnames'
     import {fade} from 'svelte/transition'
 	import { Label } from 'flowbite-svelte';

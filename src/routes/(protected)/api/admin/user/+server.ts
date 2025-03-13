@@ -20,7 +20,7 @@ export async function GET({url}){
             OR:[
                 {payroll:{contains: search}},
                 {name:{contains: search}},
-                {jabatan:{contains: search}},
+                {position:{contains: search}},
             ]
         },
         omit:{password:true},

@@ -1,6 +1,6 @@
 <script lang='ts'>
     import MyButton from '@lib/components/MyButton.svelte'
-    import {AlignJustify, Check, LogOut } from 'lucide-svelte'
+    import {AlignJustify, Check, LogOut } from '@lucide/svelte'
 	import { Alert, Modal, Breadcrumb, BreadcrumbItem } from 'flowbite-svelte';
     import { appstore } from "@lib/store/appstore";
 	import { goto } from '$app/navigation';

@@ -1,14 +1,13 @@
 <script lang="ts">
     import { fade, slide } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Button, Modal, Label, Input, ImagePlaceholder, Tabs, TabItem, Toast, Select, MultiSelect, Datepicker } from 'flowbite-svelte';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, ShieldUser, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, Ban, Check, Search, RefreshCw, Badge, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from 'lucide-svelte'
-    import {dataSample, userStore} from '@lib/store/appstore'
+    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, ShieldUser, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, Ban, Check, Search, RefreshCw, Badge, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
+    import {dataSample, userStore, userProfileStore} from '@lib/store/appstore'
 	import { Datatable, TableHandler, ThSort } from '@vincjo/datatables/server';
 	import MyButton from '@/MyButton.svelte';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
 	import { pecahArray } from '@lib/utils';
-    import SveltyPicker from 'svelty-picker'
 	import axios from 'axios';
 
     const headerData = [
@@ -38,12 +37,12 @@
     let formAttendance = $state({
         answer: {
             attendance_id: "id",
-            user_id_mesin:"",
-            waktu:"",
+            user_id_machine:"",
+            datetime:"",
             type: "",
             description: "",
-            attachment: "",
-            createdBy: $userStore.payroll,
+            attachment: [],
+            createdBy: $userStore?.payroll || "",
         },
         success:"",
         error:"",
@@ -52,23 +51,23 @@
         add:false,
         edit:false,
     })
-
+    
     const formAttendanceSubmit = async () =>{
         try {
             formAttendance.error = ""
             formAttendance.loading = true
+            const formData = new FormData()
             Object.entries(formAttendance.answer).forEach(val=>{
-                if(typeof val[1] === 'object'){
-                    formAttendance.answer[val[0]] = val[1].join("")
-                }
+                formData.append(val[0], val[1])
             })
-
+            formData.set("createdBy","202207")
+            
             if(formAttendance.add){
-                const req = await axios.post('/api/attendance', formAttendance.answer)
+                const req = await axios.post('/api/attendance', formData)
                 const res = await req.data
                 formAttendance.success = res.message
             }else if(formAttendance.edit){
-                const req = await axios.put('/api/admin/profile', formAttendance.answer)
+                const req = await axios.put('/api/attendance', formData)
                 const res = await req.data
                 formAttendance.success = res.message
             }
@@ -98,9 +97,7 @@
 
     }
 
-    const profile = $derived($userStore.profile)
-
-    // console.log(pecahArray(profile?.access_attendance, "C"))
+    let fileAttendance = $state()
 </script>
 
 <svelte:head>
@@ -152,12 +149,12 @@
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">                        
                             {#if formAttendance.add || formAttendance.edit}
-                                {#if pecahArray($userStore.profile.access_attendance, "C") || pecahArray($userStore.profile.access_attendance, "U")}
+                                {#if pecahArray($userProfileStore.access_attendance, "C") || pecahArray($userProfileStore.access_attendance, "U")}
                                     <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>
                                     <MyButton disabled={formAttendance.loading} onclick={formAttendanceSubmit}><Save size={16}/></MyButton>
                                 {/if}
                             {:else}
-                                {#if pecahArray($userStore.profile.access_attendance, "C")}
+                                {#if pecahArray($userProfileStore.access_attendance, "C")}
                                     <MyButton onclick={()=> formAttendance.add = true}><Plus size={16}/></MyButton>
                                 {/if}
                             {/if}
@@ -176,13 +173,13 @@
                 </div>
 
                 {#if formAttendance.loading}
-                    <MyLoading message="Get profile data"/>
+                    <MyLoading message="Get attendance data"/>
                 {/if}
                 {#if formAttendance.add || formAttendance.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white' enctype="multipart/form-data">
                         <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
-                        <MyInput type='text' title='User Id Mesin' name="user_id_mesin" bind:value={formAttendance.answer.user_id_mesin}/>
-                        <MyInput type='datetime' title='Waktu' name="Waktu" bind:value={formAttendance.answer.waktu}/>
+                        <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formAttendance.answer.user_id_machine}/>
+                        <MyInput type='datetime' title='Tanggal' name="datetime" bind:value={formAttendance.answer.datetime}/>
                         
                         <div class="flex flex-col gap-2">
                             <Label>Type</Label>
@@ -190,8 +187,11 @@
                         </div>
 
                         <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
-                        <MyInput type='file' title='Attachment' bind:value={formAttendance.answer.attachment} />
+                        <MyInput type='text' title='Created By' disabled={true} bind:value={formAttendance.answer.createdBy} />
+                        <!-- <MyInput type='file' title='Attachment' bind:value={formAttendance.answer.attachment} /> -->
+                        <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
                         {JSON.stringify(formAttendance.answer)}
+                        <!-- <MyButton type='submit'>Submit</MyButton> -->
                     </form>
                 {/if}
                 
@@ -210,11 +210,11 @@
                                 {#each tableAttendance.rows as row}
                                     <TableBodyRow>
                                         <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.waktu}</TableBodyCell>
+                                        <TableBodyCell>{row.datetime}</TableBodyCell>
                                         <TableBodyCell>{row.type}</TableBodyCell>
                                         <TableBodyCell>{row.description}</TableBodyCell>
                                         <TableBodyCell>
-                                            {#if pecahArray($userStore.profile.access_attendance, "U")}
+                                            {#if pecahArray($userProfileStore.access_attendance, "U")}
                                                 <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                             {/if}
                                             <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>

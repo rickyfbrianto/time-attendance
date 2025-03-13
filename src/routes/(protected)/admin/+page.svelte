@@ -4,7 +4,7 @@
     import MyInput from '@lib/components/MyInput.svelte'
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from 'lucide-svelte'
+    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from '@lucide/svelte'
     import {ListAccess, ListLevel} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
@@ -124,10 +124,10 @@
         answer:{
             payroll:"",
             profile_id:"",
-            user_id_mesin:"",
+            user_id_machine:"",
             name:"",
             password:"",
-            jabatan:"",
+            position:"",
             department:"",
             location:"",
             phone:"",
@@ -436,12 +436,12 @@
                     <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg bg-white'>
                         <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
                         <MyInput type='text' title='Profile ID' name="profile_id" bind:value={formUserState.answer.profile_id}/>
-                        <MyInput type='text' title='Card Number' name="user_id_mesin" bind:value={formUserState.answer.user_id_mesin}/>
+                        <MyInput type='text' title='Card Number' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
                         <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
                         {#if formUserState.add}
                         <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
                         {/if}
-                        <MyInput type='text' title='Jabatan' name="jabatan" bind:value={formUserState.answer.jabatan}/>
+                        <MyInput type='text' title='Position' name="position" bind:value={formUserState.answer.position}/>
                         <MyInput type='text' title='Department' name="department" bind:value={formUserState.answer.department}/>
                         <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
                         <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
@@ -455,7 +455,7 @@
                         <TableHead class="bg-slate-500" >
                             <ThSort table={tableUser} field="payroll"><TableHeadCell>Profile ID</TableHeadCell></ThSort>
                             <ThSort table={tableUser} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableUser} field="jabatan"><TableHeadCell>Jabatan</TableHeadCell></ThSort>
+                            <ThSort table={tableUser} field="position"><TableHeadCell>Position</TableHeadCell></ThSort>
                             <ThSort table={tableUser} field="department"><TableHeadCell>Department</TableHeadCell></ThSort>
                             <ThSort table={tableUser} field="location"><TableHeadCell>Location</TableHeadCell></ThSort>
                             <ThSort table={tableUser} field="email"><TableHeadCell>Email</TableHeadCell></ThSort>

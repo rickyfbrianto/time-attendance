@@ -2,13 +2,16 @@
 	import '../../app.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
-    import {appstore, userStore} from '@lib/store/appstore'
+    import {appstore, userStore, userProfileStore} from '@lib/store/appstore'
 	import type { LayoutProps } from './$types';
 
     let {children, data} :LayoutProps = $props()
     
     $effect(()=>{
-        userStore.set(data.user)
+        if(data.user && data.user.profile){
+            userStore.set(data.user)
+            userProfileStore.set(data.user.profile)
+        }
     })
     
     $effect(()=>{
@@ -34,7 +37,6 @@
                 Hai footer
             </div> -->
         </div>
-
     </div>
 </div>
 

@@ -4,7 +4,7 @@
     import {Alert, Label, Spinner} from 'flowbite-svelte'
 	import MyInput from '@/MyInput.svelte';
 	import MyButton from '@/MyButton.svelte';
-    import {Check, CircleAlert, Save} from 'lucide-svelte'
+    import {Check, CircleAlert, Save} from '@lucide/svelte'
 
     const formUserState = {
         answer:{
@@ -12,7 +12,7 @@
             profile_id:"",
             card_no:"",
             name:"",
-            jabatan:"",
+            position:"",
             department:"",
             location:"",
             phone:"",
@@ -63,8 +63,8 @@
                 <MyInput type="text" bind:value={formUserState.answer.name}/>
             </div>
             <div class="flex flex-col gap-2">
-                <Label for='jabatan'>Jabatan</Label>
-                <MyInput type="text" bind:value={formUserState.answer.jabatan}/>
+                <Label for='position'>Position</Label>
+                <MyInput type="text" bind:value={formUserState.answer.position}/>
             </div>
             <div class="flex flex-col gap-2">
                 <Label for='department'>Department</Label>

@@ -13,3 +13,4 @@ export const dataSample = writable([
 ]);
 
 export const userStore = writable();
+export const userProfileStore = writable();
