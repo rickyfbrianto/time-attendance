@@ -13,26 +13,39 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
-    const items = await prisma.profile.findMany({
-        skip:offset,
-        take:limit,
-        select:{
-            profile_id:true,
-            name:true,
-            description:true,
-            level:true,
-            delegation:true,
-        },
-        where:{
-            OR:[
-                {description:{contains: search}},
-                {name:{contains: search}}
-            ]
-        },
-        orderBy:{[sort]: order}
+    const status = await prisma.$transaction(async (tx) => {
+        const items = await tx.profile.findMany({
+            skip:offset,
+            take:limit,
+            select:{
+                profile_id:true,
+                name:true,
+                description:true,
+                level:true,
+                delegation:true,
+            },
+            where:{
+                OR:[
+                    {description:{contains: search}},
+                    {name:{contains: search}}
+                ]
+            },
+            orderBy:{[sort]: order}
+        })
+    
+        const totalItems = await tx.profile.count({
+            where:{
+                OR:[
+                    {description:{contains: search}},
+                    {name:{contains: search}}
+                ]
+            },
+        })
+
+        return {items, totalItems}
     })
 
-    return json(items)
+    return json(status)
 }
 
 export async function POST({ request }) {

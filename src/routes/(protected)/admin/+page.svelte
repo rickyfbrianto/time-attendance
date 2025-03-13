@@ -208,9 +208,9 @@
             try {
                 const req = await fetch(`/api/admin/profile?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
-                const res = await req.json()
-                state.setTotalRows(res.length)
-                return res
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
             } catch (err:any) {
                 console.log(err.message)
             }
@@ -220,9 +220,9 @@
             try {
                 const req = await fetch(`/api/admin/user?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
-                const res = await req.json()
-                state.setTotalRows(res.length)
-                return res
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
             } catch (err:any) {
                 console.log(err.message)
             }
@@ -468,7 +468,7 @@
                                     <TableBodyRow>
                                         <TableBodyCell>{row.payroll}</TableBodyCell>
                                         <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.jabatan}</TableBodyCell>
+                                        <TableBodyCell>{row.position}</TableBodyCell>
                                         <TableBodyCell>{row.department}</TableBodyCell>
                                         <TableBodyCell>{row.location}</TableBodyCell>
                                         <TableBodyCell>{row.email}</TableBodyCell>

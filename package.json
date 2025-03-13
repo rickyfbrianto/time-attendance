@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"o": "vite dev -- --open",
+		"o": "npx vite dev -- --open",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",

@@ -2,31 +2,22 @@
 	import '../../app.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
-    import {appstore, userStore, userProfileStore} from '@lib/store/appstore'
+    import {appstore } from '@lib/store/appstore'
 	import type { LayoutProps } from './$types';
 
     let {children, data} :LayoutProps = $props()
     
     $effect(()=>{
-        if(data.user && data.user.profile){
-            userStore.set(data.user)
-            userProfileStore.set(data.user.profile)
-        }
-    })
-    
-    $effect(()=>{
-        if($appstore.appWidth < 768 && $appstore.showSidebar == true){
-            appstore.update(state => ({...state, showSidebar:false}))
-        // }else if($appstore.appWidth >= 768 && $appstore.showSidebar == false){
-        //     appstore.update(state => ({...state, showSidebar:true}))
-        }
+        // if($appstore.appWidth < 768 && $appstore.showSidebar == true){
+        //     appstore.update(state => ({...state, showSidebar:false}))
+        // }
     })
 </script>
 
 <svelte:window bind:innerWidth={$appstore.appWidth}/>
 
 <div class="relative flex h-screen bg-gray-100">
-    <Sidebar/>
+    <Sidebar {data}/>
     <div class="flex flex-col flex-1">
         <Header/>
         <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll">

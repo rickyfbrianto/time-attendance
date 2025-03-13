@@ -1,0 +1,11 @@
+CREATE TRIGGER `after_calendar_delete` AFTER DELETE ON `calendar`
+ FOR EACH ROW DELETE from attendance WHERE type=old.type and datetime = DATE_FORMAT(old.date, "%Y-%m-%d")
+
+CREATE TRIGGER `after_calendar_insert` AFTER INSERT ON `calendar`
+ FOR EACH ROW INSERT INTO attendance (attendance_id, user_id_machine, datetime, type, description) SELECT uuid(), user_id_machine, DATE_FORMAT(new.date, "%Y-%m-%d"), new.type, new.description from employee
+
+CREATE TRIGGER `after_calendar_update` AFTER UPDATE ON `calendar`
+ FOR EACH ROW UPDATE attendance SET datetime = DATE_FORMAT(new.date, "%Y-%m-%d"), type=new.type, description=new.description where datetime = DATE_FORMAT(old.date, "%Y-%m-%d") and type = old.type and description=old.description
+
+CREATE TRIGGER `after_employee_insert_attendance` AFTER INSERT ON `employee`
+ FOR EACH ROW INSERT INTO attendance (attendance_id, user_id_machine, datetime, type, description) SELECT uuid(), new.user_id_machine, DATE_FORMAT(date, "%Y-%m-%d"), type, description from calendar where date >= now()

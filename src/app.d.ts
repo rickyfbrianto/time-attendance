@@ -7,7 +7,12 @@ declare global {
             id?: string
         }
 		interface Locals {
-            user: string | null | {}
+            user: {
+				payroll:string
+			} | null,
+            userProfile: {
+				access_attendance:string,
+			} | null | string | any,
         }
 		// interface PageData {}
 		// interface PageState {}

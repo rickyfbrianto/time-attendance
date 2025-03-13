@@ -16,7 +16,6 @@ export async function GET({fetch}){
 // export async function PUT ({request, cookies, url, locals}){
 export async function PUT (event){
     try {        
-        console.log('dari locals',event.locals.user)
         const data = await event.request.json()
         return json({"message":data})
     } catch (err:any) {

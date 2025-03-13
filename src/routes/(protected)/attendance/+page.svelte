@@ -1,14 +1,18 @@
 <script lang="ts">
     import { fade, slide } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Button, Modal, Label, Input, ImagePlaceholder, Tabs, TabItem, Toast, Select, MultiSelect, Datepicker } from 'flowbite-svelte';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, ShieldUser, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, Ban, Check, Search, RefreshCw, Badge, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
-    import {dataSample, userStore, userProfileStore} from '@lib/store/appstore'
-	import { Datatable, TableHandler, ThSort } from '@vincjo/datatables/server';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Toast, Badge, Select } from 'flowbite-svelte';
+    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
+    import {dataSample } from '@lib/store/appstore'
+	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@/MyButton.svelte';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
 	import { pecahArray } from '@lib/utils';
 	import axios from 'axios';
+    let {data} = $props()
+    
+    let user = $derived(data.user)
+    let userProfile = $derived(data.userProfile)
 
     const headerData = [
         {type:"total", title:"Total Att", value:18, icon: SquareArrowUpRight, link:""},
@@ -42,7 +46,7 @@
             type: "",
             description: "",
             attachment: [],
-            createdBy: $userStore?.payroll || "",
+            createdBy: data.user?.payroll || "",
         },
         success:"",
         error:"",
@@ -97,7 +101,22 @@
 
     }
 
-    let fileAttendance = $state()
+    $effect(()=>{
+        tableAttendance.load(async (state:State) =>{
+            try {
+                const req = await fetch('/api/attendance?req=tesa')
+                if(!req.ok) throw new Error('Gagal mengambil data')
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+    })
+    $effect(()=>{
+        tableAttendance.invalidate()
+    })
 </script>
 
 <svelte:head>
@@ -149,12 +168,12 @@
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">                        
                             {#if formAttendance.add || formAttendance.edit}
-                                {#if pecahArray($userProfileStore.access_attendance, "C") || pecahArray($userProfileStore.access_attendance, "U")}
+                                {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
                                     <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>
                                     <MyButton disabled={formAttendance.loading} onclick={formAttendanceSubmit}><Save size={16}/></MyButton>
                                 {/if}
                             {:else}
-                                {#if pecahArray($userProfileStore.access_attendance, "C")}
+                                {#if pecahArray(userProfile?.access_attendance, "C")}
                                     <MyButton onclick={()=> formAttendance.add = true}><Plus size={16}/></MyButton>
                                 {/if}
                             {/if}
@@ -177,21 +196,21 @@
                 {/if}
                 {#if formAttendance.add || formAttendance.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white' enctype="multipart/form-data">
-                        <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
-                        <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formAttendance.answer.user_id_machine}/>
-                        <MyInput type='datetime' title='Tanggal' name="datetime" bind:value={formAttendance.answer.datetime}/>
-                        
-                        <div class="flex flex-col gap-2">
-                            <Label>Type</Label>
-                            <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />
-                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                        <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
-                        <MyInput type='text' title='Created By' disabled={true} bind:value={formAttendance.answer.createdBy} />
-                        <!-- <MyInput type='file' title='Attachment' bind:value={formAttendance.answer.attachment} /> -->
+                            <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
+                            <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formAttendance.answer.user_id_machine}/>
+                            <MyInput type='datetime' title='Tanggal' name="datetime" bind:value={formAttendance.answer.datetime}/>
+                            
+                            <div class="flex flex-col gap-2">
+                                <Label>Type</Label>
+                                <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />
+                            </div>
+                            
+                            <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
+                        </div>
                         <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
-                        {JSON.stringify(formAttendance.answer)}
-                        <!-- <MyButton type='submit'>Submit</MyButton> -->
+                        <span>User <Badge color='dark'>{data.user.name}</Badge> </span>
                     </form>
                 {/if}
                 
@@ -199,7 +218,7 @@
                     <Table>
                         <TableHead class="bg-slate-500" >
                             <ThSort table={tableAttendance} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
+                            <ThSort table={tableAttendance} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field="delegation"><TableHeadCell>Delegation</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field=""><TableHeadCell>#</TableHeadCell></ThSort>
@@ -210,11 +229,11 @@
                                 {#each tableAttendance.rows as row}
                                     <TableBodyRow>
                                         <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.datetime}</TableBodyCell>
+                                        <TableBodyCell>{row.tanggal}</TableBodyCell>
                                         <TableBodyCell>{row.type}</TableBodyCell>
                                         <TableBodyCell>{row.description}</TableBodyCell>
                                         <TableBodyCell>
-                                            {#if pecahArray($userProfileStore.access_attendance, "U")}
+                                            {#if pecahArray(userProfile.access_attendance, "U")}
                                                 <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                             {/if}
                                             <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>

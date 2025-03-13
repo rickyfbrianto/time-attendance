@@ -13,5 +13,8 @@ export async function load({ cookies, url, locals }) {
         }
     })
 
-    return {user:locals.user}
+    return {
+        user:locals.user, 
+        userProfile: locals.userProfile
+    }
 }

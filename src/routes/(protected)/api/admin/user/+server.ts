@@ -13,21 +13,35 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
         
-    const items = await prisma.employee.findMany({
-        skip:offset,
-        take:limit,
-        where:{
-            OR:[
-                {payroll:{contains: search}},
-                {name:{contains: search}},
-                {position:{contains: search}},
-            ]
-        },
-        omit:{password:true},
-        orderBy:{[sort]: order}
+    const status = await prisma.$transaction(async (tx) =>{
+        const items = await tx.employee.findMany({
+            skip:offset,
+            take:limit,
+            where:{
+                OR:[
+                    {payroll:{contains: search}},
+                    {name:{contains: search}},
+                    {position:{contains: search}},
+                ]
+            },
+            omit:{password:true},
+            orderBy:{[sort]: order}
+        })
+    
+        const totalItems = await tx.employee.count({
+            where:{
+                OR:[
+                    {payroll:{contains: search}},
+                    {name:{contains: search}},
+                    {position:{contains: search}},
+                ]
+            },
+        })
+
+        return {items, totalItems}
     })
 
-    return json(items)
+    return json(status)
 }
 
 export async function POST({ request }) {

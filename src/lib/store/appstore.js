@@ -11,6 +11,3 @@ export const dataSample = writable([
 	{ id: 3, maker: "Volvo", type: "FGH", make: 2019 },
 	{ id: 4, maker: "Saab", type: "IJK", make: 2020 },
 ]);
-
-export const userStore = writable();
-export const userProfileStore = writable();

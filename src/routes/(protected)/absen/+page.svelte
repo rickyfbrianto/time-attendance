@@ -24,9 +24,9 @@
             try {
                 const req = await fetch('/api/absen')
                 if (!req.ok) throw new Error('Gagal mengambil data');
-                const res = await req.json()
-                state.setTotalRows(res.length)
-                return res
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
             } catch (error) {
                 
             }

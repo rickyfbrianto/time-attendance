@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard} from '@lucide/svelte'
     import usercowo from '@lib/assets/user-man.svg'
     import usercewe from '@lib/assets/user-woman.svg'
@@ -6,16 +6,21 @@
 	import { quadIn } from 'svelte/easing';
 	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
 	import MyButton from '@lib/components/MyButton.svelte'
-    import {appstore, userStore} from '@lib/store/appstore'
-    
+    import {appstore } from '@lib/store/appstore'
+
+    let {data} = $props()
+        
     const linkSidebar = [
-        {id:1, link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
-        {id:2, link:"/absen", title:"Check In/Out", icon: Clock8},
-        {id:3, link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
-        {id:4, link:"/lembur", title:"Lembur", icon: Hourglass},
-        {id:5, link:"/cuti", title:"Cuti", icon: TicketsPlane},
-        {id:6, link:"/dinas", title:"Dinas", icon: Plane},
-        {id:0, link:"/admin", title:"Admin", icon: ShieldUser},
+        {type:"separator", title:"Core"},
+        {link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
+        {link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
+        {type:"separator", title:"Main"},
+        {link:"/absen", title:"Check In/Out", icon: Clock8},
+        {link:"/lembur", title:"Lembur", icon: Hourglass},
+        {link:"/cuti", title:"Cuti", icon: TicketsPlane},
+        {link:"/dinas", title:"Dinas", icon: Plane},
+        {type:"separator", title:"Admin"},
+        {link:"/admin", title:"Admin", icon: ShieldUser},
     ]
     let defaultModal = $state(false)
 </script>
@@ -30,28 +35,33 @@
         </svg>
         
         <div class="flex flex-col">
-            <span class="text-[1.4rem] text-[24px] font-[700]">Time</span>
+            <span class="text-[1.4rem] font-[700]">Time</span>
             <span class="text-[1.4rem]">Attendance</span>
         </div>
     </a>
 
-    <div class="flex flex-col flex-1 gap-y-2 mt-8">
-        <!-- {#each linkSidebar as {link, title, icon}} -->
-        {#each linkSidebar as {link, title, icon: Icon}}
-            <a href={link} class="flex items-center bg-white py-2 px-3 rounded-lg gap-2">
-                <Icon size=14/>
-                <span class="text-[.9rem]">{title}</span>
-            </a>
+    <div class="flex flex-col flex-1 gap-y-2">
+        {#each linkSidebar as {link, title, icon: Icon, type}}
+            {#if type == "separator"}
+                <div class="flex bg-slate-800 text-white px-3 py-1 rounded-lg mt-4 shadow-lg">
+                    <span class='text-muted font-bold text-[.7rem]'>{title}</span>
+                </div>
+            {:else}
+                <a href={link} class="flex items-center bg-white py-2 px-3 rounded-lg gap-2">
+                    <Icon size=14/>
+                    <span class="text-[.9rem]">{title}</span>
+                </a>
+            {/if}
         {/each}
     </div>
 
     <div class="flex flex-col mb-10 px-4">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
-        <Tooltip>{$userStore?.name || ""}</Tooltip>
-        <span class="text-[16px] text-[#112D4E] font-[900] ">{$userStore?.name || ""}</span>
-        <span class="text-[12px] text-[#1D2D44] self-start">{$userStore?.payroll ||""}</span>
-        <span class="text-[12px] text-[#1D2D44]">{$userStore?.jabatan ||""}</span>
-        <span class="text-[12px] text-[#1D2D44]">{$userStore?.email ||""}</span>
+        <Tooltip>{data.user.name}</Tooltip>
+        <span class="text-[16px] text-[#112D4E] font-[900] ">{data.user.name}</span>
+        <span class="text-[12px] text-[#1D2D44] self-start">{data.user.payroll}</span>
+        <span class="text-[12px] text-[#1D2D44]">{data.user.position}</span>
+        <span class="text-[12px] text-[#1D2D44]">{data.user.email}</span>
     </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>
@@ -59,10 +69,10 @@
             <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton>
             <Avatar src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
 
-            <span class="text-[16px] text-[#112D4E] font-[900] ">{$userStore?.name || ""}</span>
-            <span class="text-[12px] text-[#1D2D44]">{$userStore?.payroll ||""}</span>
-            <span class="text-[12px] text-[#1D2D44]">{$userStore?.jabatan ||""}</span>
-            <span class="text-[12px] text-[#1D2D44]">{$userStore?.email ||""}</span>
+            <span class="text-[16px] text-[#112D4E] font-[900] ">{data.user.name}</span>
+            <span class="text-[12px] text-[#1D2D44]">{data.user.payroll}</span>
+            <span class="text-[12px] text-[#1D2D44]">{data.user.position}</span>
+            <span class="text-[12px] text-[#1D2D44]">{data.user.email}</span>
         </div>
     </Modal>
 </div>

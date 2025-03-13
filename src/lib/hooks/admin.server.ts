@@ -23,21 +23,6 @@ export const handle: Handle = async ({ event, resolve }) => {
                 redirect(303, '/signin');
             }
         }
-        // if (token) {
-        //     try {
-        //         const decoded = jwt.verify(token, import.meta.env.VITE_JWT_SECRET);
-        //         event.locals.user = decoded.payroll
-        //     } catch (err) {
-        //         console.error('JWT tidak valid:', err);
-        //         event.cookies.delete('jwt', {path:'/'}); // Hapus token jika tidak valid
-        //     }
-        // }
-    
-        // if (isLoginPath) {
-        //     if (!event.locals.user) {
-        //         redirect(303, '/signin'); // Redirect ke login jika tidak ada user
-        //     }
-        // }
 
         return resolve(event);
 };
