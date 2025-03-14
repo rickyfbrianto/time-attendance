@@ -10,6 +10,10 @@
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
     import bglogin from '@lib/assets/bg-login.jpg'
+    import { page } from '$app/stores';
+    
+    const urlTab = $page.url.searchParams.get('tab')
+    const urlMessage = $page.url.searchParams.get('message')
 
     const rowsPerPage = 10
 
@@ -282,6 +286,11 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
+    {#if urlTab}
+    <Toast class='my-2'>
+        {urlMessage}
+    </Toast>
+    {/if}
     <Tabs class='bg-white'>
         <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[50vh]" style={`background-image: url(${bglogin}); background-size: cover; background-position:center`}>
@@ -558,7 +567,7 @@
                 </Datatable>
             </div>
         </TabItem>
-        <TabItem title="Setting">
+        <TabItem title="Setting" open={urlTab == 'setting'}>
             <div class="flex flex-col gap-4">                
                 {#if formSettingState.error || formSettingState.success}
                     <Toast color="red">

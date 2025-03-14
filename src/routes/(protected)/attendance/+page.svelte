@@ -9,6 +9,8 @@
 	import MyInput from '@/MyInput.svelte';
 	import { pecahArray } from '@lib/utils';
 	import axios from 'axios';
+    import { format } from "date-fns";
+
     let {data} = $props()
     
     let user = $derived(data.user)
@@ -130,7 +132,7 @@
             <Calendar size={24}/>
             <div class="flex flex-col">
                 <span class="font-bold">Today</span>
-                <span>{new Date()}</span>
+                <span>{format(new Date(), "dd-MM-yyyy")}</span>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 items-center gap-4">
@@ -155,7 +157,6 @@
             </div>
         </TabItem>
         <TabItem title="Attendance">
-            <!-- <div class="flex flex-col gap-4"> -->
             <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
                 {#if formAttendance.error || formAttendance.success}
                     <Toast color="red">

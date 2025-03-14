@@ -18,12 +18,14 @@ model employee {
   department                                      String       @db.VarChar(4)
   location                                        String       @db.VarChar(100)
   phone                                           String       @db.VarChar(13)
-  workhour                                        Int          @default(8) @db.SmallInt
   signature                                       String       @db.VarChar(250)
+  workhour                                        Int          @default(8) @db.SmallInt
   attendance_attendance_createdByToemployee       attendance[] @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[] @relation("attendance_user_id_machineToemployee")
   check_io                                        check_io[]
   profile                                         profile?     @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  spl_spl_createdByToemployee                     spl[]        @relation("spl_createdByToemployee")
+  spl_spl_payrollToemployee                       spl[]        @relation("spl_payrollToemployee")
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
 }
@@ -94,6 +96,21 @@ model setting {
   setting_id    String @id @db.VarChar(40)
   start_periode Int    @default(17) @db.SmallInt
   end_periode   Int    @default(16) @db.SmallInt
+}
+
+model spl {
+  spl_id             String    @id @db.VarChar(40)
+  payroll            String?   @db.VarChar(8)
+  description        String    @db.Text
+  datetime_start     DateTime  @db.DateTime(0)
+  datetime_end       DateTime  @db.DateTime(0)
+  createdBy          String?   @db.VarChar(8)
+  createdAt          DateTime  @default(now()) @db.DateTime(0)
+  employee_createdBy employee? @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
+  employee_payroll   employee? @relation("spl_payrollToemployee", fields: [payroll], references: [payroll], map: "spl_payroll_by_fkey")
+
+  @@index([createdBy], map: "createdBy")
+  @@index([payroll], map: "payroll")
 }
 
 enum profile_level {
