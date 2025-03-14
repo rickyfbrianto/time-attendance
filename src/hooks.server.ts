@@ -27,7 +27,8 @@ export const handle: Handle = async ({event, resolve}) =>{
             name:true,
             position:true,
             email:true,
-            profile:true
+            profile:true,
+            department:true
         },
         where:{payroll},
     })

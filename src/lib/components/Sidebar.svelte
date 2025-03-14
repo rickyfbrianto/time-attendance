@@ -4,11 +4,16 @@
     import usercewe from '@lib/assets/user-woman.svg'
     import { fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Avatar, Modal, Tooltip } from 'flowbite-svelte';
-	import MyButton from '@lib/components/MyButton.svelte'
+	import { Avatar, Modal, Timeline, TimelineItem, Tooltip } from 'flowbite-svelte';
     import {appstore } from '@lib/store/appstore'
-
+    import { page } from '$app/state';
+	
     let {data} = $props()
+    let pathname:string[] = $state([])
+
+    $effect(()=>{
+        pathname = page.url.pathname.split('/').filter(v => v)
+    })
         
     const linkSidebar = [
         {type:"separator", title:"Core"},
@@ -47,7 +52,7 @@
                     <span class='text-muted font-bold text-[.7rem]'>{title}</span>
                 </div>
             {:else}
-                <a href={link} class="flex items-center bg-white py-2 px-3 rounded-lg gap-2">
+                <a href={link} class={`flex items-center ${link == "/"+pathname[0] ? "bg-slate-800 text-white":"bg-white"} py-2 px-3 rounded-lg gap-2`}>
                     <Icon size=14/>
                     <span class="text-[.9rem]">{title}</span>
                 </a>
@@ -65,14 +70,19 @@
     </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>
-        <div class="relative flex flex-col gap-3 items-center">
-            <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton>
-            <Avatar src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
-
-            <span class="text-[16px] text-[#112D4E] font-[900] ">{data.user.name}</span>
-            <span class="text-[12px] text-[#1D2D44]">{data.user.payroll}</span>
-            <span class="text-[12px] text-[#1D2D44]">{data.user.position}</span>
-            <span class="text-[12px] text-[#1D2D44]">{data.user.email}</span>
+        <div class="relative grid grid-cols-2 gap-3 items-center justify-center">
+            <!-- <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton> -->
+             <div class="flex flex-col items-center justify-center">
+                <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
+                <span>{data.user.name}</span>
+            </div>
+            <div class="flex flex-col">
+                <Timeline>
+                    <TimelineItem title={data.user.payroll} date="Payroll"/>
+                    <TimelineItem title={data.user.position} date="Position"/>
+                    <TimelineItem title={data.user.email} date="Email"/>
+                </Timeline>
+            </div>
         </div>
     </Modal>
 </div>

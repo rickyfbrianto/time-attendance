@@ -9,6 +9,7 @@
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
+    import bglogin from '@lib/assets/bg-login.jpg'
 
     const rowsPerPage = 10
 
@@ -203,6 +204,47 @@
         }
     }
 
+    // setting    
+    const formSettingState = $state({
+        answer:{
+            setting_id:"id",
+            start_periode:"",
+            end_periode:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        refresh:false,
+        add:false,
+        edit:false,
+    })
+    
+    const fetchData = async () =>{
+        const req = await fetch('/api/admin/setting')
+        const res = await req.json()
+        if(res){
+            formSettingState.answer.start_periode = res.start_periode
+            formSettingState.answer.end_periode = res.end_periode
+            return res
+        }
+    }
+    
+    const formSettingSubmit = async () =>{
+        try {
+            formSettingState.error = ""
+            formSettingState.loading = true
+            const req = await axios.post('/api/admin/setting', formSettingState.answer)
+            const res = await req.data
+            formSettingState.success = res.message
+        } catch (error: any) {
+            formSettingState.error = error.message
+            formSettingState.success = ""
+        } finally {
+            formSettingState.loading = false
+            formUserBatal()
+        }
+    }
+
     $effect(()=>{
         tableProfile.load(async(state: State) => {
             try {
@@ -228,10 +270,11 @@
             }
         })
     })
-    $effect(()=>{
+
+    setTimeout(()=>{
         tableProfile.invalidate()
         tableUser.invalidate()
-    })
+    }, 1000)
 </script>
 
 <svelte:head>
@@ -241,10 +284,13 @@
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
         <TabItem open title="Dashboard">
-            
+            <div class="relative flex items-center justify-center min-h-[50vh]" style={`background-image: url(${bglogin}); background-size: cover; background-position:center`}>
+                <!-- <img class="absolute" src={bglogin}/> -->
+                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Hallo ini halaman admin, be nice</span>
+            </div>
         </TabItem>
         <TabItem title="Profile">
-            <div class="flex flex-col gap-4">                
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">                
                 {#if formProfileState.error || formProfileState.success}
                     <Toast color="red">
                         {#if formProfileState.error}
@@ -256,7 +302,8 @@
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                <!-- <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500"> -->
+                <div class="flex flex-col gap-2">
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">                        
                             {#if formProfileState.add || formProfileState.edit}
@@ -350,28 +397,30 @@
                             <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                         </TableHead>
 
-                        <TableBody tableBodyClass="divide-y">
-                            {#if tableProfile.rows.length > 0}
-                                {#each tableProfile.rows as row}
-                                    <TableBodyRow>
-                                        <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.description}</TableBodyCell>
-                                        <TableBodyCell>{row.level}</TableBodyCell>
-                                        <TableBodyCell>{row.delegation}</TableBodyCell>
-                                        <TableBodyCell>
-                                            <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
-                                            <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
-                                        </TableBodyCell>
-                                    </TableBodyRow>
-                                {/each}
-                            {:else}
-                                <TableBodyRow>
-                                    <TableBodyCell colspan={4}>
-                                        {#if tableProfile.isLoading}Loading {:else}No data available{/if}
-                                    </TableBodyCell>
-                                </TableBodyRow>
-                            {/if}
-                        </TableBody>
+                        {#if tableProfile.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableProfile.rows.length > 0}
+                                    {#each tableProfile.rows as row}
+                                        <TableBodyRow>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{row.description}</TableBodyCell>
+                                            <TableBodyCell>{row.level}</TableBodyCell>
+                                            <TableBodyCell>{row.delegation}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
+                                                <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <span>No data available</span>
+                                {/if}
+                            </TableBody>
+                        {/if}
                     </Table>
                     {#if tableProfile.rows.length > 0}
                         <div class="flex justify-between items-center gap-2 mt-3">
@@ -394,7 +443,7 @@
             </div>
         </TabItem>
         <TabItem title="User">
-            <div class="flex flex-col gap-4">                
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
                 {#if formUserState.error || formUserState.success}
                     <Toast color="red">
                         {#if formUserState.error}
@@ -406,7 +455,7 @@
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                <div class="flex flex-col gap-2">
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">                        
                             {#if formUserState.add || formUserState.edit}
@@ -462,30 +511,32 @@
                             <ThSort table={tableUser} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                         </TableHead>
 
-                        <TableBody tableBodyClass="divide-y">
-                            {#if tableUser.rows.length > 0}
-                                {#each tableUser.rows as row}
-                                    <TableBodyRow>
-                                        <TableBodyCell>{row.payroll}</TableBodyCell>
-                                        <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.position}</TableBodyCell>
-                                        <TableBodyCell>{row.department}</TableBodyCell>
-                                        <TableBodyCell>{row.location}</TableBodyCell>
-                                        <TableBodyCell>{row.email}</TableBodyCell>
-                                        <TableBodyCell>
-                                            <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
-                                            <MyButton onclick={()=> formUserDelete(row.payroll)}><Trash size={12} /></MyButton>
-                                        </TableBodyCell>
-                                    </TableBodyRow>
-                                {/each}
-                            {:else}
-                                <TableBodyRow>
-                                    <TableBodyCell colspan={7}>
-                                        {#if tableUser.isLoading}Loading {:else}No data available{/if}
-                                    </TableBodyCell>
-                                </TableBodyRow>
-                            {/if}
-                        </TableBody>
+                        {#if tableUser.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableUser.rows.length > 0}
+                                    {#each tableUser.rows as row}
+                                        <TableBodyRow>
+                                            <TableBodyCell>{row.payroll}</TableBodyCell>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{row.position}</TableBodyCell>
+                                            <TableBodyCell>{row.department}</TableBodyCell>
+                                            <TableBodyCell>{row.location}</TableBodyCell>
+                                            <TableBodyCell>{row.email}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
+                                                <MyButton onclick={()=> formUserDelete(row.payroll)}><Trash size={12} /></MyButton>
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <span>No data available</span>
+                                {/if}
+                            </TableBody>
+                        {/if}
                     </Table>
                     {#if tableUser.rows.length > 0}
                     <div class="flex justify-between items-center gap-2 mt-3">
@@ -505,6 +556,38 @@
                     </div>
                     {/if}
                 </Datatable>
+            </div>
+        </TabItem>
+        <TabItem title="Setting">
+            <div class="flex flex-col gap-4">                
+                {#if formSettingState.error || formSettingState.success}
+                    <Toast color="red">
+                        <span class='flex gap-2'>
+                            {#if formSettingState.error}
+                            <Ban size={16} color="#d41c08" />
+                            {:else}
+                            <Check size={16} color="#08d42a" />
+                            {/if}
+                            {formSettingState.error || formSettingState.success}
+                        </span>
+                    </Toast>
+                {/if}
+
+                {#await fetchData()}
+                    <MyLoading message="Loading setting data"/>
+                {:then v}
+                    <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                        <div class="flex justify-between gap-2">
+                            <MyButton onclick={formSettingSubmit}><Save size={16}/></MyButton>
+                            <MyButton onclick={()=> fetchData()}><RefreshCw size={16}/></MyButton>
+                        </div>
+                    </div>
+
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white'>
+                        <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
+                        <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
+                    </form>
+                {/await}
             </div>
         </TabItem>
     </Tabs>

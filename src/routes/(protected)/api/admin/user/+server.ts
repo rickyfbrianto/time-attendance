@@ -6,9 +6,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET({url}){
-    const page = parseInt( url.searchParams.get('_page')) || 1
-    const limit = parseInt( url.searchParams.get('_limit')) || 10
-    const offset = parseInt(url.searchParams.get('_offset')) || (page - 1) * page
+    const page = Number(url.searchParams.get('_page')) || 1
+    const limit = Number( url.searchParams.get('_limit')) || 10
+    const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
     const sort = url.searchParams.get('_sort') ?? "payroll"
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
@@ -39,8 +39,11 @@ export async function GET({url}){
         })
 
         return {items, totalItems}
+    },{
+        maxWait: 5000,
+        timeout: 10000,
     })
-
+    
     return json(status)
 }
 

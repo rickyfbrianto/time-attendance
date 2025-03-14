@@ -104,7 +104,7 @@
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch('/api/attendance?req=tesa')
+                const req = await fetch(`/api/attendance?payroll=${data.user?.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -114,9 +114,10 @@
             }
         })
     })
-    $effect(()=>{
+    
+    setTimeout(()=>{
         tableAttendance.invalidate()
-    })
+    }, 1000)
 </script>
 
 <svelte:head>
@@ -124,17 +125,17 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4 gap-4">
-    <div class="flex flex-wrap justify-between bg-white rounded-lg p-4 gap-4 border border-slate-200">
+    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between bg-white rounded-lg p-4 gap-4 border border-slate-200">
         <div class="flex items-center gap-2">
             <Calendar size={24}/>
             <div class="flex flex-col">
                 <span class="font-bold">Today</span>
-                <span>1 Maret 2025</span>
+                <span>{new Date()}</span>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-4 ">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 items-center gap-4">
             {#each headerData as {type, title, value, icon: Icon, link}}
-                <a href={link} class="border border-slate-200 px-4 py-2 rounded-lg min-w-[8rem] md:min-w-[12rem] overflow-hidden overflow-ellipsis whitespace-nowrap">
+                <a href={link} class="border border-slate-200 px-4 py-2 rounded-lg  overflow-hidden overflow-ellipsis whitespace-nowrap">
                     <span class="text-[.9rem] font-semibold">{title}</span>
                     <div class="flex justify-between items-center gap-1">
                         <span class='text-[1.4rem]'>{value}</span>
@@ -148,11 +149,14 @@
     <Tabs>
         <TabItem open title="Dashboard">
             <div class="flex flex-col gap-4">
-                <span>Dashboard Page</span>
+                <div class="flex items-center justify-center min-h-[50vh]">
+                    <span>Dashboard Page</span>
+                </div>
             </div>
         </TabItem>
         <TabItem title="Attendance">
-            <div class="flex flex-col gap-4">                
+            <!-- <div class="flex flex-col gap-4"> -->
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
                 {#if formAttendance.error || formAttendance.success}
                     <Toast color="red">
                         {#if formAttendance.error}
@@ -164,7 +168,7 @@
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                <div class="flex flex-col gap-2">
                     <div class="flex justify-between gap-2">
                         <div class="flex gap-2">                        
                             {#if formAttendance.add || formAttendance.edit}
@@ -224,30 +228,32 @@
                             <ThSort table={tableAttendance} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                         </TableHead>
 
-                        <TableBody tableBodyClass="divide-y">
-                            {#if tableAttendance.rows.length > 0}
-                                {#each tableAttendance.rows as row}
-                                    <TableBodyRow>
-                                        <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.tanggal}</TableBodyCell>
-                                        <TableBodyCell>{row.type}</TableBodyCell>
-                                        <TableBodyCell>{row.description}</TableBodyCell>
-                                        <TableBodyCell>
-                                            {#if pecahArray(userProfile.access_attendance, "U")}
-                                                <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
-                                            {/if}
-                                            <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
-                                        </TableBodyCell>
-                                    </TableBodyRow>
-                                {/each}
-                            {:else}
-                                <TableBodyRow>
-                                    <TableBodyCell colspan={4}>
-                                        {#if tableAttendance.isLoading}Loading {:else}No data available{/if}
-                                    </TableBodyCell>
-                                </TableBodyRow>
-                            {/if}
-                        </TableBody>
+                        {#if tableAttendance.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableAttendance.rows.length > 0}
+                                    {#each tableAttendance.rows as row}
+                                        <TableBodyRow>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{row.tanggal}</TableBodyCell>
+                                            <TableBodyCell>{row.type}</TableBodyCell>
+                                            <TableBodyCell>{row.description}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {#if pecahArray(userProfile.access_attendance, "U")}
+                                                    <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
+                                                {/if}
+                                                <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <span>No data available</span>
+                                {/if}
+                            </TableBody>
+                        {/if}
                     </Table>
                     {#if tableAttendance.rows.length > 0}
                         <div class="flex justify-between items-center gap-2 mt-3">
