@@ -1,31 +1,33 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Toast, Badge, Select } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tabs, TabItem, Toast, Badge} from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
-	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Save, Search, Trash } from '@lucide/svelte';
+	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Minus, Pencil, Plus, RefreshCw, Save, Search, Trash } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
 	import { pecahArray } from '@lib/utils.js';
 	import { format } from 'date-fns';
 	import { getParams } from '@lib/data/api';
-    let {data} = $props()
+    let { data } = $props()
 
     const rowsPerPage = 10
     
     let tableSPL = $state(new TableHandler([], {rowsPerPage}))
     let tableSPLSearch = tableSPL.createSearch()
 
+    const formSPLAnswer = {
+        spl_id: "id",
+        payroll:"",
+        description:[''],
+        est_start:"",
+        est_end:"",
+        createdBy: data.user?.payroll            
+    }
+    
     let formSPL = $state({
-        answer: {
-            spl_id: "id",
-            payroll:"",
-            description:"",
-            datetime_start:"",
-            datetime_end:"",
-            createdBy: data.user?.payroll            
-        },
+        answer: {...formSPLAnswer},
         success:"",
         error:"",
         loading:false,
@@ -37,36 +39,37 @@
         try {
             formSPL.error = ""
             formSPL.loading = true
-            
-            if(formSPL.add){
-                const req = await axios.post('/api/lembur/spl', formSPL.answer)
-                const res = await req.data
-                formSPL.success = res.message
-            }else if(formSPL.edit){
-                const req = await axios.put('/api/attendance', formSPL.answer)
-                const res = await req.data
-                formSPL.success = res.message
-            }
+            const req = await axios.post('/api/lembur/spl', formSPL.answer)
+            const res = await req.data
+            formSPL.success = res.message
+            formSPLBatal()
         } catch (error: any) {
-            formSPL.error = error.message
+            formSPL.error = error.response.data.message
             formSPL.success = ""
         } finally {
             formSPL.loading = false
             tableSPL.invalidate()
-            formSPLBatal()
         }
     }
 
     const formSPLBatal = () =>{
-        Object.entries(formSPL.answer).forEach(val=>{
-            formSPL.answer[val[0]] = (typeof val[1] == "boolean" ? false : "")
-        })
+        formSPL.answer = {...formSPLAnswer}
         formSPL.add = false
         formSPL.edit = false
     }
     
-    const formSPLEdit = (id:string) =>{
-
+    const formSPLEdit = async (id:string) =>{
+        try {
+            formSPL.loading = true
+            const req = await axios.get(`/api/lembur/spl/${id}`)
+            const res = await req.data
+            formSPL.answer = {...res, description: res.spl_detail.map((val: {description:string}) => val.description)}
+            formSPL.edit = true
+            formSPL.add = false
+            formSPL.loading = false
+        } catch (error) {
+            formSPL.loading = false
+        }
     }
 
     const formSPLDelete = (id:string) =>{
@@ -74,7 +77,7 @@
     }
 
     $effect(()=>{
-        tableSPL.load(async (state:State) =>{
+        tableSPL.load(async (state:State) => {
             try {
                 const req = await fetch(`/api/lembur/spl?${getParams(state)}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -98,10 +101,10 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
     <Tabs class='bg-white'>
-        <TabItem open title="Dashboard">
+        <TabItem title="Dashboard">
             <span>Dashboard Page</span>
         </TabItem>
-        <TabItem title="Surat Perintah Lembur">
+        <TabItem open title="Surat Perintah Lembur">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
                 {#if formSPL.error || formSPL.success}
                     <Toast color="red">
@@ -142,19 +145,33 @@
                 </div>
 
                 {#if formSPL.loading}
-                    <MyLoading message="Get attendance data"/>
+                    <MyLoading message="Get SPL data"/>
                 {/if}
                 {#if formSPL.add || formSPL.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white' enctype="multipart/form-data">
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                             <MyInput type='text' title='Payroll' name="payroll" bind:value={formSPL.answer.payroll}/>
-                            <MyInput type='textarea' title='Description' name="description" bind:value={formSPL.answer.description}/>
-                            <MyInput type='datetime' title='Waktu Mulai' name="datetime_start" bind:value={formSPL.answer.datetime_start}/>
-                            <MyInput type='datetime' title='Waktu Selesai' name="datetime_end" bind:value={formSPL.answer.datetime_end}/>
+                            
+                            <MyInput type='datetime' title='Waktu Mulai' name="est_start" bind:value={formSPL.answer.est_start}/>
+                            <MyInput type='datetime' title='Waktu Selesai' name="est_end" bind:value={formSPL.answer.est_end}/>
                         </div>
-                        <span>User <Badge color='dark'>{data.user?.name}</Badge> </span>
-                        {JSON.stringify(formSPL.answer)}
+                        <div class="flex flex-col gap-2">
+                            {#each formSPL.answer.description as desc, i}
+                                <div class="flex items-end gap-2">
+                                    <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={formSPL.answer.description[i]}/>
+                                    <div class="flex flex-col gap-2">
+                                        {#if i == formSPL.answer.description.length - 1}
+                                            <MyButton className='self-start' onclick={()=>formSPL.answer.description.push('')}><Plus size={14} color='green' /></MyButton>
+                                        {/if}
+                                        {#if formSPL.answer.description.length > 1}
+                                            <MyButton className='self-start' onclick={()=> formSPL.answer.description.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
+                                        {/if}
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                        <span>User <Badge color='dark'>{formSPL.answer.createdBy}</Badge> </span>
                     </form>
                 {/if}
                 
@@ -163,10 +180,11 @@
                         <TableHead class="bg-slate-500" >
                             <ThSort table={tableSPL} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
                             <ThSort table={tableSPL} field="employee_payroll.name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="description"><TableHeadCell>description</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="datetime_start"><TableHeadCell>Datetime Start</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="datetime_end"><TableHeadCell>Datetime End</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            <ThSort table={tableSPL} field="est_start"><TableHeadCell>Datetime Start</TableHeadCell></ThSort>
+                            <ThSort table={tableSPL} field="est_end"><TableHeadCell>Datetime End</TableHeadCell></ThSort>
+                            {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
+                                <ThSort table={tableSPL} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            {/if}
                         </TableHead>
 
                         {#if tableSPL.isLoading}
@@ -180,17 +198,14 @@
                                         <TableBodyRow>
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
                                             <TableBodyCell>{row.employee_payroll.name}</TableBodyCell>
-                                            <TableBodyCell>{row.description}</TableBodyCell>
-                                            <TableBodyCell>{format(row.datetime_start, "dd-MM-yyyy HH:mm:ss")}</TableBodyCell>
-                                            <TableBodyCell>{format(row.datetime_end, "dd-MM-yyyy HH:mm:ss")}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if pecahArray(data.userProfile.access_spl, "U")}
-                                                <MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>
-                                                {/if}
-                                                {#if pecahArray(data.userProfile.access_spl, "D")}
-                                                <MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>
-                                                {/if}
-                                            </TableBodyCell>
+                                            <TableBodyCell>{format(row.est_start, "dd-MM-yyyy HH:mm:ss")}</TableBodyCell>
+                                            <TableBodyCell>{format(row.est_end, "dd-MM-yyyy HH:mm:ss")}</TableBodyCell>
+                                            {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
+                                                <TableBodyCell>
+                                                    {#if pecahArray(data.userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                    {#if pecahArray(data.userProfile.access_spl, "D")}<MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if}
+                                                </TableBodyCell>
+                                            {/if}
                                         </TableBodyRow>
                                     {/each}
                                 {:else}

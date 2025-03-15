@@ -40,20 +40,21 @@
     let tableAttendance = $state(new TableHandler([], {rowsPerPage}))
     let tableAttendanceSearch = tableAttendance.createSearch()
     
+    const formAttendanceAnswer = {
+        attendance_id: "id",
+        user_id_machine:"",
+        datetime:"",
+        type: "",
+        description: "",
+        attachment: [],
+        createdBy: data.user?.payroll || "",
+    }
+    
     let formAttendance = $state({
-        answer: {
-            attendance_id: "id",
-            user_id_machine:"",
-            datetime:"",
-            type: "",
-            description: "",
-            attachment: [],
-            createdBy: data.user?.payroll || "",
-        },
+        answer: {...formAttendanceAnswer},
         success:"",
         error:"",
         loading:false,
-        refresh:false,
         add:false,
         edit:false,
     })
@@ -88,9 +89,7 @@
     }
 
     const formAttendanceBatal = () =>{
-        Object.entries(formAttendance.answer).forEach(val=>{
-            formAttendance.answer[val[0]] = (typeof val[1] == "boolean" ? false : "")
-        })
+        formAttendance.answer = {...formAttendanceAnswer}
         formAttendance.add = false
         formAttendance.edit = false
     }

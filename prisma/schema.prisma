@@ -18,8 +18,8 @@ model employee {
   department                                      String       @db.VarChar(4)
   location                                        String       @db.VarChar(100)
   phone                                           String       @db.VarChar(13)
-  signature                                       String       @db.VarChar(250)
   workhour                                        Int          @default(8) @db.SmallInt
+  signature                                       String       @db.VarChar(250)
   attendance_attendance_createdByToemployee       attendance[] @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[] @relation("attendance_user_id_machineToemployee")
   check_io                                        check_io[]
@@ -94,23 +94,33 @@ model calendar {
 
 model setting {
   setting_id    String @id @db.VarChar(40)
-  start_periode Int    @default(17) @db.SmallInt
-  end_periode   Int    @default(16) @db.SmallInt
+  start_periode Int    @default(17) @db.TinyInt
+  end_periode   Int    @default(16) @db.TinyInt
 }
 
 model spl {
-  spl_id             String    @id @db.VarChar(40)
-  payroll            String?   @db.VarChar(8)
-  description        String    @db.Text
-  datetime_start     DateTime  @db.DateTime(0)
-  datetime_end       DateTime  @db.DateTime(0)
-  createdBy          String?   @db.VarChar(8)
-  createdAt          DateTime  @default(now()) @db.DateTime(0)
-  employee_createdBy employee? @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
-  employee_payroll   employee? @relation("spl_payrollToemployee", fields: [payroll], references: [payroll], map: "spl_payroll_by_fkey")
+  spl_id             String       @id @db.VarChar(40)
+  payroll            String?      @db.VarChar(8)
+  est_start          DateTime     @db.DateTime(0)
+  est_end            DateTime     @db.DateTime(0)
+  createdBy          String?      @db.VarChar(8)
+  createdAt          DateTime     @default(now()) @db.DateTime(0)
+  employee_createdBy employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
+  employee_payroll   employee?    @relation("spl_payrollToemployee", fields: [payroll], references: [payroll], map: "spl_payroll_by_fkey")
+  spl_detail         spl_detail[]
 
   @@index([createdBy], map: "createdBy")
   @@index([payroll], map: "payroll")
+}
+
+model spl_detail {
+  spl_detail_id String @id @db.VarChar(40)
+  step          Int    @db.TinyInt
+  spl_id        String @db.VarChar(40)
+  description   String @db.VarChar(255)
+  spl           spl    @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
+
+  @@index([spl_id], map: "spl_id")
 }
 
 enum profile_level {

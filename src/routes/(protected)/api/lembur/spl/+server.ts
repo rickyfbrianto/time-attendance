@@ -20,9 +20,8 @@ export async function GET({url}){
             select:{
                 spl_id:true,
                 payroll:true,
-                description:true,
-                datetime_start:true,
-                datetime_end:true,
+                est_start:true,
+                est_end:true,
                 employee_payroll:{
                     select:{
                         name:true
@@ -32,7 +31,6 @@ export async function GET({url}){
             where:{
                 OR:[
                     {payroll:{contains: search}},
-                    {description:{contains: search}},
                 ]
             },
             orderBy:{[sort]: order}
@@ -42,7 +40,6 @@ export async function GET({url}){
             where:{
                 OR:[
                     {payroll:{contains: search}},
-                    {description:{contains: search}},
                 ]
             },
         })
@@ -61,19 +58,74 @@ export async function POST({ request }) {
         const data = await request.json();
         const { isError, errorCount } = checkFieldKosong(data);
         if (isError) {
-            error(500, { message: `${errorCount} input masih kosong` });
+            throw new Error(`${errorCount} input masih kosong`)
         }
 
-        await prisma.spl.create({
-                data: { ...data, 
-                    spl_id: uuid4(),
-                    datetime_start: new Date(data.datetime_start),
-                    datetime_end: new Date(data.datetime_end),
-                },
+        data.description.forEach((val:string, i: number) => {
+            if(!val.trim()){
+                throw new Error(`Description ${i + 1} masih kosong`)
+            }
+        });
+        
+        const status = prisma.$transaction(async tx =>{
+            const getSPL = await tx.spl.findUnique({
+                where:{spl_id : data.spl_id}
             })
-        return json({ message: "Data successfully saved" });
-    } catch (err) {
+            const spl_id = uuid4()
+
+            if(!getSPL){
+                await tx.spl.create({
+                    data: {
+                        spl_id: spl_id,
+                        payroll: data.payroll,
+                        est_start: new Date(data.est_start),
+                        est_end: new Date(data.est_end),
+                        createdBy: data.createdBy
+                    },
+                })
+
+                await tx.spl_detail.createMany({
+                    data: data.description.map((val:string, i: number) => ({
+                        spl_detail_id: uuid4(),
+                        spl_id: spl_id,
+                        step: i,
+                        description: val
+                    }))
+                })
+            }else{
+                await tx.spl.update({
+                    data:{
+                        payroll: data.payroll,
+                        est_start: new Date(data.est_start),
+                        est_end: new Date(data.est_end),
+                    },
+                    where:{ spl_id: data.spl_id }
+                })
+
+                await tx.spl_detail.deleteMany({
+                    where : { spl_id: data.spl_id }
+                })
+
+                await tx.spl_detail.createMany({
+                    data: data.description.map((val:string, i: number) => 
+                        ({
+                            spl_detail_id: uuid4(),
+                            spl_id: data.spl_id,
+                            step: i,
+                            description: val
+                        })
+                    )
+                })
+            }
+            return { message: "Data successfully saved" }
+        }, {
+            maxWait: 5000,
+            timeout: 10000,
+        })
+
+        return json(status);
+    } catch (err:any) {
         console.log("err catch",err);
-        error(500, { message: prismaErrorHandler(err) });
+        error(500, err.message)
     }
 }

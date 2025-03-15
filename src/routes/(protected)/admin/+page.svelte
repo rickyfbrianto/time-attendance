@@ -16,32 +16,33 @@
     const urlMessage = $page.url.searchParams.get('message')
 
     const rowsPerPage = 10
-
+    
     let tableProfile = $state(new TableHandler([], {rowsPerPage}))
     let tableProfileSearch = tableProfile.createSearch()
     
+    const formProfilAnswer = {
+        profile_id: "id",
+        name: "",
+        description: "",
+        level: "",
+        user_hrd: false,
+        delegation: false,
+        access_sppd: "",
+        access_skpd: "",
+        access_attendance: "",
+        access_spl: "",
+        access_srl: "",
+        access_cuti: "",
+        access_calendar: "",
+        access_user: "",
+        access_profile: "",
+    }
+    
     let formProfileState = $state({
-        answer: {
-            profile_id: "id",
-            name: "",
-            description: "",
-            level: "",
-            user_hrd: false,
-            delegation: false,
-            access_sppd: "",
-            access_skpd: "",
-            access_attendance: "",
-            access_spl: "",
-            access_srl: "",
-            access_cuti: "",
-            access_calendar: "",
-            access_user: "",
-            access_profile: "",
-        },
+        answer: {...formProfilAnswer},
         success:"",
         error:"",
         loading:false,
-        refresh:false,
         add:false,
         edit:false,
     })
@@ -89,9 +90,7 @@
     }
 
     const formProfileBatal = () =>{
-        Object.entries(formProfileState.answer).forEach(val=>{
-            formProfileState.answer[val[0]] = (typeof val[1] == "boolean" ? false : "")
-        })
+        formProfileState.answer = {...formProfilAnswer}
         formProfileState.add = false
         formProfileState.edit = false
     }
@@ -125,24 +124,25 @@
     let tableUser = $state(new TableHandler([], {rowsPerPage}))
     let tableUserSearch = tableProfile.createSearch()
     
+    const formUserAnswer = {
+        payroll:"",
+        profile_id:"",
+        user_id_machine:"",
+        name:"",
+        password:"",
+        position:"",
+        department:"",
+        location:"",
+        phone:"",
+        email:"",
+        signature:"",
+    }
+    
     const formUserState = $state({
-        answer:{
-            payroll:"",
-            profile_id:"",
-            user_id_machine:"",
-            name:"",
-            password:"",
-            position:"",
-            department:"",
-            location:"",
-            phone:"",
-            email:"",
-            signature:"",
-        },
+        answer: {...formUserAnswer},
         success:"",
         error:"",
         loading:false,
-        refresh:false,
         add:false,
         edit:false,
     })
@@ -185,9 +185,7 @@
     }
 
     const formUserBatal = () =>{
-        Object.entries(formUserState.answer).forEach(val=>{
-            formUserState.answer[val[0]] = (typeof val[1] == "string" ? "" : "")
-        })
+        formUserState.answer = {...formUserAnswer}
         formUserState.add = false
         formUserState.edit = false
     }
@@ -218,7 +216,6 @@
         success:"",
         error:"",
         loading:false,
-        refresh:false,
         add:false,
         edit:false,
     })

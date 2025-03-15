@@ -22,7 +22,6 @@ export async function POST({request}){
         const { isError, errorCount } = checkFieldKosong(data);
         if (isError) {
             throw new Error(`${errorCount} input masih kosong`)
-            // error(500, { message: `${errorCount} input masih kosong` });
         }
 
         const status = await prisma.$transaction(async tx => {
@@ -49,8 +48,7 @@ export async function POST({request}){
 
         return json(status);
     } catch (err:any) {
-        error(500, err.message)
         console.log("err catch",err);
-        error(500, { message: prismaErrorHandler(err) });
+        error(500, err.message)
     }
 }
