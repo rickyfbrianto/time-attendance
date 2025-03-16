@@ -4,9 +4,10 @@
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
     import {dataSample } from '@lib/store/appstore'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import MyButton from '@/MyButton.svelte';
-	import MyLoading from '@/MyLoading.svelte';
-	import MyInput from '@/MyInput.svelte';
+	import MyButton from '@lib/components/MyButton.svelte';
+	import MyLoading from '@lib/components/MyLoading.svelte';
+	import MyInput from '@lib/components/MyInput.svelte';
+	import MyTabs from '@lib/components/MyTabs.svelte';
 	import { pecahArray } from '@lib/utils';
 	import axios from 'axios';
     import { format } from "date-fns";
@@ -67,24 +68,31 @@
             Object.entries(formAttendance.answer).forEach(val=>{
                 formData.append(val[0], val[1])
             })
+            formData.set("datetime", new Date(formData.get('datetime')).toLocaleString())
             formData.set("createdBy","202207")
+            console.log(formData.get('datetime'))
             
             if(formAttendance.add){
-                const req = await axios.post('/api/attendance', formData)
-                const res = await req.data
+                // const req = await axios.post('/api/attendance', formData)
+                // const res = await req.data
+                const req = await fetch('/api/attendance', {
+                    method:"POST",
+                    body: formData,
+                })
+                const res = await req.json()
                 formAttendance.success = res.message
             }else if(formAttendance.edit){
                 const req = await axios.put('/api/attendance', formData)
                 const res = await req.data
                 formAttendance.success = res.message
             }
+            formAttendanceBatal()
         } catch (error: any) {
             formAttendance.error = error.message
             formAttendance.success = ""
         } finally {
             formAttendance.loading = false
             tableAttendance.invalidate()
-            formAttendanceBatal()
         }
     }
 
@@ -125,8 +133,8 @@
     <title>Attendance</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4 gap-4">
-    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between bg-white rounded-lg p-4 gap-4 border border-slate-200">
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
         <div class="flex items-center gap-2">
             <Calendar size={24}/>
             <div class="flex flex-col">
@@ -136,7 +144,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 items-center gap-4">
             {#each headerData as {type, title, value, icon: Icon, link}}
-                <a href={link} class="border border-slate-200 px-4 py-2 rounded-lg  overflow-hidden overflow-ellipsis whitespace-nowrap">
+                <a href={link} class="border-[2px] border-slate-200 px-4 py-2 rounded-lg  overflow-hidden overflow-ellipsis whitespace-nowrap">
                     <span class="text-[.9rem] font-semibold">{title}</span>
                     <div class="flex justify-between items-center gap-1">
                         <span class='text-[1.4rem]'>{value}</span>
@@ -147,16 +155,14 @@
         </div>
     </div>
 
-    <Tabs>
+    <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center justify-center min-h-[50vh]">
-                    <span>Dashboard Page</span>
-                </div>
+            <div class="flex justify-center items-center gap-4 min-h-[50vh]">
+                <span>Dashboard Page</span>
             </div>
         </TabItem>
         <TabItem title="Attendance">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formAttendance.error || formAttendance.success}
                     <Toast color="red">
                         {#if formAttendance.error}
@@ -170,7 +176,7 @@
 
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">                        
+                        <div class="flex gap-2">
                             {#if formAttendance.add || formAttendance.edit}
                                 {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
                                     <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>
@@ -182,15 +188,15 @@
                                 {/if}
                             {/if}
                         </div>
-                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableAttendanceSearch.value}/>
-                        <MyButton onclick={()=>tableAttendanceSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyInput type='text' bind:value={tableAttendanceSearch.value}/>
+                        <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
                 </div>
@@ -199,7 +205,7 @@
                     <MyLoading message="Get attendance data"/>
                 {/if}
                 {#if formAttendance.add || formAttendance.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white' enctype="multipart/form-data">
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                             <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
@@ -214,17 +220,18 @@
                             <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
                         </div>
                         <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
-                        <span>User <Badge color='dark'>{data.user.name}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
                     </form>
                 {/if}
                 
                 <Datatable table={tableAttendance}>
                     <Table>
-                        <TableHead class="bg-slate-500" >
+                        <TableHead>
                             <ThSort table={tableAttendance} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="delegation"><TableHeadCell>Delegation</TableHeadCell></ThSort>
+                            <ThSort table={tableAttendance} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
+                            <ThSort table={tableAttendance} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
+                            <ThSort table={tableAttendance} field="type"><TableHeadCell>Type</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                         </TableHead>
 
@@ -239,8 +246,18 @@
                                         <TableBodyRow>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{row.tanggal}</TableBodyCell>
-                                            <TableBodyCell>{row.type}</TableBodyCell>
-                                            <TableBodyCell>{row.description}</TableBodyCell>
+                                            <TableBodyCell>{row.check_in ?? "-"}</TableBodyCell>
+                                            <TableBodyCell>{row.check_out ?? "-"}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {
+                                                row.type == "CI" ? "Check In" :
+                                                row.type == "CO" ? "Check Out" :
+                                                row.type == "BI" ? "Break In" :
+                                                row.type == "BO" ? "Break Out" : 
+                                                row.type == "M" ? "Mangkir" : 
+                                                row.type == "I" ? "Ijin" : 
+                                                row.type == "C" ? "Cuti" :""}
+                                            </TableBodyCell>
                                             <TableBodyCell>
                                                 {#if pecahArray(userProfile.access_attendance, "U")}
                                                     <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
@@ -257,7 +274,7 @@
                     </Table>
                     {#if tableAttendance.rows.length > 0}
                         <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
+                            <p class='text-textdark self-end text-[.9rem]'>
                                 Showing {tableAttendance.rowCount.start} to {tableAttendance.rowCount.end} of {tableAttendance.rowCount.total} rows
                                 <Badge color="dark">Page {tableAttendance.currentPage}</Badge>
                             </p>
@@ -265,7 +282,7 @@
                                 <MyButton onclick={()=> tableAttendance.setPage(1)}><ChevronFirst size={16} /></MyButton>
                                 <MyButton onclick={()=> tableAttendance.setPage('previous')}><ChevronLeft size={16} /></MyButton>
                                 {#each tableAttendance.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableAttendance.setPage(page)} type="button">{page}</MyButton>
+                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableAttendance.setPage(page)} type="button">{page}</MyButton>
                                 {/each}
                                 <MyButton onclick={()=> tableAttendance.setPage('next')}><ChevronRight size={16} /></MyButton>
                                 <MyButton onclick={()=> tableAttendance.setPage('last')}><ChevronLast size={16} /></MyButton>
@@ -277,8 +294,8 @@
         </TabItem>
         <TabItem title="Attendance Log">
             <div class="flex flex-col gap-4">
-                <Table class="bg-black" hoverable={true}>
-                    <TableHead class="bg-slate-200" >
+                <Table hoverable={true}>
+                    <TableHead>
                         <TableHeadCell>Product name</TableHeadCell>
                         <TableHeadCell defaultSort sort={(a:{maker:string}, b:{maker:string}) => a.maker.localeCompare(b.maker)}>Color</TableHeadCell>
                         <TableHeadCell>Category</TableHeadCell>
@@ -298,7 +315,4 @@
             </div>
         </TabItem>
     </Tabs>
-    <div class="flex flex-col bg-white rounded-lg p-4">
-        
-    </div>
 </main>

@@ -1,6 +1,14 @@
 import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
+import { PrismaClient } from '@prisma/client';
+
+export const prisma = new PrismaClient({
+    transactionOptions:{
+        maxWait:5000,
+        timeout: 10000
+    }
+})
 
 interface PesanProps{
     message: string;
@@ -97,16 +105,12 @@ export function prismaErrorHandler(error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         switch (error.code) {
             case 'P2002':
-                // return { error: 'Data sudah ada (duplikat)', status: 400 };
                 return 'Data sudah ada (duplikat)'
             case 'P2025':
-                // return { error: 'Data tidak ditemukan', status: 404 };
                 return 'Data tidak ditemukan'
             case 'P2003':
-                // return { error: 'Foreign key tidak valid', status: 400 };
                 return 'Foreign key tidak valid'
             default:
-                // return { error: 'Kesalahan database', status: 500 };
                 return  'Kesalahan database'
         }
     }

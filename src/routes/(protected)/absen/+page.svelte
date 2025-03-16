@@ -8,6 +8,7 @@
     import MyButton from '@lib/components/MyButton.svelte'
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';
+	import MyInput from '@/MyInput.svelte';
     let {data} = $props()
     
     let openRow: number[] = $state([]) 
@@ -61,28 +62,28 @@
     <title>Check In & Out</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">    
-    <Tabs>
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+    <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="My Absent">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">                
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between gap-2">
-                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableAbsenSearch.value}/>
-                        <MyButton onclick={()=>tableAbsenSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyInput type='text' bind:value={tableAbsenSearch.value}/>
+                        <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableAbsen.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
                 </div>
                 
                 <Datatable table={tableAbsen}>
                     <Table>
-                        <TableHead class="bg-slate-500" >
+                        <TableHead>
                             <ThSort table={tableAbsen} field="name"><TableHeadCell>Payroll</TableHeadCell></ThSort>
                             <ThSort table={tableAbsen} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                             <ThSort table={tableAbsen} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
@@ -133,25 +134,25 @@
             </div>
         </TabItem>
         <TabItem title="Departement">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between gap-2">
-                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableAbsenDeptSearch.value}/>
-                        <MyButton onclick={()=>tableAbsenDeptSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyInput type='text' bind:value={tableAbsenDeptSearch.value}/>
+                        <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableAbsenDept.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
                 </div>
                 
                 <Datatable table={tableAbsenDept}>
                     <Table>
-                        <TableHead class="bg-slate-500" >
+                        <TableHead>
                             <ThSort table={tableAbsenDept} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
                             <ThSort table={tableAbsenDept} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                             <ThSort table={tableAbsenDept} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>

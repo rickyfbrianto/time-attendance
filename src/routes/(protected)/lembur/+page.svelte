@@ -99,13 +99,15 @@
     <title>Lembur</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
-    <Tabs class='bg-white'>
-        <TabItem title="Dashboard">
-            <span>Dashboard Page</span>
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+    <Tabs contentClass='bg-bgdark' tabStyle="underline">
+        <TabItem open title="Dashboard">
+            <div class="flex justify-center items-center gap-4 min-h-[50vh]">
+                <span>Dashboard Page</span>
+            </div>
         </TabItem>
-        <TabItem open title="Surat Perintah Lembur">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
+        <TabItem title="Surat Perintah Lembur">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if formSPL.error || formSPL.success}
                     <Toast color="red">
                         {#if formSPL.error}
@@ -131,15 +133,15 @@
                                 {/if}
                             {/if}
                         </div>
-                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableSPLSearch.value}/>
-                        <MyButton onclick={()=>tableSPLSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyInput type='text' bind:value={tableSPLSearch.value}/>
+                        <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
                 </div>
@@ -148,7 +150,7 @@
                     <MyLoading message="Get SPL data"/>
                 {/if}
                 {#if formSPL.add || formSPL.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white' enctype="multipart/form-data">
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                             <MyInput type='text' title='Payroll' name="payroll" bind:value={formSPL.answer.payroll}/>

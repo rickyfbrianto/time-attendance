@@ -1,10 +1,8 @@
 import {json} from '@sveltejs/kit'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@lib/utils.js'
 
 export async function GET({params}){
-    const {id} = await params
+    const {id} = params
     const req = await prisma.profile.findUnique({
         where:{profile_id:id}
     })
@@ -13,7 +11,7 @@ export async function GET({params}){
 
 export async function DELETE({params}){
     try {
-        const {id} = await params
+        const {id} = params
         await prisma.profile.delete({
             where:{profile_id:id}
         })

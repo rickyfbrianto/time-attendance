@@ -1,7 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from '@lib/utils.js'
 
 export async function GET({params}){
     const {id} = params
@@ -11,6 +9,7 @@ export async function GET({params}){
             payroll: true,
             est_start: true,
             est_end: true,
+            createdBy:true,
             spl_detail: {
                 select: { 
                     description : true,

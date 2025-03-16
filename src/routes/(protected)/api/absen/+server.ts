@@ -1,7 +1,5 @@
 import {json} from '@sveltejs/kit'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@lib/utils.js'
 
 export async function GET({url}){
     try {
@@ -40,9 +38,6 @@ export async function GET({url}){
                 GROUP BY att.user_id_machine, DATE_FORMAT(datetime, '%Y-%m-%d')) as tmp`)
             const totalItems = Number(tempTotal[0].count)
             return {items, totalItems}
-        },{
-            maxWait: 5000,
-            timeout: 10000,
         })
                 
         return json(status)

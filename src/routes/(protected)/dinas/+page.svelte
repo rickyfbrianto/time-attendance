@@ -7,10 +7,12 @@
     <title>Dinas</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
-    <Tabs class='bg-white'>
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+    <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
-            <span>Dashboard Page</span>
+            <div class="flex justify-center items-center gap-4 min-h-[50vh]">
+                <span>Dashboard Page</span>
+            </div>
         </TabItem>
         <TabItem title="SPPD">
             <div class="flex flex-col gap-4">

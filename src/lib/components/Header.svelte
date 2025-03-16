@@ -1,6 +1,6 @@
 <script lang='ts'>
     import MyButton from '@lib/components/MyButton.svelte'
-    import {AlignJustify, Check, LogOut } from '@lucide/svelte'
+    import {AlignJustify, Check, Eclipse, LogOut, Moon, Sun } from '@lucide/svelte'
 	import { Alert, Modal, Breadcrumb, BreadcrumbItem } from 'flowbite-svelte';
     import { appstore } from "@lib/store/appstore";
 	import { goto } from '$app/navigation';
@@ -27,21 +27,43 @@
             goto('/signin')
         }, 1000)
     }
+
+    const setDarkMode = (val:boolean) =>{
+        appstore.update(state => ({...state, darkMode: val}))
+        if($appstore.darkMode){
+            document.documentElement.classList.add('dark');
+        }else{
+            document.documentElement.classList.remove('dark');
+        }
+    }
 </script>
 
-<div class="flex justify-between items-center min-h-[var(--ukuran7)] w-full border-b-[2px] border-b-[#A0B3C1] px-4 bg-[--warna-base2] bg-white shadow-md">
+<div class="flex justify-between items-center min-h-[var(--ukuran7)] w-full border-b-[2px] border-b-[#A0B3C1] px-4 bg-bgdark">
     <div class="flex gap-x-4">
-        <Breadcrumb aria-label="Solid background breadcrumb example" solid>
-            <button class='' onclick={()=> appstore.update(state => ({...state, showSidebar : !state.showSidebar}))}>
+        <Breadcrumb aria-label="Solid background breadcrumb example" solid class='text-textdark'>
+            <button class='text-textdark' onclick={()=> appstore.update(state => ({...state, showSidebar : !state.showSidebar}))}>
                 <AlignJustify class='cursor-pointer'/>
             </button>
-            <BreadcrumbItem href="/dashboard" home>Dashboard</BreadcrumbItem>
+            <BreadcrumbItem href="/dashboard" home homeClass='flex items-center text-textdark ms-2 '><span class="text-textdark text-sm">Dashboard</span></BreadcrumbItem>
             {#each pathname as val}
-                <BreadcrumbItem class='capitalize' href={val}>{val}</BreadcrumbItem>
+                <BreadcrumbItem class='capitalize' href={val}><span class="text-textdark text-sm">{val}</span></BreadcrumbItem>
             {/each}
         </Breadcrumb>
     </div>
     
+    <div class="flex gap-4 items-center text-textdark">
+        {#if $appstore.darkMode}
+            <MyButton onclick={()=> setDarkMode(false)}>
+                <Eclipse size={16} />
+            </MyButton>
+        {:else}
+            <MyButton onclick={()=> setDarkMode(true)}>
+                <Moon size={16} />
+            </MyButton>
+        {/if}
+        <MyButton className='bg-bgdark text-textdark' onclick={()=> logoutState.modal = true}><LogOut size={16}/></MyButton>
+    </div>
+
     <Modal title="Logout" bind:open={logoutState.modal}>
         <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Are you sure want logout?</p>
         {#if logoutState.message}
@@ -54,6 +76,4 @@
             <MyButton disabled={logoutState.loading} onclick={() => handleLogout()}>Yes, log me out</MyButton>
         </svelte:fragment>
     </Modal>
-    
-    <MyButton onclick={()=> logoutState.modal = true}><LogOut color={'red'} size={16}/></MyButton>
 </div>

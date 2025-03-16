@@ -1,11 +1,9 @@
 import { checkFieldKosong, prismaErrorHandler } from '@lib/utils';
 import { error, json } from '@sveltejs/kit'
-import { PrismaClient } from '@prisma/client';
 import { v4 as uuid4 } from 'uuid';
+import { prisma } from '@lib/utils.js'
 
-const prisma = new PrismaClient()
-
-export async function GET({request}){
+export async function GET(){
     try {
         const data = await prisma.setting.findFirst()
         return json(data)
@@ -41,9 +39,6 @@ export async function POST({request}){
             }
 
             return {message: getSetting ? "Data successfully updated":"Data successfully saved"}
-        },{
-            maxWait: 5000,
-            timeout: 10000,
         })
 
         return json(status);

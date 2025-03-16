@@ -1,10 +1,8 @@
 import {json} from '@sveltejs/kit'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@lib/utils.js'
 
 export async function GET({params}){
-    const {id} = await params
+    const {id} = params
     const req = await prisma.employee.findUnique({
         where:{payroll:id},
         omit:{password:true}
@@ -14,7 +12,7 @@ export async function GET({params}){
 
 export async function DELETE({params}){
     try {
-        const {id} = await params
+        const {id} = params
         await prisma.employee.delete({
             where:{payroll:id}
         })

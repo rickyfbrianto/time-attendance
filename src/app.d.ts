@@ -7,9 +7,10 @@ declare global {
             id?: string
         }
 		interface Locals {
+			// user: string,
             user: {
 				payroll:string
-			} | null,
+			} | null | string,
             userProfile: {
 				access_attendance:string,
 			} | null | string | any,

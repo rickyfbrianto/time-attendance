@@ -5,12 +5,16 @@
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from '@lucide/svelte'
-    import {ListAccess, ListLevel} from '@lib/utils'
+    import {ListAccess, ListLevel, pecahArray} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
     import bglogin from '@lib/assets/bg-login.jpg'
     import { page } from '$app/stores';
+    
+    let {data} = $props()
+    
+    console.log(data.userProfile)
     
     const urlTab = $page.url.searchParams.get('tab')
     const urlMessage = $page.url.searchParams.get('message')
@@ -282,174 +286,174 @@
     <title>Admin Page</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-4">
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
     {#if urlTab}
-    <Toast class='my-2'>
-        {urlMessage}
-    </Toast>
+        <Toast class='my-2'>
+            {urlMessage}
+        </Toast>
     {/if}
-    <Tabs class='bg-white'>
+    <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[50vh]" style={`background-image: url(${bglogin}); background-size: cover; background-position:center`}>
-                <!-- <img class="absolute" src={bglogin}/> -->
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Hallo ini halaman admin, be nice</span>
             </div>
         </TabItem>
-        <TabItem title="Profile">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">                
-                {#if formProfileState.error || formProfileState.success}
-                    <Toast color="red">
-                        {#if formProfileState.error}
-                        <Ban size={16} color="#d41c08" />
-                        {:else}
-                        <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formProfileState.error || formProfileState.success}
-                    </Toast>
-                {/if}
-
-                <!-- <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500"> -->
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">                        
-                            {#if formProfileState.add || formProfileState.edit}
-                                <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
-                                <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
+        {#if pecahArray(data.userProfile.access_profile, "R")}
+            <TabItem title="Profile">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
+                    {#if formProfileState.error || formProfileState.success}
+                        <Toast color="red">
+                            {#if formProfileState.error}
+                            <Ban size={16} color="#d41c08" />
                             {:else}
-                                <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                            <Check size={16} color="#08d42a" />
                             {/if}
-                        </div>
-                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableProfileSearch.value}/>
-                        <MyButton onclick={()=>tableProfileSearch.set()} className='bg-white'><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
-                </div>
-
-                {#if formProfileState.loading}
-                    <MyLoading message="Get profile data"/>
-                {/if}
-                {#if formProfileState.add || formProfileState.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white'>                       
-                        <input type='hidden' name="profile_id" disabled={formProfileState.edit} bind:value={formProfileState.answer.profile_id}/>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div class="flex flex-col gap-4 flex-1">
-                                <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
-                                <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
-                                <Checkbox bind:checked={formProfileState.answer.delegation as unknown as boolean}>Delegation</Checkbox>
-                            </div>
-                            <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
-                        </div>
-                        
-                        <div class="flex flex-col gap-2">
-                            <Label for='level'>Level</Label>
-                            <Select name='level' items={ListLevel} bind:value={formProfileState.answer.level} />
-                        </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <div class="flex flex-col gap-2">
-                                <Label>Access SPPD</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_sppd} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access SKPD</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_skpd} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access Attendance</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_attendance} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access SPL</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_spl} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access SRL</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_srl} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access Cuti</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_cuti} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access Calendar</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_calendar} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access User</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_user} />
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <Label>Access Profile</Label>
-                                <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_profile} />
-                            </div>
-                        </div>
-                    </form>
-                {/if}
-                
-                <Datatable table={tableProfile}>
-                    <Table>
-                        <TableHead class="bg-slate-500" >
-                            <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
-                            <ThSort table={tableProfile} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
-                            <ThSort table={tableProfile} field="delegation"><TableHeadCell>Delegation</TableHeadCell></ThSort>
-                            <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
-                        </TableHead>
-
-                        {#if tableProfile.isLoading}
-                            <div class="flex p-4 items-center">
-                                <MyLoading message="Loading data"/>
-                            </div>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
-                                {#if tableProfile.rows.length > 0}
-                                    {#each tableProfile.rows as row}
-                                        <TableBodyRow>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{row.description}</TableBodyCell>
-                                            <TableBodyCell>{row.level}</TableBodyCell>
-                                            <TableBodyCell>{row.delegation}</TableBodyCell>
-                                            <TableBodyCell>
-                                                <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
-                                                <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
-                                            </TableBodyCell>
-                                        </TableBodyRow>
-                                    {/each}
-                                {:else}
-                                    <span>No data available</span>
-                                {/if}
-                            </TableBody>
-                        {/if}
-                    </Table>
-                    {#if tableProfile.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
-                                Showing {tableProfile.rowCount.start} to {tableProfile.rowCount.end} of {tableProfile.rowCount.total} rows
-                                <Badge color="dark" border>Page {tableProfile.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableProfile.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableProfile.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableProfile.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableProfile.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableProfile.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableProfile.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
+                            {formProfileState.error || formProfileState.success}
+                        </Toast>
                     {/if}
-                </Datatable>
-            </div>
-        </TabItem>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between gap-2">
+                            <div class="flex gap-2">                        
+                                {#if formProfileState.add || formProfileState.edit}
+                                    <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
+                                    <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
+                                {:else}
+                                    <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                                {/if}
+                            </div>
+                            <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
+                                {#each [10, 20, 50, 100] as option}
+                                    <option value={option}>{option}</option>
+                                {/each}
+                            </select>
+                        </div>
+                        <div class="flex gap-2">
+                            <MyInput type='text' bind:value={tableProfileSearch.value}/>
+                            <MyButton onclick={()=>tableProfileSearch.set()}><Search size={16} /></MyButton>
+                            <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
+                        </div>
+                    </div>
+
+                    {#if formProfileState.loading}
+                        <MyLoading message="Get profile data"/>
+                    {/if}
+                    {#if formProfileState.add || formProfileState.edit}
+                        <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                            <input type='hidden' name="profile_id" disabled={formProfileState.edit} bind:value={formProfileState.answer.profile_id}/>
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="flex flex-col gap-4 flex-1">
+                                    <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
+                                    <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
+                                    <Checkbox bind:checked={formProfileState.answer.delegation as unknown as boolean}>Delegation</Checkbox>
+                                </div>
+                                <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2">
+                                <Label for='level'>Level</Label>
+                                <Select name='level' items={ListLevel} bind:value={formProfileState.answer.level} />
+                            </div>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access SPPD</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_sppd} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access SKPD</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_skpd} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access Attendance</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_attendance} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access SPL</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_spl} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access SRL</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_srl} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access Cuti</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_cuti} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access Calendar</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_calendar} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access User</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_user} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access Profile</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_profile} />
+                                </div>
+                            </div>
+                        </form>
+                    {/if}
+                    
+                    <Datatable table={tableProfile}>
+                        <Table>
+                            <TableHead>
+                                <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field="delegation"><TableHeadCell>Delegation</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            </TableHead>
+
+                            {#if tableProfile.isLoading}
+                                <div class="flex p-4 items-center">
+                                    <MyLoading message="Loading data"/>
+                                </div>
+                            {:else}
+                                <TableBody tableBodyClass="divide-y">
+                                    {#if tableProfile.rows.length > 0}
+                                        {#each tableProfile.rows as row}
+                                            <TableBodyRow>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{row.description}</TableBodyCell>
+                                                <TableBodyCell>{row.level}</TableBodyCell>
+                                                <TableBodyCell>{row.delegation}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
+                                                    <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
+                                                </TableBodyCell>
+                                            </TableBodyRow>
+                                        {/each}
+                                    {:else}
+                                        <span>No data available</span>
+                                    {/if}
+                                </TableBody>
+                            {/if}
+                        </Table>
+                        {#if tableProfile.rows.length > 0}
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-muted self-end text-[.9rem]'>
+                                    Showing {tableProfile.rowCount.start} to {tableProfile.rowCount.end} of {tableProfile.rowCount.total} rows
+                                    <Badge color="dark" border>Page {tableProfile.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableProfile.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableProfile.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableProfile.pages as page}
+                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableProfile.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableProfile.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableProfile.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
+                            </div>
+                        {/if}
+                    </Datatable>
+                </div>
+            </TabItem>
+        {/if}
         <TabItem title="User">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 bg-white rounded-lg ">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if formUserState.error || formUserState.success}
                     <Toast color="red">
                         {#if formUserState.error}
@@ -471,15 +475,15 @@
                                 <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
                             {/if}
                         </div>
-                        <select class='self-end border-slate-300 rounded-lg ring-0' bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <input class='flex-1 rounded-lg border border-slate-300 ring-0' bind:value={tableUserSearch.value}/>
-                        <MyButton onclick={()=>tableUserSearch.set()} className='bg-white'><Search size={16} /></MyButton>
+                        <MyInput type='text' bind:value={tableUserSearch.value}/>
+                        <MyButton onclick={()=>tableUserSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableUser.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
                 </div>
@@ -488,7 +492,7 @@
                     <MyLoading message="Get user data"/>
                 {/if}
                 {#if formUserState.add || formUserState.edit}
-                    <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg bg-white'>
+                    <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
                         <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
                         <MyInput type='text' title='Profile ID' name="profile_id" bind:value={formUserState.answer.profile_id}/>
                         <MyInput type='text' title='Card Number' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
@@ -507,7 +511,7 @@
 
                 <Datatable table={tableUser}>
                     <Table>
-                        <TableHead class="bg-slate-500" >
+                        <TableHead>
                             <ThSort table={tableUser} field="payroll"><TableHeadCell>Profile ID</TableHeadCell></ThSort>
                             <ThSort table={tableUser} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                             <ThSort table={tableUser} field="position"><TableHeadCell>Position</TableHeadCell></ThSort>
@@ -582,14 +586,14 @@
                 {#await fetchData()}
                     <MyLoading message="Loading setting data"/>
                 {:then v}
-                    <div class="flex flex-col gap-2 bg-white rounded-lg p-4 border-slate-500">
+                    <div class="flex flex-col gap-2 rounded-lg p-4 border-[2px] border-slate-300">
                         <div class="flex justify-between gap-2">
                             <MyButton onclick={formSettingSubmit}><Save size={16}/></MyButton>
                             <MyButton onclick={()=> fetchData()}><RefreshCw size={16}/></MyButton>
                         </div>
                     </div>
 
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg bg-white'>
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
                         <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
                         <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
                     </form>

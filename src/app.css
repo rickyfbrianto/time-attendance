@@ -17,6 +17,22 @@
   --color-primary-700: #eb4f27;
   --color-primary-800: #cc4522;
   --color-primary-900: #a5371b;
+
+  --color-bgdark: #FFF;
+  --color-textdark: var(--color-slate-800);
+  --color-bgside: var(--warna-base);
+  --color-bgside2: #FFF;
+  --color-textside: var(--color-slate-700);
+}
+
+@layer theme {
+  .dark {
+    --color-bgdark: var(--color-slate-800);
+    --color-textdark: #FFF;
+    --color-bgside: var(--color-slate-800);
+    --color-bgside2: var(--color-slate-600);
+    --color-textside: var(--color-slate-300);
+  }
 }
 
 :root{
@@ -52,7 +68,12 @@
     --ukuran30: 16.5rem;
 
     --warna-base: #F0EBD8;
+    /* --warna-base: #fff; */
     --warna-base2: #add;
+}
+
+body * {
+  @apply transition-colors duration-100;
 }
 
 @source "../node_modules/flowbite-svelte/dist";

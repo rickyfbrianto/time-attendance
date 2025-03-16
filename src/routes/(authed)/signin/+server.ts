@@ -1,13 +1,11 @@
 import { decryptData } from '@lib/utils'
 import {error, json} from '@sveltejs/kit'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@lib/utils.js'
 import jwt from 'jsonwebtoken';
 
 export async function POST({ cookies, request}){
     try {
-        let {payroll, password} = await request.json()
-
-        const prisma = new PrismaClient()
+        let {payroll, password, remember_me} = await request.json()
         const data = await prisma.employee.findUnique({
             select:{payroll:true, password:true},
             where:{ payroll },
@@ -15,7 +13,7 @@ export async function POST({ cookies, request}){
 
         if(data){
             if(password === decryptData(data.password, import.meta.env.VITE_KEY)){
-                const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: '1d' })
+                const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: remember_me ? "1d" : '1h' })
                 cookies.set("token", token, {
                     path:"/",
                     httpOnly:true

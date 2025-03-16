@@ -3,22 +3,21 @@
 	import MyButton from '@/MyButton.svelte';
     import {fade} from 'svelte/transition'
 	import axios from 'axios';
-	import { Alert, Spinner  } from 'flowbite-svelte';
+	import { Alert, Checkbox } from 'flowbite-svelte';
     import {CircleAlert, Check} from '@lucide/svelte'
     import { goto } from '$app/navigation';
-
     import { page } from '$app/stores'
 	import MyLoading from '@/MyLoading.svelte';
+
     const redirectTo = $page.url.searchParams.get('redirectTo')
     const message = $page.url.searchParams.get('message')
-    
-    const fieldLogin = [
-        {type:"text", name:"payroll", title:"Payrol", placeholder:"", required: true},
-        {type:"password", name:"password", title:"Password", placeholder:"", required: true, password:true},
-    ]
 
     let formLoginState = $state({
-        answer: fieldLogin.map((item) => ({[item.name]:""})).reduce((acc, item) => ({...acc, ...item}), {}),
+        answer: {
+            payroll:"",
+            password:"",
+            remember_me:false
+        },
         error: message,
         success:"",
         loading:false
@@ -44,12 +43,16 @@
     }
 </script>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg container border border-slate-300 rounded-lg">
-    <div class="flex p-6 bg-slate-800 rounded-t-lg">
+<svelte:head>
+    <title>Signin</title>
+</svelte:head>
+
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark rounded-lg container border-[2px] border-slate-200">
+    <div class="flex p-6 bg-textdark rounded-t-lg">
         <span class='text-white'>Login</span>
     </div>
     
-    <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 w-[25rem]'>
+    <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 min-w-[30rem]'>
         {#if formLoginState.error}
             <Alert border color="red" class='flex gap-2 items-center'>
                 <CircleAlert size={16}/>
@@ -66,9 +69,9 @@
             <MyLoading message="Login verification"/>
         {/if}
         <div class="flex flex-col gap-4">
-            {#each fieldLogin as field}
-                <MyInput {...field} bind:value={formLoginState.answer[field.name]}/>
-            {/each}
+            <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
+            <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
+            <Checkbox bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Remember Me</Checkbox>
             <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
         </div>
     </form>        

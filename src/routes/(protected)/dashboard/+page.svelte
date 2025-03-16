@@ -27,9 +27,9 @@
     <title>Dashboard</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col rounded-lg">    
+<main in:fade={{delay:500}} out:fade class="flex flex-col rounded-lg bg-bgdark text-textdark">
     <div class="grid grid-cols-12 auto-cols-max gap-4">
-        <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 bg-white rounded-[20px]">
+        <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 border-[2px] rounded-[20px]">
             <div class="flex justify-between items-center w-full">
                 <span class="font-poppins text-[16px]">Report 1</span>
                 <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
@@ -37,12 +37,12 @@
 
             <DonutChart {dataChart} />
         </div>
-        <div class="col-start-1 col-end-13 order-3 md:order-2 md:col-start-4 md:col-end-9 flex items-center p-4 gap-4 bg-white rounded-[20px]">
+        <div class="col-start-1 col-end-13 order-3 md:order-2 md:col-start-4 md:col-end-9 flex items-center p-4 gap-4 border-[2px] rounded-[20px]">
             <span class="font-poppins text-[16px]">Report 2</span>
             
             <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />
         </div>
-        <div class="order-2 md:order-3 col-start-6 col-end-13 md:col-start-9 md:col-end-13 flex items-center p-4 gap-4 bg-white rounded-[20px]">
+        <div class="order-2 md:order-3 col-start-6 col-end-13 md:col-start-9 md:col-end-13 flex items-center p-4 gap-4 border-[2px] rounded-[20px]">
             <span class="font-poppins text-[16px]">Report 3</span>
             
             <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />

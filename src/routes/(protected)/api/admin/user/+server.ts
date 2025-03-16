@@ -1,9 +1,6 @@
 import { error, json } from "@sveltejs/kit";
 import { checkFieldKosong, encryptData, prismaErrorHandler } from "@lib/utils";
-import { v4 as uuid4 } from "uuid";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from '@lib/utils.js'
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -39,9 +36,6 @@ export async function GET({url}){
         })
 
         return {items, totalItems}
-    },{
-        maxWait: 5000,
-        timeout: 10000,
     })
     
     return json(status)

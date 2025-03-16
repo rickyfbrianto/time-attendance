@@ -6,7 +6,7 @@
     import SveltyPicker from 'svelty-picker'
     let {type, title = '', name = "", className = "", rows=2, disabled = false,
         required = false, value = $bindable(), password = false, placeholder = ``} = $props()
-    const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[1px] border-slate-300 bg-white`, className)
+    const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[2px] border-slate-300 bg-bgdark`, className)
 
     let showText = $state(false)
     const sizeIcon = 18
@@ -18,13 +18,13 @@
     {/if}
     <div class={myClass}>
         {#if type == "textarea"}
-            <textarea class='w-full rounded-lg border-0 outline-none ring-0 ps-3' {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
+            <textarea class='w-full rounded-lg border-0 outline-none ring-0 ps-3 bg-bgdark text-textdark' {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
         {:else if type == 'daterange'}
-            <SveltyPicker bind:value={value} isRange inputClasses="w-full rounded-lg border-0 ring-0 ps-3" format="yyyy-mm-dd hh:i:s"/>
+            <SveltyPicker bind:value={value} isRange inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format="yyyy-mm-dd hh:i:s"/>
         {:else if type == 'datetime'}
-            <SveltyPicker bind:value={value} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3" format="yyyy-mm-dd hh:i:s"/>
+            <SveltyPicker bind:value={value} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format="yyyy-mm-dd hh:ii"/>
         {:else}
-            <input class="w-full rounded-lg border-0 outline-none ring-0 ps-3" id={name} {name} {disabled} {required} 
+            <input class="w-full rounded-lg border-0 outline-none ring-0 ps-3 bg-bgdark text-textdark" id={name} {name} {disabled} {required} 
             {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
         {/if}
         {#if password}
