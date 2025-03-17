@@ -133,7 +133,7 @@
     <title>Attendance</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <div class="grid grid-cols-1 lg:grid-cols-2 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
         <div class="flex items-center gap-2">
             <Calendar size={24}/>

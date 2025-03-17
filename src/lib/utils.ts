@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
@@ -18,6 +19,12 @@ interface PesanProps{
 interface EncryptedData {
     iv: string;
     encrypted: string;
+}
+
+export const formatTanggal = (val:string, incTime:boolean = true) => {
+    // return DateTime.fromISO(val).toFormat(`yyyy-MMMM-dd ${incTime ? "HH:mm:ss":""}`, { locale: "id" });
+    const temp = DateTime.fromISO(val, { zone: "UTC" })
+    return temp.toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`)
 }
 
 export const ListAccess = [

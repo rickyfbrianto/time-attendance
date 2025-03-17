@@ -56,7 +56,7 @@ export async function POST({request, url}) {
                 data:{
                     attendance_id,
                     user_id_machine: data.get('user_id_machine'),
-                    datetime: data.get('datetime'),
+                    datetime: new Date(data.get('datetime')),
                     type: data.get('type'),
                     description: data.get('description'),
                     attachment: attachment ? attendance_id + extname(attachment.name) : null,
@@ -68,7 +68,7 @@ export async function POST({request, url}) {
                 data:{
                     check_io_id: uuid4(),
                     user_id_machine: data.get('user_id_machine'),
-                    datetime: data.get('datetime'),
+                    datetime: new Date(data.get('datetime')),
                     type: data.get('type'),
                 }
             })

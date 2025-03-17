@@ -44,6 +44,7 @@
 		"crypto-js": "^4.2.0",
 		"date-fns": "^4.1.0",
 		"jsonwebtoken": "^9.0.2",
+		"luxon": "^3.5.0",
 		"nanoid": "^5.1.2",
 		"svelty-picker": "^6.1.5",
 		"uuid": "^11.1.0"

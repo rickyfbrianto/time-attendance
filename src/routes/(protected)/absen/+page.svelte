@@ -62,7 +62,7 @@
     <title>Check In & Out</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="My Absent">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                

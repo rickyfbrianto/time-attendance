@@ -9,13 +9,11 @@
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
-    import bglogin from '@lib/assets/bg-login.jpg'
+    import bgadmin from '@lib/assets/bg-admin.jpg'
     import { page } from '$app/stores';
     
     let {data} = $props()
-    
-    console.log(data.userProfile)
-    
+        
     const urlTab = $page.url.searchParams.get('tab')
     const urlMessage = $page.url.searchParams.get('message')
 
@@ -286,7 +284,7 @@
     <title>Admin Page</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#if urlTab}
         <Toast class='my-2'>
             {urlMessage}
@@ -294,8 +292,8 @@
     {/if}
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
-            <div class="relative flex items-center justify-center min-h-[50vh]" style={`background-image: url(${bglogin}); background-size: cover; background-position:center`}>
-                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Hallo ini halaman admin, be nice</span>
+            <div class="relative flex items-center justify-center min-h-[70vh]" style={`background-image: url(${bgadmin}); background-size: cover; background-position:bottom`}>
+                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Hallo admin</span>
             </div>
         </TabItem>
         {#if pecahArray(data.userProfile.access_profile, "R")}
@@ -397,7 +395,7 @@
                     {/if}
                     
                     <Datatable table={tableProfile}>
-                        <Table>
+                        <Table >
                             <TableHead>
                                 <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                                 <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
@@ -415,7 +413,7 @@
                                     {#if tableProfile.rows.length > 0}
                                         {#each tableProfile.rows as row}
                                             <TableBodyRow>
-                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell class='bg-bgdark text-textdark'>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.level}</TableBodyCell>
                                                 <TableBodyCell>{row.delegation}</TableBodyCell>

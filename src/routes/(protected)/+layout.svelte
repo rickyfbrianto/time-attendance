@@ -21,7 +21,7 @@
     <div class="flex flex-col flex-1">
         <Header/>
         <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll">
-            <div style="scrollbar-width: none;" class="p-4 overflow-scroll h-full">
+            <div style="scrollbar-width: none;" class="overflow-scroll h-full bg-bgdark text-textdark">
                 {@render children()}
             </div>
             <div class="sticky bottom-0 left-0 flex items-center w-full h-[var(--ukuran5)] px-5 shadow-lg bg-bgdark text-textdark border-slate-300 border-t-[2px]">

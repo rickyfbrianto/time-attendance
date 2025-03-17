@@ -6,12 +6,12 @@ export async function GET({params}){
     const req = await prisma.spl.findUnique({
         select:{
             spl_id: true,
-            payroll: true,
             est_start: true,
             est_end: true,
             createdBy:true,
             spl_detail: {
                 select: { 
+                    payroll : true,
                     description : true,
                 },
                 orderBy:{

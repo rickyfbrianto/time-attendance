@@ -1,7 +1,9 @@
+import { DateTime } from "luxon";
 import { error, json } from "@sveltejs/kit";
 import { checkFieldKosong, prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
+import { format, formatISO } from "date-fns";
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -17,18 +19,18 @@ export async function GET({url}){
             take:limit,
             select:{
                 spl_id:true,
-                payroll:true,
                 est_start:true,
                 est_end:true,
-                employee_payroll:{
-                    select:{
+                employee_createdBy:{
+                    select:{            
                         name:true
                     }
                 }
             },
             where:{
                 OR:[
-                    {payroll:{contains: search}},
+                    {est_start:{equals:new Date(search + " UTC")}},
+                    {est_end:{equals:new Date(search + " UTC")}},
                 ]
             },
             orderBy:{[sort]: order}
@@ -37,7 +39,8 @@ export async function GET({url}){
         const totalItems = await tx.spl.count({
             where:{
                 OR:[
-                    {payroll:{contains: search}},
+                    {est_start:{equals:new Date(search + " UTC")}},
+                    {est_end:{equals:new Date(search + " UTC")}},
                 ]
             },
         })
@@ -48,7 +51,7 @@ export async function GET({url}){
     return json(status)
 }
 
-export async function POST({ request }) {
+export async function POST({ request,  }) {
     try {        
         const data = await request.json();
         const { isError, errorCount } = checkFieldKosong(data);
@@ -56,11 +59,17 @@ export async function POST({ request }) {
             throw new Error(`${errorCount} input masih kosong`)
         }
 
-        data.description.forEach((val:string, i: number) => {
-            if(!val.trim()){
-                throw new Error(`Description ${i + 1} masih kosong`)
-            }
+        data.list.forEach((val:{payroll:string, description:string}, i: number) => {
+            if(!val.payroll.trim()) throw new Error(`Description ${i + 1} masih kosong`)
         });
+
+        const dataSPLDetail: {payroll:string, description:string}[] = []
+        data.list.forEach((val:{payroll:string, description:string}) => {
+            if(val.description){
+                const listDesc = val.description.split(',').filter(v => v)
+                listDesc.map((v, i) => dataSPLDetail.push({payroll: val.payroll, description: v.trim()}))
+            }
+        })
         
         const status = prisma.$transaction(async tx =>{
             const getSPL = await tx.spl.findUnique({
@@ -72,27 +81,24 @@ export async function POST({ request }) {
                 await tx.spl.create({
                     data: {
                         spl_id: spl_id,
-                        payroll: data.payroll,
-                        est_start: new Date(data.est_start),
-                        est_end: new Date(data.est_end),
+                        est_start: new Date(data.est_start + " UTC"),
+                        est_end: new Date(data.est_end + " UTC"),
                         createdBy: data.createdBy
                     },
                 })
 
                 await tx.spl_detail.createMany({
-                    data: data.description.map((val:string, i: number) => ({
+                    data: dataSPLDetail.map(({payroll, description}, step) => ({
                         spl_detail_id: uuid4(),
                         spl_id: spl_id,
-                        step: i,
-                        description: val
+                        payroll, step, description
                     }))
                 })
             }else{
                 await tx.spl.update({
                     data:{
-                        payroll: data.payroll,
-                        est_start: new Date(data.est_start),
-                        est_end: new Date(data.est_end),
+                        est_start: new Date(data.est_start + " UTC"),
+                        est_end: new Date(data.est_end + " UTC"),
                     },
                     where:{ spl_id: data.spl_id }
                 })
@@ -102,20 +108,14 @@ export async function POST({ request }) {
                 })
 
                 await tx.spl_detail.createMany({
-                    data: data.description.map((val:string, i: number) => 
-                        ({
-                            spl_detail_id: uuid4(),
-                            spl_id: data.spl_id,
-                            step: i,
-                            description: val
-                        })
-                    )
+                    data: dataSPLDetail.map(({payroll, description}, step) => ({
+                        spl_detail_id: uuid4(),
+                        spl_id: data.spl_id,
+                        payroll, step, description
+                    }))
                 })
             }
             return { message: "Data successfully saved" }
-        }, {
-            maxWait: 5000,
-            timeout: 10000,
         })
 
         return json(status);

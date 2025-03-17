@@ -25,7 +25,7 @@ model employee {
   check_io                                        check_io[]
   profile                                         profile?     @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
   spl_spl_createdByToemployee                     spl[]        @relation("spl_createdByToemployee")
-  spl_spl_payrollToemployee                       spl[]        @relation("spl_payrollToemployee")
+  spl_detail                                      spl_detail[]
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
 }
@@ -63,7 +63,10 @@ model check_io {
 model attendance {
   attendance_id                                 String    @id @db.VarChar(40)
   user_id_machine                               String?   @db.VarChar(6)
-  datetime                                      DateTime  @db.DateTime(0)
+  check_in                                      DateTime  @db.DateTime(0)
+  check_out                                     DateTime  @db.DateTime(0)
+  check_in2                                     DateTime? @db.DateTime(0)
+  check_out2                                    DateTime? @db.DateTime(0)
   type                                          String    @db.VarChar(50)
   description                                   String    @db.VarChar(255)
   attachment                                    String?   @db.Text
@@ -100,27 +103,27 @@ model setting {
 
 model spl {
   spl_id             String       @id @db.VarChar(40)
-  payroll            String?      @db.VarChar(8)
   est_start          DateTime     @db.DateTime(0)
   est_end            DateTime     @db.DateTime(0)
   createdBy          String?      @db.VarChar(8)
   createdAt          DateTime     @default(now()) @db.DateTime(0)
   employee_createdBy employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
-  employee_payroll   employee?    @relation("spl_payrollToemployee", fields: [payroll], references: [payroll], map: "spl_payroll_by_fkey")
   spl_detail         spl_detail[]
 
   @@index([createdBy], map: "createdBy")
-  @@index([payroll], map: "payroll")
 }
 
 model spl_detail {
-  spl_detail_id String @id @db.VarChar(40)
-  step          Int    @db.TinyInt
-  spl_id        String @db.VarChar(40)
-  description   String @db.VarChar(255)
-  spl           spl    @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
+  spl_detail_id String    @id @db.VarChar(40)
+  step          Int       @db.TinyInt
+  spl_id        String    @db.VarChar(40)
+  payroll       String?   @db.VarChar(8)
+  description   String    @db.VarChar(255)
+  employee      employee? @relation(fields: [payroll], references: [payroll])
+  spl           spl       @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
 
   @@index([spl_id], map: "spl_id")
+  @@index([payroll], map: "payroll")
 }
 
 enum profile_level {
