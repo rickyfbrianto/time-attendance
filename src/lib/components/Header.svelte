@@ -1,7 +1,7 @@
 <script lang='ts'>
     import MyButton from '@lib/components/MyButton.svelte'
-    import {AlignJustify, Check, Eclipse, LogOut, Moon, Sun } from '@lucide/svelte'
-	import { Alert, Modal, Breadcrumb, BreadcrumbItem } from 'flowbite-svelte';
+    import {AlignJustify, Check, CloudCog, Eclipse, LogOut, Moon, Sun } from '@lucide/svelte'
+	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Toggle } from 'flowbite-svelte';
     import { appstore } from "@lib/store/appstore";
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -28,14 +28,16 @@
         }, 1000)
     }
 
-    const setDarkMode = (val:boolean) =>{
-        appstore.update(state => ({...state, darkMode: val}))
+    
+    $effect(()=>{
+        
         if($appstore.darkMode){
             document.documentElement.classList.add('dark');
         }else{
             document.documentElement.classList.remove('dark');
         }
-    }
+        localStorage.setItem('appstore', JSON.stringify($appstore))
+    })
 </script>
 
 <div class="flex justify-between items-center min-h-[var(--ukuran7)] w-full border-b-[2px] border-b-[#A0B3C1] px-4 bg-bgdark">
@@ -52,15 +54,13 @@
     </div>
     
     <div class="flex gap-4 items-center text-textdark">
-        {#if $appstore.darkMode}
-            <MyButton onclick={()=> setDarkMode(false)}>
-                <Eclipse size={16} />
-            </MyButton>
-        {:else}
-            <MyButton onclick={()=> setDarkMode(true)}>
+        <Toggle bind:checked={$appstore.darkMode} class='ring-0 border-none outline-none'>
+            {#if $appstore.darkMode}
+                <Sun size={16} />
+            {:else}
                 <Moon size={16} />
-            </MyButton>
-        {/if}
+            {/if}
+        </Toggle>
         <MyButton className='bg-bgdark text-textdark' onclick={()=> logoutState.modal = true}><LogOut size={16}/></MyButton>
     </div>
 
