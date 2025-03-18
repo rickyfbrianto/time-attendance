@@ -7,14 +7,20 @@
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Minus, Pencil, Plus, RefreshCw, Save, Search, Trash } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal } from '@lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode } from '@lib/utils.js';
 		import { getParams } from '@lib/data/api';
+	import { format, set, setDate, startOfDay, subMonths } from 'date-fns';
     let { data } = $props()
 
     const rowsPerPage = 10
     
     let tableSPL = $state(new TableHandler([], {rowsPerPage}))
     let tableSPLSearch = tableSPL.createSearch()
+
+    let settingState = $state({
+        start_periode: new Date(),
+        end_periode: new Date(),
+    })
     
     const formSPLAnswer = {
         spl_id: "id",
@@ -61,15 +67,6 @@
             formSPL.loading = true
             const req = await axios.get(`/api/lembur/spl/${id}`)
             const res = await req.data
-
-            // const splDetail = Object.values(res.spl_detail.reduce((acc, { payroll, description }) => {
-            //     if (!acc[payroll]) {
-            //         acc[payroll] = { payroll, description };
-            //     } else {
-            //         acc[payroll].description += ", " + description;
-            //     }
-            //     return acc;
-            // },  {}))
             
             formSPL.answer = {...res,
                 est_start: formatTanggal(res.est_start),
@@ -153,27 +150,35 @@
     $effect(()=>{
         tableSPL.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/spl?${getParams(state)}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
+                const req = await fetch('/api/data?type=setting')
+                const res = await req.json()
+                if(res){
+                    const temp = set(new Date(), {year: 2025, month: 3})
+                    const {start_periode, end_periode} = getPeriode({...res, date: temp})
+
+                    const req = await fetch(`/api/lembur/spl?${getParams(state)}&start_periode=${start_periode}&end_periode=${end_periode}`)
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                }else{
+                    throw new Error("Periode perlu disetting")
+                }
             } catch (err:any) {
                 console.log(err.message)
             }
         })
 
-        tableSRL.load(async (state:State) => {
-            try {
-                const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        // tableSRL.load(async (state:State) => {
+        //     try {
+        //         const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
+        //         if(!req.ok) throw new Error('Gagal mengambil data')
+        //         const {items, totalItems} = await req.json()
+        //         state.setTotalRows(totalItems)
+        //         return items
+        //     } catch (err:any) {
+        //         console.log(err.message)
+        //     }
+        // })
     })
     
     setTimeout(()=>{
@@ -186,7 +191,7 @@
     <title>Lembur</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
             <div class="flex justify-center items-center gap-4 min-h-[50vh]">
@@ -287,7 +292,7 @@
                                 {#if tableSPL.rows.length > 0}
                                     {#each tableSPL.rows as row}
                                         <TableBodyRow>
-                                            <TableBodyCell>{row.employee_createdBy.name}</TableBodyCell>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
                                             {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
@@ -300,7 +305,7 @@
                                     {/each}
                                 {:else}
                                     <TableBodyRow>
-                                        <TableBodyCell colspan={2}>No data available</TableBodyCell>
+                                        <TableBodyCell>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>
@@ -441,7 +446,7 @@
                                     {/each}
                                 {:else}
                                     <TableBodyRow>
-                                        <TableBodyCell colspan={2}>No data available</TableBodyCell>
+                                        <TableBodyCell>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>

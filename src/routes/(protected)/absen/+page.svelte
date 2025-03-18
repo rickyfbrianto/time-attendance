@@ -9,6 +9,7 @@
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
+	import { formatTanggal } from '@lib/utils.js';
     let {data} = $props()
     
     let openRow: number[] = $state([]) 
@@ -84,11 +85,12 @@
                 <Datatable table={tableAbsen}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableAbsen} field="name"><TableHeadCell>Payroll</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
                             <ThSort table={tableAbsen} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsen} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
                             <ThSort table={tableAbsen} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
                             <ThSort table={tableAbsen} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="tanggal"><TableHeadCell>Type</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
                         </TableHead>
 
                         {#if tableAbsen.isLoading}
@@ -102,13 +104,19 @@
                                         <TableBodyRow>
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{row.tanggal}</TableBodyCell>
-                                            <TableBodyCell>{row.check_in || "-"}</TableBodyCell>
-                                            <TableBodyCell>{row.check_out || "-"}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.check_in)}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.check_out)}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {row.type == "HKC" ? "Hari Kerja Check Log" :
+                                                row.type == "HKM" ? "Hari Kerja Manual" : ""}
+                                            </TableBodyCell>
+                                            <TableBodyCell>{row.description}</TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <span>No data available</span>
+                                    <TableBodyRow>
+                                        <TableBodyCell><span>No data available</span></TableBodyCell>
+                                    </TableBodyRow> 
                                 {/if}
                             </TableBody>
                         {/if}
@@ -155,9 +163,10 @@
                         <TableHead>
                             <ThSort table={tableAbsenDept} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
                             <ThSort table={tableAbsenDept} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsenDept} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
                             <ThSort table={tableAbsenDept} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
                             <ThSort table={tableAbsenDept} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsenDept} field="tanggal"><TableHeadCell>Type</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsenDept} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
                         </TableHead>
 
                         {#if tableAbsenDept.isLoading}
@@ -171,13 +180,19 @@
                                     <TableBodyRow>
                                         <TableBodyCell>{row.payroll}</TableBodyCell>
                                         <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{row.tanggal}</TableBodyCell>
-                                        <TableBodyCell>{row.check_in || "-"}</TableBodyCell>
-                                        <TableBodyCell>{row.check_out || "-"}</TableBodyCell>
+                                        <TableBodyCell>{formatTanggal(row.check_in)}</TableBodyCell>
+                                        <TableBodyCell>{formatTanggal(row.check_out)}</TableBodyCell>
+                                        <TableBodyCell>
+                                            {row.type == "HKC" ? "Hari Kerja Check Log" :
+                                            row.type == "HKM" ? "Hari Kerja Manual" : ""}
+                                        </TableBodyCell>
+                                        <TableBodyCell>{row.description}</TableBodyCell>
                                     </TableBodyRow>
                                 {/each}
                             {:else}
-                                <span>No data available</span>
+                                <TableBodyRow>
+                                    <TableBodyCell><span>No data available</span></TableBodyCell>
+                                </TableBodyRow> 
                             {/if}
                         </TableBody>                            
                         {/if}

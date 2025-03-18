@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
 import { PrismaClient } from '@prisma/client';
+import { format, setDate, startOfDay, subMonths } from "date-fns";
 
 export const prisma = new PrismaClient({
     transactionOptions:{
@@ -127,4 +128,11 @@ export function prismaErrorHandler(error: any) {
 export function pecahArray(value : string, check:string){
     let temp = value.split('')
     return temp.includes(check)
+}
+
+export function getPeriode ({start_periode, end_periode, date}:{start_periode:number, end_periode:number, date:Date}){
+    const newStart = (start_periode < end_periode) ? startOfDay(setDate(date, start_periode)) : startOfDay(setDate(subMonths(date, 1), start_periode))
+    const newEnd = (start_periode < end_periode) ? startOfDay(setDate(date, end_periode)) : startOfDay(setDate(date, end_periode))
+
+    return {start_periode: format(newStart, "yyyy-MM-dd"), end_periode: format(newEnd, "yyyy-MM-dd")}
 }

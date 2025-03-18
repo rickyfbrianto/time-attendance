@@ -1,11 +1,14 @@
 import { DateTime } from "luxon";
 import { error, json } from "@sveltejs/kit";
-import { checkFieldKosong, prismaErrorHandler } from "@lib/utils";
+import { checkFieldKosong, formatTanggal, prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
-import { format, formatISO } from "date-fns";
+import { format } from "date-fns";
 
 export async function GET({url}){
+    const start_periode = url.searchParams.get('start_periode')
+    const end_periode = url.searchParams.get('end_periode')
+
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -13,39 +16,21 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
-    const status = await prisma.$transaction(async (tx) => {        
-        const items = await tx.spl.findMany({
-            skip:offset,
-            take:limit,
-            select:{
-                spl_id:true,
-                est_start:true,
-                est_end:true,
-                employee_createdBy:{
-                    select:{            
-                        name:true
-                    }
-                }
-            },
-            where:{
-                OR:[
-                    {est_start:{equals:new Date(search + " UTC")}},
-                    {est_end:{equals:new Date(search + " UTC")}},
-                ]
-            },
-            orderBy:{[sort]: order}
-        })
+    let where = (search ? ` AND e.name = '${search}'` :"") 
     
-        const totalItems = await tx.spl.count({
-            where:{
-                OR:[
-                    {est_start:{equals:new Date(search + " UTC")}},
-                    {est_end:{equals:new Date(search + " UTC")}},
-                ]
-            },
-        })
+    const status = await prisma.$transaction(async (tx) => {     
+        const items = await tx.$queryRawUnsafe(`
+            SELECT spl_id, est_start, est_end, e.name FROM SPL
+            LEFT JOIN employee as e ON e.payroll = SPL.createdBy
+            WHERE est_start between ? AND ? ${where}
+            ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
+            start_periode, end_periode, limit, offset)
 
-        return {items, totalItems}
+        const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM SPL 
+            LEFT JOIN employee as e ON e.payroll = SPL.createdBy WHERE est_start between ? AND ? ${where}`
+            ,start_periode, end_periode)
+                    
+        return {items, totalItems: Number(totalItems[0].count)}
     })
 
     return json(status)

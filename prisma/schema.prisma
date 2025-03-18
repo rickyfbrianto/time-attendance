@@ -26,8 +26,6 @@ model employee {
   profile                                         profile?     @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
   spl_spl_createdByToemployee                     spl[]        @relation("spl_createdByToemployee")
   spl_detail                                      spl_detail[]
-  srl_srl_createdByToemployee                     srl[]        @relation("srl_createdByToemployee")
-  srl_srl_payrollToemployee                       srl[]        @relation("srl_payrollToemployee")
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
 }
@@ -54,7 +52,8 @@ model profile {
 model check_io {
   check_io_id     String    @id @db.VarChar(40)
   user_id_machine String?   @db.VarChar(6)
-  datetime        DateTime  @db.DateTime(0)
+  check_in        DateTime  @db.DateTime(0)
+  check_out       DateTime  @db.DateTime(0)
   type            String    @db.VarChar(50)
   createdAt       DateTime  @default(now()) @db.DateTime(0)
   employee        employee? @relation(fields: [user_id_machine], references: [user_id_machine], map: "Check_io_user_id_machine_fkey")
@@ -65,18 +64,17 @@ model check_io {
 model attendance {
   attendance_id                                 String    @id @db.VarChar(40)
   user_id_machine                               String?   @db.VarChar(6)
+  check_in                                      DateTime  @db.DateTime(0)
+  check_out                                     DateTime  @db.DateTime(0)
+  check_in2                                     DateTime? @db.DateTime(0)
+  check_out2                                    DateTime? @db.DateTime(0)
   type                                          String    @db.VarChar(50)
   description                                   String    @db.VarChar(255)
   attachment                                    String?   @db.Text
   createdBy                                     String?   @db.VarChar(8)
   createdAt                                     DateTime  @default(now()) @db.DateTime(0)
-  check_in                                      DateTime  @db.DateTime(0)
-  check_in2                                     DateTime? @db.DateTime(0)
-  check_out                                     DateTime  @db.DateTime(0)
-  check_out2                                    DateTime? @db.DateTime(0)
   employee_attendance_createdByToemployee       employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
   employee_attendance_user_id_machineToemployee employee? @relation("attendance_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], map: "Attendance_user_id_machine_fkey")
-  srl                                           srl[]
 
   @@index([createdBy], map: "createdBy")
   @@index([user_id_machine], map: "user_id_mesin")
@@ -112,7 +110,6 @@ model spl {
   createdAt          DateTime     @default(now()) @db.DateTime(0)
   employee_createdBy employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
   spl_detail         spl_detail[]
-  srl                srl[]
 
   @@index([createdBy], map: "createdBy")
 }
@@ -121,45 +118,13 @@ model spl_detail {
   spl_detail_id String    @id @db.VarChar(40)
   step          Int       @db.TinyInt
   spl_id        String    @db.VarChar(40)
-  description   String    @db.Text
   payroll       String?   @db.VarChar(8)
+  description   String    @db.VarChar(255)
   employee      employee? @relation(fields: [payroll], references: [payroll])
   spl           spl       @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
 
   @@index([spl_id], map: "spl_id")
   @@index([payroll], map: "payroll")
-}
-
-model srl {
-  srl_id                           String       @id @db.VarChar(40)
-  spl_id                           String?      @db.VarChar(40)
-  attendance_id                    String?      @db.VarChar(40)
-  payroll                          String?      @db.VarChar(8)
-  real_start                       DateTime     @db.DateTime(0)
-  real_end                         DateTime     @db.DateTime(0)
-  createdBy                        String?      @db.VarChar(8)
-  createdAt                        DateTime     @default(now()) @db.DateTime(0)
-  attendance                       attendance?  @relation(fields: [attendance_id], references: [attendance_id], onDelete: Restrict, onUpdate: Restrict)
-  employee_srl_createdByToemployee employee?    @relation("srl_createdByToemployee", fields: [createdBy], references: [payroll])
-  employee_srl_payrollToemployee   employee?    @relation("srl_payrollToemployee", fields: [payroll], references: [payroll])
-  spl                              spl?         @relation(fields: [spl_id], references: [spl_id])
-  srl_detail                       srl_detail[]
-
-  @@index([attendance_id], map: "attendance_id")
-  @@index([createdBy], map: "createdBy")
-  @@index([payroll], map: "payroll")
-  @@index([spl_id], map: "spl_id")
-}
-
-model srl_detail {
-  srl_detail_id String @id @db.VarChar(40)
-  srl_id        String @db.VarChar(40)
-  step          Int    @db.TinyInt
-  description   String @db.VarChar(255)
-  status        String @db.VarChar(15)
-  srl           srl    @relation(fields: [srl_id], references: [srl_id], onDelete: Cascade)
-
-  @@index([srl_id], map: "srl_detail_srl_id_fkey")
 }
 
 enum profile_level {

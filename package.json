@@ -23,6 +23,7 @@
 		"@tailwindcss/vite": "^4.0.0",
 		"@types/crypto-js": "^4.2.2",
 		"@types/jsonwebtoken": "^9.0.9",
+		"@types/luxon": "^3.4.2",
 		"@vincjo/datatables": "^2.5.0",
 		"flowbite": "^3.1.2",
 		"flowbite-svelte": "^0.48.4",

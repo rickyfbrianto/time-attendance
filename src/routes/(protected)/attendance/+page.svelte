@@ -8,7 +8,7 @@
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
 	import MyTabs from '@lib/components/MyTabs.svelte';
-	import { pecahArray } from '@lib/utils';
+	import { formatTanggal, pecahArray } from '@lib/utils';
 	import axios from 'axios';
     import { format } from "date-fns";
 
@@ -27,8 +27,7 @@
     ]
 
     const listType = [
-        {value:"CI", name:"Check In"},
-        {value:"CO", name:"Check Out"},
+        {value:"HKM", name:"Hari Kerja Manual"},
         {value:"BI", name:"Break In"},
         {value:"BO", name:"Break Out"},
         {value:"I", name:"Ijin"},
@@ -44,7 +43,8 @@
     const formAttendanceAnswer = {
         attendance_id: "id",
         user_id_machine:"",
-        datetime:"",
+        check_in:"",
+        check_out:"",
         type: "",
         description: "",
         attachment: [],
@@ -68,24 +68,13 @@
             Object.entries(formAttendance.answer).forEach(val=>{
                 formData.append(val[0], val[1])
             })
-            formData.set("datetime", new Date(formData.get('datetime')).toLocaleString())
-            formData.set("createdBy","202207")
-            console.log(formData.get('datetime'))
-            
-            if(formAttendance.add){
-                // const req = await axios.post('/api/attendance', formData)
-                // const res = await req.data
-                const req = await fetch('/api/attendance', {
-                    method:"POST",
-                    body: formData,
-                })
-                const res = await req.json()
-                formAttendance.success = res.message
-            }else if(formAttendance.edit){
-                const req = await axios.put('/api/attendance', formData)
-                const res = await req.data
-                formAttendance.success = res.message
-            }
+
+            const req = await fetch('/api/attendance', {
+                method:"POST",
+                body: formData,
+            })
+            const res = await req.json()
+            formAttendance.success = res.message
             formAttendanceBatal()
         } catch (error: any) {
             formAttendance.error = error.message
@@ -102,8 +91,24 @@
         formAttendance.edit = false
     }
     
-    const formAttendanceEdit = (id:string) =>{
-
+    const formAttendanceEdit = async (id:string) =>{
+        try {
+            formAttendance.loading = true
+            const req = await axios.get(`/api/attendance/${id}`)
+            const res = await req.data
+            
+            formAttendance.answer = {...res,
+                check_in: formatTanggal(res.check_in),
+                check_out: formatTanggal(res.check_out),
+            }
+            formAttendance.answer.attachment = []
+            
+            formAttendance.edit = true
+            formAttendance.add = false
+            formAttendance.loading = false
+        } catch (error) {
+            formAttendance.loading = false
+        }
     }
 
     const formAttendanceDelete = (id:string) =>{
@@ -207,16 +212,15 @@
                 {#if formAttendance.add || formAttendance.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
                             <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
                             <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formAttendance.answer.user_id_machine}/>
-                            <MyInput type='datetime' title='Tanggal' name="datetime" bind:value={formAttendance.answer.datetime}/>
-                            
                             <div class="flex flex-col gap-2">
                                 <Label>Type</Label>
                                 <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />
                             </div>
-                            
+
+                            <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in}/>                            
+                            <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out}/>                            
                             <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
                         </div>
                         <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
@@ -228,10 +232,10 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableAttendance} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="tanggal"><TableHeadCell>Tanggal</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field="type"><TableHeadCell>Type</TableHeadCell></ThSort>
+                            <ThSort table={tableAttendance} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
                             <ThSort table={tableAttendance} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                         </TableHead>
 
@@ -245,12 +249,11 @@
                                     {#each tableAttendance.rows as row}
                                         <TableBodyRow>
                                             <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{row.tanggal}</TableBodyCell>
-                                            <TableBodyCell>{row.check_in ?? "-"}</TableBodyCell>
-                                            <TableBodyCell>{row.check_out ?? "-"}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.check_in) || ""}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.check_out) || ""}</TableBodyCell>
                                             <TableBodyCell>
-                                                {
-                                                row.type == "CI" ? "Check In" :
+                                                {row.type == "HKC" ? "Hari Kerja Check Log" :
+                                                row.type == "HKM" ? "Hari Kerja Manual" :
                                                 row.type == "CO" ? "Check Out" :
                                                 row.type == "BI" ? "Break In" :
                                                 row.type == "BO" ? "Break Out" : 
@@ -258,8 +261,9 @@
                                                 row.type == "I" ? "Ijin" : 
                                                 row.type == "C" ? "Cuti" :""}
                                             </TableBodyCell>
+                                            <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_attendance, "U")}
+                                                {#if pecahArray(userProfile.access_attendance, "U") && !["HKC"].includes(row.type)}
                                                     <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
                                                 <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
