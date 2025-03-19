@@ -10,32 +10,50 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
         
-    const status = await prisma.$transaction(async (tx) =>{
-        const items = await tx.employee.findMany({
-            skip:offset,
-            take:limit,
-            where:{
-                OR:[
-                    {payroll:{contains: search}},
-                    {name:{contains: search}},
-                    {position:{contains: search}},
-                ]
-            },
-            omit:{password:true},
-            orderBy:{[sort]: order}
-        })
-    
-        const totalItems = await tx.employee.count({
-            where:{
-                OR:[
-                    {payroll:{contains: search}},
-                    {name:{contains: search}},
-                    {position:{contains: search}},
-                ]
-            },
-        })
+    let where = "WHERE 1=1 " + 
+    (search ? ` AND e.payroll like '%${search}%' OR e.name like '%${search}%' OR e.position like '%${search}%'
+        OR d.name like '%${search}%' OR e.location like '%${search}%' OR e.email like '%${search}%'` :"")
 
-        return {items, totalItems}
+    const status = await prisma.$transaction(async (tx) =>{
+        const items = await tx.$queryRawUnsafe(`
+            SELECT e.payroll, e.name, e.position, d.name as dept, e.location, e.email FROM employee e
+            LEFT JOIN dept d ON e.department = d.dept_code
+            ${where}
+            ORDER by ${sort} ${order}
+            LIMIT ${limit} OFFSET ${offset}`)
+
+        const totalItems = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM employee e
+            LEFT JOIN dept d ON e.department = d.dept_code ${where}`)
+
+        return {items, totalItems: Number(totalItems[0].count)}
+        
+        
+        
+        // const items = await tx.employee.findMany({
+        //     skip:offset,
+        //     take:limit,
+        //     where:{
+        //         OR:[
+        //             {payroll:{contains: search}},
+        //             {name:{contains: search}},
+        //             {position:{contains: search}},
+        //         ]
+        //     },
+        //     omit:{password:true},
+        //     orderBy:{[sort]: order}
+        // })
+    
+        // const totalItems = await tx.employee.count({
+        //     where:{
+        //         OR:[
+        //             {payroll:{contains: search}},
+        //             {name:{contains: search}},
+        //             {position:{contains: search}},
+        //         ]
+        //     },
+        // })
+
+        // return {items, totalItems}
     })
     
     return json(status)

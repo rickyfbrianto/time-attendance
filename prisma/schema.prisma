@@ -15,7 +15,7 @@ model employee {
   name                                            String       @db.VarChar(250)
   password                                        String       @db.VarChar(250)
   position                                        String       @db.VarChar(100)
-  department                                      String       @db.VarChar(4)
+  department                                      String?      @db.VarChar(6)
   location                                        String       @db.VarChar(100)
   phone                                           String       @db.VarChar(13)
   workhour                                        Int          @default(8) @db.SmallInt
@@ -24,10 +24,14 @@ model employee {
   attendance_attendance_user_id_machineToemployee attendance[] @relation("attendance_user_id_machineToemployee")
   check_io                                        check_io[]
   profile                                         profile?     @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  dept                                            dept?        @relation(fields: [department], references: [dept_code])
   spl_spl_createdByToemployee                     spl[]        @relation("spl_createdByToemployee")
   spl_detail                                      spl_detail[]
+  srl                                             srl[]
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
+  @@index([department], map: "employee_department_fkey")
+  @@fulltext([payroll, user_id_machine, profile_id, email, name, position, department, location, phone], map: "payroll")
 }
 
 model profile {
@@ -75,6 +79,7 @@ model attendance {
   createdAt                                     DateTime  @default(now()) @db.DateTime(0)
   employee_attendance_createdByToemployee       employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
   employee_attendance_user_id_machineToemployee employee? @relation("attendance_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], map: "Attendance_user_id_machine_fkey")
+  srl                                           srl[]
 
   @@index([createdBy], map: "createdBy")
   @@index([user_id_machine], map: "user_id_mesin")
@@ -110,6 +115,7 @@ model spl {
   createdAt          DateTime     @default(now()) @db.DateTime(0)
   employee_createdBy employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
   spl_detail         spl_detail[]
+  srl                srl[]
 
   @@index([createdBy], map: "createdBy")
 }
@@ -125,6 +131,43 @@ model spl_detail {
 
   @@index([spl_id], map: "spl_id")
   @@index([payroll], map: "payroll")
+}
+
+model dept {
+  dept_id   String      @id @db.VarChar(40)
+  dept_code String      @unique(map: "dept_code") @db.VarChar(6)
+  name      String      @db.VarChar(100)
+  status    dept_status
+  employee  employee[]
+
+  @@fulltext([dept_code, name], map: "dept_code_2")
+}
+
+model srl {
+  srl_id        String       @id @db.VarChar(40)
+  spl_id        String?      @db.VarChar(40)
+  attendance_id String?      @db.VarChar(40)
+  payroll       String?      @db.VarChar(8)
+  real_start    DateTime     @db.DateTime(0)
+  real_end      DateTime     @db.DateTime(0)
+  attendance    attendance?  @relation(fields: [attendance_id], references: [attendance_id])
+  employee      employee?    @relation(fields: [payroll], references: [payroll])
+  spl           spl?         @relation(fields: [spl_id], references: [spl_id])
+  srl_detail    srl_detail[]
+
+  @@index([attendance_id], map: "attendance_id")
+  @@index([payroll], map: "payroll")
+  @@index([spl_id], map: "spl_id")
+}
+
+model srl_detail {
+  srl_detail_id String  @id @db.VarChar(40)
+  srl_id        String? @db.VarChar(40)
+  description   String  @db.VarChar(255)
+  status        String  @db.VarChar(50)
+  srl           srl?    @relation(fields: [srl_id], references: [srl_id], onDelete: Cascade)
+
+  @@index([srl_id], map: "srl_id")
 }
 
 enum profile_level {
@@ -144,4 +187,9 @@ enum calendar_type {
   Hari_Libur   @map("Hari Libur")
   Cuti_Bersama @map("Cuti Bersama")
   Event_Kantor @map("Event Kantor")
+}
+
+enum dept_status {
+  Aktif
+  Nonaktif
 }

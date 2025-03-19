@@ -7,12 +7,7 @@ export async function GET({url}){
         
         if(type == "user"){
             const req = await prisma.employee.findMany({
-                select:{
-                    payroll:true,
-                    user_id_machine:true,
-                    profile_id:true,
-                    workhour:true
-                }
+                omit:{password:true}
             })
             return json(req)
         } else if(type == "setting"){

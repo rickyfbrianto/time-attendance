@@ -22,7 +22,7 @@
         {:else if type == 'daterange'}
             <SveltyPicker bind:value={value} isRange inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format="yyyy-mm-dd hh:i:s"/>
         {:else if type == 'datetime'}
-            <SveltyPicker bind:value={value} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format="yyyy-mm-dd hh:ii"/>
+            <SveltyPicker bind:value={value} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format="yyyy-mm-dd hh:ii:ss"/>
         {:else}
             <input class="w-full rounded-lg border-0 outline-none ring-0 ps-3 bg-bgdark text-textdark" id={name} {name} {disabled} {required} 
             {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>

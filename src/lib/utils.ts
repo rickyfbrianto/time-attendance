@@ -136,3 +136,9 @@ export function getPeriode ({start_periode, end_periode, date}:{start_periode:nu
 
     return {start_periode: format(newStart, "yyyy-MM-dd"), end_periode: format(newEnd, "yyyy-MM-dd")}
 }
+
+export const safeDate = (val: string| Date | null) =>{
+    const date = new Date(val)
+    const temp = isNaN(date.getTime()) ? null : format(date, "yyyy-MM-dd HH:mm:ss")
+    return temp
+}

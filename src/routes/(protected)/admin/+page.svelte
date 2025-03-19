@@ -124,7 +124,7 @@
 
     // user
     let tableUser = $state(new TableHandler([], {rowsPerPage}))
-    let tableUserSearch = tableProfile.createSearch()
+    let tableUserSearch = tableUser.createSearch()
     
     const formUserAnswer = {
         payroll:"",
@@ -208,6 +208,62 @@
         }
     }
 
+    // Dept
+    let tableDept = $state(new TableHandler([], {rowsPerPage}))
+    let tableDeptSearch = tableDept.createSearch()
+    
+    const formDeptAnswer = {
+        dept_id:"id",
+        dept_code:"",
+        name:"",
+        status:"",
+    }
+    
+    const formDeptState = $state({
+        answer: {...formDeptAnswer},
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    })
+
+    const formDeptEdit = async (id:string) =>{
+        try {
+            formDeptState.loading = true
+            const req = await axios.get(`/api/admin/dept/${id}`)
+            formDeptState.answer = {...await req.data}
+            formDeptState.edit = true
+            formDeptState.add = false
+            formDeptState.loading = false
+        } catch (error) {
+            formDeptState.loading = false 
+        }
+    }
+    
+    const formDeptSubmit = async () =>{
+        try {
+            formDeptState.error = ""
+            formDeptState.loading = true
+            const req = await axios.post('/api/admin/dept', formDeptState.answer)
+            const res = await req.data
+            formDeptState.success = res.message
+            tableDept.invalidate()
+            formDeptBatal()
+        } catch (error: any) {
+            formDeptState.error = error.message
+            formDeptState.success = ""
+        } finally {
+            formDeptState.loading = false
+        }
+    }
+
+    const formDeptBatal = () =>{
+        formDeptState.answer = {...formDeptAnswer}
+        formDeptState.add = false
+        formDeptState.edit = false
+    }
+
     // setting    
     const formSettingState = $state({
         answer:{
@@ -272,11 +328,24 @@
                 console.log(err.message)
             }
         })
+
+        tableDept.load(async(state: State) => {
+            try {
+                const req = await fetch(`/api/admin/dept?${getParams(state)}`);
+                if (!req.ok) throw new Error('Gagal mengambil data');
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
     })
 
     setTimeout(()=>{
         tableProfile.invalidate()
         tableUser.invalidate()
+        tableDept.invalidate()
     }, 1000)
 </script>
 
@@ -531,7 +600,7 @@
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{row.position}</TableBodyCell>
-                                            <TableBodyCell>{row.department}</TableBodyCell>
+                                            <TableBodyCell>{row.dept}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
                                             <TableBodyCell>{row.email}</TableBodyCell>
                                             <TableBodyCell>
@@ -560,6 +629,110 @@
                             {/each}
                             <MyButton onclick={()=> tableUser.setPage('next')}><ChevronRight size={16} /></MyButton>
                             <MyButton onclick={()=> tableUser.setPage('last')}><ChevronLast size={16} /></MyButton>
+                        </div>
+                    </div>
+                    {/if}
+                </Datatable>
+            </div>
+        </TabItem>
+        <TabItem title="Department">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
+                {#if formDeptState.error || formDeptState.success}
+                    <Toast color="red">
+                        {#if formDeptState.error}
+                        <Ban size={16} color="#d41c08" />
+                        {:else}
+                        <Check size={16} color="#08d42a" />
+                        {/if}
+                        {formDeptState.error || formDeptState.success}
+                    </Toast>
+                {/if}
+
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between gap-2">
+                        <div class="flex gap-2">                        
+                            {#if formDeptState.add || formDeptState.edit}
+                                <MyButton onclick={formDeptBatal}><Ban size={16} /></MyButton>
+                                <MyButton onclick={formDeptSubmit}><Save size={16}/></MyButton>
+                            {:else}
+                                <MyButton onclick={()=> formDeptState.add = true}><Plus size={16}/></MyButton>
+                            {/if}
+                        </div>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableDept.rowsPerPage} onchange={() => tableDept.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <MyInput type='text' bind:value={tableDeptSearch.value}/>
+                        <MyButton onclick={()=>tableDeptSearch.set()}><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableDept.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+                </div>
+
+                {#if formDeptState.loading}
+                    <MyLoading message="Get user data"/>
+                {/if}
+                {#if formDeptState.add || formDeptState.edit}
+                    <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
+                        <input type='hidden' name="Dept ID" disabled={formDeptState.edit} bind:value={formDeptState.answer.dept_id}/>
+                        <MyInput type='text' title='Dept Code' name="dept_code" bind:value={formDeptState.answer.dept_code}/>
+                        <MyInput type='text' title='Name' name="name" bind:value={formDeptState.answer.name}/>
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formDeptState.answer.status}>
+                            {#each ['Aktif', 'Nonaktif'] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                    </form>
+                {/if}
+                
+                <Datatable table={tableDept}>
+                    <Table>
+                        <TableHead>
+                            <ThSort table={tableDept} field="dept_code"><TableHeadCell>Dept Code</TableHeadCell></ThSort>
+                            <ThSort table={tableDept} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                            <ThSort table={tableDept} field="status"><TableHeadCell>Status</TableHeadCell></ThSort>
+                            <ThSort table={tableDept} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                        </TableHead>
+
+                        {#if tableDept.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableDept.rows.length > 0}
+                                    {#each tableDept.rows as row}
+                                        <TableBodyRow>
+                                            <TableBodyCell>{row.dept_code}</TableBodyCell>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{row.status}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <MyButton onclick={()=> formDeptEdit(row.dept_id)}><Pencil size={12} /></MyButton>
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <span>No data available</span>
+                                {/if}
+                            </TableBody>
+                        {/if}
+                    </Table>
+                    {#if tableDept.rows.length > 0}
+                    <div class="flex justify-between items-center gap-2 mt-3">
+                        <p class='text-muted self-end text-[.9rem]'>
+                            Showing {tableDept.rowCount.start} to {tableDept.rowCount.end} of {tableDept.rowCount.total} rows
+                            <Badge color="dark" border>Page {tableDept.currentPage}</Badge>
+                        </p>
+                        <div class="flex gap-2">
+                            <MyButton onclick={()=> tableDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                            <MyButton onclick={()=> tableDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                            {#each tableDept.pages as page}
+                                <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableDept.setPage(page)} type="button">{page}</MyButton>
+                            {/each}
+                            <MyButton onclick={()=> tableDept.setPage('next')}><ChevronRight size={16} /></MyButton>
+                            <MyButton onclick={()=> tableDept.setPage('last')}><ChevronLast size={16} /></MyButton>
                         </div>
                     </div>
                     {/if}

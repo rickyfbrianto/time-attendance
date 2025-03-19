@@ -1,4 +1,5 @@
 <script lang="ts">
+    import SveltyPicker from 'svelty-picker'
     import { fade, slide } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Toast, Badge, Select } from 'flowbite-svelte';
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
@@ -7,8 +8,7 @@
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import MyTabs from '@lib/components/MyTabs.svelte';
-	import { formatTanggal, pecahArray } from '@lib/utils';
+	import { formatTanggal, pecahArray, safeDate } from '@lib/utils';
 	import axios from 'axios';
     import { format } from "date-fns";
 
@@ -45,6 +45,8 @@
         user_id_machine:"",
         check_in:"",
         check_out:"",
+        check_in2: "",
+        check_out2: "",
         type: "",
         description: "",
         attachment: [],
@@ -67,8 +69,7 @@
             const formData = new FormData()
             Object.entries(formAttendance.answer).forEach(val=>{
                 formData.append(val[0], val[1])
-            })
-
+            })            
             const req = await fetch('/api/attendance', {
                 method:"POST",
                 body: formData,
@@ -97,10 +98,7 @@
             const req = await axios.get(`/api/attendance/${id}`)
             const res = await req.data
             
-            formAttendance.answer = {...res,
-                check_in: formatTanggal(res.check_in),
-                check_out: formatTanggal(res.check_out),
-            }
+            formAttendance.answer = {...res}
             formAttendance.answer.attachment = []
             
             formAttendance.edit = true
@@ -111,8 +109,16 @@
         }
     }
 
-    const formAttendanceDelete = (id:string) =>{
-
+    const formAttendanceDelete = async (id:string) =>{
+        try {
+            formAttendance.loading = true
+            const req = await axios.delete(`/api/attendance/${id}`)
+            const res = await req.data
+            tableAttendance.invalidate()
+        } catch (error) {
+        } finally {
+            formAttendance.loading = false
+        }
     }
 
     $effect(()=>{
@@ -132,13 +138,17 @@
     setTimeout(()=>{
         tableAttendance.invalidate()
     }, 1000)
+
+    safeDate("A")
+    safeDate("2025-10-31 18:39:58")
 </script>
 
 <svelte:head>
     <title>Attendance</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+    
     <div class="grid grid-cols-1 lg:grid-cols-2 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
         <div class="flex items-center gap-2">
             <Calendar size={24}/>
@@ -210,7 +220,7 @@
                     <MyLoading message="Get attendance data"/>
                 {/if}
                 {#if formAttendance.add || formAttendance.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
                             <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formAttendance.answer.user_id_machine}/>
@@ -219,8 +229,17 @@
                                 <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />
                             </div>
 
-                            <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in}/>                            
-                            <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out}/>                            
+                            <div class="flex flex-col md:flex-row gap-2">
+                                <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in}/>                            
+                                <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out}/>                            
+                            </div>
+                            <div class="flex flex-col">
+                                <div class="flex flex-col md:flex-row gap-2">
+                                    <MyInput type='datetime' title='Check In 2' name="check_in2" bind:value={formAttendance.answer.check_in2}/>
+                                    <MyInput type='datetime' title='Check Out 2' name="check_out2" bind:value={formAttendance.answer.check_out2}/>
+                                </div>
+                                <span class='text-[.8rem] italic text-textdark'>Check in/out 2 for handle check in on same day (default empty)</span>
+                            </div>
                             <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
                         </div>
                         <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>

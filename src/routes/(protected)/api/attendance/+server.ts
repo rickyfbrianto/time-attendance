@@ -1,4 +1,4 @@
-import { prismaErrorHandler } from "@lib/utils";
+import { prismaErrorHandler, safeDate } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
 import { extname } from "node:path";
 import { v4 as uuid4} from "uuid";
@@ -51,19 +51,22 @@ export async function POST({request, url}) {
                 where:{attendance_id : data.get('attendance_id')}
             })
 
+            const check_in2 = (data.get('check_in2') == "null" || data.get('check_in2') == "") ? null : data.get('check_in2')
+            const check_out2 = (data.get('check_out2') == "null" || data.get('check_out2') == "") ? null : data.get('check_out2')
+            
             if(!getAttendance){
-                const attendance = await tx.attendance.create({
-                    data:{
-                        attendance_id,
-                        user_id_machine: data.get('user_id_machine'),
-                        check_in: new Date(data.get('check_in') + " UTC"),
-                        check_out: new Date(data.get('check_out') + " UTC"),
-                        type: data.get('type'),
-                        description: data?.get('description') ?? "-",
-                        attachment: attachment ? attendance_id + extname(attachment.name) : null,
-                        createdBy: data.get('createdBy'),
-                    }
-                })
+                const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
+                    attendance_id, 
+                    data.get('user_id_machine'),
+                    data.get('check_in'),
+                    data.get('check_out'),
+                    check_in2,
+                    check_out2,
+                    data.get('type'),
+                    data.get('description'),
+                    attachment ? attendance_id + extname(attachment.name) : null,
+                    data.get('createdBy')
+                )
                 
                 const check_io = await tx.check_io.create({
                     data:{
@@ -82,19 +85,38 @@ export async function POST({request, url}) {
 
                 return {message:"Data successfully saved"}
             } else {
-                const attendance = await tx.attendance.update({
-                    data:{
-                        user_id_machine: data.get('user_id_machine'),
-                        check_in: new Date(data.get('check_in') + " UTC"),
-                        check_out: new Date(data.get('check_out') + " UTC"),
-                        type: data.get('type'),
-                        description: data?.get('description') ?? "-",
-                        attachment: attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
-                        createdBy: data.get('createdBy'),
-                    }, where:{
-                        attendance_id: data.get('attendance_id')
-                    }
-                })
+                const attendance = await tx.$queryRawUnsafe(`
+                    UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
+                    check_in2=?,check_out2=?,type=?,description=?,attachment=?,createdBy=?
+                    WHERE attendance_id = ?`,
+                    data.get('user_id_machine'),
+                    data.get('check_in'),
+                    data.get('check_out'),
+                    check_in2,
+                    check_out2,
+                    data.get('type'),
+                    data?.get('description'),
+                    attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
+                    data.get('createdBy'),
+                    data.get('attendance_id')
+                )
+                
+                // const attendance = await tx.attendance.update({
+                //     data:{
+                //         user_id_machine: data.get('user_id_machine'),
+                //         check_in: new Date(data.get('check_in') + " UTC"),
+                //         check_out: new Date(data.get('check_out') + " UTC"),
+                //         check_in2: check_in2 ? check_in2: null,
+                //         check_out2: check_out2 ? check_out2: null,
+                //         type: data.get('type'),
+                //         description: data?.get('description') ?? "-",
+                //         attachment: attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
+                //         createdBy: data.get('createdBy'),
+                //         createdAt: new Date()
+                //     }, where:{
+                //         attendance_id: data.get('attendance_id')
+                //     }
+                // })
 
                 if(attendance && attachment){
                     const filename = path.resolve('src/lib/assets/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`

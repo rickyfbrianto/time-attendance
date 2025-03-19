@@ -8,3 +8,11 @@ export async function GET({params}){
     })
     return json(req)
 }
+
+export async function DELETE({params}){
+    const {id} = params
+    const req = await prisma.attendance.delete({
+        where:{attendance_id:id},
+    })
+    return json(req)
+}
