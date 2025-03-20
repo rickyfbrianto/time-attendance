@@ -19,18 +19,27 @@ model employee {
   location                                        String       @db.VarChar(100)
   phone                                           String       @db.VarChar(13)
   workhour                                        Int          @default(8) @db.SmallInt
+  approver                                        String?      @db.VarChar(8)
+  substitute                                      String?      @db.VarChar(8)
   signature                                       String       @db.VarChar(250)
   attendance_attendance_createdByToemployee       attendance[] @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[] @relation("attendance_user_id_machineToemployee")
   check_io                                        check_io[]
   profile                                         profile?     @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  employee_employee_approverToemployee            employee?    @relation("employee_approverToemployee", fields: [approver], references: [payroll])
+  other_employee_employee_approverToemployee      employee[]   @relation("employee_approverToemployee")
   dept                                            dept?        @relation(fields: [department], references: [dept_code])
+  employee_employee_substituteToemployee          employee?    @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
+  other_employee_employee_substituteToemployee    employee[]   @relation("employee_substituteToemployee")
   spl_spl_createdByToemployee                     spl[]        @relation("spl_createdByToemployee")
   spl_detail                                      spl_detail[]
+  srl_srl_createdByToemployee                     srl[]        @relation("srl_createdByToemployee")
   srl                                             srl[]
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
   @@index([department], map: "employee_department_fkey")
+  @@index([approver], map: "approver")
+  @@index([substitute], map: "substitute")
   @@fulltext([payroll, user_id_machine, profile_id, email, name, position, department, location, phone], map: "payroll")
 }
 
@@ -40,7 +49,6 @@ model profile {
   description       String        @db.VarChar(255)
   level             profile_level
   user_hrd          Boolean
-  delegation        Boolean
   access_sppd       String        @db.VarChar(4)
   access_skpd       String        @db.VarChar(4)
   access_attendance String        @db.VarChar(4)
@@ -79,7 +87,6 @@ model attendance {
   createdAt                                     DateTime  @default(now()) @db.DateTime(0)
   employee_attendance_createdByToemployee       employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
   employee_attendance_user_id_machineToemployee employee? @relation("attendance_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], map: "Attendance_user_id_machine_fkey")
-  srl                                           srl[]
 
   @@index([createdBy], map: "createdBy")
   @@index([user_id_machine], map: "user_id_mesin")
@@ -113,6 +120,7 @@ model spl {
   est_end            DateTime     @db.DateTime(0)
   createdBy          String?      @db.VarChar(8)
   createdAt          DateTime     @default(now()) @db.DateTime(0)
+  status             spl_status   @default(OPEN)
   employee_createdBy employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
   spl_detail         spl_detail[]
   srl                srl[]
@@ -144,20 +152,22 @@ model dept {
 }
 
 model srl {
-  srl_id        String       @id @db.VarChar(40)
-  spl_id        String?      @db.VarChar(40)
-  attendance_id String?      @db.VarChar(40)
-  payroll       String?      @db.VarChar(8)
-  real_start    DateTime     @db.DateTime(0)
-  real_end      DateTime     @db.DateTime(0)
-  attendance    attendance?  @relation(fields: [attendance_id], references: [attendance_id])
-  employee      employee?    @relation(fields: [payroll], references: [payroll])
-  spl           spl?         @relation(fields: [spl_id], references: [spl_id])
-  srl_detail    srl_detail[]
+  srl_id                           String       @id @db.VarChar(40)
+  spl_id                           String?      @db.VarChar(40)
+  payroll                          String?      @db.VarChar(8)
+  real_start                       DateTime     @db.DateTime(0)
+  real_end                         DateTime     @db.DateTime(0)
+  status                           srl_status
+  createdBy                        String?      @db.VarChar(8)
+  createdAt                        DateTime     @db.DateTime(0)
+  employee_srl_createdByToemployee employee?    @relation("srl_createdByToemployee", fields: [createdBy], references: [payroll], map: "srl_created_by_fkey")
+  employee                         employee?    @relation(fields: [payroll], references: [payroll])
+  spl                              spl?         @relation(fields: [spl_id], references: [spl_id])
+  srl_detail                       srl_detail[]
 
-  @@index([attendance_id], map: "attendance_id")
   @@index([payroll], map: "payroll")
   @@index([spl_id], map: "spl_id")
+  @@index([createdBy], map: "createdBy")
 }
 
 model srl_detail {
@@ -168,6 +178,15 @@ model srl_detail {
   srl           srl?    @relation(fields: [srl_id], references: [srl_id], onDelete: Cascade)
 
   @@index([srl_id], map: "srl_id")
+}
+
+model cuti {
+  cuti_id  String      @id @db.VarChar(40)
+  payroll  String      @db.VarChar(8)
+  datetime DateTime    @db.DateTime(0)
+  status   cuti_status
+
+  @@index([payroll], map: "payroll")
 }
 
 enum profile_level {
@@ -192,4 +211,20 @@ enum calendar_type {
 enum dept_status {
   Aktif
   Nonaktif
+}
+
+enum cuti_status {
+  Waiting
+  Reject
+  Approved
+}
+
+enum spl_status {
+  OPEN
+  CLOSE
+}
+
+enum srl_status {
+  OPEN
+  CLOSE
 }

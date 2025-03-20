@@ -28,9 +28,6 @@ export async function GET({url}){
                     ) as tmp`)
             const totalItems = Number(tempTotal[0].count)
             return {items, totalItems}
-        }, {
-            maxWait:5000,
-            timeout:10000
         })
                 
         return json(status)
@@ -51,11 +48,13 @@ export async function POST({request, url}) {
                 where:{attendance_id : data.get('attendance_id')}
             })
 
-            const check_in2 = (data.get('check_in2') == "null" || data.get('check_in2') == "") ? null : data.get('check_in2')
-            const check_out2 = (data.get('check_out2') == "null" || data.get('check_out2') == "") ? null : data.get('check_out2')
-            
+            const check_in2 = safeDate(data.get('check_in2'))
+            const check_out2 = safeDate(data.get('check_out2'))
+                        
             if(!getAttendance){
-                const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
+                const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance
+                    (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,type,description,attachment,createdBy,createdAt)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
                     attendance_id, 
                     data.get('user_id_machine'),
                     data.get('check_in'),

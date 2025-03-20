@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import { error, json } from "@sveltejs/kit";
-import { checkFieldKosong, formatTanggal, prismaErrorHandler } from "@lib/utils";
+import { checkFieldKosong, formatTanggal, isEmpty, prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
 import { format } from "date-fns";
@@ -16,7 +16,7 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
-    let where = (search ? ` AND e.name = '${search}'` :"") 
+    let where =  (search ? ` AND e.name = '${search}'` :"") 
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
@@ -45,7 +45,7 @@ export async function POST({ request,  }) {
         }
 
         data.spl_detail.forEach((val:{payroll:string, description:string}, i: number) => {
-            if(!val.payroll.trim()) throw new Error(`Description ${i + 1} masih kosong`)
+            if(!val.payroll.trim() || !val.description.trim()) throw new Error(`Description ${i + 1} masih kosong`)
         });
 
         const dataSPLDetail: {payroll:string, description:string}[] = []
@@ -56,26 +56,51 @@ export async function POST({ request,  }) {
             }
         })
         
-        const status = prisma.$transaction(async tx =>{
+        const status = await prisma.$transaction(async tx =>{
             const getSPL = await tx.spl.findUnique({
                 where:{spl_id : data.spl_id}
             })
-            const spl_id = uuid4()
 
             if(!getSPL){
+                let newID
+                const tempID = await tx.$queryRawUnsafe(`
+                SELECT spl_id as id from spl 
+                    WHERE 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 2), '-', -1) = '${data.dept}' AND 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 3), '-', -1) = year(now()) AND 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 4), '-', -1) = month(now())
+                ORDER by spl_id desc limit 0,1`)
+                if(tempID.length > 0){
+                    newID = tempID[0].id.split('-')
+                    const lastID = Number(newID[newID.length-1]) + 1
+                    newID[newID.length-1] = lastID
+                    newID = newID.join('-')
+                }else{
+                    newID = `SPL-${data.dept}-${format(new Date(), "yyyy-MM")}-1`
+                }
+                
                 await tx.spl.create({
                     data: {
-                        spl_id: spl_id,
+                        spl_id: newID,
                         est_start: new Date(data.est_start + " UTC"),
                         est_end: new Date(data.est_end + " UTC"),
-                        createdBy: data.createdBy
+                        createdBy: data.createdBy,
+                        status: data.status,
+
                     },
                 })
+
+                console.log(dataSPLDetail.map(({payroll, description}, step) => ({
+                    spl_detail_id: uuid4(),
+                    spl_id: newID,
+                    payroll, step, description
+                }))
+            )
 
                 await tx.spl_detail.createMany({
                     data: dataSPLDetail.map(({payroll, description}, step) => ({
                         spl_detail_id: uuid4(),
-                        spl_id: spl_id,
+                        spl_id: newID,
                         payroll, step, description
                     }))
                 })

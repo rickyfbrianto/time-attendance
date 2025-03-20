@@ -22,7 +22,7 @@
         {type:"separator", title:"Main"},
         {link:"/absen", title:"Check In/Out", icon: Clock8},
         {link:"/lembur", title:"Lembur", icon: Hourglass},
-        {link:"/cuti", title:"Cuti", icon: TicketsPlane},
+        {link:"/ijin", title:"Ijin", icon: TicketsPlane},
         {link:"/dinas", title:"Dinas", icon: Plane},
         {type:"separator", title:"Admin"},
         {link:"/admin", title:"Admin", icon: ShieldUser},
@@ -41,14 +41,14 @@
         </div>
     </a>
 
-    <div class="flex flex-col flex-1 gap-y-2">
+    <div class="flex flex-col flex-1 gap-y-1">
         {#each linkSidebar as {link, title, icon: Icon, type}}
             {#if type == "separator"}
-                <div class="flex bg-bgside2 text-textside px-3 py-2 rounded-lg mt-4 shadow-lg">
+                <div class="flex bg-bgside2 text-textside px-3 py-2 rounded-lg mb-1 mt-2 shadow-lg">
                     <span class='text-muted font-bold text-[.7rem]'>{title}</span>
                 </div>
             {:else}
-                <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} p-3 rounded-lg gap-2`}>
+                <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-lg gap-2`}>
                     <Icon size=14/>
                     <span class={`text-[.9rem] text-white"}`}>{title}</span>
                     <!-- {#if link == "/"+pathname[0]}

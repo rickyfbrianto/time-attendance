@@ -8,7 +8,7 @@
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
 	import { pecahArray, formatTanggal, getPeriode } from '@lib/utils.js';
-		import { getParams } from '@lib/data/api';
+    import { getParams } from '@lib/data/api';
 	import { format, set, setDate, startOfDay, subMonths } from 'date-fns';
     let { data } = $props()
 
@@ -24,10 +24,12 @@
     
     const formSPLAnswer = {
         spl_id: "id",
+        dept:"",
         spl_detail:[{payroll:"",description:""}],
         est_start:"",
         est_end:"",
-        createdBy: data.user?.payroll            
+        createdBy: data.user?.payroll,
+        status:"OPEN"
     }
     
     let formSPL = $state({
@@ -131,14 +133,10 @@
     const formSRLEdit = async (id:string) =>{
         try {
             formSRL.loading = true
-            const req = await axios.get(`/api/lembur/srl/${id}`)
+            const req = await axios.get(`/api/lembur/srl/${btoa(id)}`)
             const res = await req.data
             
-            formSRL.answer = {...res,
-                est_start: formatTanggal(res.est_start),
-                est_end: formatTanggal(res.est_end),
-                spl_detail: res.spl_detail.map(({payroll, description}) => ({payroll, description }))
-            }
+            formSRL.answer = {...res}
             formSRL.edit = true
             formSRL.add = false
             formSRL.loading = false
@@ -147,6 +145,26 @@
         }
     }
 
+    const getDept = async () =>{
+        const req = await fetch('/api/data?type=dept')
+        const res = await req.json()
+        return res
+    }
+
+    const getSPL = async () =>{
+        const req = await fetch('/api/data?type=spl_by_status&val=open')
+        const res = await req.json()
+        return res
+    }
+
+    const getPayroll = $derived.by(()=>{
+        return async () =>{
+            const req = await fetch(`/api/data?type=spl_detail_by_spl_id&val=${formSRL.answer.spl_id}`)
+            const res = await req.json()
+            return res
+        }
+    })
+    
     $effect(()=>{
         tableSPL.load(async (state:State) => {
             try {
@@ -168,17 +186,17 @@
             }
         })
 
-        // tableSRL.load(async (state:State) => {
-        //     try {
-        //         const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
-        //         if(!req.ok) throw new Error('Gagal mengambil data')
-        //         const {items, totalItems} = await req.json()
-        //         state.setTotalRows(totalItems)
-        //         return items
-        //     } catch (err:any) {
-        //         console.log(err.message)
-        //     }
-        // })
+        tableSRL.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
+                if(!req.ok) throw new Error('Gagal mengambil data')
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
     })
     
     setTimeout(()=>{
@@ -243,9 +261,13 @@
                 {/if}
                 {#if formSPL.add || formSPL.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                        {#await getDept() then val}
+                            <Select bind:value={formSPL.answer.dept} items={val.map((v:any) => ({value:v.name, name:v.name}))}/>
+                        {/await}
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                             
+
                             <MyInput type='datetime' title='Waktu Mulai' name="est_start" bind:value={formSPL.answer.est_start}/>
                             <MyInput type='datetime' title='Waktu Selesai' name="est_end" bind:value={formSPL.answer.est_end}/>
                         </div>
@@ -378,9 +400,21 @@
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="srl_id" disabled={formSRL.edit} bind:value={formSRL.answer.srl_id}/>
-                            <MyInput type='text' name="spl_id" title='SPL Id' bind:value={formSRL.answer.spl_id}/>
-                            <MyInput type='text' name="attendance_id" title="Attendance" bind:value={formSRL.answer.attendance_id}/>
-                            <MyInput type='text' name="payroll" title='Payroll' bind:value={formSRL.answer.payroll}/>
+                            {#await getSPL() then val}
+                                <div class="flex flex-col gap-2">
+                                    <Label>SPL ID</Label>
+                                    <Select bind:value={formSRL.answer.spl_id} items={val.map((v:any) => ({value:v.spl_id, name:v.spl_id}))}/>
+                                </div>                           
+                            {/await}
+
+                            {#await getPayroll()}
+                                <span>Memperbarui data</span>
+                            {:then val}
+                                <div class="flex flex-col gap-2">
+                                    <Label>Payroll</Label>
+                                    <Select bind:value={formSRL.answer.payroll} items={val.map((v:any) => ({value:v.payroll, name: v.payroll + " | " + v.name}))}/>
+                                </div>
+                            {/await}
                             
                             <MyInput type='datetime' title='Waktu Mulai' name="real_start" bind:value={formSRL.answer.real_start}/>
                             <MyInput type='datetime' title='Waktu Selesai' name="real_end" bind:value={formSRL.answer.real_end}/>
@@ -416,9 +450,10 @@
                 <Datatable table={tableSRL}>
                     <Table>
                         <TableHead class="bg-slate-500" >
-                            <ThSort table={tableSRL} field="employee_createdBy.name"><TableHeadCell>Created By</TableHeadCell></ThSort>
-                            <ThSort table={tableSRL} field="est_start"><TableHeadCell>Datetime Start</TableHeadCell></ThSort>
-                            <ThSort table={tableSRL} field="est_end"><TableHeadCell>Datetime End</TableHeadCell></ThSort>
+                            <ThSort table={tableSRL} field="srl_id"><TableHeadCell>SRL ID</TableHeadCell></ThSort>
+                            <ThSort table={tableSRL} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
+                            <ThSort table={tableSRL} field="real_start"><TableHeadCell>Real Start</TableHeadCell></ThSort>
+                            <ThSort table={tableSRL} field="real_end"><TableHeadCell>Real End</TableHeadCell></ThSort>
                             {#if pecahArray(data.userProfile.access_srl, "U") || pecahArray(data.userProfile.access_srl, "D")}
                                 <ThSort table={tableSRL} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                             {/if}
@@ -433,12 +468,13 @@
                                 {#if tableSRL.rows.length > 0}
                                     {#each tableSRL.rows as row}
                                         <TableBodyRow>
-                                            <TableBodyCell>{row.employee_createdBy.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
+                                            <TableBodyCell>{row.srl_id}</TableBodyCell>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
                                             {#if pecahArray(data.userProfile.access_srl, "U") || pecahArray(data.userProfile.access_srl, "D")}
                                                 <TableBodyCell>
-                                                    {#if pecahArray(data.userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                    {#if pecahArray(data.userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
                                                     <!-- {#if pecahArray(data.userProfile.access_srl, "D")}<MyButton onclick={()=> formSRLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if} -->
                                                 </TableBodyCell>
                                             {/if}

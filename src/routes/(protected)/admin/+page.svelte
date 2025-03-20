@@ -28,7 +28,6 @@
         description: "",
         level: "",
         user_hrd: false,
-        delegation: false,
         access_sppd: "",
         access_skpd: "",
         access_attendance: "",
@@ -137,6 +136,8 @@
         location:"",
         phone:"",
         email:"",
+        approver: "",
+        substitute: "",
         signature:"",
     }
     
@@ -342,6 +343,20 @@
         })
     })
 
+    const getDept = async () =>{
+        const req = await fetch('/api/data?type=dept')
+        const res = await req.json()
+        return res
+    }
+
+    const getProfile = async () =>{
+        const req = await fetch('/api/data?type=profile')
+        const res = await req.json()
+        return res
+    }
+
+
+    
     setTimeout(()=>{
         tableProfile.invalidate()
         tableUser.invalidate()
@@ -412,7 +427,6 @@
                                 <div class="flex flex-col gap-4 flex-1">
                                     <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
                                     <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
-                                    <Checkbox bind:checked={formProfileState.answer.delegation as unknown as boolean}>Delegation</Checkbox>
                                 </div>
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
                             </div>
@@ -469,7 +483,6 @@
                                 <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                                 <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
                                 <ThSort table={tableProfile} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field="delegation"><TableHeadCell>Delegation</TableHeadCell></ThSort>
                                 <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                             </TableHead>
 
@@ -485,7 +498,6 @@
                                                 <TableBodyCell class='bg-bgdark text-textdark'>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.level}</TableBodyCell>
-                                                <TableBodyCell>{row.delegation}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
                                                     <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
@@ -561,17 +573,40 @@
                 {#if formUserState.add || formUserState.edit}
                     <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
                         <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
-                        <MyInput type='text' title='Profile ID' name="profile_id" bind:value={formUserState.answer.profile_id}/>
+
+                        {#await getProfile() then val}
+                            <div class="flex flex-col gap-2">
+                                <Label>Profile ID</Label>
+                                <Select bind:value={formUserState.answer.profile_id} items={val.map((v:any) => ({value:v.profile_id, name:v.name}))}/>
+                            </div>
+                        {/await}
+                        
                         <MyInput type='text' title='Card Number' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
                         <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
                         {#if formUserState.add}
                         <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
                         {/if}
                         <MyInput type='text' title='Position' name="position" bind:value={formUserState.answer.position}/>
-                        <MyInput type='text' title='Department' name="department" bind:value={formUserState.answer.department}/>
+
+                        {#await getDept() then val}
+                            <div class="flex flex-col gap-2">
+                                <Label>Department</Label>
+                                <Select bind:value={formUserState.answer.department} items={val.map((v:any) => ({value:v.dept_code, name:v.name}))}/>
+                            </div>
+                        {/await}
+                        
+                        <!-- <MyInput type='text' title='Department' name="department" bind:value={formUserState.answer.department}/> -->
                         <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
                         <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
                         <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
+                        <div class="flex flex-col">
+                            <div class="flex gap-2">
+
+                                <MyInput type='text' title='Approver' name="approver" bind:value={formUserState.answer.approver}/>
+                                <MyInput type='text' title='Substitute' name="substitute" bind:value={formUserState.answer.substitute}/>
+                            </div>
+                            <span>Handle who delegate and substitute</span>
+                        </div>
                         <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/>
                     </form>
                 {/if}
@@ -672,7 +707,7 @@
                 </div>
 
                 {#if formDeptState.loading}
-                    <MyLoading message="Get user data"/>
+                    <MyLoading message="Get department data"/>
                 {/if}
                 {#if formDeptState.add || formDeptState.edit}
                     <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>

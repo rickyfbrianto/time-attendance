@@ -20,7 +20,6 @@ export async function GET({url}){
                 name:true,
                 description:true,
                 level:true,
-                delegation:true,
             },
             where:{
                 OR:[

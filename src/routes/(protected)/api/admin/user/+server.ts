@@ -26,34 +26,6 @@ export async function GET({url}){
             LEFT JOIN dept d ON e.department = d.dept_code ${where}`)
 
         return {items, totalItems: Number(totalItems[0].count)}
-        
-        
-        
-        // const items = await tx.employee.findMany({
-        //     skip:offset,
-        //     take:limit,
-        //     where:{
-        //         OR:[
-        //             {payroll:{contains: search}},
-        //             {name:{contains: search}},
-        //             {position:{contains: search}},
-        //         ]
-        //     },
-        //     omit:{password:true},
-        //     orderBy:{[sort]: order}
-        // })
-    
-        // const totalItems = await tx.employee.count({
-        //     where:{
-        //         OR:[
-        //             {payroll:{contains: search}},
-        //             {name:{contains: search}},
-        //             {position:{contains: search}},
-        //         ]
-        //     },
-        // })
-
-        // return {items, totalItems}
     })
     
     return json(status)

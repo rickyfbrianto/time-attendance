@@ -9,43 +9,25 @@ export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
-    const sort = url.searchParams.get('_sort') ?? "spl_id"
+    const sort = url.searchParams.get('_sort') ?? "srl_id"
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
-    const status = await prisma.$transaction(async (tx) => {        
-        const items = await tx.spl.findMany({
-            skip:offset,
-            take:limit,
-            select:{
-                spl_id:true,
-                est_start:true,
-                est_end:true,
-                employee_createdBy:{
-                    select:{            
-                        name:true
-                    }
-                }
-            },
-            where:{
-                OR:[
-                    {est_start:{equals:new Date(search + " UTC")}},
-                    {est_end:{equals:new Date(search + " UTC")}},
-                ]
-            },
-            orderBy:{[sort]: order}
-        })
+    let where = "WHERE 1=1 " + (search ? "":"")
     
-        const totalItems = await tx.spl.count({
-            where:{
-                OR:[
-                    {est_start:{equals:new Date(search + " UTC")}},
-                    {est_end:{equals:new Date(search + " UTC")}},
-                ]
-            },
-        })
+    const status = await prisma.$transaction(async (tx) => {        
+        const items = await tx.$queryRawUnsafe(`
+            SELECT srl_id, spl_id, srl.payroll, real_start, real_end, e.name FROM srl
+            LEFT JOIN employee as e ON e.payroll = srl.payroll
+            ${where}
+            ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
+            limit, offset)
 
-        return {items, totalItems}
+        const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as COUNT FROM srl
+            LEFT JOIN employee as e ON e.payroll = srl.payroll
+            ${where}`)
+                    
+        return {items, totalItems: Number(totalItems[0].count)}
     })
 
     return json(status)

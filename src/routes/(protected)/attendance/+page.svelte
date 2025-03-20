@@ -8,9 +8,9 @@
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, safeDate } from '@lib/utils';
-	import axios from 'axios';
+	import { formatTanggal, pecahArray } from '@lib/utils';
     import { format } from "date-fns";
+	import axios from 'axios';
 
     let {data} = $props()
     
@@ -138,9 +138,6 @@
     setTimeout(()=>{
         tableAttendance.invalidate()
     }, 1000)
-
-    safeDate("A")
-    safeDate("2025-10-31 18:39:58")
 </script>
 
 <svelte:head>

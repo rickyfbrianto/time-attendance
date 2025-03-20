@@ -70,6 +70,21 @@ export function checkFieldKosong(data:any){
     return {isError, errors, errorCount}
 }
 
+export function isEmpty(obj: any): boolean {
+    for(let key in obj){
+        //if the value is 'object'
+        if(obj[key] instanceof Object === true){
+            if(isEmpty(obj[key]) === false) return false;
+        }
+        //if value is string/number
+        else{
+          //if array or string have length is not 0.
+            if(obj[key].length !== 0) return false;
+        }
+    }
+    return true;
+}
+
 export function encryptDynamic(value:string, secretKey:string):EncryptedData {    
     const iv = CryptoJS.lib.WordArray.random(128/8); //iv untuk generate acak setiap value meskipun nilainya sama
     
@@ -137,8 +152,7 @@ export function getPeriode ({start_periode, end_periode, date}:{start_periode:nu
     return {start_periode: format(newStart, "yyyy-MM-dd"), end_periode: format(newEnd, "yyyy-MM-dd")}
 }
 
-export const safeDate = (val: string| Date | null) =>{
-    const date = new Date(val)
-    const temp = isNaN(date.getTime()) ? null : format(date, "yyyy-MM-dd HH:mm:ss")
+export const safeDate = (val: string) =>{
+    const temp = (val == 'null' || val == '') ? null : val
     return temp
 }
