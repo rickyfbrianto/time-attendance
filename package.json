@@ -48,6 +48,7 @@
 		"luxon": "^3.5.0",
 		"nanoid": "^5.1.2",
 		"pdf-lib": "^1.17.1",
+		"svelecte": "^5.1.5",
 		"svelty-picker": "^6.1.5",
 		"uuid": "^11.1.0"
 	}

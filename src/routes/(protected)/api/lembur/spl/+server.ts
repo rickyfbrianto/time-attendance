@@ -86,7 +86,6 @@ export async function POST({ request,  }) {
                         est_end: new Date(data.est_end + " UTC"),
                         createdBy: data.createdBy,
                         status: data.status,
-
                     },
                 })
 

@@ -1,15 +1,17 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tabs, TabItem, Toast, Badge, Select, Label} from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tabs, TabItem, Toast, Badge, Select, Label, Dropdown} from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
-	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Minus, Pencil, Plus, RefreshCw, Save, Search, Trash } from '@lucide/svelte';
+	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, RefreshCw, Save, Search, Trash } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
 	import { pecahArray, formatTanggal, getPeriode } from '@lib/utils.js';
     import { getParams } from '@lib/data/api';
 	import { format, set, setDate, startOfDay, subMonths } from 'date-fns';
+    import Svelecte from 'svelecte'
+    
     let { data } = $props()
 
     const rowsPerPage = 10
@@ -90,13 +92,14 @@
     const formSRLAnswer = {
         srl_id: "id",
         spl_id: "",
-        attendance_id: "",
         payroll: "",
-        real_start:"",
+        real_start: "",
         real_end:"",
         srl_detail:[{description:"", status: ""}],
-        createdBy: data.user?.payroll            
+        createdBy: data.user?.payroll,
     }
+
+    let formSRLDetailAnswer = $state([{description:""}])
     
     let formSRL = $state({
         answer: {...formSRLAnswer},
@@ -144,27 +147,48 @@
             formSRL.loading = false
         }
     }
-
+    
     const getDept = async () =>{
         const req = await fetch('/api/data?type=dept')
-        const res = await req.json()
-        return res
+        return await req.json()
     }
 
     const getSPL = async () =>{
         const req = await fetch('/api/data?type=spl_by_status&val=open')
-        const res = await req.json()
-        return res
+        return await req.json()
     }
-
-    const getPayroll = $derived.by(()=>{
-        return async () =>{
-            const req = await fetch(`/api/data?type=spl_detail_by_spl_id&val=${formSRL.answer.spl_id}`)
+    
+    const getUserByDept = $derived.by(() => {
+        return async (v:string) =>{
+            const req = await fetch(`/api/data?type=user_by_dept&val=${v}`)
             const res = await req.json()
             return res
         }
     })
     
+    const getSPLDetail = $derived.by(()=>{
+        return async (v:string) =>{
+            const req = await fetch(`/api/data?type=spl_detail_by_spl_id&val=${v}`)
+            const res = await req.json()
+            formSRLDetailAnswer = res.map((v:any)=> ({description: v.description, payroll:v.payroll}))
+            return res
+        }
+    })
+
+    const getPayrollDetailJobs = $derived.by(()=> {
+        return async (payroll:string) =>{
+            const newData = formSRLDetailAnswer.filter((val: any) => val.payroll == payroll)[0]
+            formSRL.answer.srl_detail = newData.description.split(',').map((v:string) => {
+                return {description: v, status:"Completed"}       
+            })
+
+            const req = await fetch(`/api/data?type=srl_calculation_overflow&val=${payroll}`)
+            const res = await req.json()
+            formSRL.answer.real_start = formatTanggal(res[0].check_in)
+            formSRL.answer.real_end = formatTanggal(res[0].check_out)
+        }
+    })
+
     $effect(()=>{
         tableSPL.load(async (state:State) => {
             try {
@@ -262,12 +286,16 @@
                 {#if formSPL.add || formSPL.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         {#await getDept() then val}
-                            <Select bind:value={formSPL.answer.dept} items={val.map((v:any) => ({value:v.name, name:v.name}))}/>
+                        <div class="flex flex-col gap-2 flex-1">
+                            <Label>Department</Label>
+                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.dept} 
+                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " | " + v.name}))}/>
+                        </div>
+                        
                         {/await}
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                             
-
                             <MyInput type='datetime' title='Waktu Mulai' name="est_start" bind:value={formSPL.answer.est_start}/>
                             <MyInput type='datetime' title='Waktu Selesai' name="est_end" bind:value={formSPL.answer.est_end}/>
                         </div>
@@ -275,7 +303,15 @@
                             {#each formSPL.answer.spl_detail as list, i}
                                 <div class="flex flex-col gap-2 border-t-[2px] border-slate-300 pt-2">
                                     <div class="flex gap-2 items-end">
-                                        <MyInput type='text' title={`Employee ${i+1}`} name="payroll" bind:value={formSPL.answer.spl_detail[i].payroll}/>
+                                        {#await getUserByDept(formSPL.answer.dept) then val}
+                                            <div class="flex flex-col gap-2 flex-1">
+                                                <Label>{`Employee ${i+1}`}</Label>
+                                                <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.spl_detail[i].payroll} 
+                                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" | "+v.name}))}
+                                                />
+                                            </div>
+                                        {/await}
+                                        
                                         {#if i == formSPL.answer.spl_detail.length - 1}
                                         <MyButton onclick={()=>formSPL.answer.spl_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
                                         {/if}
@@ -401,27 +437,34 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="srl_id" disabled={formSRL.edit} bind:value={formSRL.answer.srl_id}/>
                             {#await getSPL() then val}
-                                <div class="flex flex-col gap-2">
+                                <div class="flex flex-col gap-2 flex-1">
                                     <Label>SPL ID</Label>
-                                    <Select bind:value={formSRL.answer.spl_id} items={val.map((v:any) => ({value:v.spl_id, name:v.spl_id}))}/>
-                                </div>                           
-                            {/await}
-
-                            {#await getPayroll()}
-                                <span>Memperbarui data</span>
-                            {:then val}
-                                <div class="flex flex-col gap-2">
-                                    <Label>Payroll</Label>
-                                    <Select bind:value={formSRL.answer.payroll} items={val.map((v:any) => ({value:v.payroll, name: v.payroll + " | " + v.name}))}/>
+                                    <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
+                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id}))}
+                                    />
                                 </div>
                             {/await}
                             
-                            <MyInput type='datetime' title='Waktu Mulai' name="real_start" bind:value={formSRL.answer.real_start}/>
-                            <MyInput type='datetime' title='Waktu Selesai' name="real_end" bind:value={formSRL.answer.real_end}/>
+                            {#if formSRL.answer.spl_id}
+                            <div class="flex flex-col gap-2">
+                                <Label>Payroll</Label>
+                                    {#await getSPLDetail(formSRL.answer.spl_id) then val}
+                                        <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.payroll} 
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " | " + v.name}))}
+                                        onChange={(e:any)=> getPayrollDetailJobs(e.value)}
+                                        />
+                                    {/await}
+                                </div>
+                                
+                                <MyInput type='text' title='Realisasi Mulai' name="real_start" bind:value={formSRL.answer.real_start}/>
+                                <MyInput type='text' title='Realisasi Selesai' name="real_end" bind:value={formSRL.answer.real_end}/>
+                                {/if}
+                            <!-- <MyInput type='datetime' title='Realisasi Mulai' name="real_start" bind:value={formSRL.answer.real_start}/> -->
+                            <!-- <MyInput type='datetime' title='Realisasi Selesai' name="real_end" bind:value={formSRL.answer.real_end}/> -->
                         </div>
-                        <div class="flex flex-col gap-3">
+                        <div class="flex flex-col gap-4">
                             {#each formSRL.answer.srl_detail as list, i}
-                                <div class="flex flex-col gap-2 border-t-[2px] border-slate-300 pt-2">
+                                <div class="flex flex-col gap-2 border-t-[2px] border-slate-300 pt-4">
                                     <div class="flex gap-2 items-end">
                                         <div class="flex flex-1 flex-col gap-2">
                                             <Label>Status {i + 1}</Label>

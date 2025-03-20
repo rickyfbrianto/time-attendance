@@ -11,6 +11,7 @@
 	import { formatTanggal, pecahArray } from '@lib/utils';
     import { format } from "date-fns";
 	import axios from 'axios';
+	import Svelecte from 'svelecte';
 
     let {data} = $props()
     
@@ -121,6 +122,11 @@
         }
     }
 
+    const getUser = async () =>{
+        const req = await fetch('/api/data?type=user')
+        return await req.json()
+    }
+    
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
@@ -220,7 +226,16 @@
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
-                            <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formAttendance.answer.user_id_machine}/>
+
+                            {#await getUser() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>User Id Machine</Label>
+                                    <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formAttendance.answer.user_id_machine} 
+                                    options={val.map((v:any) => ({value: v.user_id_machine, text:v.payroll + " | " + v.user_id_machine + " | " + v.name}))}
+                                    />
+                                </div>
+                            {/await}
+                            
                             <div class="flex flex-col gap-2">
                                 <Label>Type</Label>
                                 <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />

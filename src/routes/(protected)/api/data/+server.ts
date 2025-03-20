@@ -6,11 +6,13 @@ export async function GET({url}){
         const type = url.searchParams.get('type')
         const val = url.searchParams.get('val')
 
-        
         if(type == "user"){
-            const req = await prisma.employee.findMany({
-                omit:{password:true}
-            })
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT payroll, name, user_id_machine, department FROM employee`)
+            return json(req)
+        }else if(type == "user_by_dept"){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT payroll, name FROM employee WHERE department LIKE ?`, `%${val || ""}%`)
             return json(req)
         } else if(type == "setting"){
             const req = await prisma.setting.findFirst()
@@ -28,9 +30,20 @@ export async function GET({url}){
             return json(req)
         }else if(type=='spl_detail_by_spl_id'){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT spl_detail.payroll, e.name FROM spl_detail
-                LEFT JOIN employee e ON e.payroll = spl_detail.payroll
-                 WHERE spl_id LIKE ?`, `%${val || ""}%`)
+                SELECT sd.payroll, sd.description, e.name FROM spl_detail sd
+                LEFT JOIN employee e ON e.payroll = sd.payroll
+                WHERE sd.spl_id LIKE ?`, `%${val || ""}%`)
+            return json(req)
+        }else if(type=='srl_calculation_overflow'){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT DATE( s.est_start ) AS srl_date,
+                    GetStartOvertime( a.check_in, a.check_out, e.workhour) AS check_in,
+                    RoundCheckOut(a.check_in, a.check_out) AS check_out,
+                    CAST(TIMESTAMPDIFF( HOUR, GetStartOvertime ( a.check_in, a.check_out, e.workhour ), a.check_out ) as CHAR) AS overtime
+                FROM
+                    spl s, spl_detail sd, employee e, attendance a 
+                WHERE
+                    sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in )= DATE (s.est_start) AND sd.payroll = ?`, val)
             return json(req)
         }else{
             throw new Error("Parameter Invalid")

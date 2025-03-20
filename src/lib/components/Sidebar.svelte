@@ -31,8 +31,8 @@
 </script>
 
 {#if $appstore.showSidebar}
-<div transition:fly={{x: "-200px", easing: quadIn}} class="flex flex-col bg-bgside px-3 min-w-[16rem] text-textside">
-    <a class="flex items-center justify-center gap-3 mt-[1rem] text-textdark" href="/">
+<div style="scrollbar-width: none;" transition:fly={{x: "-200px", easing: quadIn}} class="relative flex flex-col bg-bgside px-3 min-w-[16rem] text-textside overflow-y-scroll">
+    <a class="sticky top-0 bg-bgside z-[10] flex items-center justify-center gap-3 py-[1rem] text-textdark" href="/">
         <Clock8 size={46}/>
         
         <div class="flex flex-col">
@@ -59,7 +59,7 @@
         {/each}
     </div>
 
-    <div class="flex flex-col mb-10 px-4">
+    <div class="flex flex-col mb-10 mt-5 px-4">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
         <Tooltip>{data.user.name}</Tooltip>
         <span class="text-[16px] text-textdark font-[900] ">{data.user.name}</span>
