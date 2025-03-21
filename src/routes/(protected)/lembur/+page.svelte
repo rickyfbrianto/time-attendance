@@ -26,7 +26,7 @@
     
     const formSPLAnswer = {
         spl_id: "id",
-        dept:"",
+        dept: data.user.profile.user_hrd ? "" : data.user.department,
         spl_detail:[{payroll:"",description:""}],
         est_start:"",
         est_end:"",
@@ -75,7 +75,7 @@
             formSPL.answer = {...res,
                 est_start: formatTanggal(res.est_start),
                 est_end: formatTanggal(res.est_end),
-                spl_detail: res.spl_detail.map(({payroll, description}) => ({payroll, description }))
+                spl_detail: res.spl_detail.map(({payroll, description}) => ({payroll, description: description.trim() }))
             }
             formSPL.edit = true
             formSPL.add = false
@@ -85,6 +85,14 @@
         }
     }
 
+    const formSPLDelete = async (id:string) =>{
+        formSPL.error = ""
+        const req = await axios.delete(`/api/lembur/spl/${id}`)
+        const res = await req.data
+        formSPL.success = res.message
+        tableSPL.invalidate()
+    }
+    
     // SRL
     let tableSRL = $state(new TableHandler([], {rowsPerPage}))
     let tableSRLSearch = tableSRL.createSearch()
@@ -93,6 +101,7 @@
         srl_id: "id",
         spl_id: "",
         payroll: "",
+        dept:"",
         real_start: "",
         real_end:"",
         srl_detail:[{description:"", status: ""}],
@@ -136,10 +145,13 @@
     const formSRLEdit = async (id:string) =>{
         try {
             formSRL.loading = true
-            const req = await axios.get(`/api/lembur/srl/${btoa(id)}`)
+            const req = await axios.get(`/api/lembur/srl/${id}`)
             const res = await req.data
             
-            formSRL.answer = {...res}
+            formSRL.answer = {...res,
+                real_start: formatTanggal(res.real_start),
+                real_end: formatTanggal(res.real_end),
+            }
             formSRL.edit = true
             formSRL.add = false
             formSRL.loading = false
@@ -178,14 +190,14 @@
     const getPayrollDetailJobs = $derived.by(()=> {
         return async (payroll:string) =>{
             const newData = formSRLDetailAnswer.filter((val: any) => val.payroll == payroll)[0]
-            formSRL.answer.srl_detail = newData.description.split(',').map((v:string) => {
-                return {description: v, status:"Completed"}       
-            })
+            formSRL.answer.srl_detail = (newData.description) 
+                ? newData.description.split(',').map((v:string) => ({description: v.trim(), status:"Completed"}))
+                : [{description:"", status: ""}]
 
             const req = await fetch(`/api/data?type=srl_calculation_overflow&val=${payroll}`)
             const res = await req.json()
-            formSRL.answer.real_start = formatTanggal(res[0].check_in)
-            formSRL.answer.real_end = formatTanggal(res[0].check_out)
+            formSRL.answer.real_start = (res.length > 0) ? formatTanggal(res[0].check_in) :""
+            formSRL.answer.real_end = (res.length > 0) ? formatTanggal(res[0].check_out) :""
         }
     })
 
@@ -234,6 +246,10 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+    <!-- {#await getUserByDept2 then val}
+    {JSON.stringify(val)}
+    {/await} -->
+    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
             <div class="flex justify-center items-center gap-4 min-h-[50vh]">
@@ -285,14 +301,16 @@
                 {/if}
                 {#if formSPL.add || formSPL.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
-                        {#await getDept() then val}
-                        <div class="flex flex-col gap-2 flex-1">
-                            <Label>Department</Label>
-                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.dept} 
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " | " + v.name}))}/>
-                        </div>
-                        
-                        {/await}
+                        {#if data.user.profile.user_hrd}
+                            {#await getDept() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Department</Label>
+                                    <Svelecte disabled={formSPL.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.dept} 
+                                        options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " | " + v.name}))}/>
+                                </div>
+                            {/await}
+                        {/if}
+
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                             
@@ -333,7 +351,8 @@
                 <Datatable table={tableSPL}>
                     <Table>
                         <TableHead class="bg-slate-500" >
-                            <ThSort table={tableSPL} field="employee_createdBy.name"><TableHeadCell>Created By</TableHeadCell></ThSort>
+                            <ThSort table={tableSPL} field="spl_id"><TableHeadCell>SPL ID</TableHeadCell></ThSort>
+                            <ThSort table={tableSPL} field="name"><TableHeadCell>Created By</TableHeadCell></ThSort>
                             <ThSort table={tableSPL} field="est_start"><TableHeadCell>Datetime Start</TableHeadCell></ThSort>
                             <ThSort table={tableSPL} field="est_end"><TableHeadCell>Datetime End</TableHeadCell></ThSort>
                             {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
@@ -350,6 +369,7 @@
                                 {#if tableSPL.rows.length > 0}
                                     {#each tableSPL.rows as row}
                                         <TableBodyRow>
+                                            <TableBodyCell>{row.spl_id}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
@@ -439,28 +459,28 @@
                             {#await getSPL() then val}
                                 <div class="flex flex-col gap-2 flex-1">
                                     <Label>SPL ID</Label>
-                                    <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
-                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id}))}
+                                    <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
+                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id, dept:v.dept}))}
+                                    onChange={(e:any) => {
+                                        if(e) formSRL.answer.dept = e.dept
+                                    }}
                                     />
                                 </div>
                             {/await}
                             
                             {#if formSRL.answer.spl_id}
-                            <div class="flex flex-col gap-2">
-                                <Label>Payroll</Label>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Payroll</Label>
                                     {#await getSPLDetail(formSRL.answer.spl_id) then val}
-                                        <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " | " + v.name}))}
-                                        onChange={(e:any)=> getPayrollDetailJobs(e.value)}
-                                        />
+                                        <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.payroll} 
+                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " | " + v.name}))} 
+                                            onChange={(e:any) => {if(e.value) getPayrollDetailJobs(e.value)}}/>
                                     {/await}
                                 </div>
                                 
                                 <MyInput type='text' title='Realisasi Mulai' name="real_start" bind:value={formSRL.answer.real_start}/>
                                 <MyInput type='text' title='Realisasi Selesai' name="real_end" bind:value={formSRL.answer.real_end}/>
-                                {/if}
-                            <!-- <MyInput type='datetime' title='Realisasi Mulai' name="real_start" bind:value={formSRL.answer.real_start}/> -->
-                            <!-- <MyInput type='datetime' title='Realisasi Selesai' name="real_end" bind:value={formSRL.answer.real_end}/> -->
+                            {/if}
                         </div>
                         <div class="flex flex-col gap-4">
                             {#each formSRL.answer.srl_detail as list, i}

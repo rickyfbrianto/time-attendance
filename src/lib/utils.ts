@@ -23,9 +23,10 @@ interface EncryptedData {
 }
 
 export const formatTanggal = (val:string, incTime:boolean = true) => {
-    // return DateTime.fromISO(val).toFormat(`yyyy-MMMM-dd ${incTime ? "HH:mm:ss":""}`, { locale: "id" });
     const temp = DateTime.fromISO(val, { zone: "UTC" })
     return temp.toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`)
+    // const temp = format(new Date(val), `yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`)
+    // return temp
 }
 
 export const ListAccess = [

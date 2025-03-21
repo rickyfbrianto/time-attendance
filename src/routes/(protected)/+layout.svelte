@@ -20,7 +20,7 @@
     <Sidebar {data}/>
     <div class="flex flex-col flex-1">
         <Header/>
-        <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll">
+        <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll ">
             <div style="scrollbar-width: none;" class="overflow-scroll h-full bg-bgdark text-textdark">
                 {@render children()}
             </div>
@@ -38,5 +38,15 @@
     :global(#MyButton){
         font-size: .9rem;
         font-family: "Poppins", sans-serif;
+    }
+    :global(.sdt-component-wrap){
+        width: 100%;
+    }
+
+    :global(.sv-input--text, .sv-control--selection, .sv-input--sizer){
+        border: none !important;
+        outline: none !important;
+        /* width: 100%; */
+        /* border: 1px solid #000!; */
     }
 </style>

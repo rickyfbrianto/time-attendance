@@ -68,6 +68,12 @@
         <span class="text-[12px] text-textdark">{data.user.email}</span>
     </div>
 
+    {#if data.userProfile.user_hrd}
+        <div class="absolute flex items-center bottom-0 left-[50%] translate-x-[-50%] flex bg-slate-200 px-5 py-2">
+            <span class='text-[.8rem]'>HRD User</span>
+        </div>
+    {/if}
+
     <Modal title="My Account" bind:open={defaultModal} autoclose>
         <div class="relative grid grid-cols-2 gap-3 items-center justify-center">
             <!-- <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton> -->

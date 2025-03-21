@@ -5,13 +5,10 @@ import { prisma } from '@lib/utils.js'
 import { format } from "date-fns";
 
 export async function GET({url}){
-    const start_periode = url.searchParams.get('start_periode')
-    const end_periode = url.searchParams.get('end_periode')
-
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
-    const sort = url.searchParams.get('_sort') ?? "est_start"
+    const sort = url.searchParams.get('_sort') ?? "start_date"
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
@@ -19,15 +16,15 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT spl_id, est_start, est_end, e.name FROM SPL
-            LEFT JOIN employee as e ON e.payroll = SPL.createdBy
-            WHERE est_start between ? AND ? ${where}
+            SELECT sppd_id, start_date, end_date, duration, e.name FROM SPPD
+            LEFT JOIN employee as e ON e.payroll = SPPD.createdBy
+            WHERE 1=1 ${where}
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            start_periode, end_periode, limit, offset)
+            limit, offset)
 
-        const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM SPL 
-            LEFT JOIN employee as e ON e.payroll = SPL.createdBy WHERE est_start between ? AND ? ${where}`
-            ,start_periode, end_periode)
+        const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM SPPD
+            LEFT JOIN employee as e ON e.payroll = SPPD.createdBy
+            WHERE 1=1 ${where}`)
                     
         return {items, totalItems: Number(totalItems[0].count)}
     })
@@ -38,6 +35,8 @@ export async function GET({url}){
 export async function POST({ request,  }) {
     try {        
         const data = await request.json();
+        console.log(data)
+        return
         const { isError, errorCount } = checkFieldKosong(data);
         if (isError) {
             throw new Error(`${errorCount} input masih kosong`)

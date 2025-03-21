@@ -12,7 +12,7 @@ export async function GET({url}){
             return json(req)
         }else if(type == "user_by_dept"){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT payroll, name FROM employee WHERE department LIKE ?`, `%${val || ""}%`)
+                SELECT payroll, name, department FROM employee WHERE department LIKE ?`, `%${val || ""}%`)
             return json(req)
         } else if(type == "setting"){
             const req = await prisma.setting.findFirst()
@@ -33,6 +33,12 @@ export async function GET({url}){
                 SELECT sd.payroll, sd.description, e.name FROM spl_detail sd
                 LEFT JOIN employee e ON e.payroll = sd.payroll
                 WHERE sd.spl_id LIKE ?`, `%${val || ""}%`)
+            // const req = await prisma.$queryRawUnsafe(`
+            //     SELECT s.dept, sd.payroll, sd.description, e.name 
+            //     FROM spl s
+            //     LEFT JOIN spl_detail sd ON s.spl_id = sd.spl_id
+            //     LEFT JOIN employee e ON e.payroll = sd.payroll
+            //     WHERE sd.spl_id LIKE ?`, `%${val || ""}%`)
             return json(req)
         }else if(type=='srl_calculation_overflow'){
             const req = await prisma.$queryRawUnsafe(`

@@ -5,13 +5,29 @@ export async function GET({params}){
     try {
         const {id} = params       
         const req = await prisma.srl.findUnique({
-            include:{
-                employee:{
+            select:{
+                srl_id:true,
+                spl_id:true,
+                payroll:true,
+                real_start:true,
+                real_end:true,
+                status:true,
+                createdBy:true,
+                createdAt:true,
+                srl_detail:{
                     select:{
-                        name:true
+                        description:true,
+                        status:true
                     }
                 }
             },
+            // include:{
+            //     employee:{
+            //         select:{
+            //             name:true
+            //         }
+            //     }
+            // },
             where:{
                 srl_id: id
             }

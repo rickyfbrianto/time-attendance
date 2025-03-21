@@ -1,5 +1,4 @@
 <script lang="ts">
-    import SveltyPicker from 'svelty-picker'
     import { fade, slide } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Toast, Badge, Select } from 'flowbite-svelte';
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
@@ -151,18 +150,17 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
-        <div class="flex items-center gap-2">
+    <div class="flex justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
+        <div class="flex items-center gap-2 min-w-[8rem]">
             <Calendar size={24}/>
             <div class="flex flex-col">
                 <span class="font-bold">Today</span>
                 <span>{format(new Date(), "dd-MM-yyyy")}</span>
             </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 items-center gap-4">
+        <div class="hidden lg:flex flex-wrap items-center gap-4">
             {#each headerData as {type, title, value, icon: Icon, link}}
-                <a href={link} class="border-[2px] border-slate-200 px-4 py-2 rounded-lg  overflow-hidden overflow-ellipsis whitespace-nowrap">
+                <a href={link} class="border-[2px] border-slate-200 px-4 py-2 min-w-[10rem] rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap">
                     <span class="text-[.9rem] font-semibold">{title}</span>
                     <div class="flex justify-between items-center gap-1">
                         <span class='text-[1.4rem]'>{value}</span>

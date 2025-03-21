@@ -3,24 +3,27 @@ import { prisma } from '@lib/utils.js'
 
 export async function GET({params}){
     const {id} = params
-    const req = await prisma.spl.findUnique({
+    const req = await prisma.sppd.findUnique({
         select:{
-            spl_id: true,
-            est_start: true,
-            est_end: true,
+            sppd_id: true,
+            dept: true,
+            start_date: true,
+            end_date: true,
+            duration:true,
             createdBy:true,
-            dept:true,
-            spl_detail: {
+            createdAt:true,
+            sppd_detail: {
                 select: { 
                     payroll : true,
+                    location : true,
                     description : true,
                 },
                 orderBy:{
-                    step: 'asc'
+                    sppd_detail_id: 'asc'
                 }
             },
         },
-        where:{spl_id:id},
+        where:{sppd_id:id},
     })
     return json(req)
 }
