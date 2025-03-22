@@ -2,14 +2,13 @@
     import { fade, slide } from 'svelte/transition'
     import { Tabs, TabItem } from 'flowbite-svelte';
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Button, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
-    import {dataSample} from '@lib/store/appstore'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
+	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ClockArrowDown, ClockArrowUp, RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '@lib/components/MyButton.svelte'
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
-	import { formatTanggal } from '@lib/utils.js';
+	import { formatTanggal, getPeriode } from '@lib/utils.js';
     let {data} = $props()
     
     let openRow: number[] = $state([]) 
@@ -26,6 +25,13 @@
 
     let tableAbsenDept = new TableHandler([], {rowsPerPage: 10})
     let tableAbsenDeptSearch = tableAbsenDept.createSearch()
+
+    const getSetting = async () =>{
+        const req = await fetch('/api/admin/setting')
+        const {start_periode, end_periode} = await req.json()
+        const temp = getPeriode({start_periode, end_periode, date: new Date()})
+        return temp
+    }
 
     $effect(()=>{
         tableAbsen.load(async (state: State) => {
@@ -64,22 +70,33 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+    <div class="flex justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
+        <div class="flex flex-col gap-2">
+            {#await getSetting() then {start_periode, end_periode}}
+                <div class="flex gap-2">
+                    <ClockArrowDown size={16}/>
+                    <span class="text-[.8rem]">Start Periode {start_periode}</span>
+                </div>
+                <div class="flex gap-2">
+                    <ClockArrowUp size={16}/>
+                    <span class="text-[.8rem]">End Periode {end_periode}</span>
+                </div>
+            {/await}
+        </div>
+    </div>
+    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="My Absent">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableAbsenSearch.value}/>
-                        <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableAbsen.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableAbsenSearch.value}/>
+                    <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableAbsen.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
                 
                 <Datatable table={tableAbsen}>
@@ -143,19 +160,15 @@
         </TabItem>
         <TabItem title="Departement">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableAbsenDeptSearch.value}/>
-                        <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableAbsenDept.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableAbsenDeptSearch.value}/>
+                    <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableAbsenDept.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
                 
                 <Datatable table={tableAbsenDept}>

@@ -50,7 +50,7 @@
         type: "",
         description: "",
         attachment: [],
-        createdBy: data.user?.payroll || "",
+        createdBy: user?.payroll || "",
     }
     
     let formAttendance = $state({
@@ -99,6 +99,12 @@
             const res = await req.data
             
             formAttendance.answer = {...res}
+            setTimeout(()=>{
+                formAttendance.answer.check_in = formatTanggal(res.check_in)
+                formAttendance.answer.check_out = formatTanggal(res.check_out)
+                formAttendance.answer.check_in2 = res.check_in2
+                formAttendance.answer.check_out2 = res.check_out2
+            }, 100)
             formAttendance.answer.attachment = []
             
             formAttendance.edit = true
@@ -129,7 +135,7 @@
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?payroll=${data.user?.payroll}`)
+                const req = await fetch(`/api/attendance?payroll=${user?.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -181,40 +187,28 @@
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formAttendance.error || formAttendance.success}
                     <Toast color="red">
-                        {#if formAttendance.error}
+                        <span class='flex gap-2'>
+                            {#if formAttendance.error}
                             <Ban size={16} color="#d41c08" />
-                        {:else}
+                            {:else}
                             <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formAttendance.error || formAttendance.success}
+                            {/if}
+                            {formAttendance.error || formAttendance.success}
+                        </span>
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">
-                            {#if formAttendance.add || formAttendance.edit}
-                                {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
-                                    <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>
-                                    <MyButton disabled={formAttendance.loading} onclick={formAttendanceSubmit}><Save size={16}/></MyButton>
-                                {/if}
-                            {:else}
-                                {#if pecahArray(userProfile?.access_attendance, "C")}
-                                    <MyButton onclick={()=> formAttendance.add = true}><Plus size={16}/></MyButton>
-                                {/if}
-                            {/if}
-                        </div>
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableAttendanceSearch.value}/>
-                        <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">
+                    {#if formAttendance.add || formAttendance.edit}
+                        {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
+                            <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>
+                            <MyButton disabled={formAttendance.loading} onclick={formAttendanceSubmit}><Save size={16}/></MyButton>
+                        {/if}
+                    {:else}
+                        {#if pecahArray(userProfile?.access_attendance, "C")}
+                            <MyButton onclick={()=> formAttendance.add = true}><Plus size={16}/></MyButton>
+                        {/if}
+                    {/if}
                 </div>
 
                 {#if formAttendance.loading}
@@ -253,9 +247,20 @@
                             <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
                         </div>
                         <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
                     </form>
                 {/if}
+                
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableAttendanceSearch.value}/>
+                    <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
                 
                 <Datatable table={tableAttendance}>
                     <Table>

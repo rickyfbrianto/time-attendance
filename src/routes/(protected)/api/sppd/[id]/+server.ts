@@ -6,6 +6,7 @@ export async function GET({params}){
     const req = await prisma.sppd.findUnique({
         select:{
             sppd_id: true,
+            purpose: true,
             dept: true,
             start_date: true,
             end_date: true,

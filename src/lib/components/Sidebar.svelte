@@ -44,13 +44,13 @@
     <div class="flex flex-col flex-1 gap-y-1">
         {#each linkSidebar as {link, title, icon: Icon, type}}
             {#if type == "separator"}
-                <div class="flex bg-bgside2 text-textside px-3 py-2 rounded-lg mb-1 mt-2 shadow-lg">
-                    <span class='text-muted font-bold text-[.7rem]'>{title}</span>
+                <div class="flex bg-bgside2 text-textside px-3 py-2 rounded-lg mt-2 shadow-lg">
+                    <span class='text-muted font-bold italic text-[.7rem]'>{title}</span>
                 </div>
             {:else}
                 <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-lg gap-2`}>
                     <Icon size=14/>
-                    <span class={`text-[.9rem] text-white"}`}>{title}</span>
+                    <span class={`text-[.8rem] font-bold `}>{title}</span>
                     <!-- {#if link == "/"+pathname[0]}
                         <Locate size={16} class='absolute right-[1em] top-[50%] translate-y-[-50%]'/>
                     {/if} -->

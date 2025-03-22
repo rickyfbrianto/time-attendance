@@ -13,19 +13,18 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
-    let where = "WHERE 1=1 " + (search ? "":"")
-    
     const status = await prisma.$transaction(async (tx) => {        
         const items = await tx.$queryRawUnsafe(`
             SELECT srl_id, spl_id, srl.payroll, real_start, real_end, e.name FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
-            ${where}
+            WHERE srl_id LIKE ? OR spl_id LIKE ? OR srl.payroll LIKE ? OR e.name LIKE ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            limit, offset)
+            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,limit, offset)
 
         const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as COUNT FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
-            ${where}`)
+            WHERE srl_id LIKE ? OR spl_id LIKE ? OR srl.payroll LIKE ? OR e.name LIKE ?`,
+            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`)
                     
         return {items, totalItems: Number(totalItems[0].count)}
     })

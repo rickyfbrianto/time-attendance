@@ -31,6 +31,8 @@ model employee {
   dept                                            dept?         @relation(fields: [department], references: [dept_code])
   employee_employee_substituteToemployee          employee?     @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
   other_employee_employee_substituteToemployee    employee[]    @relation("employee_substituteToemployee")
+  skpd_skpd_createdByToemployee                   skpd[]        @relation("skpd_createdByToemployee")
+  skpd_skpd_payrollToemployee                     skpd[]        @relation("skpd_payrollToemployee")
   spl_spl_createdByToemployee                     spl[]         @relation("spl_createdByToemployee")
   spl_detail                                      spl_detail[]
   sppd                                            sppd[]
@@ -118,6 +120,7 @@ model setting {
 
 model spl {
   spl_id              String       @id @db.VarChar(40)
+  purpose             String       @db.VarChar(255)
   dept                String?      @db.VarChar(6)
   est_start           DateTime     @db.DateTime(0)
   est_end             DateTime     @db.DateTime(0)
@@ -198,12 +201,14 @@ model cuti {
 
 model sppd {
   sppd_id              String        @id @db.VarChar(40)
+  purpose              String        @db.VarChar(255)
   dept                 String?       @db.VarChar(6)
   start_date           DateTime      @db.DateTime(0)
   end_date             DateTime      @db.DateTime(0)
   duration             Int           @db.TinyInt
   createdBy            String?       @db.VarChar(8)
   createdAt            DateTime      @db.DateTime(0)
+  skpd                 skpd[]
   employee             employee?     @relation(fields: [createdBy], references: [payroll])
   dept_sppd_deptTodept dept?         @relation("sppd_deptTodept", fields: [dept], references: [dept_code])
   sppd_detail          sppd_detail[]
@@ -219,8 +224,26 @@ model sppd_detail {
   location       String    @db.VarChar(100)
   description    String    @db.VarChar(255)
   employee       employee? @relation(fields: [payroll], references: [payroll])
-  sppd           sppd?     @relation(fields: [sppd_id], references: [sppd_id])
+  sppd           sppd?     @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
 
+  @@index([payroll], map: "payroll")
+  @@index([sppd_id], map: "sppd_id")
+}
+
+model skpd {
+  skpd_id                           String      @id @db.VarChar(40)
+  sppd_id                           String?     @db.VarChar(40)
+  payroll                           String?     @db.VarChar(8)
+  real_start                        DateTime    @db.DateTime(0)
+  real_end                          DateTime    @db.DateTime(0)
+  status                            skpd_status
+  createdBy                         String?     @db.VarChar(8)
+  createdAt                         DateTime    @db.DateTime(0)
+  employee_skpd_createdByToemployee employee?   @relation("skpd_createdByToemployee", fields: [createdBy], references: [payroll])
+  employee_skpd_payrollToemployee   employee?   @relation("skpd_payrollToemployee", fields: [payroll], references: [payroll])
+  sppd                              sppd?       @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
+
+  @@index([createdBy], map: "createdBy")
   @@index([payroll], map: "payroll")
   @@index([sppd_id], map: "sppd_id")
 }
@@ -261,6 +284,11 @@ enum spl_status {
 }
 
 enum srl_status {
+  OPEN
+  CLOSE
+}
+
+enum skpd_status {
   OPEN
   CLOSE
 }

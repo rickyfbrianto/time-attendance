@@ -354,8 +354,6 @@
         const res = await req.json()
         return res
     }
-
-
     
     setTimeout(()=>{
         tableProfile.invalidate()
@@ -385,36 +383,24 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
                     {#if formProfileState.error || formProfileState.success}
                         <Toast color="red">
-                            {#if formProfileState.error}
-                            <Ban size={16} color="#d41c08" />
-                            {:else}
-                            <Check size={16} color="#08d42a" />
-                            {/if}
-                            {formProfileState.error || formProfileState.success}
+                            <span class='flex gap-2'>
+                                {#if formProfileState.error}
+                                <Ban size={16} color="#d41c08" />
+                                {:else}
+                                <Check size={16} color="#08d42a" />
+                                {/if}
+                                {formProfileState.error || formProfileState.success}
+                            </span>
                         </Toast>
                     {/if}
 
-                    <div class="flex flex-col gap-2">
-                        <div class="flex justify-between gap-2">
-                            <div class="flex gap-2">                        
-                                {#if formProfileState.add || formProfileState.edit}
-                                    <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
-                                    <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
-                                {:else}
-                                    <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
-                                {/if}
-                            </div>
-                            <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
-                                {#each [10, 20, 50, 100] as option}
-                                    <option value={option}>{option}</option>
-                                {/each}
-                            </select>
-                        </div>
-                        <div class="flex gap-2">
-                            <MyInput type='text' bind:value={tableProfileSearch.value}/>
-                            <MyButton onclick={()=>tableProfileSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
-                        </div>
+                    <div class="flex gap-2">                        
+                        {#if formProfileState.add || formProfileState.edit}
+                            <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
+                            <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
+                        {:else}
+                            <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                        {/if}
                     </div>
 
                     {#if formProfileState.loading}
@@ -477,6 +463,17 @@
                         </form>
                     {/if}
                     
+                    <div class="flex gap-2">
+                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                        <MyInput type='text' bind:value={tableProfileSearch.value}/>
+                        <MyButton onclick={()=>tableProfileSearch.set()}><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+                    
                     <Datatable table={tableProfile}>
                         <Table >
                             <TableHead>
@@ -535,36 +532,24 @@
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if formUserState.error || formUserState.success}
                     <Toast color="red">
-                        {#if formUserState.error}
-                        <Ban size={16} color="#d41c08" />
-                        {:else}
-                        <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formUserState.error || formUserState.success}
+                        <span class='flex gap-2'>
+                            {#if formUserState.error}
+                            <Ban size={16} color="#d41c08" />
+                            {:else}
+                            <Check size={16} color="#08d42a" />
+                            {/if}
+                            {formUserState.error || formUserState.success}
+                        </span>
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">                        
-                            {#if formUserState.add || formUserState.edit}
-                                <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
-                                <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
-                            {:else}
-                                <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
-                            {/if}
-                        </div>
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableUserSearch.value}/>
-                        <MyButton onclick={()=>tableUserSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableUser.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">                        
+                    {#if formUserState.add || formUserState.edit}
+                        <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
+                        <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
+                    {:else}
+                        <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
+                    {/if}
                 </div>
 
                 {#if formUserState.loading}
@@ -610,6 +595,17 @@
                         <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/>
                     </form>
                 {/if}
+
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableUserSearch.value}/>
+                    <MyButton onclick={()=>tableUserSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableUser.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
 
                 <Datatable table={tableUser}>
                     <Table>
@@ -674,36 +670,24 @@
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if formDeptState.error || formDeptState.success}
                     <Toast color="red">
-                        {#if formDeptState.error}
-                        <Ban size={16} color="#d41c08" />
-                        {:else}
-                        <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formDeptState.error || formDeptState.success}
-                    </Toast>
+                        <span class='flex gap-2'>
+                            {#if formDeptState.error}
+                            <Ban size={16} color="#d41c08" />
+                            {:else}
+                            <Check size={16} color="#08d42a" />
+                            {/if}
+                            {formDeptState.error || formDeptState.success}
+                        </span>
+                    </Toast>                    
                 {/if}
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">                        
-                            {#if formDeptState.add || formDeptState.edit}
-                                <MyButton onclick={formDeptBatal}><Ban size={16} /></MyButton>
-                                <MyButton onclick={formDeptSubmit}><Save size={16}/></MyButton>
-                            {:else}
-                                <MyButton onclick={()=> formDeptState.add = true}><Plus size={16}/></MyButton>
-                            {/if}
-                        </div>
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableDept.rowsPerPage} onchange={() => tableDept.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableDeptSearch.value}/>
-                        <MyButton onclick={()=>tableDeptSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableDept.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">                        
+                    {#if formDeptState.add || formDeptState.edit}
+                        <MyButton onclick={formDeptBatal}><Ban size={16} /></MyButton>
+                        <MyButton onclick={formDeptSubmit}><Save size={16}/></MyButton>
+                    {:else}
+                        <MyButton onclick={()=> formDeptState.add = true}><Plus size={16}/></MyButton>
+                    {/if}
                 </div>
 
                 {#if formDeptState.loading}
@@ -721,6 +705,17 @@
                         </select>
                     </form>
                 {/if}
+                
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableDept.rowsPerPage} onchange={() => tableDept.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableDeptSearch.value}/>
+                    <MyButton onclick={()=>tableDeptSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableDept.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
                 
                 <Datatable table={tableDept}>
                     <Table>

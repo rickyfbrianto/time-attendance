@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../../app.css';
+	import '../../style.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
     import {appstore } from '@lib/store/appstore'
@@ -31,22 +32,8 @@
     </div>
 </div>
 
-<style>
+<!-- <style>
     :global(p, span, a, input, button, label){
         font-family: "Poppins", sans-serif;
     }
-    :global(#MyButton){
-        font-size: .9rem;
-        font-family: "Poppins", sans-serif;
-    }
-    :global(.sdt-component-wrap){
-        width: 100%;
-    }
-
-    :global(.sv-input--text, .sv-control--selection, .sv-input--sizer){
-        border: none !important;
-        outline: none !important;
-        /* width: 100%; */
-        /* border: 1px solid #000!; */
-    }
-</style>
+</style> -->

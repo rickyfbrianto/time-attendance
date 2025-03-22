@@ -19,6 +19,7 @@
   --color-primary-900: #a5371b;
 
   --color-bgdark: #FFF;
+  --color-bgdark2: #F7F7FF;
   --color-textdark: var(--color-slate-800);
   --color-bgside: var(--warna-base);
   --color-bgside2: #FFF;
@@ -28,6 +29,7 @@
 @layer theme {
   .dark {
     --color-bgdark: var(--color-slate-800);
+    --color-bgdark2: var(--color-slate-700);
     --color-textdark: #FFF;
     --color-bgside: var(--color-slate-700);
     --color-bgside2: var(--color-slate-600);

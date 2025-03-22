@@ -11,6 +11,7 @@
     import { getParams } from '@lib/data/api';
 	import { format, set, setDate, startOfDay, subMonths } from 'date-fns';
     import Svelecte from 'svelecte'
+    import bglembur from '@lib/assets/bg-lembur.jpg'
     
     let { data } = $props()
 
@@ -26,6 +27,7 @@
     
     const formSPLAnswer = {
         spl_id: "id",
+        purpose:"",
         dept: data.user.profile.user_hrd ? "" : data.user.department,
         spl_detail:[{payroll:"",description:""}],
         est_start:"",
@@ -245,62 +247,46 @@
     <title>Lembur</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
-    <!-- {#await getUserByDept2 then val}
-    {JSON.stringify(val)}
-    {/await} -->
-    
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">        
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
-            <div class="flex justify-center items-center gap-4 min-h-[50vh]">
-                <span>Dashboard Page</span>
+            <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
+                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Overtime Page</span>
             </div>
         </TabItem>
         <TabItem title="Surat Perintah Lembur">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if formSPL.error || formSPL.success}
                     <Toast color="red">
-                        {#if formSPL.error}
-                            <Ban size={16} color="#d41c08" />
-                        {:else}
-                            <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formSPL.error || formSPL.success}
+                        <span class='flex gap-2'>
+                            {#if formSPL.error}
+                                <Ban size={16} color="#d41c08" />
+                            {:else}
+                                <Check size={16} color="#08d42a" />
+                            {/if}
+                            {formSPL.error || formSPL.success}
+                        </span>
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">                        
-                            {#if formSPL.add || formSPL.edit}
-                                {#if pecahArray(data.userProfile?.access_spl, "C") || pecahArray(data.userProfile.access_spl, "U")}
-                                    <MyButton onclick={formSPLBatal}><Ban size={16} /></MyButton>
-                                    <MyButton disabled={formSPL.loading} onclick={formSPLSubmit}><Save size={16}/></MyButton>
-                                {/if}
-                            {:else}
-                                {#if pecahArray(data.userProfile?.access_spl, "C")}
-                                    <MyButton onclick={()=> formSPL.add = true}><Plus size={16}/></MyButton>
-                                {/if}
-                            {/if}
-                        </div>
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableSPLSearch.value}/>
-                        <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">                        
+                    {#if formSPL.add || formSPL.edit}
+                        {#if pecahArray(data.userProfile?.access_spl, "C") || pecahArray(data.userProfile.access_spl, "U")}
+                            <MyButton onclick={formSPLBatal}><Ban size={16} /></MyButton>
+                            <MyButton disabled={formSPL.loading} onclick={formSPLSubmit}><Save size={16}/></MyButton>
+                        {/if}
+                    {:else}
+                        {#if pecahArray(data.userProfile?.access_spl, "C")}
+                            <MyButton onclick={()=> formSPL.add = true}><Plus size={16}/></MyButton>
+                        {/if}
+                    {/if}
                 </div>
 
                 {#if formSPL.loading}
                     <MyLoading message="Get SPL data"/>
                 {/if}
                 {#if formSPL.add || formSPL.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         {#if data.user.profile.user_hrd}
                             {#await getDept() then val}
                                 <div class="flex flex-col gap-2 flex-1">
@@ -311,48 +297,62 @@
                             {/await}
                         {/if}
 
+                        <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
+                        
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                             
                             <MyInput type='datetime' title='Waktu Mulai' name="est_start" bind:value={formSPL.answer.est_start}/>
                             <MyInput type='datetime' title='Waktu Selesai' name="est_end" bind:value={formSPL.answer.est_end}/>
                         </div>
-                        <div class="flex flex-col gap-3">
+
+                        <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
                             {#each formSPL.answer.spl_detail as list, i}
-                                <div class="flex flex-col gap-2 border-t-[2px] border-slate-300 pt-2">
+                                <div class="flex flex-col gap-2">
                                     <div class="flex gap-2 items-end">
                                         {#await getUserByDept(formSPL.answer.dept) then val}
                                             <div class="flex flex-col gap-2 flex-1">
                                                 <Label>{`Employee ${i+1}`}</Label>
-                                                <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.spl_detail[i].payroll} 
-                                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" | "+v.name}))}
+                                                <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
+                                                    options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" | "+v.name}))}
                                                 />
                                             </div>
                                         {/await}
                                         
                                         {#if i == formSPL.answer.spl_detail.length - 1}
-                                        <MyButton onclick={()=>formSPL.answer.spl_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
+                                            <MyButton onclick={()=>formSPL.answer.spl_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
                                         {/if}
                                         {#if formSPL.answer.spl_detail.length > 1}
-                                        <MyButton onclick={()=> formSPL.answer.spl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
+                                            <MyButton onclick={()=> formSPL.answer.spl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
                                         {/if}
                                     </div>
                                     <div class="flex flex-1 flex-col">
-                                        <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={formSPL.answer.spl_detail[i].description}/>
+                                        <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
                                         <span class='text-[.8rem] italic'>For several jobs use comas as separator (,)</span>
                                     </div>
                                 </div>
                             {/each}
                         </div>
-                        <span>Created By <Badge color='dark'>{formSPL.answer.createdBy}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
                     </form>
                 {/if}
+                
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableSPLSearch.value}/>
+                    <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
                 
                 <Datatable table={tableSPL}>
                     <Table>
                         <TableHead class="bg-slate-500" >
                             <ThSort table={tableSPL} field="spl_id"><TableHeadCell>SPL ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="name"><TableHeadCell>Created By</TableHeadCell></ThSort>
+                            <ThSort table={tableSPL} field="purpose"><TableHeadCell>Purpose</TableHeadCell></ThSort>
                             <ThSort table={tableSPL} field="est_start"><TableHeadCell>Datetime Start</TableHeadCell></ThSort>
                             <ThSort table={tableSPL} field="est_end"><TableHeadCell>Datetime End</TableHeadCell></ThSort>
                             {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
@@ -370,7 +370,7 @@
                                     {#each tableSPL.rows as row}
                                         <TableBodyRow>
                                             <TableBodyCell>{row.spl_id}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{row.purpose}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
                                             {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
@@ -413,57 +413,43 @@
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if formSRL.error || formSRL.success}
                     <Toast color="red">
-                        {#if formSRL.error}
+                        <span class='flex gap-2'>
+                            {#if formSRL.error}
                             <Ban size={16} color="#d41c08" />
-                        {:else}
+                            {:else}
                             <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formSRL.error || formSRL.success}
+                            {/if}
+                            {formSRL.error || formSRL.success}
+                        </span>
                     </Toast>
                 {/if}
 
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between gap-2">
-                        <div class="flex gap-2">                        
-                            {#if formSRL.add || formSRL.edit}
-                                {#if pecahArray(data.userProfile?.access_srl, "C") || pecahArray(data.userProfile.access_srl, "U")}
-                                    <MyButton onclick={formSRLBatal}><Ban size={16} /></MyButton>
-                                    <MyButton disabled={formSRL.loading} onclick={formSRLSubmit}><Save size={16}/></MyButton>
-                                {/if}
-                            {:else}
-                                {#if pecahArray(data.userProfile?.access_srl, "C")}
-                                    <MyButton onclick={()=> formSRL.add = true}><Plus size={16}/></MyButton>
-                                {/if}
-                            {/if}
-                        </div>
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
-                                <option value={option}>{option}</option>
-                            {/each}
-                        </select>
-                    </div>
-                    <div class="flex gap-2">
-                        <MyInput type='text' bind:value={tableSRLSearch.value}/>
-                        <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
-                    </div>
+                <div class="flex gap-2">                        
+                    {#if formSRL.add || formSRL.edit}
+                        {#if pecahArray(data.userProfile?.access_srl, "C") || pecahArray(data.userProfile.access_srl, "U")}
+                            <MyButton onclick={formSRLBatal}><Ban size={16} /></MyButton>
+                            <MyButton disabled={formSRL.loading} onclick={formSRLSubmit}><Save size={16}/></MyButton>
+                        {/if}
+                    {:else}
+                        {#if pecahArray(data.userProfile?.access_srl, "C")}
+                            <MyButton onclick={()=> formSRL.add = true}><Plus size={16}/></MyButton>
+                        {/if}
+                    {/if}
                 </div>
 
                 {#if formSRL.loading}
                     <MyLoading message="Get SPL data"/>
                 {/if}
                 {#if formSRL.add || formSRL.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="srl_id" disabled={formSRL.edit} bind:value={formSRL.answer.srl_id}/>
                             {#await getSPL() then val}
                                 <div class="flex flex-col gap-2 flex-1">
                                     <Label>SPL ID</Label>
                                     <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
-                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id, dept:v.dept}))}
-                                    onChange={(e:any) => {
-                                        if(e) formSRL.answer.dept = e.dept
-                                    }}
+                                        options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id + " | " + v.purpose, dept:v.dept}))}
+                                        onChange={(e:any) => {if(e) formSRL.answer.dept = e.dept}}
                                     />
                                 </div>
                             {/await}
@@ -482,38 +468,53 @@
                                 <MyInput type='text' title='Realisasi Selesai' name="real_end" bind:value={formSRL.answer.real_end}/>
                             {/if}
                         </div>
-                        <div class="flex flex-col gap-4">
-                            {#each formSRL.answer.srl_detail as list, i}
-                                <div class="flex flex-col gap-2 border-t-[2px] border-slate-300 pt-4">
-                                    <div class="flex gap-2 items-end">
-                                        <div class="flex flex-1 flex-col gap-2">
-                                            <Label>Status {i + 1}</Label>
-                                            <select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formSRL.answer.srl_detail[i].status}>
-                                                {#each ["Hold", "On Progress", "Completed"] as option}
-                                                <option value={option}>{option}</option>
-                                                {/each}
-                                            </select>
+
+                        {#if formSRL.answer.spl_id}
+                            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
+                                {#each formSRL.answer.srl_detail as list, i}
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex gap-2 items-end">
+                                            <div class="flex flex-1 flex-col gap-2">
+                                                <Label>Status {i + 1}</Label>
+                                                <select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={list.status}>
+                                                    {#each ["Hold", "On Progress", "Completed"] as option}
+                                                    <option value={option}>{option}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+
+                                            {#if i == formSRL.answer.srl_detail.length - 1}
+                                                <MyButton onclick={()=>formSRL.answer.srl_detail.push({status:"", description:""})}><Plus size={14} color='green' /></MyButton>
+                                            {/if}
+                                            {#if formSRL.answer.srl_detail.length > 1}
+                                                <MyButton onclick={()=> formSRL.answer.srl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
+                                            {/if}
                                         </div>
-                                        <!-- <MyInput type='text' title={`Status ${i+1}`} name="status" bind:value={formSRL.answer.srl_detail[i].status}/> -->
-                                        {#if i == formSRL.answer.srl_detail.length - 1}
-                                        <MyButton onclick={()=>formSRL.answer.srl_detail.push({status:"", description:""})}><Plus size={14} color='green' /></MyButton>
-                                        {/if}
-                                        {#if formSRL.answer.srl_detail.length > 1}
-                                        <MyButton onclick={()=> formSRL.answer.srl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
-                                        {/if}
+                                        <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
                                     </div>
-                                    <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={formSRL.answer.srl_detail[i].description}/>
-                                </div>
-                            {/each}
-                        </div>
-                        <span>Created By <Badge color='dark'>{formSRL.answer.createdBy}</Badge> </span>
+                                {/each}
+                            </div>
+                        {/if}
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
                     </form>
                 {/if}
+                
+                <div class="flex gap-2">
+                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableSRLSearch.value}/>
+                    <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
                 
                 <Datatable table={tableSRL}>
                     <Table>
                         <TableHead class="bg-slate-500" >
                             <ThSort table={tableSRL} field="srl_id"><TableHeadCell>SRL ID</TableHeadCell></ThSort>
+                            <ThSort table={tableSRL} field="spl_id"><TableHeadCell>SPL ID</TableHeadCell></ThSort>
                             <ThSort table={tableSRL} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                             <ThSort table={tableSRL} field="real_start"><TableHeadCell>Real Start</TableHeadCell></ThSort>
                             <ThSort table={tableSRL} field="real_end"><TableHeadCell>Real End</TableHeadCell></ThSort>
@@ -532,6 +533,7 @@
                                     {#each tableSRL.rows as row}
                                         <TableBodyRow>
                                             <TableBodyCell>{row.srl_id}</TableBodyCell>
+                                            <TableBodyCell>{row.spl_id}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>

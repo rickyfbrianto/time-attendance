@@ -26,19 +26,13 @@ export async function GET({url}){
             return json(req)
         }else if(type=='spl_by_status'){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT * FROM spl WHERE status LIKE ?`, `%${val || ""}%`)
+                SELECT spl_id, purpose, dept FROM spl WHERE status LIKE ?`, `%${val || ""}%`)
             return json(req)
         }else if(type=='spl_detail_by_spl_id'){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT sd.payroll, sd.description, e.name FROM spl_detail sd
                 LEFT JOIN employee e ON e.payroll = sd.payroll
                 WHERE sd.spl_id LIKE ?`, `%${val || ""}%`)
-            // const req = await prisma.$queryRawUnsafe(`
-            //     SELECT s.dept, sd.payroll, sd.description, e.name 
-            //     FROM spl s
-            //     LEFT JOIN spl_detail sd ON s.spl_id = sd.spl_id
-            //     LEFT JOIN employee e ON e.payroll = sd.payroll
-            //     WHERE sd.spl_id LIKE ?`, `%${val || ""}%`)
             return json(req)
         }else if(type=='srl_calculation_overflow'){
             const req = await prisma.$queryRawUnsafe(`
@@ -50,6 +44,12 @@ export async function GET({url}){
                     spl s, spl_detail sd, employee e, attendance a 
                 WHERE
                     sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in )= DATE (s.est_start) AND sd.payroll = ?`, val)
+            return json(req)
+        }else if(type=='sppd_by_payroll'){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, sd.payroll, sd.location, sd.description FROM sppd as s
+                LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
+                WHERE sd.payroll = ?`, val)
             return json(req)
         }else{
             throw new Error("Parameter Invalid")

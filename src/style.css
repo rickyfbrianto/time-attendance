@@ -1,0 +1,24 @@
+p, span, a, input, button, label{
+    font-family: "Poppins", sans-serif;
+}
+
+#MyButton{
+    font-size: .9rem;
+    font-family: "Poppins", sans-serif;
+}
+
+.sv-control{
+    border: none;
+    outline: none;
+    background-color: var(--bg-bgdark)!;
+}
+
+.sv-input--text, .sv-control--selection, .sv-input--sizer{
+    border: none !important;
+    outline: none !important;
+}
+
+.std-component-wrap{
+    width: 100% !important;
+}
+

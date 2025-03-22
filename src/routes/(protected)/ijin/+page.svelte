@@ -188,7 +188,7 @@
                     <MyLoading message="Get cuti data"/>
                 {/if}
                 {#if formCuti.add || formCuti.edit}
-                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="attendance_id" disabled={formCuti.edit} bind:value={formCuti.answer.attendance_id}/>
                             <MyInput type='text' title='User Id Mesin' name="user_id_machine" bind:value={formCuti.answer.user_id_machine}/>

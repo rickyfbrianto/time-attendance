@@ -19,15 +19,16 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT spl_id, est_start, est_end, e.name FROM SPL
+            SELECT spl_id, purpose, est_start, est_end, e.name FROM SPL
             LEFT JOIN employee as e ON e.payroll = SPL.createdBy
-            WHERE est_start between ? AND ? ${where}
+            WHERE est_start between ? AND ? AND (spl_id like ? OR purpose like ? OR est_start like ? OR est_end like ?)
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            start_periode, end_periode, limit, offset)
+            start_periode, end_periode, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
 
         const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM SPL 
-            LEFT JOIN employee as e ON e.payroll = SPL.createdBy WHERE est_start between ? AND ? ${where}`
-            ,start_periode, end_periode)
+            LEFT JOIN employee as e ON e.payroll = SPL.createdBy 
+            WHERE est_start between ? AND ? AND (spl_id like ? OR purpose like ? OR est_start like ? OR est_end like ?)`,
+            start_periode, end_periode, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`)
                     
         return {items, totalItems: Number(totalItems[0].count)}
     })
@@ -65,12 +66,12 @@ export async function POST({ request,  }) {
                 const dept = await tx.dept.findUnique({where:{dept_code: data.dept}})
 
                 const tempID = await tx.$queryRawUnsafe(`
-                SELECT spl_id as id from spl 
-                    WHERE 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 2), '-', -1) = '${dept?.name}' AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 3), '-', -1) = year(now()) AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 4), '-', -1) = month(now())
-                ORDER by spl_id desc limit 0,1`)
+                    SELECT spl_id as id from spl 
+                        WHERE 
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 2), '-', -1) = '${dept?.name}' AND 
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 3), '-', -1) = year(now()) AND 
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '-', 4), '-', -1) = month(now())
+                    ORDER by spl_id desc limit 0,1`)
                 if(tempID.length > 0){
                     newID = tempID[0].id.split('-')
                     const lastID = Number(newID[newID.length-1]) + 1
@@ -83,6 +84,7 @@ export async function POST({ request,  }) {
                 await tx.spl.create({
                     data: {
                         spl_id: newID,
+                        purpose: data.purpose,
                         dept: data.dept,
                         est_start: new Date(data.est_start + " UTC"),
                         est_end: new Date(data.est_end + " UTC"),
@@ -101,6 +103,7 @@ export async function POST({ request,  }) {
             }else{
                 await tx.spl.update({
                     data:{
+                        purpose: data.purpose,
                         est_start: new Date(data.est_start + " UTC"),
                         est_end: new Date(data.est_end + " UTC"),
                     },
