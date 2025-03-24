@@ -61,9 +61,13 @@ export function checkFieldKosong(data:any){
     let isError = false
     let errors : PesanProps[] = []
     let errorCount = 0
-    Object.entries(data).forEach(value => {
-        if (typeof value[1] == "string" && !value[1].trim()){
-            errors.push({"message":"Ada yang kosong", id: value[0]})
+    Object.entries(data).forEach(([key, value]) => {
+        if (
+            (value === null) ||
+            (typeof value == "string" && !value.trim()) ||
+            (Array.isArray(value) && value.length == 0 && value.every(val => val !== ""))
+        ){
+            errors.push({"message":"Ada yang kosong", id: key})
             isError = true
             errorCount += 1
         }

@@ -38,7 +38,7 @@ export async function POST({ request,  }) {
         if (isError) 
             throw new Error(`${errorCount} input masih kosong`)
 
-        if(data.sppd_detail.every((val:any) => (!val.payroll.trim() || !val.description.trim() || !val.location.trim()))) 
+        if(data.sppd_detail.every((val:any) => (!val.payroll || !val.description || !val.location))) 
             throw new Error("Detail masih kosong")
 
         const dataSPPDDetail = data.sppd_detail.map((val:any) => {

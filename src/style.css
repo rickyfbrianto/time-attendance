@@ -1,10 +1,18 @@
-p, span, a, input, button, label{
+p, span, a, input, button, label, textarea{
     font-family: "Poppins", sans-serif;
 }
 
 #MyButton{
     font-size: .9rem;
     font-family: "Poppins", sans-serif;
+}
+
+tr{
+    background-color: var(--bg-bgdark);
+}
+
+td{
+    color: var(--text-textdark);
 }
 
 .sv-control{

@@ -1,0 +1,12 @@
+GET http://localhost:5173/api/absen
+
+###
+
+POST http://localhost:5173/signin
+Content-Type: application/json
+
+{
+    "payroll": "202207",
+    "password:":"123",
+    "rememberMe": true
+}

@@ -294,7 +294,7 @@
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>                            
-                            <MyInput type='daterange' title='Start Date' name="date" bind:value={formSPPD.answer.date}/>
+                            <MyInput type='daterange' title='Date' name="date" bind:value={formSPPD.answer.date}/>
                             <MyInput type='text' title='Duration' bind:value={formSPPD.answer.duration} />
                         </div>
                         

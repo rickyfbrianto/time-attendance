@@ -48,8 +48,8 @@ export async function POST({request, url}) {
                 where:{attendance_id : data.get('attendance_id')}
             })
 
-            const check_in2 = safeDate(data.get('check_in2'))
-            const check_out2 = safeDate(data.get('check_out2'))
+            // const check_in2 = safeDate(data.get('check_in2'))
+            // const check_out2 = safeDate(data.get('check_out2'))
                         
             if(!getAttendance){
                 const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance
@@ -59,8 +59,8 @@ export async function POST({request, url}) {
                     data.get('user_id_machine'),
                     data.get('check_in'),
                     data.get('check_out'),
-                    check_in2,
-                    check_out2,
+                    data.get('check_in2'),
+                    data.get('check_out2'),
                     data.get('type'),
                     data.get('description'),
                     attachment ? attendance_id + extname(attachment.name) : null,
@@ -91,8 +91,8 @@ export async function POST({request, url}) {
                     data.get('user_id_machine'),
                     data.get('check_in'),
                     data.get('check_out'),
-                    check_in2,
-                    check_out2,
+                    data.get('check_in2'),
+                    data.get('check_out2'),
                     data.get('type'),
                     data?.get('description'),
                     attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,

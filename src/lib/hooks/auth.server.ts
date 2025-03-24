@@ -33,7 +33,8 @@ export const handle: Handle = async ({event, resolve}) =>{
                 email:true,
                 profile:true,
                 department:true,
-                location:true
+                location:true,
+                workhour:true
             },
             where:{payroll},
         })

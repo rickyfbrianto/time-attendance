@@ -31,6 +31,7 @@ model employee {
   dept                                            dept?         @relation(fields: [department], references: [dept_code])
   employee_employee_substituteToemployee          employee?     @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
   other_employee_employee_substituteToemployee    employee[]    @relation("employee_substituteToemployee")
+  ijin                                            ijin[]
   skpd_skpd_createdByToemployee                   skpd[]        @relation("skpd_createdByToemployee")
   skpd_skpd_payrollToemployee                     skpd[]        @relation("skpd_payrollToemployee")
   spl_spl_createdByToemployee                     spl[]         @relation("spl_createdByToemployee")
@@ -59,6 +60,7 @@ model profile {
   access_spl        String        @db.VarChar(4)
   access_srl        String        @db.VarChar(4)
   access_cuti       String        @db.VarChar(4)
+  access_ijin       String        @db.VarChar(4)
   access_calendar   String        @db.VarChar(4)
   access_user       String        @db.VarChar(4)
   access_profile    String        @db.VarChar(4)
@@ -248,6 +250,20 @@ model skpd {
   @@index([sppd_id], map: "sppd_id")
 }
 
+model ijin {
+  ijin_id     String      @id @db.VarChar(40)
+  payroll     String?     @db.VarChar(8)
+  type        String      @db.VarChar(50)
+  description String      @db.VarChar(255)
+  start_date  DateTime    @db.Date
+  end_date    DateTime    @db.Date
+  status      ijin_status
+  createdAt   DateTime    @db.DateTime(0)
+  employee    employee?   @relation(fields: [payroll], references: [payroll])
+
+  @@index([payroll], map: "payroll")
+}
+
 enum profile_level {
   L0
   L1
@@ -291,4 +307,10 @@ enum srl_status {
 enum skpd_status {
   OPEN
   CLOSE
+}
+
+enum ijin_status {
+  OPEN
+  CANCEL
+  APPROVED
 }

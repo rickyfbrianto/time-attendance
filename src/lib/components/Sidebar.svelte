@@ -22,8 +22,9 @@
         {type:"separator", title:"Main"},
         {link:"/absen", title:"Check In/Out", icon: Clock8},
         {link:"/lembur", title:"Lembur", icon: Hourglass},
-        {link:"/ijin", title:"Ijin", icon: TicketsPlane},
         {link:"/dinas", title:"Dinas", icon: Plane},
+        {link:"/ijin", title:"Ijin", icon: TicketsPlane},
+        {link:"/cuti", title:"Cuti", icon: TicketsPlane},
         {type:"separator", title:"Admin"},
         {link:"/admin", title:"Admin", icon: ShieldUser},
     ]
