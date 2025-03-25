@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tabs, TabItem, Toast, Badge, Select, Label, Dropdown} from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Toast, Badge, Select, Label, Dropdown} from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
@@ -351,12 +351,12 @@
                 <Datatable table={tableSPL}>
                     <Table>
                         <TableHead class="bg-slate-500" >
-                            <ThSort table={tableSPL} field="spl_id"><TableHeadCell>SPL ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="purpose"><TableHeadCell>Purpose</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="est_start"><TableHeadCell>Datetime Start</TableHeadCell></ThSort>
-                            <ThSort table={tableSPL} field="est_end"><TableHeadCell>Datetime End</TableHeadCell></ThSort>
+                            <ThSort table={tableSPL} field="spl_id">SPL ID</ThSort>
+                            <ThSort table={tableSPL} field="purpose">Purpose</ThSort>
+                            <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
+                            <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
                             {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
-                                <ThSort table={tableSPL} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                                <ThSort table={tableSPL} field="">#</ThSort>
                             {/if}
                         </TableHead>
 
@@ -513,13 +513,13 @@
                 <Datatable table={tableSRL}>
                     <Table>
                         <TableHead class="bg-slate-500" >
-                            <ThSort table={tableSRL} field="srl_id"><TableHeadCell>SRL ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSRL} field="spl_id"><TableHeadCell>SPL ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSRL} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableSRL} field="real_start"><TableHeadCell>Real Start</TableHeadCell></ThSort>
-                            <ThSort table={tableSRL} field="real_end"><TableHeadCell>Real End</TableHeadCell></ThSort>
+                            <ThSort table={tableSRL} field="srl_id">SRL ID</ThSort>
+                            <ThSort table={tableSRL} field="spl_id">SPL ID</ThSort>
+                            <ThSort table={tableSRL} field="name">Name</ThSort>
+                            <ThSort table={tableSRL} field="real_start">Real Start</ThSort>
+                            <ThSort table={tableSRL} field="real_end">Real End</ThSort>
                             {#if pecahArray(data.userProfile.access_srl, "U") || pecahArray(data.userProfile.access_srl, "D")}
-                                <ThSort table={tableSRL} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                                <ThSort table={tableSRL} field="">#</ThSort>
                             {/if}
                         </TableHead>
 

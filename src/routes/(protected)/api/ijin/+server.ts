@@ -1,6 +1,5 @@
 import { error, json } from "@sveltejs/kit";
 import { checkFieldKosong, formatTanggal, isEmpty, prismaErrorHandler } from "@lib/utils";
-import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
 import { format } from "date-fns";
 
@@ -8,7 +7,7 @@ export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
-    const sort = url.searchParams.get('_sort') ?? "end_date"
+    const sort = url.searchParams.get('_sort') ?? "date"
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     

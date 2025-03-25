@@ -38,12 +38,6 @@
         }
     }
 
-    // const getAccount = async () =>{
-    //     const req = await axios.get('/account')
-    //     const res = await req.data
-    //     console.log(res)
-    // }
-    // getAccount()
 </script>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-white rounded-lg p-5 border border-slate-300">

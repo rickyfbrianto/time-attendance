@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fade, slide } from 'svelte/transition'
     import { Tabs, TabItem } from 'flowbite-svelte';
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Checkbox, TableSearch, Button, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Checkbox, Button, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ClockArrowDown, ClockArrowUp, RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '@lib/components/MyButton.svelte'
@@ -102,12 +102,12 @@
                 <Datatable table={tableAbsen}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableAbsen} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsen} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsen} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsen} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsen} field="tanggal"><TableHeadCell>Type</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsen} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsen} field="payroll">Payroll</ThSort>
+                            <ThSort table={tableAbsen} field="name">Name</ThSort>
+                            <ThSort table={tableAbsen} field="check_in">Check In</ThSort>
+                            <ThSort table={tableAbsen} field="check_out">Check Out</ThSort>
+                            <ThSort table={tableAbsen} field="tanggal">Type</ThSort>
+                            <ThSort table={tableAbsen} field="description">Description</ThSort>
                         </TableHead>
 
                         {#if tableAbsen.isLoading}
@@ -174,12 +174,12 @@
                 <Datatable table={tableAbsenDept}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableAbsenDept} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsenDept} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsenDept} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsenDept} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsenDept} field="tanggal"><TableHeadCell>Type</TableHeadCell></ThSort>
-                            <ThSort table={tableAbsenDept} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
+                            <ThSort table={tableAbsenDept} field="payroll">Payroll</ThSort>
+                            <ThSort table={tableAbsenDept} field="name">Name</ThSort>
+                            <ThSort table={tableAbsenDept} field="check_in">Check In</ThSort>
+                            <ThSort table={tableAbsenDept} field="check_out">Check Out</ThSort>
+                            <ThSort table={tableAbsenDept} field="tanggal">Type</ThSort>
+                            <ThSort table={tableAbsenDept} field="description">Description</ThSort>
                         </TableHead>
 
                         {#if tableAbsenDept.isLoading}

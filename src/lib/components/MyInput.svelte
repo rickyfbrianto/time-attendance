@@ -26,6 +26,8 @@
             <textarea class='w-full rounded-lg border-0 outline-none ring-0 ps-3 bg-bgdark text-textdark' {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
         {:else if type == 'daterange'}
             <SveltyPicker bind:value={value} isRange mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark flex" format={format} displayFormat={displayFormatDate}/>
+        {:else if type == 'date'}
+            <SveltyPicker bind:value={value} mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={format}/>
         {:else if type == 'datetime'}
             <SveltyPicker bind:value={value} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={format}/>
         {:else}

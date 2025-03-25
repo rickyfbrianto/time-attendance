@@ -5,12 +5,13 @@
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from '@lucide/svelte'
-    import {ListAccess, ListLevel, pecahArray} from '@lib/utils'
+    import {formatTanggal, ListAccess, ListLevel, pecahArray} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
     import bgadmin from '@lib/assets/bg-admin.jpg'
     import { page } from '$app/stores';
+	import { getYear } from 'date-fns';
     
     let {data} = $props()
         
@@ -279,7 +280,7 @@
         edit:false,
     })
     
-    const fetchData = async () =>{
+    const getSetting = async () =>{
         const req = await fetch('/api/admin/setting')
         const res = await req.json()
         if(res){
@@ -305,6 +306,85 @@
         }
     }
 
+    // Calendar
+    let tableCalendar = $state(new TableHandler([], {rowsPerPage}))
+    let tableCalendarSearch = tableCalendar.createSearch()
+
+    const formCalendarAnswer = {
+        calendar_id:"id",
+        description:"",
+        type:"",
+        date:"",
+        year: getYear(new Date()),
+    }
+    
+    const formCalendar = $state({
+        answer:{...formCalendarAnswer},
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    })
+    
+    const formCalendarSubmit = async () =>{
+        try {
+            formCalendar.error = ""
+            formCalendar.loading = true
+            const req = await axios.post('/api/admin/calendar', formCalendar.answer)
+            const res = await req.data
+            formCalendar.success = res.message
+            tableCalendar.invalidate()
+            formCalendarBatal()
+        } catch (error: any) {
+            formCalendar.error = error.message
+            formCalendar.success = ""
+        } finally {
+            formCalendar.loading = false
+        }
+    }
+
+    const formCalendarEdit = async (id:string) =>{
+        try {
+            formCalendar.loading = true
+            const req = await fetch(`/api/admin/calendar/${id}`)
+            const res = await req.json()
+            formCalendar.answer = {...res}
+
+            formCalendar.answer.type = res.type.replace('_',' ')
+            setTimeout(()=>{
+                formCalendar.answer.date = formatTanggal(res.date, false)
+            }, 100)
+            formCalendar.edit = true
+            formCalendar.add = false
+            formCalendar.loading = false
+        } catch (error) {
+            formCalendar.loading = false 
+        }
+    }
+
+    const formCalendarDelete = async (id: string) => {
+        try {
+            formCalendar.error = ""
+            formCalendar.loading = true
+            const req = await axios.delete(`/api/admin/calendar/${id}`)
+            const res = await req.data
+            formCalendar.success = res.message
+            tableCalendar.invalidate()
+        } catch (error) {
+            formCalendar.error = ""
+            formCalendar.success = ""
+        }finally{
+            formCalendar.loading = false
+        }
+    }
+    
+    const formCalendarBatal = () =>{
+        formCalendar.answer = {...formCalendarAnswer}
+        formCalendar.add = false
+        formCalendar.edit = false
+    }
+    
     $effect(()=>{
         tableProfile.load(async(state: State) => {
             try {
@@ -341,6 +421,18 @@
                 console.log(err.message)
             }
         })
+
+        tableCalendar.load(async(state: State) => {
+            try {
+                const req = await fetch(`/api/admin/calendar?${getParams(state)}&year=${formCalendar.answer.year}`);
+                if (!req.ok) throw new Error('Gagal mengambil data');
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
     })
 
     const getDept = async () =>{
@@ -359,6 +451,7 @@
         tableProfile.invalidate()
         tableUser.invalidate()
         tableDept.invalidate()
+        tableCalendar.invalidate()
     }, 1000)
 </script>
 
@@ -367,6 +460,7 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+    {JSON.stringify(formCalendar.answer)}
     {#if urlTab}
         <Toast class='my-2'>
             {urlMessage}
@@ -784,13 +878,13 @@
                     </Toast>
                 {/if}
 
-                {#await fetchData()}
+                {#await getSetting()}
                     <MyLoading message="Loading setting data"/>
                 {:then v}
                     <div class="flex flex-col gap-2 rounded-lg p-4 border-[2px] border-slate-300">
                         <div class="flex justify-between gap-2">
                             <MyButton onclick={formSettingSubmit}><Save size={16}/></MyButton>
-                            <MyButton onclick={()=> fetchData()}><RefreshCw size={16}/></MyButton>
+                            <MyButton onclick={getSetting}><RefreshCw size={16}/></MyButton>
                         </div>
                     </div>
 
@@ -799,6 +893,118 @@
                         <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
                     </form>
                 {/await}
+            </div>
+        </TabItem>
+        <TabItem title="Calendar">
+            <div class="flex flex-col gap-4">                
+                {#if formCalendar.error || formCalendar.success}
+                    <Toast color="red">
+                        <span class='flex gap-2'>
+                            {#if formCalendar.error}
+                            <Ban size={16} color="#d41c08" />
+                            {:else}
+                            <Check size={16} color="#08d42a" />
+                            {/if}
+                            {formCalendar.error || formCalendar.success}
+                        </span>
+                    </Toast>
+                {/if}
+
+                <div class="flex gap-2">                        
+                    {#if formCalendar.add || formCalendar.edit}
+                        <MyButton onclick={formCalendarBatal}><Ban size={16} /></MyButton>
+                        <MyButton onclick={formCalendarSubmit}><Save size={16}/></MyButton>
+                    {:else}
+                        <MyButton onclick={()=> formCalendar.add = true}><Plus size={16}/></MyButton>
+                    {/if}
+                </div>
+
+                {#if formCalendar.loading}
+                    <MyLoading message="Get calendar data"/>
+                {/if}
+                {#if formCalendar.add || formCalendar.edit}
+                    <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
+                        <input type='hidden' name="Calendar ID" disabled={formCalendar.edit} bind:value={formCalendar.answer.calendar_id}/>
+                        <MyInput type='date' title='Date' name="date" bind:value={formCalendar.answer.date} format="yyyy-mm-dd"/>
+                        <div class="flex flex-col gap-2">
+                            <Label>Type</Label>
+                            <select class='border-[2px] border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formCalendar.answer.type}>
+                                {#each ['Hari Libur', 'Cuti Bersama', 'Event Kantor'] as option}
+                                <option value={option}>{option}</option>
+                                {/each}
+                            </select>
+                        </div>
+                        <MyInput type='textarea' title='Description' name="description" bind:value={formCalendar.answer.description}/>
+                    </form>
+                {/if}
+                
+                <div class="flex gap-2">
+                    <select bind:value={tableCalendar.rowsPerPage} onchange={() => tableCalendar.setPage(1)}>
+                        {#each [10, 20, 50, 100] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <select bind:value={formCalendar.answer.year} onchange={()=>tableCalendar.invalidate()}>
+                        {#each [2024,2025] as option}
+                            <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <MyInput type='text' bind:value={tableCalendarSearch.value}/>
+                    <MyButton onclick={()=>tableCalendarSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableCalendar.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
+
+                <Datatable table={tableCalendar}>
+                    <Table>
+                        <TableHead>
+                            <ThSort table={tableCalendar} field="type">Type</ThSort>
+                            <ThSort table={tableCalendar} field="description">Description</ThSort>
+                            <ThSort table={tableCalendar} field="date">Date</ThSort>
+                            <ThSort table={tableCalendar} field="">#</ThSort>
+                        </TableHead>
+
+                        {#if tableCalendar.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableCalendar.rows.length > 0}
+                                    {#each tableCalendar.rows as row}
+                                        <TableBodyRow>
+                                            <TableBodyCell>{row.type}</TableBodyCell>
+                                            <TableBodyCell>{row.description}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.date, false)}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
+                                                <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton>
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <span>No data available</span>
+                                {/if}
+                            </TableBody>
+                        {/if}
+                    </Table>
+                    {#if tableCalendar.rows.length > 0}
+                    <div class="flex justify-between items-center gap-2 mt-3">
+                        <p class='text-muted self-end text-[.9rem]'>
+                            Showing {tableCalendar.rowCount.start} to {tableCalendar.rowCount.end} of {tableCalendar.rowCount.total} rows
+                            <Badge color="dark" border>Page {tableCalendar.currentPage}</Badge>
+                        </p>
+                        <div class="flex gap-2">
+                            <MyButton onclick={()=> tableCalendar.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                            <MyButton onclick={()=> tableCalendar.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                            {#each tableCalendar.pages as page}
+                                <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableCalendar.setPage(page)} type="button">{page}</MyButton>
+                            {/each}
+                            <MyButton onclick={()=> tableCalendar.setPage('next')}><ChevronRight size={16} /></MyButton>
+                            <MyButton onclick={()=> tableCalendar.setPage('last')}><ChevronLast size={16} /></MyButton>
+                        </div>
+                    </div>
+                    {/if}
+                </Datatable>
             </div>
         </TabItem>
     </Tabs>

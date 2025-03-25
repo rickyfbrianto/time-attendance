@@ -1,7 +1,7 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Select } from 'flowbite-svelte';
-	import {Calendar, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, CalendarCheck, NotebookPen} from '@lucide/svelte'
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Select } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, CalendarCheck, NotebookPen} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
@@ -100,7 +100,7 @@
         }
     }
 
-    const ijinList =[
+    const typeList =[
         ['Pernikahan Saya', 3],
         ['Pernikahan Keluarga', 4], 
         ['Kelahiran', 5],
@@ -142,6 +142,8 @@
     setTimeout(()=>{
         tableIjin.invalidate()
     }, 1000)
+
+    console.log(user)
 </script>
 
 <svelte:head>
@@ -205,7 +207,7 @@
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formIjin.answer.type}>
-                                        {#each ijinList as [item], i}
+                                        {#each typeList as [item], i}
                                             <option value={item}>{item}</option>
                                         {/each}
                                     </Select>
@@ -236,13 +238,12 @@
                 <Datatable table={tableIjin}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableIjin} field="ijin_id"><TableHeadCell>Ijin ID</TableHeadCell></ThSort>
-                            <ThSort table={tableIjin} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableIjin} field="type"><TableHeadCell>Type</TableHeadCell></ThSort>
-                            <ThSort table={tableIjin} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
-                            <ThSort table={tableIjin} field="start_date"><TableHeadCell>Start Date</TableHeadCell></ThSort>
-                            <ThSort table={tableIjin} field="end_date"><TableHeadCell>End Date</TableHeadCell></ThSort>
-                            <ThSort table={tableIjin} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            <ThSort table={tableIjin} field="ijin_id">Ijin ID</ThSort>
+                            <ThSort table={tableIjin} field="name">Name</ThSort>
+                            <ThSort table={tableIjin} field="date">Date</ThSort>
+                            <ThSort table={tableIjin} field="type">Type</ThSort>
+                            <ThSort table={tableIjin} field="description">Description</ThSort>
+                            <ThSort table={tableIjin} field="">#</ThSort>
                         </TableHead>
 
                         {#if tableIjin.isLoading}
@@ -253,13 +254,12 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableIjin.rows.length > 0}
                                     {#each tableIjin.rows as row}
-                                        <TableBodyRow>
+                                        <TableBodyRow>                                            
                                             <TableBodyCell>{row.ijin_id}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.date, false) || ""}</TableBodyCell>
                                             <TableBodyCell>{row.type}</TableBodyCell>
                                             <TableBodyCell>{row.description}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.start_date, false) || ""}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.end_date, false) || ""}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if pecahArray(userProfile.access_ijin, "U")}
                                                     <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>

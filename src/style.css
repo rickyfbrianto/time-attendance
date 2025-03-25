@@ -30,3 +30,12 @@ td{
     width: 100% !important;
 }
 
+select{
+    border: 2px solid  var(--color-slate-300);
+    background-color: var(--bg-bgdark);
+    border-radius: var(--radius-lg);
+    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentColor);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    outline-style: var(--tw-outline-style);
+    outline-width: 0px;
+}

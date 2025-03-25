@@ -34,11 +34,12 @@ export const handle: Handle = async ({event, resolve}) =>{
                 profile:true,
                 department:true,
                 location:true,
-                workhour:true
+                workhour:true,
+                join_date:true
             },
             where:{payroll},
         })
-        
+                
         event.locals.user = data
         event.locals.userProfile = data?.profile || null
         return await resolve(event)

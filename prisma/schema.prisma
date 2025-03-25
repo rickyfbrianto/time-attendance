@@ -21,6 +21,7 @@ model employee {
   workhour                                        Int           @default(8) @db.SmallInt
   approver                                        String?       @db.VarChar(8)
   substitute                                      String?       @db.VarChar(8)
+  join_date                                       DateTime      @default(now()) @db.Date
   signature                                       String        @db.VarChar(250)
   attendance_attendance_createdByToemployee       attendance[]  @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[]  @relation("attendance_user_id_machineToemployee")
@@ -193,10 +194,13 @@ model srl_detail {
 }
 
 model cuti {
-  cuti_id  String      @id @db.VarChar(40)
-  payroll  String      @db.VarChar(8)
-  datetime DateTime    @db.DateTime(0)
-  status   cuti_status
+  cuti_id     String      @id @db.VarChar(40)
+  payroll     String      @db.VarChar(8)
+  type        String      @db.VarChar(50)
+  description String      @db.VarChar(255)
+  date        DateTime    @db.Date
+  status      cuti_status
+  createdAt   DateTime    @db.DateTime(0)
 
   @@index([payroll], map: "payroll")
 }
@@ -255,8 +259,7 @@ model ijin {
   payroll     String?     @db.VarChar(8)
   type        String      @db.VarChar(50)
   description String      @db.VarChar(255)
-  start_date  DateTime    @db.Date
-  end_date    DateTime    @db.Date
+  date        DateTime    @db.Date
   status      ijin_status
   createdAt   DateTime    @db.DateTime(0)
   employee    employee?   @relation(fields: [payroll], references: [payroll])
@@ -288,12 +291,6 @@ enum dept_status {
   Nonaktif
 }
 
-enum cuti_status {
-  Waiting
-  Reject
-  Approved
-}
-
 enum spl_status {
   OPEN
   CLOSE
@@ -309,8 +306,16 @@ enum skpd_status {
   CLOSE
 }
 
+enum cuti_status {
+  Waiting
+  Reject
+  Approved
+  Cancelled
+}
+
 enum ijin_status {
-  OPEN
-  CANCEL
-  APPROVED
+  Waiting
+  Reject
+  Approved
+  Cancelled
 }

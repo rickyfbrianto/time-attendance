@@ -265,12 +265,12 @@
                 <Datatable table={tableAttendance}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableAttendance} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="check_in"><TableHeadCell>Check In</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="check_out"><TableHeadCell>Check Out</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="type"><TableHeadCell>Type</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
-                            <ThSort table={tableAttendance} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            <ThSort table={tableAttendance} field="name">Name</ThSort>
+                            <ThSort table={tableAttendance} field="check_in">Check In</ThSort>
+                            <ThSort table={tableAttendance} field="check_out">Check Out</ThSort>
+                            <ThSort table={tableAttendance} field="type">Type</ThSort>
+                            <ThSort table={tableAttendance} field="description">Description</ThSort>
+                            <ThSort table={tableAttendance} field="">#</ThSort>
                         </TableHead>
 
                         {#if tableAttendance.isLoading}

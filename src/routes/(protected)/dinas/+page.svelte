@@ -1,6 +1,6 @@
 <script lang="ts">    
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox, Datepicker } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox, Datepicker } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
@@ -345,13 +345,13 @@
                 <Datatable table={tableSPPD}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableSPPD} field="sppd_id"><TableHeadCell>SPPD ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSPPD} field="purpose"><TableHeadCell>Purpose</TableHeadCell></ThSort>
-                            <ThSort table={tableSPPD} field="start_date"><TableHeadCell>Start Date</TableHeadCell></ThSort>
-                            <ThSort table={tableSPPD} field="end_date"><TableHeadCell>End Date</TableHeadCell></ThSort>
-                            <ThSort table={tableSPPD} field="duration"><TableHeadCell>Duration</TableHeadCell></ThSort>
-                            <ThSort table={tableSPPD} field="name"><TableHeadCell>Created By</TableHeadCell></ThSort>
-                            <ThSort table={tableSPPD} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            <ThSort table={tableSPPD} field="sppd_id">SPPD ID</ThSort>
+                            <ThSort table={tableSPPD} field="purpose">Purpose</ThSort>
+                            <ThSort table={tableSPPD} field="start_date">Start Date</ThSort>
+                            <ThSort table={tableSPPD} field="end_date">End Date</ThSort>
+                            <ThSort table={tableSPPD} field="duration">Duration</ThSort>
+                            <ThSort table={tableSPPD} field="name">Created By</ThSort>
+                            <ThSort table={tableSPPD} field="">#</ThSort>
                         </TableHead>
 
                         {#if tableSPPD.isLoading}
@@ -485,13 +485,13 @@
                 <Datatable table={tableSKPD}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableSKPD} field="skpd_id"><TableHeadCell>SKPD ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSKPD} field="sppd_id"><TableHeadCell>SPPD ID</TableHeadCell></ThSort>
-                            <ThSort table={tableSKPD} field="location"><TableHeadCell>Location</TableHeadCell></ThSort>
-                            <ThSort table={tableSKPD} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
-                            <ThSort table={tableSKPD} field="real_start"><TableHeadCell>Start Date</TableHeadCell></ThSort>
-                            <ThSort table={tableSKPD} field="real_end"><TableHeadCell>End Date</TableHeadCell></ThSort>
-                            <ThSort table={tableSKPD} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                            <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
+                            <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort>
+                            <ThSort table={tableSKPD} field="location">Location</ThSort>
+                            <ThSort table={tableSKPD} field="description">Description</ThSort>
+                            <ThSort table={tableSKPD} field="real_start">Start Date</ThSort>
+                            <ThSort table={tableSKPD} field="real_end">End Date</ThSort>
+                            <ThSort table={tableSKPD} field="">#</ThSort>
                         </TableHead>
         
                         {#if tableSKPD.isLoading}

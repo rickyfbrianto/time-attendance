@@ -51,6 +51,13 @@ export async function GET({url}){
                 LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
                 WHERE sd.payroll = ?`, val)
             return json(req)
+        }else if(type=='get_cuti'){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT
+                (SELECT getHakCuti(join_date, now()) as cuti FROM employee WHERE payroll = ?) as jatah_cuti,
+                (SELECT CAST(COUNT(*) as CHAR) as count from cuti where year(date) = year(now()) and STATUS ='Approved') as ambil_cuti`, 
+                val)
+            return json(req)
         }else{
             throw new Error("Parameter Invalid")
         }
