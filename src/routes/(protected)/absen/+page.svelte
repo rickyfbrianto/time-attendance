@@ -89,7 +89,7 @@
         <TabItem open title="My Absent">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
+                    <select bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -161,7 +161,7 @@
         <TabItem title="Departement">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
+                    <select bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}

@@ -4,6 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"db": "npx prisma db pull && npx prisma generate && npm run dev",
 		"o": "npx vite dev -- --open",
 		"dev": "vite dev",
 		"build": "vite build",

@@ -22,11 +22,14 @@ interface EncryptedData {
     encrypted: string;
 }
 
+export const formatWaktu = (val:string, format:string = "HH:mm:ss") => {
+    const temp = DateTime.fromISO(val, { zone: "UTC" })
+    return temp.toFormat(format).trim()
+}
+
 export const formatTanggal = (val:string, incTime:boolean = true) => {
     const temp = DateTime.fromISO(val, { zone: "UTC" })
-    return temp.toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`).trim()
-    // const temp = format(new Date(val), `yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`)
-    // return temp
+    return temp.setLocale('id').toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`).trim()
 }
 
 export const ListAccess = [

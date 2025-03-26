@@ -56,12 +56,12 @@ export async function POST({ request,  }) {
 
             if(!getSRL){
                 let newID
-                const dept = await tx.dept.findUnique({where:{dept_code: data.dept}})
+                const dept = data.spl_id.split('-')[1]
                 
                 const tempID = await tx.$queryRawUnsafe(`
                 SELECT srl_id as id from srl 
                     WHERE 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 2), '-', -1) = '${dept?.name}' AND 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 2), '-', -1) = '${dept}' AND 
                     SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 3), '-', -1) = year(now()) AND 
                     SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 4), '-', -1) = month(now())
                 ORDER by spl_id desc limit 0,1`)
@@ -71,14 +71,14 @@ export async function POST({ request,  }) {
                     newID[newID.length-1] = lastID
                     newID = newID.join('-')
                 }else{
-                    newID = `SRL-${dept?.name}-${format(new Date(), "yyyy-MM")}-1`
+                    newID = `SRL-${dept}-${format(new Date(), "yyyy-MM")}-1`
                 }
                 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO srl (srl_id, spl_id, payroll, real_start, real_end, status, createdBy, createdAt) 
-                    VALUES(?,?,?,?,?,?,?, now())`,
+                    INSERT INTO srl (srl_id, spl_id, payroll, real_start, real_end, status, createdAt) 
+                    VALUES(?,?,?,?,?,?, now())`,
                     newID, data.spl_id, data.payroll, new Date(data.real_start + " UTC"), 
-                    new Date(data.real_end + " UTC"), "CLOSE", data.createdBy)
+                    new Date(data.real_end + " UTC"), "OPEN")
 
                 await tx.srl_detail.createMany({
                     data: dataSRLDetail.map(({status, description}) => ({

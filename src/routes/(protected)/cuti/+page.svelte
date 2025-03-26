@@ -1,7 +1,7 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge} from '@lucide/svelte'
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
@@ -11,16 +11,11 @@
 	import { eachDayOfInterval, getDay } from 'date-fns';
 
     const rowsPerPage = 10
-    let {data} = $props()
-    let user = $derived(data.user)
-    let userProfile = $derived(data.userProfile)
+    const headerData: {title:string, value:string, icon: any }[] = []
 
-    const headerData = [
-        {title:"Total Cuti", value:18, icon: Calendar, link:""},
-        {title:"Sisa Cuti", value: 2, icon: Calendar, link:""},
-        {title:"Cuti Bersama", value: 1, icon: Calendar, link:""},
-        {title:"Ijin", value: 1, icon: Calendar, link:""},
-    ]
+    let {data} = $props()
+    let user = $derived(data.user) 
+    let userProfile = $derived(data.userProfile)
     
     let tableCuti = $state(new TableHandler([], {rowsPerPage}))
     let tableCutiSearch = tableCuti.createSearch()
@@ -81,7 +76,6 @@
             const res = await req.data
             
             formCuti.answer = {...res}
-            formCuti.answer.attachment = []
             
             formCuti.edit = true
             formCuti.add = false
@@ -115,9 +109,11 @@
     ]
     
     const getCuti = async () =>{
-        const req = await fetch(`/api/data?type=get_cuti&val=${user.payroll}`)
+        const req = await fetch(`/api/data?type=get_cuti&val=${user.payroll}&year=2025`)
         const res = await req.json()
-        return res[0]
+        Object.entries(res).map(val => {
+            headerData.push({title:val[0], value:val[1] as string, icon:Calendar})
+        })
     }
     
     $effect(()=>{
@@ -159,12 +155,10 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#await getCuti() then val}
-    {JSON.stringify(val)}
-    
         <div class="grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
-            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 items-center gap-4">
-                {#each headerData as {title, value, icon: Icon, link}}
-                    <a href={link} class="border-[2px] border-slate-200 px-4 py-2 min-w-[10rem] rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap">
+            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
+                {#each headerData as {title, value, icon: Icon}}
+                    <a href={"#"} class="border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap">
                         <span class="text-[.9rem] font-semibold">{title}</span>
                         <div class="flex justify-between items-center gap-1">
                             <span class='text-[1.4rem]'>{value}</span>
@@ -175,7 +169,7 @@
             </div>
         </div>
     {/await}
-
+    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Cuti">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
@@ -215,7 +209,7 @@
                                 <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
-                                    <Select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formCuti.answer.type}>
+                                    <Select bind:value={formCuti.answer.type}>
                                         {#each typeList as [item], i}
                                             <option value={item}>{item}</option>
                                         {/each}
@@ -234,7 +228,7 @@
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableCuti.rowsPerPage} onchange={() => tableCuti.setPage(1)}>
+                    <select bind:value={tableCuti.rowsPerPage} onchange={() => tableCuti.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}

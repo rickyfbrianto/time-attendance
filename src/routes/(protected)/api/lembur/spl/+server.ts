@@ -85,11 +85,9 @@ export async function POST({ request,  }) {
                     data: {
                         spl_id: newID,
                         purpose: data.purpose,
-                        dept: data.dept,
                         est_start: new Date(data.est_start + " UTC"),
                         est_end: new Date(data.est_end + " UTC"),
                         createdBy: data.createdBy,
-                        status: data.status,
                     },
                 })
 

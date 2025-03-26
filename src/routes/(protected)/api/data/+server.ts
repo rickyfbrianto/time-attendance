@@ -5,6 +5,8 @@ export async function GET({url}){
     try {
         const type = url.searchParams.get('type')
         const val = url.searchParams.get('val')
+        const date = url.searchParams.get('date')
+        const year = url.searchParams.get('year')
 
         if(type == "user"){
             const req = await prisma.$queryRawUnsafe(`
@@ -26,13 +28,10 @@ export async function GET({url}){
             return json(req)
         }else if(type=='spl_by_status'){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT spl_id, purpose, dept FROM spl WHERE status LIKE ?`, `%${val || ""}%`)
-            return json(req)
-        }else if(type=='spl_detail_by_spl_id'){
-            const req = await prisma.$queryRawUnsafe(`
-                SELECT sd.payroll, sd.description, e.name FROM spl_detail sd
-                LEFT JOIN employee e ON e.payroll = sd.payroll
-                WHERE sd.spl_id LIKE ?`, `%${val || ""}%`)
+                SELECT s.spl_id, s.purpose, s.est_start, s.est_end, sd.description
+                FROM spl as s
+                LEFT JOIN spl_detail as sd ON s.spl_id = sd.spl_id
+                WHERE sd.payroll = ? AND NOT EXISTS (SELECT 1 FROM srl WHERE s.spl_id = srl.spl_id)`, val) as any []
             return json(req)
         }else if(type=='srl_calculation_overflow'){
             const req = await prisma.$queryRawUnsafe(`
@@ -52,12 +51,30 @@ export async function GET({url}){
                 WHERE sd.payroll = ?`, val)
             return json(req)
         }else if(type=='get_cuti'){
-            const req = await prisma.$queryRawUnsafe(`
-                SELECT
-                (SELECT getHakCuti(join_date, now()) as cuti FROM employee WHERE payroll = ?) as jatah_cuti,
-                (SELECT CAST(COUNT(*) as CHAR) as count from cuti where year(date) = year(now()) and STATUS ='Approved') as ambil_cuti`, 
-                val)
-            return json(req)
+            const transact = await prisma.$transaction(async tx => {
+                const [cuti] = await tx.$queryRawUnsafe(`
+                    SELECT
+                    (SELECT getHakCuti(join_date, now()) as cuti FROM employee WHERE payroll = ?) as 'Total Cuti',
+                    (SELECT CAST(COUNT(*) as CHAR) as count from cuti where year(date) = year(now()) and STATUS ='Approved') as Cuti`, 
+                    val) as {'Total Cuti': number, Cuti: number}[]
+
+                const [getDataLibur] = await tx.$queryRawUnsafe(`
+                    select 
+                        sum(case when type = 'Cuti Bersama' then 1 else 0 end) AS 'Cuti Bersama',
+                        sum(case when type = 'Event Kantor' then 1 else 0 end) AS 'Event Kantor',
+                        sum(case when type = 'Hari Libur' then 1 else 0 end) AS 'Hari Libur' 
+                    FROM calendar WHERE year(date) = year(now()) AND month(date) <= month(now())`,
+                ) as {'Cuti Bersama':string, 'Event Kantor':string, 'Hari Libur':string}[]
+
+                const newData = Object.fromEntries(
+                    Object.entries({...cuti, ...getDataLibur})
+                    .map(([key, value]) => ([key, Number(value)]))
+                )
+                newData['Sisa Cuti'] = newData['Total Cuti'] - newData['Cuti'] - newData['Cuti Bersama']
+
+                return {...newData}
+            })
+            return json(transact)
         }else{
             throw new Error("Parameter Invalid")
         }

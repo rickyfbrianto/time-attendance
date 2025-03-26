@@ -9,7 +9,7 @@ export async function GET({params}){
             est_start: true,
             est_end: true,
             createdBy:true,
-            dept:true,
+            purpose:true,
             spl_detail: {
                 select: { 
                     payroll : true,

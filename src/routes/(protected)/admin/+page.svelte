@@ -460,7 +460,6 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {JSON.stringify(formCalendar.answer)}
     {#if urlTab}
         <Toast class='my-2'>
             {urlMessage}
@@ -558,7 +557,7 @@
                     {/if}
                     
                     <div class="flex gap-2">
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
+                        <select bind:value={tableProfile.rowsPerPage} onchange={() => tableProfile.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
@@ -691,7 +690,7 @@
                 {/if}
 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
+                    <select bind:value={tableUser.rowsPerPage} onchange={() => tableUser.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -792,7 +791,7 @@
                         <input type='hidden' name="Dept ID" disabled={formDeptState.edit} bind:value={formDeptState.answer.dept_id}/>
                         <MyInput type='text' title='Dept Code' name="dept_code" bind:value={formDeptState.answer.dept_code}/>
                         <MyInput type='text' title='Name' name="name" bind:value={formDeptState.answer.name}/>
-                        <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formDeptState.answer.status}>
+                        <select bind:value={formDeptState.answer.status}>
                             {#each ['Aktif', 'Nonaktif'] as option}
                                 <option value={option}>{option}</option>
                             {/each}
@@ -801,7 +800,7 @@
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableDept.rowsPerPage} onchange={() => tableDept.setPage(1)}>
+                    <select bind:value={tableDept.rowsPerPage} onchange={() => tableDept.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -928,7 +927,7 @@
                         <MyInput type='date' title='Date' name="date" bind:value={formCalendar.answer.date} format="yyyy-mm-dd"/>
                         <div class="flex flex-col gap-2">
                             <Label>Type</Label>
-                            <select class='border-[2px] border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formCalendar.answer.type}>
+                            <select bind:value={formCalendar.answer.type}>
                                 {#each ['Hari Libur', 'Cuti Bersama', 'Event Kantor'] as option}
                                 <option value={option}>{option}</option>
                                 {/each}

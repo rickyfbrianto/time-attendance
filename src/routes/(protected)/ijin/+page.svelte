@@ -142,8 +142,6 @@
     setTimeout(()=>{
         tableIjin.invalidate()
     }, 1000)
-
-    console.log(user)
 </script>
 
 <svelte:head>
@@ -206,7 +204,7 @@
                                 <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
-                                    <Select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formIjin.answer.type}>
+                                    <Select bind:value={formIjin.answer.type}>
                                         {#each typeList as [item], i}
                                             <option value={item}>{item}</option>
                                         {/each}
@@ -225,7 +223,7 @@
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableIjin.rowsPerPage} onchange={() => tableIjin.setPage(1)}>
+                    <select bind:value={tableIjin.rowsPerPage} onchange={() => tableIjin.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}

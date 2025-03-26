@@ -13,12 +13,6 @@
 </script>
 
 <main>    
-    <!-- <select value={item}>
-        {#each [5,10,15] as item}
-            <option value={item}>{item}</option>
-        {/each}
-    </select> -->
-    
     <div class="flex">
 
     </div>

@@ -15,10 +15,11 @@ td{
     color: var(--text-textdark);
 }
 
-.sv-control{
+:global(.sv-control){
     border: none;
     outline: none;
     background-color: var(--bg-bgdark)!;
+    border: 2px solid var(--color-slate-300)!;
 }
 
 .sv-input--text, .sv-control--selection, .sv-input--sizer{

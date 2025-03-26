@@ -13,7 +13,9 @@
     import Svelecte from 'svelecte'
     import bglembur from '@lib/assets/bg-lembur.jpg'
     
-    let { data } = $props()
+    let {data} = $props()
+    let user = $derived(data.user) 
+    let userProfile = $derived(data.userProfile)
 
     const rowsPerPage = 10
     
@@ -28,12 +30,11 @@
     const formSPLAnswer = {
         spl_id: "id",
         purpose:"",
-        dept: data.user.profile.user_hrd ? "" : data.user.department,
+        dept: user?.department,
         spl_detail:[{payroll:"",description:""}],
         est_start:"",
         est_end:"",
-        createdBy: data.user?.payroll,
-        status:"OPEN"
+        createdBy: user?.payroll,
     }
     
     let formSPL = $state({
@@ -102,15 +103,13 @@
     const formSRLAnswer = {
         srl_id: "id",
         spl_id: "",
-        payroll: "",
-        dept:"",
+        payroll: user?.payroll,
         real_start: "",
         real_end:"",
         srl_detail:[{description:"", status: ""}],
-        createdBy: data.user?.payroll,
     }
 
-    let formSRLDetailAnswer = $state([{description:""}])
+    let formSRLDetailAnswer = $state([])
     
     let formSRL = $state({
         answer: {...formSRLAnswer},
@@ -128,8 +127,8 @@
             const req = await axios.post('/api/lembur/srl', formSRL.answer)
             const res = await req.data
             formSRL.success = res.message
-            formSPLBatal()
-            tableSPL.invalidate()
+            formSRLBatal()
+            tableSRL.invalidate()
         } catch (error: any) {
             formSRL.error = error.response.data.message
             formSRL.success = ""
@@ -154,6 +153,7 @@
                 real_start: formatTanggal(res.real_start),
                 real_end: formatTanggal(res.real_end),
             }
+
             formSRL.edit = true
             formSRL.add = false
             formSRL.loading = false
@@ -161,47 +161,31 @@
             formSRL.loading = false
         }
     }
-    
-    const getDept = async () =>{
-        const req = await fetch('/api/data?type=dept')
-        return await req.json()
-    }
 
     const getSPL = async () =>{
-        const req = await fetch('/api/data?type=spl_by_status&val=open')
-        return await req.json()
+        const req = await fetch(`/api/data?type=spl_by_status&val=${user.payroll}`)
+        const res = await req.json()
+        formSRLDetailAnswer = res.map((val: any) => ({est_start:val.est_start, est_end: val.est_end, spl_id: val.spl_id, description: val.description}))
+        return res
     }
     
     const getUserByDept = $derived.by(() => {
-        return async (v:string) =>{
-            const req = await fetch(`/api/data?type=user_by_dept&val=${v}`)
+        return async () =>{
+            const req = await fetch(`/api/data?type=user_by_dept&val=${user.department}`)
             const res = await req.json()
             return res
         }
     })
-    
-    const getSPLDetail = $derived.by(()=>{
-        return async (v:string) =>{
-            const req = await fetch(`/api/data?type=spl_detail_by_spl_id&val=${v}`)
-            const res = await req.json()
-            formSRLDetailAnswer = res.map((v:any)=> ({description: v.description, payroll:v.payroll}))
-            return res
-        }
-    })
 
-    const getPayrollDetailJobs = $derived.by(()=> {
-        return async (payroll:string) =>{
-            const newData = formSRLDetailAnswer.filter((val: any) => val.payroll == payroll)[0]
-            formSRL.answer.srl_detail = (newData.description) 
-                ? newData.description.split(',').map((v:string) => ({description: v.trim(), status:"Completed"}))
-                : [{description:"", status: ""}]
-
-            const req = await fetch(`/api/data?type=srl_calculation_overflow&val=${payroll}`)
-            const res = await req.json()
-            formSRL.answer.real_start = (res.length > 0) ? formatTanggal(res[0].check_in) :""
-            formSRL.answer.real_end = (res.length > 0) ? formatTanggal(res[0].check_out) :""
-        }
-    })
+    const getSPLAll = (id:string) =>{
+        const {description, est_start, est_end} = formSRLDetailAnswer.find((v:any) => v.spl_id == id) as unknown as {description:string, est_start:string, est_end:string}
+        setTimeout(()=>{
+            formSRL.answer.real_start = formatTanggal(est_start)
+            formSRL.answer.real_end = formatTanggal(est_end)
+        }, 100)
+        formSRL.answer.srl_detail = description.split(',').map(v => v.trim())
+            .map(v => ({description: v.trim(), status:"Completed"}))
+    }
 
     $effect(()=>{
         tableSPL.load(async (state:State) => {
@@ -247,7 +231,7 @@
     <title>Lembur</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">        
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
@@ -271,12 +255,12 @@
 
                 <div class="flex gap-2">                        
                     {#if formSPL.add || formSPL.edit}
-                        {#if pecahArray(data.userProfile?.access_spl, "C") || pecahArray(data.userProfile.access_spl, "U")}
+                        {#if pecahArray(userProfile?.access_spl, "C") || pecahArray(userProfile.access_spl, "U")}
                             <MyButton onclick={formSPLBatal}><Ban size={16} /></MyButton>
                             <MyButton disabled={formSPL.loading} onclick={formSPLSubmit}><Save size={16}/></MyButton>
                         {/if}
                     {:else}
-                        {#if pecahArray(data.userProfile?.access_spl, "C")}
+                        {#if pecahArray(userProfile?.access_spl, "C")}
                             <MyButton onclick={()=> formSPL.add = true}><Plus size={16}/></MyButton>
                         {/if}
                     {/if}
@@ -287,16 +271,6 @@
                 {/if}
                 {#if formSPL.add || formSPL.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        {#if data.user.profile.user_hrd}
-                            {#await getDept() then val}
-                                <div class="flex flex-col gap-2 flex-1">
-                                    <Label>Department</Label>
-                                    <Svelecte disabled={formSPL.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.dept} 
-                                        options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " | " + v.name}))}/>
-                                </div>
-                            {/await}
-                        {/if}
-
                         <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
                         
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -306,11 +280,11 @@
                             <MyInput type='datetime' title='Waktu Selesai' name="est_end" bind:value={formSPL.answer.est_end}/>
                         </div>
 
-                        <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
+                        <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
                             {#each formSPL.answer.spl_detail as list, i}
                                 <div class="flex flex-col gap-2">
                                     <div class="flex gap-2 items-end">
-                                        {#await getUserByDept(formSPL.answer.dept) then val}
+                                        {#await getUserByDept() then val}
                                             <div class="flex flex-col gap-2 flex-1">
                                                 <Label>{`Employee ${i+1}`}</Label>
                                                 <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
@@ -333,12 +307,12 @@
                                 </div>
                             {/each}
                         </div>
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
                     </form>
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
+                    <select bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -355,7 +329,7 @@
                             <ThSort table={tableSPL} field="purpose">Purpose</ThSort>
                             <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
                             <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
-                            {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
+                            {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
                                 <ThSort table={tableSPL} field="">#</ThSort>
                             {/if}
                         </TableHead>
@@ -373,10 +347,10 @@
                                             <TableBodyCell>{row.purpose}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
-                                            {#if pecahArray(data.userProfile.access_spl, "U") || pecahArray(data.userProfile.access_spl, "D")}
+                                            {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
                                                 <TableBodyCell>
-                                                    {#if pecahArray(data.userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                    {#if pecahArray(data.userProfile.access_spl, "D")}<MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if}
+                                                    {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                    {#if pecahArray(userProfile.access_spl, "D")}<MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if}
                                                 </TableBodyCell>
                                             {/if}
                                         </TableBodyRow>
@@ -426,12 +400,12 @@
 
                 <div class="flex gap-2">                        
                     {#if formSRL.add || formSRL.edit}
-                        {#if pecahArray(data.userProfile?.access_srl, "C") || pecahArray(data.userProfile.access_srl, "U")}
+                        {#if pecahArray(userProfile?.access_srl, "C") || pecahArray(userProfile.access_srl, "U")}
                             <MyButton onclick={formSRLBatal}><Ban size={16} /></MyButton>
                             <MyButton disabled={formSRL.loading} onclick={formSRLSubmit}><Save size={16}/></MyButton>
                         {/if}
                     {:else}
-                        {#if pecahArray(data.userProfile?.access_srl, "C")}
+                        {#if pecahArray(userProfile?.access_srl, "C")}
                             <MyButton onclick={()=> formSRL.add = true}><Plus size={16}/></MyButton>
                         {/if}
                     {/if}
@@ -442,43 +416,34 @@
                 {/if}
                 {#if formSRL.add || formSRL.edit}
                     <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                        {#await getSPL() then val}
+                            <div class="flex flex-col gap-2 flex-1">
+                                <Label>SPL ID</Label>
+                                <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
+                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id + " | " + v.purpose}))}
+                                    onChange={(e:any) => getSPLAll(e.value)}
+                                />
+                            </div>
+                        {/await}
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="srl_id" disabled={formSRL.edit} bind:value={formSRL.answer.srl_id}/>
-                            {#await getSPL() then val}
-                                <div class="flex flex-col gap-2 flex-1">
-                                    <Label>SPL ID</Label>
-                                    <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
-                                        options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id + " | " + v.purpose, dept:v.dept}))}
-                                        onChange={(e:any) => {if(e) formSRL.answer.dept = e.dept}}
-                                    />
-                                </div>
-                            {/await}
                             
-                            {#if formSRL.answer.spl_id}
-                                <div class="flex flex-col gap-2">
-                                    <Label>Payroll</Label>
-                                    {#await getSPLDetail(formSRL.answer.spl_id) then val}
-                                        <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.payroll} 
-                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " | " + v.name}))} 
-                                            onChange={(e:any) => {if(e.value) getPayrollDetailJobs(e.value)}}/>
-                                    {/await}
-                                </div>
-                                
+                            {#if formSRL.answer.spl_id}                                
                                 <MyInput type='text' title='Realisasi Mulai' name="real_start" bind:value={formSRL.answer.real_start}/>
                                 <MyInput type='text' title='Realisasi Selesai' name="real_end" bind:value={formSRL.answer.real_end}/>
                             {/if}
                         </div>
 
                         {#if formSRL.answer.spl_id}
-                            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
+                        <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
                                 {#each formSRL.answer.srl_detail as list, i}
                                     <div class="flex flex-col gap-2">
                                         <div class="flex gap-2 items-end">
                                             <div class="flex flex-1 flex-col gap-2">
                                                 <Label>Status {i + 1}</Label>
-                                                <select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={list.status}>
+                                                <select bind:value={list.status}>
                                                     {#each ["Hold", "On Progress", "Completed"] as option}
-                                                    <option value={option}>{option}</option>
+                                                        <option value={option}>{option}</option>
                                                     {/each}
                                                 </select>
                                             </div>
@@ -495,12 +460,12 @@
                                 {/each}
                             </div>
                         {/if}
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
                     </form>
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
+                    <select bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -518,7 +483,7 @@
                             <ThSort table={tableSRL} field="name">Name</ThSort>
                             <ThSort table={tableSRL} field="real_start">Real Start</ThSort>
                             <ThSort table={tableSRL} field="real_end">Real End</ThSort>
-                            {#if pecahArray(data.userProfile.access_srl, "U") || pecahArray(data.userProfile.access_srl, "D")}
+                            {#if pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")}
                                 <ThSort table={tableSRL} field="">#</ThSort>
                             {/if}
                         </TableHead>
@@ -537,10 +502,10 @@
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
-                                            {#if pecahArray(data.userProfile.access_srl, "U") || pecahArray(data.userProfile.access_srl, "D")}
+                                            {#if pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")}
                                                 <TableBodyCell>
-                                                    {#if pecahArray(data.userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                    <!-- {#if pecahArray(data.userProfile.access_srl, "D")}<MyButton onclick={()=> formSRLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if} -->
+                                                    {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                    <!-- {#if pecahArray(userProfile.access_srl, "D")}<MyButton onclick={()=> formSRLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if} -->
                                                 </TableBodyCell>
                                             {/if}
                                         </TableBodyRow>

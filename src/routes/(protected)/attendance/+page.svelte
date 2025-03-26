@@ -7,8 +7,8 @@
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray } from '@lib/utils';
-    import { format } from "date-fns";
+	import { formatTanggal, formatWaktu, pecahArray } from '@lib/utils';
+    import { format, parse } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 
@@ -230,7 +230,7 @@
                             
                             <div class="flex flex-col gap-2">
                                 <Label>Type</Label>
-                                <Select size="md" class='w-full' items={listType} bind:value={formAttendance.answer.type} />
+                                <Select size="md" items={listType} bind:value={formAttendance.answer.type} />
                             </div>
 
                             <div class="flex flex-col md:flex-row gap-2">
@@ -252,7 +252,7 @@
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
+                    <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -265,7 +265,7 @@
                 <Datatable table={tableAttendance}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableAttendance} field="name">Name</ThSort>
+                            <ThSort table={tableAttendance} field="check_in">Date</ThSort>
                             <ThSort table={tableAttendance} field="check_in">Check In</ThSort>
                             <ThSort table={tableAttendance} field="check_out">Check Out</ThSort>
                             <ThSort table={tableAttendance} field="type">Type</ThSort>
@@ -282,18 +282,15 @@
                                 {#if tableAttendance.rows.length > 0}
                                     {#each tableAttendance.rows as row}
                                         <TableBodyRow>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_in) || ""}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_out) || ""}</TableBodyCell>
+                                            <TableBodyCell>{format(row.check_in, "dd-MMM-yyyy") || ""}</TableBodyCell>
+                                            <TableBodyCell>{['HKC','HKM'].includes(row.type) ? formatWaktu(row.check_in ) : "-" } </TableBodyCell>
+                                            <TableBodyCell>{['HKC','HKM'].includes(row.type) ? formatWaktu(row.check_out) : "-" }</TableBodyCell>
                                             <TableBodyCell>
                                                 {row.type == "HKC" ? "Hari Kerja Check Log" :
                                                 row.type == "HKM" ? "Hari Kerja Manual" :
-                                                row.type == "CO" ? "Check Out" :
-                                                row.type == "BI" ? "Break In" :
-                                                row.type == "BO" ? "Break Out" : 
                                                 row.type == "M" ? "Mangkir" : 
                                                 row.type == "I" ? "Ijin" : 
-                                                row.type == "C" ? "Cuti" :""}
+                                                row.type == "C" ? "Cuti" : row.type}
                                             </TableBodyCell>
                                             <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
                                             <TableBodyCell>

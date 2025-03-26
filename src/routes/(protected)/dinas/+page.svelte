@@ -332,7 +332,7 @@
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSPPD.rowsPerPage} onchange={() => tableSPPD.setPage(1)}>
+                    <select bind:value={tableSPPD.rowsPerPage} onchange={() => tableSPPD.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
@@ -458,7 +458,7 @@
                                 <MyInput type='text' title='Payroll' bind:value={formSKPD.answer.payroll} />
                                 <div class="flex flex-col gap-2">
                                     <Label>Status</Label>
-                                    <select class='border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={formSKPD.answer.status}>
+                                    <select bind:value={formSKPD.answer.status}>
                                         {#each ["OPEN","CLOSE"] as option}
                                             <option value={option}>{option}</option>
                                         {/each}
@@ -472,7 +472,7 @@
                 {/if}
                 
                 <div class="flex gap-2">
-                    <select class='self-end border-slate-300 bg-bgdark rounded-lg ring-0' bind:value={tableSKPD.rowsPerPage} onchange={() => tableSKPD.setPage(1)}>
+                    <select bind:value={tableSKPD.rowsPerPage} onchange={() => tableSKPD.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}

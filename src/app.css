@@ -19,7 +19,8 @@
   --color-primary-900: #a5371b;
 
   --color-bgdark: #FFF;
-  --color-bgdark2: #F7F7FF;
+  /* --color-bgdark2: #F7F7FF; */
+  --color-bgdark2: var(--color-slate-50);
   --color-textdark: var(--color-slate-800);
   --color-bgside: var(--warna-base);
   --color-bgside2: #FFF;
