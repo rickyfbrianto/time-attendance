@@ -1,17 +1,20 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge } from '@lucide/svelte'
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Hr } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, RotateCw } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray } from '@lib/utils.js';
-	import { eachDayOfInterval, getDay } from 'date-fns';
+	import { eachDayOfInterval, format, getDay, getMonth, getYear } from 'date-fns';
+    import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 
     const rowsPerPage = 10
-    const headerData: {title:string, value:string, icon: any }[] = []
+    const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
+
+    let headerData: {title:string, value:string, icon: any }[] = $state([])
 
     let {data} = $props()
     let user = $derived(data.user) 
@@ -19,15 +22,19 @@
     
     let tableCuti = $state(new TableHandler([], {rowsPerPage}))
     let tableCutiSearch = tableCuti.createSearch()
+
+    let modalHeader = $state({
+        modal:false,
+        val:""
+    })
     
     const formCutiAnswer = {
         cuti_id: "id",
-        payroll:"",
+        payroll: user?.payroll,
         type: "",
         description: "",
         date:"",
-        status:"",
-        askDuration:0
+        status: "Waiting"
     }
     
     let formCuti = $state({
@@ -43,15 +50,8 @@
         try {
             formCuti.error = ""
             formCuti.loading = true
-            const formData = new FormData()
-            Object.entries(formCuti.answer).forEach(val=>{
-                formData.append(val[0], val[1])
-            })            
-            const req = await fetch('/api/cuti', {
-                method:"POST",
-                body: formData,
-            })
-            const res = await req.json()
+            const req = await axios.post('/api/cuti', formCuti.answer)
+            const res = await req.data
             formCuti.success = res.message
             formCutiBatal()
         } catch (error: any) {
@@ -108,27 +108,26 @@
         ['Ibadah Haji',10]
     ]
     
-    const getCuti = async () =>{
-        const req = await fetch(`/api/data?type=get_cuti&val=${user.payroll}&year=2025`)
+    const getCutiUser = async () =>{
+        const year = getYear(new Date())
+        // const month = getMonth(new Date()) + 1
+        const month = 12
+        const req = await fetch(`/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`)
         const res = await req.json()
-        Object.entries(res).map(val => {
-            headerData.push({title:val[0], value:val[1] as string, icon:Calendar})
-        })
+        headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
     }
+
+    let cutiBersamaCalendar = $state([])
     
-    $effect(()=>{
-        if(Array.isArray(formCuti.answer.date) && formCuti.answer.date[0] && formCuti.answer.date[1]){
-            const daysInRange = eachDayOfInterval({ start: formCuti.answer.date[0], end: formCuti.answer.date[1] });
-            
-            const dayNames = daysInRange.map(date => getDay(date));
-            const dayFree = user?.workhour == 7 ? [0] : [0, 6]
-            let dayCount = 0 
-            dayNames.forEach(day => {
-                if(!dayFree.includes(day)) dayCount++
-            })
-            formCuti.answer.askDuration = isNaN(dayCount) ? 0 : dayCount
-        }
-    })
+    const getCutiCalendar = async (v: string) =>{
+        const year = getYear(new Date())
+        // const month = getMonth(new Date()) + 1
+        const month = 12
+        const req = await fetch(`/api/data?type=get_cuti_calendar&val=${v}&year=${year}&month=${month}`)
+        const res = await req.json()
+        cutiBersamaCalendar = res.map((v:any) => v.date)
+        return res
+    }
     
     $effect(()=>{
         tableCuti.load(async (state:State) =>{
@@ -147,28 +146,66 @@
     setTimeout(()=>{
         tableCuti.invalidate()
     }, 1000)
+    
+    const handleDetailHeader = (title: string) => {
+        if(eventCuti.includes(title)){
+            modalHeader.modal = true
+            modalHeader.val = title
+        }
+    }
 </script>
 
-<svelte:head>
+<svelte:head>   
     <title>Cuti</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#await getCuti() then val}
-        <div class="grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+    {#await getCutiUser()}
+        <MyLoading message={`Loading users data`}/>
+    {:then val}
+        <div class="relative grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
+            <MyButton onclick={getCutiUser} className='absolute left-[-1rem] top-[-1rem] bg-bgdark'><RotateCw size={14} /></MyButton>
             <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
                 {#each headerData as {title, value, icon: Icon}}
-                    <a href={"#"} class="border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap">
+                    <button onclick={() => handleDetailHeader(title)} class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap
+                    ${eventCuti.includes(title) ? "cursor-pointer":""}
+                    `}>
                         <span class="text-[.9rem] font-semibold">{title}</span>
-                        <div class="flex justify-between items-center gap-1">
-                            <span class='text-[1.4rem]'>{value}</span>
-                            <Icon size={20}/>
+                        <div class="flex justify-between items-center gap-2">
+                            <Icon size={16}/>
+                            <span class='text-[1.1rem] font-bold'>{value}</span>
                         </div>
-                    </a>
+                    </button>
                 {/each}
             </div>
         </div>
     {/await}
+
+    <Modal title={modalHeader.val} size={'sm'} bind:open={modalHeader.modal}>
+        {#await getCutiCalendar(modalHeader.val)}
+            <MyLoading message={`Loading ${modalHeader.val} data`}/>
+        {:then val}
+            {#if val.length > 0}
+                <div class="ps-4">
+                    <p class='-ms-3 mb-5'>There {val.length} day{val.length > 1 ? "s":""} on '{modalHeader.val}' events</p>
+                    <Timeline order="vertical">
+                        {#each val as {description, date}}
+                            <TimelineItem title={formatTanggal(date, false)} date={format(date, "EEEE")}>
+                                <svelte:fragment slot="icon">
+                                    <span class="flex absolute -start-3 justify-center items-center w-6 h-6 bg-primary-200 rounded-full ring-8 ring-white dark:ring-gray-900 dark:bg-primary-900">
+                                        <CalendarWeekSolid class="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                    </span>
+                                </svelte:fragment>
+                                <p>{description}</p>
+                            </TimelineItem>
+                        {/each}
+                    </Timeline>
+                </div>
+            {:else}
+                <span class='text-center'>There is no events</span>
+            {/if}
+        {/await}
+    </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Cuti">
@@ -214,9 +251,6 @@
                                             <option value={item}>{item}</option>
                                         {/each}
                                     </Select>
-                                </div>
-                                <div class="flex flex-1 flex-col gap-2">
-                                    <span class="text-[.8rem]">Your ask <span>{formCuti.answer.askDuration}</span></span>
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">

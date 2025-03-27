@@ -1,11 +1,13 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils'
+import { formatTanggal, prisma } from '@lib/utils'
+import { getMonth, getYear } from "date-fns";
 
 export async function GET({url}){
     try {
         const type = url.searchParams.get('type')
-        const val = url.searchParams.get('val')
+        const val = url.searchParams.get('val') || ""
         const date = url.searchParams.get('date')
+        const month = url.searchParams.get('month')
         const year = url.searchParams.get('year')
 
         if(type == "user"){
@@ -50,28 +52,35 @@ export async function GET({url}){
                 LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
                 WHERE sd.payroll = ?`, val)
             return json(req)
-        }else if(type=='get_cuti'){
+        }else if(type=='get_cuti_calendar'){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT * FROM calendar 
+                WHERE type like ? AND YEAR(date) = ? AND month(date) <= ?
+                ORDER BY date asc`, `%${val}%`, year, month)
+            return json(req)
+        }else if(type=='get_cuti_user'){
             const transact = await prisma.$transaction(async tx => {
                 const [cuti] = await tx.$queryRawUnsafe(`
                     SELECT
                     (SELECT getHakCuti(join_date, now()) as cuti FROM employee WHERE payroll = ?) as 'Total Cuti',
-                    (SELECT CAST(COUNT(*) as CHAR) as count from cuti where year(date) = year(now()) and STATUS ='Approved') as Cuti`, 
-                    val) as {'Total Cuti': number, Cuti: number}[]
+                    (SELECT CAST(COUNT(*) as CHAR) as count from cuti where year(date) = ? and STATUS ='Approved') as Cuti`, 
+                    val, year) as {'Total Cuti': number, Cuti: number, 'Sisa Cuti': number}[]
 
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select 
                         sum(case when type = 'Cuti Bersama' then 1 else 0 end) AS 'Cuti Bersama',
                         sum(case when type = 'Event Kantor' then 1 else 0 end) AS 'Event Kantor',
                         sum(case when type = 'Hari Libur' then 1 else 0 end) AS 'Hari Libur' 
-                    FROM calendar WHERE year(date) = year(now()) AND month(date) <= month(now())`,
+                        FROM calendar WHERE year(date) = ? AND month(date) <= ?`,
+                        year, month
                 ) as {'Cuti Bersama':string, 'Event Kantor':string, 'Hari Libur':string}[]
 
+                cuti['Sisa Cuti'] = Number(cuti["Total Cuti"]) - Number(cuti['Cuti']) - Number(getDataLibur['Cuti Bersama'])
+                
                 const newData = Object.fromEntries(
-                    Object.entries({...cuti, ...getDataLibur})
+                    Object.entries({...getDataLibur, ...cuti})
                     .map(([key, value]) => ([key, Number(value)]))
                 )
-                newData['Sisa Cuti'] = newData['Total Cuti'] - newData['Cuti'] - newData['Cuti Bersama']
-
                 return {...newData}
             })
             return json(transact)

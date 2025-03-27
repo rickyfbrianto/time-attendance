@@ -47,9 +47,6 @@ export async function POST({request, url}) {
             const getAttendance = await tx.attendance.findUnique({
                 where:{attendance_id : data.get('attendance_id')}
             })
-
-            // const check_in2 = safeDate(data.get('check_in2'))
-            // const check_out2 = safeDate(data.get('check_out2'))
                         
             if(!getAttendance){
                 const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance

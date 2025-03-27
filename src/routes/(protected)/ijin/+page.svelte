@@ -8,8 +8,7 @@
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray } from '@lib/utils.js';
-	import { Duration } from 'luxon';
-	import { addDays, differenceInDays, eachDayOfInterval, format, getDay } from 'date-fns';
+    import { addDays, differenceInDays, eachDayOfInterval, format, getDay } from 'date-fns';
 
     const rowsPerPage = 10
     let {data} = $props()

@@ -42,17 +42,17 @@ export async function POST({ request}) {
             if(!getIjin){
                 let newID
                 const dept = await tx.dept.findUnique({where:{dept_code: data.dept}})
-
+                
                 const tempID = await tx.$queryRawUnsafe(`
                     SELECT ijin_id as id from ijin 
-                    WHERE 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 2), '-', -1) = '${dept?.name}' AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 3), '-', -1) = year(now()) AND 
+                        WHERE 
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 2), '-', -1) = '${dept?.name}' AND 
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 3), '-', -1) = year(now()) AND 
                         SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 4), '-', -1) = month(now())
-                        ORDER by ijin_id desc limit 0,1`)
-                        if(tempID.length > 0){
-                            newID = tempID[0].id.split('-')
-                            const lastID = Number(newID[newID.length-1]) + 1
+                    ORDER by ijin_id desc limit 0,1`)
+                    if(tempID.length > 0){
+                        newID = tempID[0].id.split('-')
+                        const lastID = Number(newID[newID.length-1]) + 1
                     newID[newID.length-1] = lastID
                     newID = newID.join('-')
                     newID = newID.toUpperCase()
@@ -61,8 +61,8 @@ export async function POST({ request}) {
                 }
                 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO Ijin (ijin_id,payroll,type,description,start_date,end_date,status,createdAt) VALUES(?,?,?,?,?,?,?,now())`,
-                    newID,data.payroll,data.type,data.description,data.date[0],data.date[1],data.status)
+                    INSERT INTO Ijin (ijin_id,payroll,type,description,date,status,createdAt) VALUES(?,?,?,?,?,?,?,now())`,
+                    newID,data.payroll,data.type,data.description,data.date,data.status)
                 
                 return { message: "Data successfully saved" }
             }else{
