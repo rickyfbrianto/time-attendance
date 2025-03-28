@@ -1,7 +1,7 @@
 import { error, json } from "@sveltejs/kit";
-import { checkFieldKosong, formatTanggal, } from "@lib/utils";
+import { checkFieldKosong, formatTanggal, formatTanggalISO, } from "@lib/utils";
 import { prisma } from '@lib/utils.js'
-import { eachDayOfInterval, format, getDay, getYear } from "date-fns";
+import { eachDayOfInterval, format, formatISO, getDay, getYear } from "date-fns";
 import { v4 as uuid4 } from "uuid";
 
 export async function GET({url}){
@@ -30,18 +30,15 @@ export async function GET({url}){
     return json(status)
 }
 
-export async function POST({ request, locals }) {
+export async function POST({ request }) {
     try {        
         const data = await request.json();
-        const { isError, errorCount } = checkFieldKosong(data);
-        if (isError) 
-            throw new Error(`${errorCount} input masih kosong`)
         
         const status = await prisma.$transaction(async tx =>{
             const getCuti = await tx.cuti.findUnique({
                 where:{cuti_id : data.cuti_id}
             })
-
+            
             if(!getCuti){
                 const user = await tx.employee.findUnique({
                     select:{workhour: true},
@@ -51,8 +48,7 @@ export async function POST({ request, locals }) {
                 const year = getYear(new Date())
                 const month = 12
                 const resCalendar = await prisma.$queryRawUnsafe(`
-                    SELECT date FROM calendar 
-                    WHERE YEAR(date) = ? AND month(date) <= ?
+                    SELECT date FROM calendar WHERE YEAR(date) = ? AND month(date) <= ?
                     ORDER BY date asc`, year, month) as {date: string}[]
 
                 const daysInRange = eachDayOfInterval({ start: data.date[0], end: data.date[1] })
@@ -62,24 +58,18 @@ export async function POST({ request, locals }) {
                     return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), false) == formatTanggal(format(cal.date, "yyyy-MM-dd"), false)) && !dayFree.includes(getDay(v))
                 }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), false))
 
-                Promise.all(
-                    [temp.forEach(async ([date]) => {
-                        await tx.$queryRawUnsafe(`INSERT INTO cuti (cuti_id,payroll,type,description,date,year,status,createdAt) VALUES(?,?,?,?,?,?,?,now())`,
-                            uuid4(),data.payroll,data.type,data.description,date,getYear(data.date[0]),data.status)
-                    })]
-                )
-                // await tx.cuti.createMany({
-                //     data: [...temp.map(([date], step) => ({
-                //         cuti_id: uuid4(),
-                //         payroll: data.payroll,
-                //         type: data.type,
-                //         description: data.description,
-                //         date,
-                //         year: getYear(data.date[0]),
-                //         status: data.status,
-                //         createdAt: format(data.date[0], "yyyy-MM-dd")
-                //     }))]
-                // })
+                await tx.cuti.createMany({
+                    data: [...temp.map((date) => ({
+                        cuti_id: uuid4(),
+                        payroll: data.payroll,
+                        type: data.type,
+                        description: data.description,
+                        date: formatTanggalISO(date),
+                        year: getYear(data.date[0]),
+                        status: data.status,
+                        createdAt: formatTanggalISO(new Date())
+                    }))]
+                })
                 
                 // let newID
                 // const [{name}] = await tx.$queryRawUnsafe(`

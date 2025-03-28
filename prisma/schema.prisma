@@ -191,6 +191,7 @@ model cuti {
   type        String      @db.VarChar(50)
   description String      @db.VarChar(255)
   date        DateTime    @db.Date
+  year        Int         @db.SmallInt
   status      cuti_status
   createdAt   DateTime    @db.DateTime(0)
   employee    employee?   @relation(fields: [payroll], references: [payroll])

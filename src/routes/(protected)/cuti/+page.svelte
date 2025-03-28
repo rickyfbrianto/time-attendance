@@ -1,16 +1,19 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Hr } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, RotateCw } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, pecahArray } from '@lib/utils.js';
-	import { eachDayOfInterval, format, getDay, getMonth, getYear } from 'date-fns';
+	import { formatTanggal, formatTanggalISO, pecahArray } from '@lib/utils.js';
+	import { eachDayOfInterval, format, getDay, parseISO, getYear, formatISO } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
-
+    import {z} from 'zod'
+    import {fromZodError} from 'zod-validation-error'
+    import { toZonedTime } from "date-fns-tz";
+    
     const rowsPerPage = 10
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
 
@@ -29,44 +32,53 @@
     })
     
     const formCutiAnswer = {
-        cuti_id: "id",
-        payroll: user?.payroll,
-        type: "",
-        description: "",
-        date:"",
-        status: "Waiting"
-    }
-    
-    let formCuti = $state({
-        answer: {...formCutiAnswer},
+        answer: {
+            cuti_id: "id",
+            payroll: user?.payroll,
+            type: "",
+            description: "",
+            date:"",
+            status: "Waiting",
+        },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+    }
+    
+    let formCuti = $state({...formCutiAnswer})
     
     const formCutiSubmit = async () =>{
         try {
-            formCuti.error = ""
             formCuti.loading = true
-            const req = await axios.post('/api/cuti', formCuti.answer)
-            const res = await req.data
-            formCuti.success = res.message
-            formCutiBatal()
+            const valid = z.object({
+                date: z.tuple([z.string(), z.string()], {message: "Date is not valid"}),
+                type: z.string().trim().min(1),
+                description: z.string().trim().min(5)
+            })
+            const isValid = valid.safeParse(formCuti.answer)
+            if(isValid.success){
+                const req = await axios.post('/api/cuti', formCuti.answer)
+                const res = await req.data
+                formCutiBatal()
+                tableCuti.invalidate()
+                formCuti.success = res.message
+            }else{
+                const err = fromZodError(isValid.error)
+                formCuti.success = ""
+                formCuti.error = err.message
+            }
         } catch (error: any) {
             formCuti.error = error.message
             formCuti.success = ""
         } finally {
             formCuti.loading = false
-            tableCuti.invalidate()
         }
     }
 
     const formCutiBatal = () =>{
-        formCuti.answer = {...formCutiAnswer}
-        formCuti.add = false
-        formCuti.edit = false
+        formCuti = {...formCutiAnswer}
     }
     
     const formCutiEdit = async (id:string) =>{
@@ -160,6 +172,8 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+    {JSON.stringify(formCuti)}
+    
     {#await getCutiUser()}
         <MyLoading message={`Loading users data`}/>
     {:then val}
@@ -210,15 +224,16 @@
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Cuti">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formCuti.error || formCuti.success}
-                    <Toast color="red">
-                        {#if formCuti.error}
-                            <Ban size={16} color="#d41c08" />
-                        {:else}
-                            <Check size={16} color="#08d42a" />
-                        {/if}
-                        {formCuti.error || formCuti.success}
-                    </Toast>
+                {#if formCuti.error}
+                    {#each formCuti.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formCuti.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formCuti.success}</span>
+                    </Alert>
                 {/if}
 
                 <div class="flex gap-2">
@@ -280,6 +295,7 @@
                             <ThSort table={tableCuti} field="date">Date</ThSort>
                             <ThSort table={tableCuti} field="type">Type</ThSort>
                             <ThSort table={tableCuti} field="description">Description</ThSort>
+                            <ThSort table={tableCuti} field="status">Status</ThSort>
                             <ThSort table={tableCuti} field="">#</ThSort>
                         </TableHead>
 
@@ -288,7 +304,7 @@
                                 <MyLoading message="Loading data"/>
                             </div>
                         {:else}
-                            <TableBody tableBodyClass="divide-y">
+                            <TableBody class='h-10'>
                                 {#if tableCuti.rows.length > 0}
                                     {#each tableCuti.rows as row}
                                         <TableBodyRow>
@@ -297,11 +313,14 @@
                                             <TableBodyCell>{formatTanggal(row.date, false) || ""}</TableBodyCell>
                                             <TableBodyCell>{row.type ?? "-"}</TableBodyCell>
                                             <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                            <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_attendance, "U") && !["HKC"].includes(row.type)}
+                                                {#if pecahArray(userProfile.access_cuti, "U") && row.status !== "Approved"}
                                                     <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
-                                                <MyButton onclick={()=> formCutiDelete(row.cuti_id)}><Trash size={12} /></MyButton>
+                                                {#if pecahArray(userProfile.access_cuti, "D") && row.status !== "Approved"}
+                                                    <MyButton onclick={()=> formCutiDelete(row.cuti_id)}><Trash size={12} /></MyButton>
+                                                {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}

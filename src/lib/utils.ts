@@ -32,6 +32,10 @@ export const formatTanggal = (val:string, incTime:boolean = true) => {
     return temp.setLocale('id').toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`).trim()
 }
 
+export const formatTanggalISO = (val:Date | string) =>{
+    return format(new Date(val), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+}
+
 export const ListAccess = [
     {value:"C", name:"Create"},
     {value:"R", name:"Read"},

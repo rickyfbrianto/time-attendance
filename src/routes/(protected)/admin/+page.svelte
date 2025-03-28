@@ -334,8 +334,8 @@
             const req = await axios.post('/api/admin/calendar', formCalendar.answer)
             const res = await req.data
             formCalendar.success = res.message
-            tableCalendar.invalidate()
             formCalendarBatal()
+            tableCalendar.invalidate()
         } catch (error: any) {
             formCalendar.error = error.message
             formCalendar.success = ""
@@ -460,6 +460,7 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+    {JSON.stringify(formCalendar.answer)}
     {#if urlTab}
         <Toast class='my-2'>
             {urlMessage}

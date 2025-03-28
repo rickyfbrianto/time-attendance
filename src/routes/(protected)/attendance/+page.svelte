@@ -1,6 +1,6 @@
 <script lang="ts">
     import { fade, slide } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Toast, Badge, Select } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select } from 'flowbite-svelte';
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
     import {dataSample } from '@lib/store/appstore'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
@@ -8,9 +8,11 @@
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
 	import { formatTanggal, formatWaktu, pecahArray } from '@lib/utils';
-    import { format, parse } from "date-fns";
+    import { format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
+	import { fromZodError } from 'zod-validation-error';
+	import { z } from 'zod';
 
     let {data} = $props()
     
@@ -28,8 +30,6 @@
 
     const listType = [
         {value:"HKM", name:"Hari Kerja Manual"},
-        {value:"BI", name:"Break In"},
-        {value:"BO", name:"Break Out"},
         {value:"I", name:"Ijin"},
         {value:"C", name:"Cuti"},
         {value:"M", name:"Mangkir"},
@@ -41,55 +41,63 @@
     let tableAttendanceSearch = tableAttendance.createSearch()
     
     const formAttendanceAnswer = {
-        attendance_id: "id",
-        user_id_machine:"",
-        check_in:"",
-        check_out:"",
-        check_in2: "",
-        check_out2: "",
-        type: "",
-        description: "",
-        attachment: [],
-        createdBy: user?.payroll || "",
-    }
-    
-    let formAttendance = $state({
-        answer: {...formAttendanceAnswer},
+        answer: {
+            attendance_id: "id",
+            user_id_machine:"",
+            check_in:"",
+            check_out:"",
+            check_in2: "",
+            check_out2: "",
+            type: "",
+            description: "",
+            attachment: [],
+            createdBy: user?.payroll || "",
+        },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+    }
+    
+    let formAttendance = $state({...formAttendanceAnswer})
     
     const formAttendanceSubmit = async () =>{
         try {
-            formAttendance.error = ""
             formAttendance.loading = true
+            const valid = z.object({
+                user_id_machine: z.string().trim().min(1),
+                check_in: z.string().trim().min(1),
+                check_out: z.string().trim().min(1),
+                type: z.string().trim().min(1)
+            })
             const formData = new FormData()
             Object.entries(formAttendance.answer).forEach(val=>{
                 formData.append(val[0], val[1])
-            })            
-            const req = await fetch('/api/attendance', {
-                method:"POST",
-                body: formData,
-            })
-            const res = await req.json()
-            formAttendance.success = res.message
-            formAttendanceBatal()
+            })  
+            
+            const isValid = valid.safeParse(formAttendance.answer)
+            if(isValid.success){
+                const req = await axios.post('/api/attendance', formData)
+                const res = await req.data
+                formAttendanceBatal()
+                tableAttendance.invalidate()
+                formAttendance.success = res.message
+            }else{
+                const err = fromZodError(isValid.error)
+                formAttendance.success = ""
+                formAttendance.error = err.message
+            }
         } catch (error: any) {
             formAttendance.error = error.message
             formAttendance.success = ""
         } finally {
             formAttendance.loading = false
-            tableAttendance.invalidate()
         }
     }
 
     const formAttendanceBatal = () =>{
-        formAttendance.answer = {...formAttendanceAnswer}
-        formAttendance.add = false
-        formAttendance.edit = false
+        formAttendance = {...formAttendanceAnswer}
     }
     
     const formAttendanceEdit = async (id:string) =>{
@@ -185,17 +193,16 @@
         </TabItem>
         <TabItem title="Attendance">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formAttendance.error || formAttendance.success}
-                    <Toast color="red">
-                        <span class='flex gap-2'>
-                            {#if formAttendance.error}
-                            <Ban size={16} color="#d41c08" />
-                            {:else}
-                            <Check size={16} color="#08d42a" />
-                            {/if}
-                            {formAttendance.error || formAttendance.success}
-                        </span>
-                    </Toast>
+                {#if formAttendance.error}
+                    {#each formAttendance.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formAttendance.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formAttendance.success}</span>
+                    </Alert>
                 {/if}
 
                 <div class="flex gap-2">
@@ -228,25 +235,29 @@
                                 </div>
                             {/await}
                             
-                            <div class="flex flex-col gap-2">
-                                <Label>Type</Label>
-                                <Select size="md" items={listType} bind:value={formAttendance.answer.type} />
-                            </div>
-
-                            <div class="flex flex-col md:flex-row gap-2">
-                                <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in}/>                            
-                                <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out}/>                            
-                            </div>
-                            <div class="flex flex-col">
-                                <div class="flex flex-col md:flex-row gap-2">
-                                    <MyInput type='datetime' title='Check In 2' name="check_in2" bind:value={formAttendance.answer.check_in2}/>
-                                    <MyInput type='datetime' title='Check Out 2' name="check_out2" bind:value={formAttendance.answer.check_out2}/>
+                            {#if formAttendance.answer.user_id_machine}
+                                <div class="flex flex-col gap-2">
+                                    <Label>Type</Label>
+                                    <Select size="md" items={listType} bind:value={formAttendance.answer.type} />
                                 </div>
-                                <span class='text-[.8rem] italic text-textdark'>Check in/out 2 for handle check in on same day (default empty)</span>
-                            </div>
-                            <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
+
+                                <div class="flex flex-col md:flex-row gap-2">
+                                    <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in}/>                            
+                                    <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out}/>                            
+                                </div>
+                                <div class="flex flex-col">
+                                    <div class="flex flex-col md:flex-row gap-2">
+                                        <MyInput type='datetime' title='Check In 2' name="check_in2" bind:value={formAttendance.answer.check_in2}/>
+                                        <MyInput type='datetime' title='Check Out 2' name="check_out2" bind:value={formAttendance.answer.check_out2}/>
+                                    </div>
+                                    <span class='text-[.8rem] italic text-textdark'>Check in/out 2 for handle check in on same day (default empty)</span>
+                                </div>
+                                <MyInput type='textarea' title='Description' bind:value={formAttendance.answer.description} />
+                            {/if}
                         </div>
-                        <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
+                        {#if formAttendance.answer.user_id_machine}
+                            <input type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
+                        {/if}
                         <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
                     </form>
                 {/if}
@@ -281,7 +292,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableAttendance.rows.length > 0}
                                     {#each tableAttendance.rows as row}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{format(row.check_in, "dd-MMM-yyyy") || ""}</TableBodyCell>
                                             <TableBodyCell>{['HKC','HKM'].includes(row.type) ? formatWaktu(row.check_in ) : "-" } </TableBodyCell>
                                             <TableBodyCell>{['HKC','HKM'].includes(row.type) ? formatWaktu(row.check_out) : "-" }</TableBodyCell>
@@ -293,11 +304,13 @@
                                                 row.type == "C" ? "Cuti" : row.type}
                                             </TableBodyCell>
                                             <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_attendance, "U") && !["HKC"].includes(row.type)}
-                                                    <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
+                                            <TableBodyCell tdClass='py-2'>
+                                                {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
+                                                <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
-                                                <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
+                                                {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
+                                                    <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
+                                                {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
