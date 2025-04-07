@@ -29,11 +29,12 @@
 
 @layer theme {
   .dark {
-    --color-bgdark: var(--color-slate-800);
+    /* --color-bgdark: var(--color-slate-800); */
+    --color-bgdark: #0F0A0A;
     --color-bgdark2: var(--color-slate-700);
     --color-textdark: #FFF;
-    --color-bgside: var(--color-slate-700);
-    --color-bgside2: var(--color-slate-600);
+    --color-bgside: #191919;
+    --color-bgside2: #272727;
     --color-textside: var(--color-slate-300);
   }
 }

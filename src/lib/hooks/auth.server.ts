@@ -10,7 +10,7 @@ export const handle: Handle = async ({event, resolve}) =>{
         const rootRoute = url.pathname.split('/').filter(v => v)[0]
         const token = cookies.get('token')
         let payroll
-
+        
         if(rootGroup == "(protected)" && rootRoute != "api"){
             if (!token) {
                 throw new Error(`/signin?redirectTo=${url.pathname}&message=Invalid Session`)

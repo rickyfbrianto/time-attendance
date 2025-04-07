@@ -35,7 +35,7 @@
             {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
         {/if}
         {#if password}
-            <button class='pe-3' type="button" transition:fade onclick={()=> showText = !showText}>
+            <button class='px-3' type="button" transition:fade onclick={()=> showText = !showText}>
                 {#if showText} <EyeClosed size={sizeIcon} /> {:else} <Eye size={sizeIcon}/>{/if}
             </button>
         {/if}

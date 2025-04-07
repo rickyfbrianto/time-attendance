@@ -172,13 +172,11 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
-    {JSON.stringify(formCuti)}
-    
     {#await getCutiUser()}
         <MyLoading message={`Loading users data`}/>
     {:then val}
         <div class="relative grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
-            <MyButton onclick={getCutiUser} className='absolute left-[-1rem] top-[-1rem] bg-bgdark'><RotateCw size={14} /></MyButton>
+            <MyButton onclick={getCutiUser} className='absolute left-[50%] translate-x-[-50%] bottom-[-1rem] bg-bgdark'><RotateCw size={14} /></MyButton>
             <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
                 {#each headerData as {title, value, icon: Icon}}
                     <button onclick={() => handleDetailHeader(title)} class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap
@@ -290,7 +288,6 @@
                 <Datatable table={tableCuti}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableCuti} field="cuti_id">Cuti ID</ThSort>
                             <ThSort table={tableCuti} field="name">Name</ThSort>
                             <ThSort table={tableCuti} field="date">Date</ThSort>
                             <ThSort table={tableCuti} field="type">Type</ThSort>
@@ -308,7 +305,6 @@
                                 {#if tableCuti.rows.length > 0}
                                     {#each tableCuti.rows as row}
                                         <TableBodyRow>
-                                            <TableBodyCell>{row.cuti_id}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.date, false) || ""}</TableBodyCell>
                                             <TableBodyCell>{row.type ?? "-"}</TableBodyCell>

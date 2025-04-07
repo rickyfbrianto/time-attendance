@@ -10,28 +10,30 @@ export async function GET({url}){
         const order = url.searchParams.get('_order') ?? "asc"
         const search = url.searchParams.get('_search') ?? ""
         
-        const dept = url.searchParams.get('dept')
-        const payroll = url.searchParams.get('payroll')
-        let where = "WHERE 1=1 and type IN ('HKC','HKM') " + (dept ? ` AND user.department = '${dept}'` :"") + (payroll ? ` AND user.payroll = '${payroll}'` :"") 
+        const dept = url.searchParams.get('dept') || ""
+        const payroll = url.searchParams.get('payroll') || ""
         
         const status = await prisma.$transaction(async (tx) =>{
             const items = await tx.$queryRawUnsafe(`SELECT att.user_id_machine, user.payroll, user.name, att.check_in, att.check_out, att.description, att.type
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                    ${where}
+                    WHERE type IN ('HKC','HKM') AND (user.department like ? AND user.payroll like ?)
                 ORDER by ${sort} ${order}
-                LIMIT ${limit} OFFSET ${offset}`)
+                LIMIT ${limit} OFFSET ${offset}`,
+                `%${dept}%`, `%${payroll}%`)
             
-            const tempTotal = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (SELECT att.user_id_machine, user.payroll, user.name, att.check_in, att.check_out, att.description, att.type
+            const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (SELECT att.user_id_machine, user.payroll, user.name, att.check_in, att.check_out, att.description, att.type
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                    ${where}) as tmp`)
-            const totalItems = Number(tempTotal[0].count)
+                    WHERE type IN ('HKC','HKM') AND user.department like ? AND user.payroll like ?
+                ) as tmp`,
+                `%${dept}%`, `%${payroll}%`) as {count:number}[]
+            const totalItems = Number(count)
             return {items, totalItems}
         })
-                
+
         return json(status)
     } catch (error) {
         console.log("err catch",error);

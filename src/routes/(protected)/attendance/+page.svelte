@@ -13,6 +13,7 @@
 	import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
 	import { z } from 'zod';
+	import { getParams } from '@lib/data/api.js';
 
     let {data} = $props()
     
@@ -143,7 +144,7 @@
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?payroll=${user?.payroll}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${user?.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)

@@ -4,7 +4,7 @@
     import usercewe from '@lib/assets/user-woman.svg'
     import { fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Avatar, Modal, Timeline, TimelineItem, Tooltip } from 'flowbite-svelte';
+	import { Card, Avatar, Modal, Timeline, TimelineItem, Tooltip } from 'flowbite-svelte';
     import {appstore } from '@lib/store/appstore'
     import { page } from '$app/state';
 	
@@ -60,17 +60,17 @@
         {/each}
     </div>
 
-    <div class="flex flex-col mb-10 mt-5 px-4">
+    <Card class="flex flex-col mb-10 mt-5 px-4">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
         <Tooltip>{data.user.name}</Tooltip>
         <span class="text-[16px] text-textdark font-[900] ">{data.user.name}</span>
         <span class="text-[12px] text-textdark self-start">{data.user.payroll}</span>
         <span class="text-[12px] text-textdark">{data.user.position}</span>
         <span class="text-[12px] text-textdark">{data.user.email}</span>
-    </div>
+    </Card>
 
     {#if data.userProfile.user_hrd}
-        <div class="absolute flex items-center bottom-0 left-[50%] translate-x-[-50%] flex bg-slate-200 px-5 py-2">
+        <div class="absolute flex items-center bottom-0 left-[50%] translate-x-[-50%] bg-slate-200 px-5 py-2">
             <span class='text-[.8rem]'>HRD User</span>
         </div>
     {/if}

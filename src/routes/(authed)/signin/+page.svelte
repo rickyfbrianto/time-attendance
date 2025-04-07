@@ -47,9 +47,9 @@
     <title>Signin</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark rounded-lg container border-[2px] border-slate-200">
-    <div class="flex p-6 bg-textdark rounded-t-lg">
-        <span class='text-white'>Login</span>
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg container border-[2px] border-slate-200">
+    <div class="flex p-6 bg-bgdark2 rounded-t-lg">
+        <span class=''>Login</span>
     </div>
     
     <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 min-w-[30rem]'>

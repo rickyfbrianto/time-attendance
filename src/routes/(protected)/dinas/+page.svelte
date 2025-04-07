@@ -1,6 +1,6 @@
 <script lang="ts">    
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Select, Checkbox, Datepicker } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Modal } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
@@ -12,6 +12,8 @@
 	import Svelecte from 'svelecte';
 	import { getParams } from '@lib/data/api.js';
     import bgtravel from '@lib/assets/bg-travel.jpg'
+    import { jsPDF } from "jspdf";
+    import html2canvas from 'html2canvas';
 
     let {data} = $props()
     
@@ -100,24 +102,26 @@
     let tableSKPDSearch = tableSKPD.createSearch()
     
     const formSKPDAnswer = {
-        skpd_id: "id",
-        sppd_id:"",
-        payroll:"",
-        date: ["", ""],
-        status: "",
-        createdBy: data.user?.payroll || "",
-    }
-    
-    let formSKPD = $state({
-        answer: {...formSKPDAnswer},
+        answer:{
+            skpd_id: "id",
+            sppd_id:"",
+            payroll:"",
+            date: ["", ""],
+            status: "",
+            createdBy: data.user?.payroll || "",
+        },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+        cetakPDF:false,
+        cetakPDFID:"",
+    }
+    
+    let formSKPD = $state({...formSKPDAnswer})
 
-    let formSKPDTemp:any[] = $state([])
+    let formSKPDTemp: any[] = $state([])
     
     const formSKPDSubmit = async () =>{
         try {
@@ -136,11 +140,7 @@
         }
     }
 
-    const formSKPDBatal = () =>{
-        formSKPD.answer = {...formSKPDAnswer}
-        formSKPD.add = false
-        formSKPD.edit = false
-    }
+    const formSKPDBatal = () => formSKPD = {...formSKPDAnswer}
     
     const formSKPDEdit = async (id:string) =>{
         try {
@@ -172,6 +172,28 @@
         } finally {
             formSKPD.loading = false
         }
+    }
+
+    const formCetakSKPD = (id:string) =>{
+        formSKPD.cetakPDF = true
+        formSKPD.cetakPDFID = id
+    }
+    
+    const handleCetakPDF = () =>{
+        const element = document.getElementById('cetakPDF');
+
+        const doc = new jsPDF()
+        doc.html(element!, {
+            callback: function(){
+                doc.save('SKPD.pdf')
+            },
+            x:10,
+            y:10,
+        })
+        doc.context2d 
+
+        // doc.text("Hello world!", 1, 1);
+        // doc.save(`${formSKPD.cetakPDFID}.pdf`);
     }
     
     const getDept = async () =>{
@@ -405,7 +427,7 @@
                 </Datatable>
             </div>
         </TabItem>
-        <TabItem title="SKPD">
+        <TabItem open title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error || formSKPD.success}
                     <Toast color="red">
@@ -516,7 +538,7 @@
                                                 {#if pecahArray(userProfile.access_skpd, "D")}
                                                     <MyButton onclick={()=> formSKPDDelete(row.skpd_id)}><Trash size={12} /></MyButton>
                                                     {/if}
-                                                <MyButton onclick={()=> formSKPDDelete(row.skpd_id)}><Printer size={12} /></MyButton>
+                                                <MyButton onclick={()=> formCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
@@ -547,6 +569,19 @@
                     {/if}
                 </Datatable>
             </div>
+
+            <Modal title="Terms of Service" bind:open={formSKPD.cetakPDF} size={'xl'} autoclose>
+                <div class="flex flex-col py-1" id="cetakPDF">
+                    <span>hello world</span>
+                    <div class="flex w-full ">
+                    <span class="">Hallo</span>
+                    </div>
+                    <div class="flex w-full ">
+                        <span>Surat Keterangan Perjalanan Dinas</span>
+                    </div>
+                </div>
+                <button onclick={handleCetakPDF}>Cetak</button>
+            </Modal>
         </TabItem>
     </Tabs>
 </main>

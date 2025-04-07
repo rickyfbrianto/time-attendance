@@ -2,8 +2,8 @@ import { DateTime } from "luxon";
 import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
-import { PrismaClient } from '@prisma/client';
 import { format, setDate, startOfDay, subMonths } from "date-fns";
+import { PrismaClient } from '@prisma/client';
 
 export const prisma = new PrismaClient({
     transactionOptions:{

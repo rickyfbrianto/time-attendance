@@ -30,7 +30,6 @@
 
     
     $effect(()=>{
-        
         if($appstore.darkMode){
             document.documentElement.classList.add('dark');
         }else{
