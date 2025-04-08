@@ -4,50 +4,6 @@
     import { Select, Label } from 'flowbite-svelte';
     import DonutChart from '@lib/components/DonutChart.svelte'
     // import { Calendar } from '@fullcalendar/core';
-
-    import Calendar from '@toast-ui/calendar';
-    import '@toast-ui/calendar/dist/toastui-calendar.min.css';
-
-    document.addEventListener('DOMContentLoaded', function() {
-    //     let calendarEl = document.getElementById('mycalendar');
-        
-    //     let calendar = new Calendar(calendarEl!, {
-    //         headerToolbar: {
-    //             left: 'prev,next today',
-    //             center: 'title',
-    //             right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    //         },
-    //         droppable: true
-    //     });
-        
-    //     calendar.render();
-
-        const calendar = new Calendar('#mycalendar', {
-        defaultView: 'week',
-        template: {
-            time(event) {
-            const { start, end, title } = event;
-
-            return `<span style="color: white;">${formatTime(start)}~${formatTime(end)} ${title}</span>`;
-            },
-            allday(event) {
-            return `<span style="color: gray;">${event.title}</span>`;
-            },
-        },
-        calendars: [
-            {
-            id: 'cal1',
-            name: 'Personal',
-            backgroundColor: '#03bd9e',
-            },
-            {
-            id: 'cal2',
-            name: 'Work',
-            backgroundColor: '#00a9ff',
-            },
-        ],
-        });
-    })
     
     let selected = ""
     

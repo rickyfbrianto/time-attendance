@@ -60,6 +60,7 @@
 		"luxon": "^3.5.0",
 		"nanoid": "^5.1.2",
 		"pdf-lib": "^1.17.1",
+		"puppeteer": "^24.6.0",
 		"svelecte": "^5.1.5",
 		"svelty-picker": "^5.2.11",
 		"uuid": "^11.1.0",

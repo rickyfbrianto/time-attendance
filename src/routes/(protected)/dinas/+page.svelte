@@ -2,7 +2,7 @@
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Modal } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
+    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
@@ -13,7 +13,8 @@
 	import { getParams } from '@lib/data/api.js';
     import bgtravel from '@lib/assets/bg-travel.jpg'
     import { jsPDF } from "jspdf";
-    import html2canvas from 'html2canvas';
+    import stm from '@lib/assets/stm.png'
+    import "@lib/assets/font/Comic-normal.js"
 
     let {data} = $props()
     
@@ -96,6 +97,73 @@
             formSPPD.loading = false
         }
     }
+
+    const handleCetakSPPD= async (id:string) =>{
+        const req = await axios.get(`/api/sppd/${id}`)
+        const res = await req.data
+
+        const doc = new jsPDF({
+            orientation:"p",
+            unit:"mm",
+            format:"a4"
+        })
+
+        const rowData = 0
+        let rowInc = 0
+        let row1 = 6
+        let row2 = 8
+        let row3 = 10
+
+        rowInc += row3
+        doc.rect(150, rowData + rowInc, 50, rowData + rowInc + 5)
+        doc.setFontSize(10)
+        rowInc += 5
+        doc.text("Form No  : 11-21", 152, rowData + rowInc)
+        rowInc += 4
+        doc.text("Rev No   : 0", 152, rowData + rowInc)
+        rowInc += 4
+        doc.text("Rev Date : Jan 2020", 152, rowData + rowInc)
+        
+        rowInc += row2
+        doc.rect(10, 28, 190, 236)
+        doc.addImage(stm, 13, rowData + rowInc, 20, 20)
+        doc.line(36, 28, 36, 53)
+        rowInc += 3
+        doc.setFontSize(12)
+        doc.text("HUMAN RESOURCES", 90, rowData + rowInc)
+        doc.setFontSize(14)
+        rowInc += row1
+        doc.text("SURAT PERINTAH PERJALANAN DINAS", 62, rowData + rowInc)
+        rowInc += 2
+        doc.line(36, rowData + rowInc, 200, rowData + rowInc)
+        rowInc += row1
+        doc.setFontSize(12)
+        doc.text("INSTRUCTION FOR BUSSINESS TRAVEL", 62, rowData + rowInc)
+        rowInc += row1
+        doc.line(10, rowData + rowInc, 200, rowData + rowInc)
+        
+        const colData = [12, 55, 60]
+        
+        doc.setFontSize(12)
+        rowInc += row3
+        doc.text("Nomor / No", colData[0], rowData + rowInc)
+        rowInc += row3
+        doc.text("To :", colData[0], rowData + rowInc)
+        rowInc += row1
+        doc.text("From :", colData[0], rowData + rowInc)
+
+        rowInc += row3
+        doc.text("Karyawan tersebut di bawah ini diperintahkan untuk menjalankan tugas dinas dengan spesifikasi", colData[0], rowData + rowInc)
+        rowInc += row1
+        doc.text("sebagai berikut : /", colData[0], rowData + rowInc)
+
+        rowInc += row2
+        doc.text("Nama", colData[0], rowData + rowInc)
+        doc.text(`: ${res}`, colData[1], rowData + rowInc)
+        doc.text(res.dept, colData[2], rowData + rowInc)
+        
+        doc.save(`${res.sppd_id}.pdf`);
+    }
     
     // SKPD
     let tableSKPD = $state(new TableHandler([], {rowsPerPage}))
@@ -174,26 +242,151 @@
         }
     }
 
-    const formCetakSKPD = (id:string) =>{
-        formSKPD.cetakPDF = true
-        formSKPD.cetakPDFID = id
-    }
-    
-    const handleCetakPDF = () =>{
-        const element = document.getElementById('cetakPDF');
+    const handleCetakSKPD= async (id:string) =>{
+        const req = await axios.get(`/api/skpd/${id}`)
+        const res = await req.data
 
-        const doc = new jsPDF()
-        doc.html(element!, {
-            callback: function(){
-                doc.save('SKPD.pdf')
-            },
-            x:10,
-            y:10,
+        const doc = new jsPDF({
+            orientation:"p",
+            unit:"mm",
+            format:"a4"
         })
-        doc.context2d 
+        doc.addFont("Comic", "bold", "normal")
 
-        // doc.text("Hello world!", 1, 1);
-        // doc.save(`${formSKPD.cetakPDFID}.pdf`);
+        const rowData = 10
+        let rowInc = 0
+        let row1 = 6
+        let row2 = 8
+        let row3 = 10
+
+        doc.setTextColor("#174ca3")
+        doc.addImage(stm,18, 8, 15, 15)
+        doc.setFontSize(22)
+        rowInc += row1
+        doc.text("PT. SAGATRADE MURNI", 62, rowData + rowInc)
+        doc.setFontSize(13)
+        rowInc += row1
+        doc.text("MANUFACTURES OF PRIMARY CEMENTING EQUIPMENT", 45, rowData + rowInc)
+        doc.rect(10, 28, 190, 236)
+        doc.setFont("Comic", "normal")
+        doc.setFontSize(16)
+        doc.setTextColor("#000000")
+        rowInc += 18
+        doc.text("SURAT KETERANGAN PERJALANAN DINAS", 56, rowData + rowInc)
+        rowInc += row2
+        doc.line(10, rowData + rowInc, 200, rowData + rowInc)
+        
+        rowInc += row3
+        doc.setFont("Tahoma")
+        doc.setFontSize(12)
+        doc.text("Nomor", 18, rowData + rowInc)
+        doc.text(`: ${res.skpd_id}`, 35, rowData + rowInc)
+        doc.text(`Jakarta, ${format(res.real_start, "d MMMM yyyy")}`, 145, rowData + rowInc)
+        
+        rowInc += row3
+        doc.text("Dengan Hormat,", 18, rowData + rowInc)
+        rowInc += row1
+        doc.text("Dalam rangka tugas perusahaan, maka dengan ini kami berikan Surat Keterangan Perjalanan Dinas", 18, rowData + rowInc)
+        rowInc += row1
+        doc.text("kepada karyawan :", 18, rowData + rowInc)
+
+        rowInc += row2
+        const colData = [18, 47, 50]
+        doc.text("- Nama", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(res.name, colData[2], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Payroll", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(`STM - ${res.payroll}`, colData[2], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Pangkat/Gol", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Jabatan", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Divisi/Bagian", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(res.dept, colData[2], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Tujuan", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(res.location, colData[2], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Keperluan", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(res.description.slice(0, 75).trim(), colData[2], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text(res.description.slice(75, 150).trim(), colData[2], rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Tanggal", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(format(res.real_start, "d MMMM yyyy"), colData[2], rowData + rowInc)
+        doc.text(`s/d    ${format(res.real_end, "d MMMM yyyy")}`, colData[2] + 60, rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+        rowInc += row2
+        doc.text("- Lamanya", colData[0], rowData + rowInc)
+        doc.text(":", colData[1], rowData + rowInc)
+        doc.text(`${differenceInDays(formatTanggal(res.real_end), formatTanggal(res.real_start))}`, colData[2], rowData + rowInc)
+        doc.text(`hari kerja.`, colData[2] + 40, rowData + rowInc)
+        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 45, rowData + rowInc + 2)
+        rowInc += row2 + 2
+        doc.text("Demikian Surat Keterangan Perjalanan Dinas ini kami keluarkan agar dapat dipergunakan sebagaimana", colData[0], rowData + rowInc)
+        rowInc += row1
+        doc.text("mestinya.", colData[0], rowData + rowInc)
+        rowInc += row2
+        doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
+        doc.text("Pejabat yang dituju,", colData[0] + 120, rowData + rowInc)
+        rowInc += row3 * 2.4
+        doc.text("Hari Sandi", colData[0], rowData + rowInc)
+        doc.line(colData[0] + 110, rowData + rowInc + 2, 180, rowData + rowInc + 2)
+        rowInc += row3
+        doc.text("Datang tanggal", colData[0] + 80, rowData + rowInc)
+        doc.text(":", colData[0] + 110, rowData + rowInc)
+        doc.line(colData[0] + 112, rowData + rowInc + 2, 180, rowData + rowInc + 2)
+        rowInc += row3
+        doc.text("Kembali tanggal", colData[0] + 80, rowData + rowInc)
+        doc.text(":", colData[0] + 110, rowData + rowInc)
+        doc.line(colData[0] + 112, rowData + rowInc + 2, 180, rowData + rowInc + 2)
+        rowInc += row1
+        doc.setFillColor(186, 187, 194)
+        doc.rect(colData[0], rowData + rowInc, 174, 21, "FD")
+        rowInc += row1
+        doc.text("PERHATIAN :", colData[0] + 4, rowData + rowInc)
+        rowInc += row1
+        doc.text("-", colData[0]  + 4, rowData + rowInc)
+        doc.text("Harap lapor kepada pejabat yang dikunjungi dan meminta tanda tangan setelah selesai", colData[0] + 8, rowData + rowInc)
+        rowInc += row1
+        doc.text("menjalankan tugas", colData[0] + 8, rowData + rowInc)
+        rowInc += row2
+        doc.text("* Pertinggal", colData[0], rowData + rowInc)
+
+        rowInc += row3
+        doc.setFontSize(8)
+        doc.text("Gandaria 8 Office Tower, Lt. 8, Jl. Sultan Iskandar Muda No-10, RT-10/RW-06 Kel. Kebayoran Lama - Jakarta 12770 Tel: (62-21) 7985951 Fax: (62-21) 7986134", 12, rowData + rowInc)
+        rowInc += 4
+        doc.setFontSize(9)
+        doc.text("Marketing Office :", 90, rowData + rowInc)
+        rowInc += 4
+        doc.setFontSize(8)
+        doc.text("Jl. Gandaria Tengah III No-25 Kramat Pela, Kebayoran Baru - Jakarta 12130 Telp : (62-21) 72797009, Fax : : (62-21) 7211435", 30, rowData + rowInc)
+        rowInc += 4
+        doc.setFontSize(9)
+        doc.text("Factory :", 95, rowData + rowInc)
+        rowInc += 4
+        doc.setFontSize(8)
+        doc.text("Jl. Lumba-lumba, Log. Pond Selili, Samarinda 75114 - Kalimantan Timur. Telp : (62-541) 240801 Fax : (62-541) 240604", 34, rowData + rowInc)
+        
+        doc.save(`${res.skpd_id}.pdf`);
     }
     
     const getDept = async () =>{
@@ -271,7 +464,7 @@
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Travel Page</span>
             </div>
         </TabItem>
-        <TabItem title="SPPD">
+        <TabItem open title="SPPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSPPD.error || formSPPD.success}
                     <Toast color="red">
@@ -396,6 +589,7 @@
                                                     <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
                                                 <MyButton onclick={()=> formSPPDDelete(row.sppd_id)}><Trash size={12} /></MyButton>
+                                                <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
@@ -427,7 +621,7 @@
                 </Datatable>
             </div>
         </TabItem>
-        <TabItem open title="SKPD">
+        <TabItem title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error || formSKPD.success}
                     <Toast color="red">
@@ -538,7 +732,7 @@
                                                 {#if pecahArray(userProfile.access_skpd, "D")}
                                                     <MyButton onclick={()=> formSKPDDelete(row.skpd_id)}><Trash size={12} /></MyButton>
                                                     {/if}
-                                                <MyButton onclick={()=> formCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
+                                                <MyButton onclick={()=> handleCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
@@ -580,7 +774,6 @@
                         <span>Surat Keterangan Perjalanan Dinas</span>
                     </div>
                 </div>
-                <button onclick={handleCetakPDF}>Cetak</button>
             </Modal>
         </TabItem>
     </Tabs>
