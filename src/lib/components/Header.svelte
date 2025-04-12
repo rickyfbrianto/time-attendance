@@ -28,21 +28,26 @@
         }, 1000)
     }
 
-    
-    $effect(()=>{
-        if($appstore.darkMode){
-            document.documentElement.classList.add('dark');
-        }else{
+    const handleDarkMode = (val)=>{
+        const temp = JSON.parse(localStorage.getItem('appstore') || "")
+        if(val)
+            document.documentElement.classList.add('dark')
+        else
             document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('appstore', JSON.stringify($appstore))
-    })
+        localStorage.setItem('appstore', JSON.stringify({...temp, darkMode: val}))
+    }
+
+    const handleShowSidebar = () =>{
+        const temp = JSON.parse(localStorage.getItem('appstore') || "")
+        appstore.update(state => ({...temp, showSidebar: !state.showSidebar}))
+        localStorage.setItem('appstore', JSON.stringify({...temp, showSidebar: !temp.showSidebar}))
+    }
 </script>
 
-<div class="flex justify-between items-center min-h-[var(--ukuran7)] w-full border-b-[2px] border-b-[#A0B3C1] px-4 bg-bgdark">
+<div class="flex justify-between items-center min-h-[var(--ukuran7)] w-full border-b-[2px] border-b-[#A0B3C1] px-4 bg-bgdark text-textdark">
     <div class="flex gap-x-4">
         <Breadcrumb aria-label="Solid background breadcrumb example" solid class='text-textdark'>
-            <button class='text-textdark' onclick={()=> appstore.update(state => ({...state, showSidebar : !state.showSidebar}))}>
+            <button class='text-textdark' onclick={handleShowSidebar}>
                 <AlignJustify class='cursor-pointer'/>
             </button>
             <BreadcrumbItem href="/dashboard" home homeClass='flex items-center text-textdark ms-2 '><span class="text-textdark text-sm">Dashboard</span></BreadcrumbItem>
@@ -52,19 +57,19 @@
         </Breadcrumb>
     </div>
     
-    <div class="flex gap-4 items-center text-textdark">
-        <Toggle bind:checked={$appstore.darkMode} class='ring-0 border-none outline-none'>
+    <div class="flex gap-4 items-center">
+        <Toggle bind:checked={$appstore.darkMode} onchange={e => handleDarkMode(e.target.checked)} class='ring-0 border-none outline-none'>
             {#if $appstore.darkMode}
                 <Sun size={16} />
             {:else}
                 <Moon size={16} />
             {/if}
         </Toggle>
-        <MyButton className='bg-bgdark text-textdark' onclick={()=> logoutState.modal = true}><LogOut size={16}/></MyButton>
+        <MyButton className='bg-bgdark2 text-textdark' onclick={()=> logoutState.modal = true}><LogOut size={16}/></MyButton>
     </div>
 
-    <Modal title="Logout" bind:open={logoutState.modal}>
-        <p class="text-base leading-relaxed text-gray-500 dark:text-gray-400">Are you sure want logout?</p>
+    <Modal class='bg-bgdark' title="Logout" bind:open={logoutState.modal}>
+        <p class="text-base leading-relaxed">Are you sure want logout?</p>
         {#if logoutState.message}
             <Alert color="green" class='flex items-center'>
                 <Check />

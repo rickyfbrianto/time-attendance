@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { fade, slide } from 'svelte/transition'
+    import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select } from 'flowbite-svelte';
     import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
     import {dataSample } from '@lib/store/appstore'
@@ -11,8 +11,8 @@
     import { format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
-	import { fromZodError } from 'zod-validation-error';
 	import { z } from 'zod';
+	import { fromZodError } from 'zod-validation-error';
 	import { getParams } from '@lib/data/api.js';
 
     let {data} = $props()
@@ -97,9 +97,7 @@
         }
     }
 
-    const formAttendanceBatal = () =>{
-        formAttendance = {...formAttendanceAnswer}
-    }
+    const formAttendanceBatal = () => formAttendance = {...formAttendanceAnswer}
     
     const formAttendanceEdit = async (id:string) =>{
         try {

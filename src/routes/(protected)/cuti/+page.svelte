@@ -1,14 +1,14 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, RotateCw } from '@lucide/svelte'
+    import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, formatTanggalISO, pecahArray } from '@lib/utils.js';
-	import { eachDayOfInterval, format, getDay, parseISO, getYear, formatISO } from 'date-fns';
+	import { eachDayOfInterval, format, getDay, parseISO, getYear, formatISO, differenceInDays } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
@@ -63,6 +63,7 @@
                 const res = await req.data
                 formCutiBatal()
                 tableCuti.invalidate()
+                formCuti.error = ""
                 formCuti.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
@@ -202,7 +203,12 @@
                     <p class='-ms-3 mb-5'>There {val.length} day{val.length > 1 ? "s":""} on '{modalHeader.val}' events</p>
                     <Timeline order="vertical">
                         {#each val as {description, date}}
-                            <TimelineItem title={formatTanggal(date, false)} date={format(date, "EEEE")}>
+                            {#if differenceInDays(date, new Date()) > 0}
+                            <Badge class='ms-2 mb-2'>Upcoming</Badge>
+                            {:else if differenceInDays(date, new Date()) == 0}
+                            <Badge class='ms-2 mb-2' color="green">Today</Badge>
+                            {/if}
+                            <TimelineItem  title={formatTanggal(date, false)} date={format(date, "EEEE")}>
                                 <svelte:fragment slot="icon">
                                     <span class="flex absolute -start-3 justify-center items-center w-6 h-6 bg-primary-200 rounded-full ring-8 ring-white dark:ring-gray-900 dark:bg-primary-900">
                                         <CalendarWeekSolid class="w-4 h-4 text-primary-600 dark:text-primary-400" />

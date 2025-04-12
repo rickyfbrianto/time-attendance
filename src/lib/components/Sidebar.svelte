@@ -4,7 +4,7 @@
     import usercewe from '@lib/assets/user-woman.svg'
     import { fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Card, Avatar, Modal, Timeline, TimelineItem, Tooltip } from 'flowbite-svelte';
+	import { Card, Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr } from 'flowbite-svelte';
     import {appstore } from '@lib/store/appstore'
     import { page } from '$app/state';
 	
@@ -34,8 +34,7 @@
 {#if $appstore.showSidebar}
 <div style="scrollbar-width: none;" transition:fly={{x: "-200px", easing: quadIn}} class="relative flex flex-col bg-bgside px-3 min-w-[16rem] text-textside overflow-y-scroll">
     <a class="sticky top-0 bg-bgside z-[10] flex items-center justify-center gap-3 py-[1rem] text-textdark" href="/">
-        <Clock8 size={46}/>
-        
+        <Clock8 size={46}/>        
         <div class="flex flex-col">
             <span class="text-[1.4rem] font-[700]">Time</span>
             <span class="text-[1.4rem]">Attendance</span>
@@ -45,11 +44,11 @@
     <div class="flex flex-col flex-1 gap-y-1">
         {#each linkSidebar as {link, title, icon: Icon, type}}
             {#if type == "separator"}
-                <div class="flex bg-bgside2 text-textside px-3 py-2 rounded-lg mt-2 shadow-lg">
+                <div class="flex bg-bgside2 text-textside px-3 py-2 rounded-lg mt-2 shadow-xl">
                     <span class='text-muted font-bold italic text-[.7rem]'>{title}</span>
                 </div>
             {:else}
-                <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-lg gap-2`}>
+                <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-lg gap-2 shadow-lg`}>
                     <Icon size=14/>
                     <span class={`text-[.8rem] font-bold `}>{title}</span>
                     <!-- {#if link == "/"+pathname[0]}
@@ -60,14 +59,15 @@
         {/each}
     </div>
 
-    <Card class="flex flex-col mb-10 mt-5 px-4">
+    <div class="flex flex-col my-5 bg-bgside2 px-4 py-6 rounded-xl shadow-xl">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
         <Tooltip>{data.user.name}</Tooltip>
-        <span class="text-[16px] text-textdark font-[900] ">{data.user.name}</span>
+        <span class="text-[16px] text-center font-normal text-textdark font-[900] ">{data.user.name}</span>
+        <Hr hrClass="my-3"/>
         <span class="text-[12px] text-textdark self-start">{data.user.payroll}</span>
         <span class="text-[12px] text-textdark">{data.user.position}</span>
         <span class="text-[12px] text-textdark">{data.user.email}</span>
-    </Card>
+    </div>
 
     {#if data.userProfile.user_hrd}
         <div class="absolute flex items-center bottom-0 left-[50%] translate-x-[-50%] bg-slate-200 px-5 py-2">

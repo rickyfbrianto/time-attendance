@@ -1,8 +1,8 @@
 <script lang="ts">    
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Modal } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Modal, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
+    import { Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
@@ -15,6 +15,8 @@
     import { jsPDF } from "jspdf";
     import stm from '@lib/assets/stm.png'
     import "@lib/assets/font/Comic-normal.js"
+	import { z } from 'zod';
+	import { fromZodError } from 'zod-validation-error';
 
     let {data} = $props()
     
@@ -25,35 +27,49 @@
     
     let tableSPPD = $state(new TableHandler([], {rowsPerPage}))
     let tableSPPDSearch = tableSPPD.createSearch()
-    
+        
     const formSPPDAnswer = {
-        sppd_id: "id",
-        purpose:"",
-        dept:"",
-        date: [],
-        duration: 0,
-        createdBy: data.user?.payroll || "",
-        sppd_detail:[{payroll:"", description:"", location:""}]
-    }
-    
-    let formSPPD = $state({
-        answer: {...formSPPDAnswer},
+        answer:{
+            sppd_id: "id",
+            purpose:"",
+            location:"",
+            dept:"",
+            date: [],
+            duration: 0,
+            createdBy: user?.payroll || "",
+            sppd_detail:[{payroll:"", description:""}]
+        },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+    }
+    
+    let formSPPD = $state({...formSPPDAnswer})
     
     const formSPPDSubmit = async () =>{
         try {
-            formSPPD.error = ""
             formSPPD.loading = true
-            const req = await axios.post('/api/sppd', formSPPD.answer)
-            const res = await req.data
-            formSPPD.success = res.message
-            formSPPDBatal()
-            tableSPPD.invalidate()
+            const valid = z.object({
+                sppd_id: z.string().trim().min(1),
+                purpose: z.string().trim().min(1),
+                location: z.string().trim().min(1),
+                date: z.tuple([z.string(), z.string()], {message: "Date is not valid"}),
+            })
+            const isValid = valid.safeParse(formSPPD.answer)
+            if(isValid.success){            
+                const req = await axios.post('/api/sppd', formSPPD.answer)
+                const res = await req.data
+                formSPPD.error = ""
+                formSPPD.success = res.message
+                formSPPDBatal()
+                tableSPPD.invalidate()
+            }else{
+                const err = fromZodError(isValid.error)
+                formSPPD.success = ""
+                formSPPD.error = err.message
+            }
         } catch (error: any) {
             formSPPD.error = error.response.data.message
             formSPPD.success = ""
@@ -62,15 +78,11 @@
         }
     }
 
-    const formSPPDBatal = () =>{
-        formSPPD.answer = {...formSPPDAnswer}
-        formSPPD.add = false
-        formSPPD.edit = false
-    }
+    const formSPPDBatal = () => formSPPD = {...formSPPDAnswer}
     
     const formSPPDEdit = async (id:string) =>{
         try {
-            formSPPD.loading = true
+            formSPPD.loading = true            
             const req = await axios.get(`/api/sppd/${id}`)
             const res = await req.data
             if(res){
@@ -108,59 +120,149 @@
             format:"a4"
         })
 
-        const rowData = 0
-        let rowInc = 0
-        let row1 = 6
-        let row2 = 8
-        let row3 = 10
+        res.sppd_detail.forEach((val: any, i: number) => {
+            if(i > 0) doc.addPage("a4", "p")
 
-        rowInc += row3
-        doc.rect(150, rowData + rowInc, 50, rowData + rowInc + 5)
-        doc.setFontSize(10)
-        rowInc += 5
-        doc.text("Form No  : 11-21", 152, rowData + rowInc)
-        rowInc += 4
-        doc.text("Rev No   : 0", 152, rowData + rowInc)
-        rowInc += 4
-        doc.text("Rev Date : Jan 2020", 152, rowData + rowInc)
-        
-        rowInc += row2
-        doc.rect(10, 28, 190, 236)
-        doc.addImage(stm, 13, rowData + rowInc, 20, 20)
-        doc.line(36, 28, 36, 53)
-        rowInc += 3
-        doc.setFontSize(12)
-        doc.text("HUMAN RESOURCES", 90, rowData + rowInc)
-        doc.setFontSize(14)
-        rowInc += row1
-        doc.text("SURAT PERINTAH PERJALANAN DINAS", 62, rowData + rowInc)
-        rowInc += 2
-        doc.line(36, rowData + rowInc, 200, rowData + rowInc)
-        rowInc += row1
-        doc.setFontSize(12)
-        doc.text("INSTRUCTION FOR BUSSINESS TRAVEL", 62, rowData + rowInc)
-        rowInc += row1
-        doc.line(10, rowData + rowInc, 200, rowData + rowInc)
-        
-        const colData = [12, 55, 60]
-        
-        doc.setFontSize(12)
-        rowInc += row3
-        doc.text("Nomor / No", colData[0], rowData + rowInc)
-        rowInc += row3
-        doc.text("To :", colData[0], rowData + rowInc)
-        rowInc += row1
-        doc.text("From :", colData[0], rowData + rowInc)
+            const colData = [12, 58, 62]
+            const rowData = 0
+            let rowInc = 0
+            let row1 = 4
+            let row2 = 6
+            let row3 = 8
+            let row4 = 10
 
-        rowInc += row3
-        doc.text("Karyawan tersebut di bawah ini diperintahkan untuk menjalankan tugas dinas dengan spesifikasi", colData[0], rowData + rowInc)
-        rowInc += row1
-        doc.text("sebagai berikut : /", colData[0], rowData + rowInc)
+            rowInc += row4
+            doc.rect(150, rowData + rowInc, 50, rowData + rowInc + 5)
+            doc.setFont('times', 'normal', '')
+            doc.setFontSize(10)
+            rowInc += row1
+            doc.text("Form No  : 11-21", 152, rowData + rowInc)
+            rowInc += row1
+            doc.text("Rev No   : 0", 152, rowData + rowInc)
+            rowInc += row1
+            doc.text("Rev Date : Jan 2020", 152, rowData + rowInc)
+            
+            rowInc += row3
+            doc.rect(10, 28, 190, 236)
+            doc.addImage(stm, 12, rowData + rowInc, 21, 21)
+            doc.line(36, 28, 36, 54)
+            rowInc += row1
+            doc.setFont('times', 'normal', 'bold')
+            doc.setFontSize(12)
+            doc.text("HUMAN RESOURCES", 94, rowData + rowInc)
+            doc.setFontSize(14)
+            rowInc += row2
+            doc.text("SURAT PERINTAH PERJALANAN DINAS", 67, rowData + rowInc)
+            rowInc += 2
+            doc.line(36, rowData + rowInc, 200, rowData + rowInc)
+            rowInc += row3
+            doc.setFont('times', 'italic')
+            doc.setFontSize(12)
+            doc.text("INSTRUCTION FOR BUSSINESS TRAVEL", 77, rowData + rowInc)
+            rowInc += row1
+            doc.line(10, rowData + rowInc, 200, rowData + rowInc)
+            
+            doc.setFont('times', 'normal')
+            doc.setFontSize(12)
+            rowInc += row4
+            doc.text("Nomor / No", colData[0], rowData + rowInc)
+            doc.text(`: ${res.sppd_id.replace(/\_/g, '/')}`, colData[1], rowData + rowInc)
+            rowInc += row4
+            doc.text("To", colData[0], rowData + rowInc)
+            doc.text(":", colData[0] + 25, rowData + rowInc)
+            doc.setFont('times', 'normal', 'bold')
+            doc.text("Human Resources", colData[0] + 28, rowData + rowInc)
+            rowInc += row2
+            doc.setFont('times', 'normal')
+            doc.text("From", colData[0], rowData + rowInc)
+            doc.text(":", colData[0] + 25, rowData + rowInc)
+            
+            rowInc += row4
+            doc.text("Karyawan tersebut di bawah ini diperintahkan untuk menjalankan tugas dinas dengan spesifikasi", colData[0], rowData + rowInc)
+            rowInc += row2
+            doc.text("sebagai berikut : /", colData[0], rowData + rowInc)
 
-        rowInc += row2
-        doc.text("Nama", colData[0], rowData + rowInc)
-        doc.text(`: ${res}`, colData[1], rowData + rowInc)
-        doc.text(res.dept, colData[2], rowData + rowInc)
+            rowInc += row4
+            doc.text("Nama", colData[0], rowData + rowInc)
+            doc.text(`: ${val.employee.name}`, colData[1], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Name", colData[0], rowData + rowInc)
+            
+            rowInc += row3
+            doc.setFont('times', 'normal')
+            doc.text("No. Payroll", colData[0], rowData + rowInc)
+            doc.text(`: ${val.payroll}`, colData[1], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Payroll No.", colData[0], rowData + rowInc)
+
+            rowInc += row3
+            doc.setFont('times', 'normal')
+            doc.text("Jabatan", colData[0], rowData + rowInc)
+            doc.text(`: -`, colData[1], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Payroll No.", colData[0], rowData + rowInc)
+
+            rowInc += row3
+            doc.setFont('times', 'normal')
+            doc.text("Department", colData[0], rowData + rowInc)
+            doc.text(`: ${val.employee.dept.name}`, colData[1], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Department", colData[0], rowData + rowInc)
+
+            rowInc += row3
+            doc.setFont('times', 'normal')
+            doc.text("Tujuan", colData[0], rowData + rowInc)
+            doc.text(`: ${val.location}`, colData[1], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Destination", colData[0], rowData + rowInc)
+
+            rowInc += row3
+            doc.setFont('times', 'normal')
+            doc.text("Tanggal", colData[0], rowData + rowInc)
+            doc.text(`: ${format(res.start_date, "dd MMMM yyyy")}`, colData[1], rowData + rowInc)
+            doc.text(`s/d     ${format(res.end_date, "dd MMMM yyyy")}`, colData[1] + 60, rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Date", colData[0], rowData + rowInc)
+
+            rowInc += row3
+            doc.setFont('times', 'normal')
+            doc.text("Deskripsi Tugas", colData[0], rowData + rowInc)
+            doc.text(`: ${val.description}`, colData[1], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Description of Assignment", colData[0], rowData + rowInc)
+
+            rowInc += row4 + 4
+            doc.setFont('times', 'normal')
+            doc.text("Terima kasih atas perhatiannya.", colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'italic')
+            doc.text("Thank you for your consideration on this matter.", colData[0], rowData + rowInc)
+
+            rowInc += row4
+            doc.setFont('times', 'normal')
+            doc.text(`Jakarta, ${format(new Date(), "dd MMMM yyyy")}`, colData[0], rowData + rowInc)
+            
+            rowInc += row4 * 3
+            doc.setFont('times', 'underline')
+            doc.text(`Allan Cheong`, colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.setFont('times', 'normal')
+            doc.text(`Mill manager`, colData[0], rowData + rowInc)
+
+            doc.setFontSize(10)
+            rowInc += row4 + 4
+            doc.text(`* File`, colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.text(`* Disetujui 1 tingkat di atas yang bersangkutan (Minimal Kasi/Supervisor)`, colData[0], rowData + rowInc)
+            doc.setFont('calibri', 'normal')
+        })
         
         doc.save(`${res.sppd_id}.pdf`);
     }
@@ -176,7 +278,7 @@
             payroll:"",
             date: ["", ""],
             status: "",
-            createdBy: data.user?.payroll || "",
+            createdBy: user?.payroll || "",
         },
         success:"",
         error:"",
@@ -251,47 +353,47 @@
             unit:"mm",
             format:"a4"
         })
-        doc.addFont("Comic", "bold", "normal")
+        doc.addFont("Comic-normal", "normal", "normal")
 
         const rowData = 10
+        const colData = [16, 45, 50]
         let rowInc = 0
         let row1 = 6
         let row2 = 8
         let row3 = 10
 
         doc.setTextColor("#174ca3")
-        doc.addImage(stm,18, 8, 15, 15)
+        doc.addImage(stm, 18, 8, 15, 15)
         doc.setFontSize(22)
         rowInc += row1
-        doc.text("PT. SAGATRADE MURNI", 62, rowData + rowInc)
+        doc.text("PT. SAGATRADE MURNI", 60, rowData + rowInc)
         doc.setFontSize(13)
         rowInc += row1
-        doc.text("MANUFACTURES OF PRIMARY CEMENTING EQUIPMENT", 45, rowData + rowInc)
+        doc.text("MANUFACTURES OF PRIMARY CEMENTING EQUIPMENT", 43, rowData + rowInc)
         doc.rect(10, 28, 190, 236)
         doc.setFont("Comic", "normal")
         doc.setFontSize(16)
         doc.setTextColor("#000000")
         rowInc += 18
-        doc.text("SURAT KETERANGAN PERJALANAN DINAS", 56, rowData + rowInc)
+        doc.text("SURAT KETERANGAN PERJALANAN DINAS", 52, rowData + rowInc)
         rowInc += row2
         doc.line(10, rowData + rowInc, 200, rowData + rowInc)
         
         rowInc += row3
-        doc.setFont("Tahoma")
+        doc.setFont("times", "normal")
         doc.setFontSize(12)
-        doc.text("Nomor", 18, rowData + rowInc)
-        doc.text(`: ${res.skpd_id}`, 35, rowData + rowInc)
-        doc.text(`Jakarta, ${format(res.real_start, "d MMMM yyyy")}`, 145, rowData + rowInc)
+        doc.text("Nomor", colData[0], rowData + rowInc)
+        doc.text(`:    ${res.skpd_id.replace(/\_/g,'/')}`, 35, rowData + rowInc)
+        doc.text(`Jakarta, ${format(res.real_start, "d MMMM yyyy")}`, 142, rowData + rowInc)
         
         rowInc += row3
-        doc.text("Dengan Hormat,", 18, rowData + rowInc)
+        doc.text("Dengan Hormat,", colData[0], rowData + rowInc)
         rowInc += row1
-        doc.text("Dalam rangka tugas perusahaan, maka dengan ini kami berikan Surat Keterangan Perjalanan Dinas", 18, rowData + rowInc)
+        doc.text("Dalam rangka tugas perusahaan, maka dengan ini kami berikan Surat Keterangan Perjalanan Dinas", colData[0], rowData + rowInc)
         rowInc += row1
-        doc.text("kepada karyawan :", 18, rowData + rowInc)
+        doc.text("kepada karyawan :", colData[0], rowData + rowInc)
 
         rowInc += row2
-        const colData = [18, 47, 50]
         doc.text("- Nama", colData[0], rowData + rowInc)
         doc.text(":", colData[1], rowData + rowInc)
         doc.text(res.name, colData[2], rowData + rowInc)
@@ -345,25 +447,25 @@
         doc.text("mestinya.", colData[0], rowData + rowInc)
         rowInc += row2
         doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
-        doc.text("Pejabat yang dituju,", colData[0] + 120, rowData + rowInc)
+        doc.text("Pejabat yang dituju,", colData[0] + 130, rowData + rowInc)
         rowInc += row3 * 2.4
         doc.text("Hari Sandi", colData[0], rowData + rowInc)
-        doc.line(colData[0] + 110, rowData + rowInc + 2, 180, rowData + rowInc + 2)
+        doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
         rowInc += row3
-        doc.text("Datang tanggal", colData[0] + 80, rowData + rowInc)
-        doc.text(":", colData[0] + 110, rowData + rowInc)
-        doc.line(colData[0] + 112, rowData + rowInc + 2, 180, rowData + rowInc + 2)
+        doc.text("Datang tanggal", colData[0] + 90, rowData + rowInc)
+        doc.text(":", colData[0] + 120, rowData + rowInc)
+        doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
         rowInc += row3
-        doc.text("Kembali tanggal", colData[0] + 80, rowData + rowInc)
-        doc.text(":", colData[0] + 110, rowData + rowInc)
-        doc.line(colData[0] + 112, rowData + rowInc + 2, 180, rowData + rowInc + 2)
+        doc.text("Kembali tanggal", colData[0] + 90, rowData + rowInc)
+        doc.text(":", colData[0] + 120, rowData + rowInc)
+        doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
         rowInc += row1
         doc.setFillColor(186, 187, 194)
-        doc.rect(colData[0], rowData + rowInc, 174, 21, "FD")
+        doc.rect(colData[0], rowData + rowInc, 176, 21, "FD")
         rowInc += row1
         doc.text("PERHATIAN :", colData[0] + 4, rowData + rowInc)
         rowInc += row1
-        doc.text("-", colData[0]  + 4, rowData + rowInc)
+        doc.text("-", colData[0]  + 5, rowData + rowInc)
         doc.text("Harap lapor kepada pejabat yang dikunjungi dan meminta tanda tangan setelah selesai", colData[0] + 8, rowData + rowInc)
         rowInc += row1
         doc.text("menjalankan tugas", colData[0] + 8, rowData + rowInc)
@@ -414,8 +516,8 @@
 
         setTimeout(()=>{
             formSKPD.answer.date = [formatTanggal(temp.start_date), formatTanggal(temp.end_date)]
+            formSKPD.answer.payroll = temp.payroll
         }, 100)
-        formSKPD.answer.payroll = temp.payroll
     }
     
     $effect(()=>{
@@ -466,17 +568,16 @@
         </TabItem>
         <TabItem open title="SPPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formSPPD.error || formSPPD.success}
-                    <Toast color="red">
-                        <span class='flex gap-2'>
-                            {#if formSPPD.error}
-                            <Ban size={16} color="#d41c08" />
-                            {:else}
-                            <Check size={16} color="#08d42a" />
-                            {/if}
-                            {formSPPD.error || formSPPD.success}
-                        </span>
-                    </Toast>
+                {#if formSPPD.error}
+                    {#each formSPPD.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formSPPD.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formSPPD.success}</span>
+                    </Alert>
                 {/if}
 
                 <div class="flex gap-2">
@@ -505,9 +606,9 @@
                             </div>
                         {/await}
 
-                        <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>
-
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>
+                            <MyInput type='text' title={`Location`} name="location" bind:value={formSPPD.answer.location}/>
                             <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>                            
                             <MyInput type='daterange' title='Date' name="date" bind:value={formSPPD.answer.date}/>
                             <MyInput type='text' title='Duration' bind:value={formSPPD.answer.duration} />
@@ -527,22 +628,19 @@
                                             {/await}
 
                                             {#if i == formSPPD.answer.sppd_detail.length - 1}
-                                                <MyButton onclick={()=>formSPPD.answer.sppd_detail.push({payroll:"", location:"", description:""})}><Plus size={14} color='green' /></MyButton>
+                                                <MyButton onclick={()=>formSPPD.answer.sppd_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
                                             {/if}
                                             {#if formSPPD.answer.sppd_detail.length > 1}
                                                 <MyButton onclick={()=> formSPPD.answer.sppd_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
                                             {/if}
                                         </div>
-                                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                            <MyInput type='text' title={`Location ${i+1}`} bind:value={list.location} />
-                                            <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={list.description}/>
-                                        </div>
+                                        <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={list.description}/>
                                     </div>
                                 {/each}
                             </div>
                         {/if}
                         
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user?.name}</Badge> </span>
                     </form>
                 {/if}
                 
@@ -562,10 +660,10 @@
                         <TableHead>
                             <ThSort table={tableSPPD} field="sppd_id">SPPD ID</ThSort>
                             <ThSort table={tableSPPD} field="purpose">Purpose</ThSort>
+                            <ThSort table={tableSPPD} field="location">Location</ThSort>
                             <ThSort table={tableSPPD} field="start_date">Start Date</ThSort>
                             <ThSort table={tableSPPD} field="end_date">End Date</ThSort>
                             <ThSort table={tableSPPD} field="duration">Duration</ThSort>
-                            <ThSort table={tableSPPD} field="name">Created By</ThSort>
                             <ThSort table={tableSPPD} field="">#</ThSort>
                         </TableHead>
 
@@ -578,12 +676,12 @@
                                 {#if tableSPPD.rows.length > 0}
                                     {#each tableSPPD.rows as row}
                                         <TableBodyRow>
-                                            <TableBodyCell>{row.sppd_id}</TableBodyCell>
+                                            <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.purpose}</TableBodyCell>
+                                            <TableBodyCell>{row.location}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.start_date,false)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.end_date, false)}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.end_date,false)}</TableBodyCell>
                                             <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if pecahArray(userProfile.access_sppd, "U")}
                                                     <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
@@ -654,17 +752,19 @@
                 {/if}
                 {#if formSKPD.add || formSKPD.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        {#await getSPPD() then val}
-                            <div class="flex flex-col gap-2 flex-1">
-                                <Label>SPL ID</Label>
-                                <Svelecte class='rounded-lg bg-bgdark' disabled={formSKPD.edit} clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.sppd_id} 
-                                options={val.map((v:any) => ({value: v.sppd_id, text:v.sppd_id + " | " + v.purpose, sppd_id: v.sppd_id}))}
-                                onChange={(e:any) => {
-                                    fillSKPD(e.sppd_id)
-                                    formSKPD.answer.date = ['2025-01-01', '2025-01-11']
-                                }}/>
-                            </div>
-                        {/await}
+                        {#if formSKPD.add}
+                            {#await getSPPD() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>SPPD ID</Label>
+                                    <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.sppd_id} 
+                                    options={val.map((v:any) => ({value: v.sppd_id, text:v.sppd_id + " | " + v.purpose, sppd_id: v.sppd_id}))}
+                                    onChange={(e:any) => fillSKPD(e.sppd_id)}
+                                    />
+                                </div>
+                            {/await}
+                        {:else}
+                        <MyInput type='text' title='SPPD ID' disabled={formSKPD.edit} bind:value={formSKPD.answer.sppd_id} />
+                        {/if}
                 
                         {#if formSKPD.answer.sppd_id}
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -683,7 +783,7 @@
                             </div>
                         {/if}
                         
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{data.user.name}</Badge> </span>
+                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user?.name}</Badge> </span>
                     </form>
                 {/if}
                 
@@ -702,11 +802,11 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
-                            <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort>
                             <ThSort table={tableSKPD} field="location">Location</ThSort>
                             <ThSort table={tableSKPD} field="description">Description</ThSort>
-                            <ThSort table={tableSKPD} field="real_start">Start Date</ThSort>
-                            <ThSort table={tableSKPD} field="real_end">End Date</ThSort>
+                            <ThSort table={tableSPPD} field="real_start">Start Date</ThSort>
+                            <ThSort table={tableSPPD} field="real_end">End Date</ThSort>
+                            <ThSort table={tableSKPD} field="status">Status</ThSort>
                             <ThSort table={tableSKPD} field="">#</ThSort>
                         </TableHead>
         
@@ -719,12 +819,12 @@
                                 {#if tableSKPD.rows.length > 0}
                                     {#each tableSKPD.rows as row}
                                         <TableBodyRow>
-                                            <TableBodyCell>{row.skpd_id}</TableBodyCell>
-                                            <TableBodyCell>{row.sppd_id}</TableBodyCell>
+                                            <TableBodyCell>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
                                             <TableBodyCell>{row.description}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_start,false)}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.real_start, false)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_end, false)}</TableBodyCell>
+                                            <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if pecahArray(userProfile.access_skpd, "U")}
                                                 <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>

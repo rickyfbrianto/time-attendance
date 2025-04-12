@@ -1,7 +1,8 @@
 import { error, json } from "@sveltejs/kit";
-import { checkFieldKosong, formatTanggal, isEmpty, prismaErrorHandler } from "@lib/utils";
+import { formatTanggal, formatTanggalISO, prismaErrorHandler } from "@lib/utils";
 import { prisma } from '@lib/utils.js'
-import { format } from "date-fns";
+import { differenceInDays, eachDayOfInterval, format, getDay, getYear } from "date-fns";
+import { v4 as uuid4 } from "uuid";
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -15,7 +16,7 @@ export async function GET({url}){
         const items = await tx.$queryRawUnsafe(`
             SELECT i.*, e.name FROM ijin as i
             LEFT JOIN employee as e ON i.payroll = e.payroll
-            WHERE ijin_id like ? 
+            WHERE i.ijin_id like ? 
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             `%${search}%`, limit, offset)
 
@@ -30,9 +31,6 @@ export async function GET({url}){
 export async function POST({ request}) {
     try {        
         const data = await request.json();
-        const { isError, errorCount } = checkFieldKosong(data);
-        if (isError) 
-            throw new Error(`${errorCount} input masih kosong`)
         
         const status = await prisma.$transaction(async tx =>{
             const getIjin = await tx.ijin.findUnique({
@@ -41,29 +39,58 @@ export async function POST({ request}) {
 
             if(!getIjin){
                 let newID
-                const dept = await tx.dept.findUnique({where:{dept_code: data.dept}})
+                const separator = "_"
+
+                const user = await tx.employee.findUnique({
+                    select:{workhour: true},
+                    where:{payroll:data.payroll}
+                })
                 
-                const tempID = await tx.$queryRawUnsafe(`
-                    SELECT ijin_id as id from ijin 
-                        WHERE 
-                        SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 2), '-', -1) = '${dept?.name}' AND 
-                        SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 3), '-', -1) = year(now()) AND 
-                        SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '-', 4), '-', -1) = month(now())
-                    ORDER by ijin_id desc limit 0,1`)
-                    if(tempID.length > 0){
-                        newID = tempID[0].id.split('-')
-                        const lastID = Number(newID[newID.length-1]) + 1
-                    newID[newID.length-1] = lastID
-                    newID = newID.join('-')
-                    newID = newID.toUpperCase()
-                }else{
-                    newID = `IJIN-${dept?.name}-${format(new Date(), "yyyy-MM")}-1`
-                }
+                const year = getYear(new Date())
+                const month = 12
+                const resCalendar = await prisma.$queryRawUnsafe(`
+                    SELECT date FROM calendar WHERE YEAR(date) = ? AND month(date) <= ?
+                    ORDER BY date asc`, year, month) as {date: string}[]
                 
-                await tx.$queryRawUnsafe(`
-                    INSERT INTO Ijin (ijin_id,payroll,type,description,date,status,createdAt) VALUES(?,?,?,?,?,?,?,now())`,
-                    newID,data.payroll,data.type,data.description,data.date,data.status)
+                const daysInRange = eachDayOfInterval({ start: data.date_range[0], end: data.date_range[1] })
+                const dayFree = user?.workhour == 7 ? [0] : [0, 6]
+
+                const temp = daysInRange.filter(v => {
+                    return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), false) == formatTanggal(format(cal.date, "yyyy-MM-dd"), false)) 
+                    && !dayFree.includes(getDay(v))
+                }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), false))
                 
+                await tx.ijin.createMany({
+                    data: [...temp.map((date) => ({
+                        ijin_id: uuid4(),
+                        payroll: data.payroll,
+                        type: data.type,
+                        description: data.description,
+                        date: formatTanggalISO(date),
+                        status: data.status,
+                        createdAt: formatTanggalISO(new Date())
+                    }))]
+                })
+                
+                // const dept = await tx.dept.findUnique({where:{dept_code: data.dept}})
+                
+                // eachDayOfInterval(data.date_range[0], data.date_range[1]).map(async date => {                
+                //     const [{id}] = await tx.$queryRawUnsafe(`
+                //         SELECT 
+                //         IFNULL(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '${separator}', 1), '-', 1) AS unsigned)), 0) as id
+                //         from ijin where 
+                //         SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '_', 2), '_', -1) = ? AND
+                //         SUBSTRING_INDEX(SUBSTRING_INDEX(ijin_id, '_', -1), '${separator}', -1) = year(now())`,
+                //     dept?.initial) as {id: number}[]
+                    
+                //     const lastID = Number(id) + 1
+                //     newID = `${lastID}-IJIN${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
+                    
+                //     await tx.$queryRawUnsafe(`INSERT INTO Ijin (ijin_id,payroll,type,description,date,status,createdAt) 
+                //         VALUES(?,?,?,?,?,?,now())`,
+                //     newID,data.payroll,data.type,data.description, date,data.status)
+                // })
+
                 return { message: "Data successfully saved" }
             }else{
                 await tx.$queryRawUnsafe(`

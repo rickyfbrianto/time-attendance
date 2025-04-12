@@ -54,6 +54,7 @@ export async function POST({request}){
                 await tx.dept.update({
                     data:{
                         dept_code: data.dept_code,
+                        initial: data.initial,
                         name:data.name, 
                         status:data.status
                     }, where:{

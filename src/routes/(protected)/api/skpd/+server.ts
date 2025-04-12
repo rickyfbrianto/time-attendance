@@ -14,8 +14,9 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT skpd_id, s.sppd_id, sd.location, sd.description, e.name, real_start, real_end FROM SKPD as s
+            SELECT skpd_id, s.sppd_id, sppd.location, sd.description, e.name, real_start, real_end, status FROM SKPD as s
             LEFT JOIN employee as e ON e.payroll = s.payroll
+            LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
             WHERE skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
@@ -23,6 +24,7 @@ export async function GET({url}){
 
         const totalItems = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM SKPD as s
             LEFT JOIN employee as e ON e.payroll = s.payroll
+            LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
             WHERE skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?`, 
             `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`)
@@ -47,24 +49,19 @@ export async function POST({ request,  }) {
 
             if(!getSKPD){
                 let newID
-                const dept = data.sppd_id.split('-')[1]
+                const separator = "_"
 
-                const tempID = await tx.$queryRawUnsafe(`
-                SELECT skpd_id as id from SKPD 
-                    WHERE 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '-', 2), '-', -1) = '${dept}' AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '-', 3), '-', -1) = year(now()) AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '-', 4), '-', -1) = month(now())
-                ORDER by skpd_id desc limit 0,1`)
-                if(tempID.length > 0){
-                    newID = tempID[0].id.split('-')
-                    const lastID = Number(newID[newID.length-1]) + 1
-                    newID[newID.length-1] = lastID
-                    newID = newID.join('-')
-                    newID = newID.toUpperCase()
-                }else{
-                    newID = `SKPD-${dept}-${format(new Date(), "yyyy-MM")}-1`
-                }
+                // SELECT * from SKPD WHERE 
+                // SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '_', 4), '-', 1) = month(now()) and 
+                // SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '_', 4), '-', 2) = year(now());
+                
+                const [{id}] = await tx.$queryRawUnsafe(`
+                    SELECT 
+                    IFNULL(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '${separator}', 1), '-', 1) AS unsigned)), 0) as id
+                    from SKPD where 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '${separator}', -1), '-', -1) = year(now())`) as {id: number}[]
+                const lastID = Number(id) + 1
+                newID = `${lastID}-SKPD${separator}HR-GA${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
 
                 await tx.$queryRawUnsafe(`
                     INSERT INTO SKPD (skpd_id,sppd_id,payroll,real_start,real_end,status,createdBy,createdAt) 

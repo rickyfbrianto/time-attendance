@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Select } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Select, Alert } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, CalendarCheck, NotebookPen} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
@@ -8,7 +8,9 @@
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray } from '@lib/utils.js';
-    import { addDays, differenceInDays, eachDayOfInterval, format, getDay } from 'date-fns';
+    import { differenceInDays, eachDayOfInterval, getDay } from 'date-fns';
+    import { z } from 'zod';
+	import { fromZodError } from 'zod-validation-error';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -26,34 +28,47 @@
     let tableIjinSearch = tableIjin.createSearch()
 
     const formIjinAnswer = {
-        ijin_id: "id",
-        date:[],
-        type:"",
-        askDuration:0,
-        description: "",
-        payroll: user?.payroll || "",
-        dept: user?.department || "",
-        status: "OPEN",
-    }
-    
-    let formIjin = $state({
-        answer: {...formIjinAnswer},
+        answer:{
+            ijin_id: "id",
+            date_range:[],
+            type:"",
+            askDuration:0,
+            description: "",
+            payroll: user?.payroll || "",
+            dept: user?.department || "",
+            status: "Waiting",
+        },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+    }
+    
+    let formIjin = $state({...formIjinAnswer})
     
     const formIjinSubmit = async () =>{
         try {
-            formIjin.error = ""
             formIjin.loading = true
-            const req = await axios.post('/api/ijin', formIjin.answer)
-            const res = await req.data
-            formIjin.success = res.message
-            formIjinBatal()
-            tableIjin.invalidate()
+            formIjin.error = ""
+            const valid = z.object({
+                payroll: z.string().trim().min(1),
+                date_range: z.tuple([z.string().trim().min(1), z.string().trim().min(1)]),
+                description: z.string().trim().min(5),
+                type: z.string().trim().min(1)
+            })
+            const isValid = valid.safeParse(formIjin.answer)
+            if(isValid.success){
+                const req = await axios.post('/api/ijin', formIjin.answer)
+                const res = await req.data
+                formIjin.success = res.message
+                formIjinBatal()
+                tableIjin.invalidate()
+            }else{
+                const err = fromZodError(isValid.error)
+                formIjin.success = ""
+                formIjin.error = err.message
+            }
         } catch (error: any) {
             formIjin.error = error.response.data.message
             formIjin.success = ""
@@ -62,11 +77,7 @@
         }
     }
 
-    const formIjinBatal = () =>{
-        formIjin.answer = {...formIjinAnswer}
-        formIjin.add = false
-        formIjin.edit = false
-    }
+    const formIjinBatal = () => formIjin = {...formIjinAnswer}
     
     const formIjinEdit = async (id:string) =>{
         try {
@@ -78,7 +89,7 @@
             
             formIjin.answer = {...res}
             setTimeout(()=>{
-                formIjin.answer.date = [formatTanggal(res.start_date), formatTanggal(res.end_date)]
+                formIjin.answer.date_range = [formatTanggal(res.start_date), formatTanggal(res.end_date)]
             }, 100)
             
             formIjin.loading = false
@@ -111,8 +122,8 @@
     ]
     
     $effect(()=>{
-        if(Array.isArray(formIjin.answer.date) && formIjin.answer.date[0] && formIjin.answer.date[1]){
-            const daysInRange = eachDayOfInterval({ start: formIjin.answer.date[0], end: formIjin.answer.date[1] });
+        if(Array.isArray(formIjin.answer.date_range) && formIjin.answer.date_range[0] && formIjin.answer.date_range[1]){
+            const daysInRange = eachDayOfInterval({ start: formIjin.answer.date_range[0], end: formIjin.answer.date_range[1] });
             
             const dayNames = daysInRange.map(date => getDay(date));
             const dayFree = user?.workhour == 7 ? [0] : [0, 6]
@@ -165,18 +176,18 @@
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Ijin">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formIjin.error || formIjin.success}
-                    <Toast color="red">
-                        <span class='flex gap-2'>
-                            {#if formIjin.error}
-                                <Ban size={16} color="#d41c08" />
-                            {:else}
-                                <Check size={16} color="#08d42a" />
-                            {/if}
-                            {formIjin.error || formIjin.success}
-                        </span>
-                    </Toast>
+                {#if formIjin.error}
+                    {#each formIjin.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formIjin.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formIjin.success}</span>
+                    </Alert>
                 {/if}
+                
 
                 <div class="flex gap-2">
                     {#if formIjin.add || formIjin.edit}
@@ -194,13 +205,12 @@
                 {#if formIjin.loading}
                     <MyLoading message="Get ijin data"/>
                 {/if}
-
                 {#if formIjin.add || formIjin.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="ijin_id" disabled={formIjin.edit} bind:value={formIjin.answer.ijin_id}/>
                             <div class="flex flex-col gap-2">
-                                <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                <MyInput type='daterange' title='Date Range' name="date_range" bind:value={formIjin.answer.date_range}/>
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Select bind:value={formIjin.answer.type}>
@@ -252,7 +262,7 @@
                                 {#if tableIjin.rows.length > 0}
                                     {#each tableIjin.rows as row}
                                         <TableBodyRow>                                            
-                                            <TableBodyCell>{row.ijin_id}</TableBodyCell>
+                                            <TableBodyCell>{row.ijin_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.date, false) || ""}</TableBodyCell>
                                             <TableBodyCell>{row.type}</TableBodyCell>

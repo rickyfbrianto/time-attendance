@@ -14,6 +14,15 @@ export async function GET({params}){
                 select: { 
                     payroll : true,
                     description : true,
+                    employee:{
+                        select:{
+                            dept:{
+                                select:{
+                                    name:true
+                                }
+                            }
+                        }
+                    }
                 },
                 orderBy:{
                     step: 'asc'

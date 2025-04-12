@@ -8,16 +8,14 @@
 
     let {children, data} :LayoutProps = $props()
 
-    // $effect(()=>{
-    //     return ()=>{
-    //         if(!localStorage.getItem('appstore')){
-    //             localStorage.setItem('appstore', JSON.stringify($appstore))
-    //         }else{
-    //             console.log(' ada')
-        
-    //         }
-    //     }
-    // })
+    $effect(()=>{
+        const temp = JSON.parse(localStorage.getItem('appstore') || "")
+        appstore.update(state => ({...state, ...temp}))
+        if(temp.darkMode)
+            document.documentElement.classList.add('dark')
+        else
+            document.documentElement.classList.remove('dark');
+    })
 </script>
 
 <svelte:window bind:innerWidth={$appstore.appWidth}/>
@@ -26,11 +24,11 @@
     <Sidebar {data}/>
     <div class="flex flex-col flex-1">
         <Header/>
-        <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll ">
-            <div style="scrollbar-width: none;" class="overflow-scroll h-full text-textdark">
+        <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll bg-bgdark text-textdark">
+            <div style="scrollbar-width: none;" class="overflow-scroll h-full">
                 {@render children()}
             </div>
-            <div class="sticky bottom-0 left-0 flex items-center w-full h-[var(--ukuran5)] px-5 shadow-lg bg-bgdark text-textdark border-slate-300 border-t-[2px]">
+            <div class="sticky bottom-0 left-0 flex items-center w-full h-[var(--ukuran5)] px-5 shadow-lg border-slate-300 border-t-[2px]">
                 Hai footer
             </div>
         </div>

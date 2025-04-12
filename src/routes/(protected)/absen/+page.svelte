@@ -9,6 +9,9 @@
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
 	import { formatTanggal, getPeriode } from '@lib/utils.js';
+    import gsap from 'gsap'
+	import { mount, unmount } from 'svelte';
+    
     let {data} = $props()
     
     let openRow: number[] = $state([]) 
@@ -70,19 +73,17 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    <div class="flex justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
-        <div class="flex flex-col gap-2">
-            {#await getSetting() then {start_periode, end_periode}}
-                <div class="flex gap-2">
-                    <ClockArrowDown size={16}/>
-                    <span class="text-[.8rem]">Start Periode {start_periode}</span>
-                </div>
-                <div class="flex gap-2">
-                    <ClockArrowUp size={16}/>
-                    <span class="text-[.8rem]">End Periode {end_periode}</span>
-                </div>
-            {/await}
-        </div>
+    <div class="flex items-center gap-2">
+        {#await getSetting() then {start_periode, end_periode}}
+            <div class="flex gap-2 p-3 bg-bgdark2 text-textdark rounded-lg">
+                <ClockArrowDown size={16}/>
+                <span class="text-[.9rem]">Start Periode {start_periode}</span>
+            </div>
+            <div class="flex gap-2 p-3 bg-bgdark2 text-textdark rounded-lg">
+                <ClockArrowUp size={16}/>
+                <span class="text-[.9rem]">End Periode {end_periode}</span>
+            </div>
+        {/await}
     </div>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">

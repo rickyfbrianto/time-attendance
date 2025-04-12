@@ -49,7 +49,7 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg container border-[2px] border-slate-200">
     <div class="flex p-6 bg-bgdark2 rounded-t-lg">
-        <span class=''>Login</span>
+        <span class='text-[1.4rem]'>Login</span>
     </div>
     
     <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 min-w-[30rem]'>

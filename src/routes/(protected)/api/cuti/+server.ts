@@ -53,7 +53,7 @@ export async function POST({ request }) {
 
                 const daysInRange = eachDayOfInterval({ start: data.date[0], end: data.date[1] })
                 const dayFree = user?.workhour == 7 ? [0] : [0, 6]
-                
+
                 const temp = daysInRange.filter(v => {
                     return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), false) == formatTanggal(format(cal.date, "yyyy-MM-dd"), false)) && !dayFree.includes(getDay(v))
                 }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), false))

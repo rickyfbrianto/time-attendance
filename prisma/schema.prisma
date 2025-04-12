@@ -151,6 +151,7 @@ model spl_detail {
 model dept {
   dept_id              String      @id @db.VarChar(40)
   dept_code            String      @unique(map: "dept_code") @db.VarChar(6)
+  initial              String      @db.VarChar(10)
   name                 String      @db.VarChar(100)
   status               dept_status
   employee             employee[]
@@ -202,6 +203,7 @@ model cuti {
 model sppd {
   sppd_id              String        @id @db.VarChar(40)
   purpose              String        @db.VarChar(255)
+  location             String        @db.VarChar(100)
   dept                 String?       @db.VarChar(6)
   start_date           DateTime      @db.DateTime(0)
   end_date             DateTime      @db.DateTime(0)
@@ -221,7 +223,6 @@ model sppd_detail {
   sppd_detail_id String    @id @db.VarChar(40)
   sppd_id        String?   @db.VarChar(40)
   payroll        String?   @db.VarChar(8)
-  location       String    @db.VarChar(100)
   description    String    @db.VarChar(255)
   employee       employee? @relation(fields: [payroll], references: [payroll])
   sppd           sppd?     @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
@@ -285,11 +286,6 @@ enum dept_status {
   Nonaktif
 }
 
-enum srl_status {
-  OPEN
-  CLOSE
-}
-
 enum skpd_status {
   OPEN
   CLOSE
@@ -307,4 +303,11 @@ enum ijin_status {
   Reject
   Approved
   Cancelled
+}
+
+enum srl_status {
+  Open
+  Pending
+  Approve
+  Cancel
 }

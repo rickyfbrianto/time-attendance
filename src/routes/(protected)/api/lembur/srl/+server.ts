@@ -35,14 +35,6 @@ export async function GET({url}){
 export async function POST({ request,  }) {
     try {        
         const data = await request.json();
-        const { isError, errorCount } = checkFieldKosong(data);
-        if (isError) {
-            throw new Error(`${errorCount} input masih kosong`)
-        }
-
-        data.srl_detail.forEach((val:{status:string, description:string}, i: number) => {
-            if(!val.description.trim()) throw new Error(`Description ${i + 1} masih kosong`)
-        });
 
         const dataSRLDetail: {status:string, description:string}[] = []
         data.srl_detail.forEach((val:{status:string, description:string}) => {
@@ -56,24 +48,20 @@ export async function POST({ request,  }) {
 
             if(!getSRL){
                 let newID
-                const dept = data.spl_id.split('-')[1]
-                
-                const tempID = await tx.$queryRawUnsafe(`
-                SELECT srl_id as id from srl 
-                    WHERE 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 2), '-', -1) = '${dept}' AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 3), '-', -1) = year(now()) AND 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '-', 4), '-', -1) = month(now())
-                ORDER by spl_id desc limit 0,1`)
-                if(tempID.length > 0){
-                    newID = tempID[0].id.split('-')
-                    const lastID = Number(newID[newID.length-1]) + 1
-                    newID[newID.length-1] = lastID
-                    newID = newID.join('-')
-                }else{
-                    newID = `SRL-${dept}-${format(new Date(), "yyyy-MM")}-1`
-                }
-                
+                const separator = "_"
+                const dept = data.spl_id.split(separator)[1]
+
+                const [{id}] = await tx.$queryRawUnsafe(`
+                    SELECT 
+                    IFNULL(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '${separator}', 1), '-', 1) AS unsigned)), 0) as id 
+                    from SRL WHERE 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '${separator}', 2), '${separator}', -1) = ? AND
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '${separator}', -1), '-', 1) = month(now()) AND 
+                    SUBSTRING_INDEX(SUBSTRING_INDEX(srl_id, '${separator}', -1), '-', -1) = year(now())`,
+                dept) as {id: number}[]
+                const lastID = Number(id) + 1
+                newID = `${lastID}-SRL${separator}${dept}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
+
                 await tx.$queryRawUnsafe(`
                     INSERT INTO srl (srl_id, spl_id, payroll, real_start, real_end, status, createdAt) 
                     VALUES(?,?,?,?,?,?, now())`,
