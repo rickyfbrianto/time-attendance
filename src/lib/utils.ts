@@ -28,6 +28,7 @@ export const formatWaktu = (val:string, format:string = "HH:mm:ss") => {
 }
 
 export const formatTanggal = (val:string, incTime:boolean = true) => {
+    if(!val) return ""
     const temp = DateTime.fromISO(val, { zone: "UTC" })
     return temp.setLocale('id').toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`).trim()
 }

@@ -35,8 +35,9 @@ export async function POST({ request,  }) {
     try {        
         const data = await request.json();
         
-        const dataSPPDDetail = data.sppd_detail.map((val:any) => {
-            return {payroll: val.payroll, description: val.description.trim()}
+        const dataSPPDDetail: {payroll:string, description:string}[] = []
+        data.sppd_detail.map((val:any) => {
+            dataSPPDDetail.push({payroll: val.payroll, description: val.description})
         })        
         
         const status = await prisma.$transaction(async tx =>{
@@ -64,10 +65,10 @@ export async function POST({ request,  }) {
                     newID,data.purpose,data.location,data.dept,data.date[0],data.date[1],data.duration,data.createdBy)
                 
                 await tx.sppd_detail.createMany({
-                    data: dataSPPDDetail.map(({payroll, description}:{payroll:string, description:string}) => ({
+                    data: dataSPPDDetail.map(({payroll, description}, step) => ({
                         sppd_detail_id: uuid4(),
                         sppd_id: newID,
-                        payroll, description
+                        payroll, step, description
                     }))
                 })
 
@@ -82,10 +83,10 @@ export async function POST({ request,  }) {
                 })
 
                 await tx.sppd_detail.createMany({
-                    data: dataSPPDDetail.map(({payroll, description}:{payroll:string, description:string}) => ({
+                    data: dataSPPDDetail.map(({payroll, description}, step) => ({
                         sppd_detail_id: uuid4(),
                         sppd_id: data.sppd_id,
-                        payroll, description
+                        payroll, step, description
                     }))
                 })
 

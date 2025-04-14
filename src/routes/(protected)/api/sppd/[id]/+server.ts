@@ -30,7 +30,7 @@ export async function GET({params}){
                     }
                 },
                 orderBy:{
-                    sppd_detail_id: 'asc'
+                    step: 'asc'
                 }
             },
         },

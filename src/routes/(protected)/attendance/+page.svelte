@@ -8,10 +8,10 @@
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
 	import { formatTanggal, formatWaktu, pecahArray } from '@lib/utils';
-    import { format } from "date-fns";
+    import { differenceInHours, differenceInMinutes, differenceInSeconds, format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
-	import { z } from 'zod';
+	import { date, z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { getParams } from '@lib/data/api.js';
 
@@ -105,12 +105,13 @@
             const req = await axios.get(`/api/attendance/${id}`)
             const res = await req.data
             
+            console.log(formatTanggal(res.check_in2))
             formAttendance.answer = {...res}
             setTimeout(()=>{
                 formAttendance.answer.check_in = formatTanggal(res.check_in)
                 formAttendance.answer.check_out = formatTanggal(res.check_out)
-                formAttendance.answer.check_in2 = res.check_in2
-                formAttendance.answer.check_out2 = res.check_out2
+                formAttendance.answer.check_in2 = formatTanggal(res.check_in2)
+                formAttendance.answer.check_out2 = formatTanggal(res.check_out2)
             }, 100)
             formAttendance.answer.attachment = []
             
@@ -185,12 +186,12 @@
     </div>
 
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Dashboard">
+        <TabItem  title="Dashboard">
             <div class="flex justify-center items-center gap-4 min-h-[50vh]">
                 <span>Dashboard Page</span>
             </div>
         </TabItem>
-        <TabItem title="Attendance">
+        <TabItem open title="Attendance">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formAttendance.error}
                     {#each formAttendance.error.split(';') as v}
@@ -261,13 +262,16 @@
                     </form>
                 {/if}
                 
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-start">
                     <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableAttendanceSearch.value}/>
+                    <div class="flex w-full flex-col">
+                        <MyInput type='text' bind:value={tableAttendanceSearch.value}/>
+                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                    </div>
                     <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
@@ -279,7 +283,8 @@
                             <ThSort table={tableAttendance} field="check_in">Check In</ThSort>
                             <ThSort table={tableAttendance} field="check_out">Check Out</ThSort>
                             <ThSort table={tableAttendance} field="type">Type</ThSort>
-                            <ThSort table={tableAttendance} field="description">Description</ThSort>
+                            <ThSort table={tableAttendance} field="">Difference</ThSort>
+                            <ThSort table={tableAttendance} field="">Information</ThSort>
                             <ThSort table={tableAttendance} field="">#</ThSort>
                         </TableHead>
 
@@ -292,9 +297,9 @@
                                 {#if tableAttendance.rows.length > 0}
                                     {#each tableAttendance.rows as row}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{format(row.check_in, "dd-MMM-yyyy") || ""}</TableBodyCell>
-                                            <TableBodyCell>{['HKC','HKM'].includes(row.type) ? formatWaktu(row.check_in ) : "-" } </TableBodyCell>
-                                            <TableBodyCell>{['HKC','HKM'].includes(row.type) ? formatWaktu(row.check_out) : "-" }</TableBodyCell>
+                                            <TableBodyCell>{format(row.check_in, "dd MMMM yyyy") || ""}</TableBodyCell>
+                                            <TableBodyCell>{formatWaktu(row.check_in).slice(0,2) == "00" ? "-" : formatWaktu(row.check_in)}</TableBodyCell>
+                                            <TableBodyCell>{formatWaktu(row.check_out).slice(0,2) == "00" ? "-" : formatWaktu(row.check_out)}</TableBodyCell>
                                             <TableBodyCell>
                                                 {row.type == "HKC" ? "Hari Kerja Check Log" :
                                                 row.type == "HKM" ? "Hari Kerja Manual" :
@@ -302,7 +307,31 @@
                                                 row.type == "I" ? "Ijin" : 
                                                 row.type == "C" ? "Cuti" : row.type}
                                             </TableBodyCell>
-                                            <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0}
+                                                    <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
+                                                        {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
+                                                        {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
+                                                        {format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}
+                                                    </Badge>
+                                                {/if}
+                                            </TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class="flex flex-col gap-1 items-start">
+                                                    {#each [...row.description.split("|").filter(v => v).map((v: string) => ({type:"kerja", value: v})), 
+                                                    formatWaktu(row.check_in).slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                    differenceInHours(row.lembur_end, row.lembur_start) > 0 
+                                                        ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minutes" :""}`}
+                                                        : null
+                                                    ] as val}
+                                                        {#if val}
+                                                            <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                            : val.type == "late" ? "red" 
+                                                            : val.type == "lembur" ? "yellow" : "none"} class=''>{val.value}</Badge>
+                                                        {/if}
+                                                    {/each}
+                                                </div>
+                                            </TableBodyCell>
                                             <TableBodyCell tdClass='py-2'>
                                                 {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
                                                 <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
