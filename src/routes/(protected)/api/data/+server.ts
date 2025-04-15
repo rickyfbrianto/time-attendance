@@ -11,7 +11,8 @@ export async function GET({url}){
         const year = url.searchParams.get('year')
 
         if(type == "user"){
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee`)
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`,
+                `%${val}%`)
             return json(req)
         }else if(type == "user_by_dept"){
             const req = await prisma.$queryRawUnsafe(`
@@ -29,7 +30,7 @@ export async function GET({url}){
         }else if(type=='spl_by_status'){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT s.spl_id, s.purpose, sd.description,
-                    DATE( s.est_start ) AS srl_date,
+                    DATE(s.est_start) AS srl_date,
                     GetStartOvertime( a.check_in, a.check_out, e.workhour) AS est_start,
                     RoundCheckOut(a.check_in, a.check_out) AS est_end
                 FROM
@@ -41,11 +42,10 @@ export async function GET({url}){
             return json(req)
         }else if(type=='sppd_by_payroll'){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, sd.payroll, s.location, sd.description 
+                SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, s.location
                 FROM sppd as s
-                LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
                 LEFT JOIN skpd ON s.sppd_id = skpd.sppd_id
-                WHERE sd.payroll = ? and skpd.sppd_id IS NULL`, val)
+                WHERE skpd.sppd_id IS NULL`)
             return json(req)
         }else if(type=='get_cuti_calendar'){
             const req = await prisma.$queryRawUnsafe(`

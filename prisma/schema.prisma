@@ -88,6 +88,7 @@ model attendance {
   check_in2                                     DateTime? @db.DateTime(0)
   check_out2                                    DateTime? @db.DateTime(0)
   type                                          String    @db.VarChar(50)
+  ijin_info                                     String    @db.VarChar(50)
   description                                   String    @db.VarChar(255)
   attachment                                    String?   @db.Text
   createdBy                                     String?   @db.VarChar(8)
@@ -221,6 +222,7 @@ model sppd {
 
 model sppd_detail {
   sppd_detail_id String    @id @db.VarChar(40)
+  step           Int       @db.TinyInt
   sppd_id        String?   @db.VarChar(40)
   payroll        String?   @db.VarChar(8)
   description    String    @db.VarChar(255)

@@ -1,16 +1,15 @@
 <script lang="ts">
     import { fade, slide } from 'svelte/transition'
     import { Tabs, TabItem } from 'flowbite-svelte';
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Checkbox, Button, Modal, Label, Input, ImagePlaceholder } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Checkbox, Button, Modal, Label, Input, ImagePlaceholder, Badge } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import { Badge, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ClockArrowDown, ClockArrowUp, RefreshCw, Search } from '@lucide/svelte';
+	import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ClockArrowDown, ClockArrowUp, RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '@lib/components/MyButton.svelte'
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
 	import { formatTanggal, getPeriode } from '@lib/utils.js';
-    import gsap from 'gsap'
-	import { mount, unmount } from 'svelte';
+	import { differenceInHours, format } from 'date-fns';
     
     let {data} = $props()
     
@@ -73,7 +72,7 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    <div class="flex items-center gap-2">
+    <!-- <div class="flex items-center gap-2">
         {#await getSetting() then {start_periode, end_periode}}
             <div class="flex gap-2 p-3 bg-bgdark2 text-textdark rounded-lg">
                 <ClockArrowDown size={16}/>
@@ -84,18 +83,21 @@
                 <span class="text-[.9rem]">End Periode {end_periode}</span>
             </div>
         {/await}
-    </div>
+    </div> -->
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="My Absent">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-start">
                     <select bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableAbsenSearch.value}/>
+                    <div class="flex w-full flex-col">
+                        <MyInput type='text' bind:value={tableAbsenSearch.value}/>
+                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                    </div>
                     <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableAbsen.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
@@ -103,12 +105,12 @@
                 <Datatable table={tableAbsen}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableAbsen} field="payroll">Payroll</ThSort>
-                            <ThSort table={tableAbsen} field="name">Name</ThSort>
-                            <ThSort table={tableAbsen} field="check_in">Check In</ThSort>
-                            <ThSort table={tableAbsen} field="check_out">Check Out</ThSort>
-                            <ThSort table={tableAbsen} field="tanggal">Type</ThSort>
-                            <ThSort table={tableAbsen} field="description">Description</ThSort>
+                            <ThSort table={tableAbsen} field="check_in">Day</ThSort>
+                            <ThSort table={tableAbsen} field="check_in">Date</ThSort>
+                            <ThSort table={tableAbsen} field="check_in">Clock In</ThSort>
+                            <ThSort table={tableAbsen} field="check_out">Clock Out</ThSort>
+                            <ThSort table={tableAbsen} field="">Difference</ThSort>
+                            <ThSort table={tableAbsen} field="">Information</ThSort>
                         </TableHead>
 
                         {#if tableAbsen.isLoading}
@@ -119,16 +121,40 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableAbsen.rows.length > 0}
                                     {#each tableAbsen.rows as row}
-                                        <TableBodyRow>
-                                            <TableBodyCell>{row.payroll}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_in)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_out)}</TableBodyCell>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
+                                            <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                             <TableBodyCell>
-                                                {row.type == "HKC" ? "Hari Kerja Check Log" :
-                                                row.type == "HKM" ? "Hari Kerja Manual" : ""}
+                                                {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out}
+                                                    <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
+                                                        {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
+                                                        {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
+                                                        {format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}
+                                                    </Badge>
+                                                {/if}
                                             </TableBodyCell>
-                                            <TableBodyCell>{row.description}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class="flex flex-col gap-1 items-start">
+                                                    {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                    formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                    differenceInHours(row.lembur_end, row.lembur_start) > 0 
+                                                        ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minutes" :""}`}
+                                                        : null,
+                                                    row.ijin_info
+                                                        ? {type:"ijin_info", value: row.ijin_info}
+                                                        : null
+                                                    ] as val}
+                                                        {#if val}
+                                                            <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                            : val.type == "late" ? "red" 
+                                                            : val.type == "lembur" ? "yellow" 
+                                                            : val.type == "ijin_info" ? "dark" : "none"} class=''>{val.value}</Badge>
+                                                        {/if}
+                                                    {/each}
+                                                </div>
+                                            </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
@@ -161,13 +187,16 @@
         </TabItem>
         <TabItem title="Departement">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-start">
                     <select bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableAbsenDeptSearch.value}/>
+                    <div class="flex w-full flex-col">
+                        <MyInput type='text' bind:value={tableAbsenDeptSearch.value}/>
+                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                    </div>
                     <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableAbsenDept.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
@@ -177,10 +206,12 @@
                         <TableHead>
                             <ThSort table={tableAbsenDept} field="payroll">Payroll</ThSort>
                             <ThSort table={tableAbsenDept} field="name">Name</ThSort>
-                            <ThSort table={tableAbsenDept} field="check_in">Check In</ThSort>
-                            <ThSort table={tableAbsenDept} field="check_out">Check Out</ThSort>
-                            <ThSort table={tableAbsenDept} field="tanggal">Type</ThSort>
-                            <ThSort table={tableAbsenDept} field="description">Description</ThSort>
+                            <ThSort table={tableAbsenDept} field="check_in">Day</ThSort>
+                            <ThSort table={tableAbsenDept} field="check_in">Date</ThSort>
+                            <ThSort table={tableAbsenDept} field="check_in">Clock In</ThSort>
+                            <ThSort table={tableAbsenDept} field="check_out">Clock Out</ThSort>
+                            <ThSort table={tableAbsenDept} field="">Difference</ThSort>
+                            <ThSort table={tableAbsenDept} field="">Information</ThSort>
                         </TableHead>
 
                         {#if tableAbsenDept.isLoading}
@@ -191,16 +222,42 @@
                         <TableBody tableBodyClass="divide-y">
                             {#if tableAbsenDept.rows.length > 0}
                                 {#each tableAbsenDept.rows as row}
-                                    <TableBodyRow>
+                                    <TableBodyRow class='h-10'>
                                         <TableBodyCell>{row.payroll}</TableBodyCell>
                                         <TableBodyCell>{row.name}</TableBodyCell>
-                                        <TableBodyCell>{formatTanggal(row.check_in)}</TableBodyCell>
-                                        <TableBodyCell>{formatTanggal(row.check_out)}</TableBodyCell>
+                                        <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
+                                        <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
+                                        <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
+                                        <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                         <TableBodyCell>
-                                            {row.type == "HKC" ? "Hari Kerja Check Log" :
-                                            row.type == "HKM" ? "Hari Kerja Manual" : ""}
+                                            {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out}
+                                                <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
+                                                    {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
+                                                    {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
+                                                    {format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}
+                                                </Badge>
+                                            {/if}
                                         </TableBodyCell>
-                                        <TableBodyCell>{row.description}</TableBodyCell>
+                                        <TableBodyCell>
+                                            <div class="flex flex-col gap-1 items-start">
+                                                {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                differenceInHours(row.lembur_end, row.lembur_start) > 0 
+                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minutes" :""}`}
+                                                    : null,
+                                                row.ijin_info
+                                                    ? {type:"ijin_info", value: row.ijin_info}
+                                                    : null
+                                                ] as val}
+                                                    {#if val}
+                                                        <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                        : val.type == "late" ? "red" 
+                                                        : val.type == "lembur" ? "yellow" 
+                                                        : val.type == "ijin_info" ? "dark" : "none"} class=''>{val.value}</Badge>
+                                                    {/if}
+                                                {/each}
+                                            </div>
+                                        </TableBodyCell>
                                     </TableBodyRow>
                                 {/each}
                             {:else}

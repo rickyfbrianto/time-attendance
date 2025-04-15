@@ -48,25 +48,10 @@ export async function POST({ request,  }) {
             })
 
             if(!getSKPD){
-                let newID
-                const separator = "_"
-
-                // SELECT * from SKPD WHERE 
-                // SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '_', 4), '-', 1) = month(now()) and 
-                // SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '_', 4), '-', 2) = year(now());
-                
-                const [{id}] = await tx.$queryRawUnsafe(`
-                    SELECT 
-                    IFNULL(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '${separator}', 1), '-', 1) AS unsigned)), 0) as id
-                    from SKPD where 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(skpd_id, '${separator}', -1), '-', -1) = year(now())`) as {id: number}[]
-                const lastID = Number(id) + 1
-                newID = `${lastID}-SKPD${separator}HR-GA${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
-
                 await tx.$queryRawUnsafe(`
                     INSERT INTO SKPD (skpd_id,sppd_id,payroll,real_start,real_end,status,createdBy,createdAt) 
-                    VALUES(?,?,?,?,?,?,?,now())`,
-                    newID,data.sppd_id,data.payroll,data.date[0],data.date[1],data.status,data.createdBy)
+                    VALUES(getNomorSKPD(),?,?,?,?,?,?,now())`,
+                    data.sppd_id,data.payroll,data.date[0],data.date[1],data.status,data.createdBy)
                 
                 return { message: "Data successfully saved" }
             }else{

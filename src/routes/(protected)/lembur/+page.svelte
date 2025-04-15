@@ -4,7 +4,7 @@
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
-	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash } from '@lucide/svelte';
+	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
 	import { pecahArray, formatTanggal, getPeriode } from '@lib/utils.js';
@@ -51,7 +51,6 @@
             const valid = z.object({
                 spl_id: z.string().trim().min(1),
                 purpose: z.string().trim().min(5),
-                dept: z.string().trim().min(1),
                 spl_detail: z.array(z.object({
                     payroll: z.string().trim().min(1).max(8),
                     description: z.string().trim().min(1).max(255),
@@ -63,11 +62,10 @@
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
                 const req = await axios.post('/api/lembur/spl', formSPL.answer)
-                const res = await req.data
-                formSPL.error = ""
-                formSPL.success = res.message
+                const res = await req.data                
                 formSPLBatal()
                 tableSPL.invalidate()
+                formSPL.success = res.message
             } else{
                 const err = fromZodError(isValid.error)
                 formSPL.success = ""
@@ -219,24 +217,15 @@
         try {
             formSRL.loading = true
             const valid = z.object({
-                srl_id: z.string().trim().min(1),
                 spl_id: z.string().trim().min(1),
-                payroll: z.string().trim().min(1),
-                real_start: z.string().trim().min(1),
-                real_end: z.string().trim().min(1),
-                srl_detail: z.array(z.object({
-                    status: z.string().trim().min(1),
-                    description: z.string().trim().min(1).max(255),
-                })),
             })
             const isValid = valid.safeParse(formSRL.answer)
             if(isValid.success){
                 const req = await axios.post('/api/lembur/srl', formSRL.answer)
                 const res = await req.data
-                formSRL.error = ""
-                formSRL.success = res.message
                 formSRLBatal()
                 tableSRL.invalidate()
+                formSRL.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
                 formSRL.success = ""
@@ -666,7 +655,7 @@
                         </Alert>
                     {/each}
                 {:else if formSRL.success}
-                    <Alert border color="green" dismissable>
+                    <Alert color="green" dismissable>
                         <span>{formSRL.success}</span>
                     </Alert>
                 {/if}
@@ -711,7 +700,7 @@
                         </div>
 
                         {#if formSRL.answer.spl_id}
-                        <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
+                            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
                                 {#each formSRL.answer.srl_detail as list, i}
                                     <div class="flex flex-col gap-2">
                                         <div class="flex gap-2 items-end">
@@ -724,14 +713,14 @@
                                                 </select>
                                             </div>
 
-                                            {#if i == formSRL.answer.srl_detail.length - 1}
+                                            <!-- {#if i == formSRL.answer.srl_detail.length - 1}
                                                 <MyButton onclick={()=>formSRL.answer.srl_detail.push({status:"", description:""})}><Plus size={14} color='green' /></MyButton>
                                             {/if}
                                             {#if formSRL.answer.srl_detail.length > 1}
                                                 <MyButton onclick={()=> formSRL.answer.srl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
-                                            {/if}
+                                            {/if} -->
                                         </div>
-                                        <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
+                                        <MyInput type='textarea' disabled title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
                                     </div>
                                 {/each}
                             </div>
@@ -779,7 +768,10 @@
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
-                                            <TableBodyCell>{differenceInHours(row.real_end,row.real_start)} Hours</TableBodyCell>
+                                            <TableBodyCell>
+                                                {differenceInHours(row.real_end,row.real_start)}  Hour
+                                                {format(row.real_end, "mm") != "00" ? format(row.real_end, "mm") + " Minute" :""}
+                                            </TableBodyCell>
                                             {#if pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")}
                                                 <TableBodyCell>
                                                     {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}

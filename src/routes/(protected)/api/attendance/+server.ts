@@ -1,4 +1,4 @@
-import { prismaErrorHandler, safeDate } from "@lib/utils";
+import { formatTanggalISO, prismaErrorHandler, safeDate } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
 import { extname } from "node:path";
 import { v4 as uuid4} from "uuid";
@@ -11,15 +11,18 @@ export async function GET({url}){
         const page = Number(url.searchParams.get('_page')) || 1
         const limit = Number(url.searchParams.get('_limit')) || 10
         const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
-        const sort = url.searchParams.get('_sort') ?? "att.check_in"
-        const order = url.searchParams.get('_order') ?? "asc"
-        const search = url.searchParams.get('_search') ?? ""
+        const sort = url.searchParams.get('_sort') || "att.check_in"
+        const order = url.searchParams.get('_order') || "asc"
+        const search = url.searchParams.get('_search') || ""
         
-        const dept = url.searchParams.get('dept') ?? ""
-        const payroll = url.searchParams.get('payroll') ?? ""
+        const dept = url.searchParams.get('dept') || ""
+        const payroll = url.searchParams.get('payroll') || ""
         
         const status = await prisma.$transaction(async (tx) =>{
-            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, att.check_in AS check_in, att.check_out AS check_out, att.description, att.type
+            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
+                att.description, att.type, att.ijin_info, 
+                GetStartOvertime( att.check_in, att.check_out, user.workhour) AS lembur_start,
+                RoundCheckOut( att.check_in, att.check_out) as lembur_end
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
@@ -53,21 +56,42 @@ export async function POST({request, url}) {
         const attachment = data.get('attachment')
         
         const status = await prisma.$transaction(async (tx) => {
-            const getAttendance = await tx.attendance.findUnique({
+            // untuk mengecek apakah ada attendance dengan tipe cuti bersama atau hari libur, jika ya maka update check in, check out dan type serta keterangan
+            const getTime = await tx.$queryRawUnsafe(`
+            SELECT attendance_id as getTime FROM attendance 
+            WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`, 
+            data.get('user_id_machine'), data.get('check_in'), data.get('check_out')) as {}[]
+
+            if(getTime[0]){
+                const [{description}] = await tx.$queryRawUnsafe(`SELECT description FROM calendar WHERE DATE(date) = DATE(?)`, 
+                    data.get('check_in')) as {description: string}[]
+                await tx.$queryRawUnsafe(`
+                    UPDATE attendance SET check_in=?,check_out=?,type=?,description=?
+                    WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`,
+                    data.get('check_in'), data.get('check_out'),
+                    // `${data.get('date')}T${data.get('check_in')}Z`,  `${data.get('date')}T${data.get('check_out')}Z`,
+                    data?.get('type'), data?.get('description') ? description +","+ data?.get('description'): description, data.get('user_id_machine'),
+                    data.get('check_in'), data.get('check_out'))
+                return {message:"Data successfully updated"}
+            }
+
+            const getAttendance = await tx.attendance.findFirst({
                 where:{attendance_id : data.get('attendance_id')}
             })
-                        
+            
             if(!getAttendance){
+                console.log('insert time attendance baru')
                 const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance
-                    (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,type,description,attachment,createdBy,createdAt)
+                    (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,type,ijin_info,description,attachment,createdBy,createdAt)
                     VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
                     attendance_id, 
                     data.get('user_id_machine'),
                     data.get('check_in'),
                     data.get('check_out'),
-                    data.get('check_in2'),
-                    data.get('check_out2'),
+                    data.get('check_in2') || null,
+                    data.get('check_out2') || null,
                     data.get('type'),
+                    data.get('ijin_info'),
                     data.get('description'),
                     attachment ? attendance_id + extname(attachment.name) : null,
                     data.get('createdBy')
@@ -90,38 +114,23 @@ export async function POST({request, url}) {
 
                 return {message:"Data successfully saved"}
             } else {
+                console.log('update time attendance baru')
                 const attendance = await tx.$queryRawUnsafe(`
                     UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
-                    check_in2=?,check_out2=?,type=?,description=?,attachment=?,createdBy=?
+                    check_in2=?,check_out2=?,type=?,ijin_info=?,description=?,attachment=?,createdBy=?
                     WHERE attendance_id = ?`,
                     data.get('user_id_machine'),
                     data.get('check_in'),
                     data.get('check_out'),
-                    data.get('check_in2'),
-                    data.get('check_out2'),
+                    data.get('check_in2') || null ,
+                    data.get('check_out2') || null ,
                     data.get('type'),
+                    data?.get('ijin_info'),
                     data?.get('description'),
                     attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
                     data.get('createdBy'),
                     data.get('attendance_id')
                 )
-                
-                // const attendance = await tx.attendance.update({
-                //     data:{
-                //         user_id_machine: data.get('user_id_machine'),
-                //         check_in: new Date(data.get('check_in') + " UTC"),
-                //         check_out: new Date(data.get('check_out') + " UTC"),
-                //         check_in2: check_in2 ? check_in2: null,
-                //         check_out2: check_out2 ? check_out2: null,
-                //         type: data.get('type'),
-                //         description: data?.get('description') ?? "-",
-                //         attachment: attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
-                //         createdBy: data.get('createdBy'),
-                //         createdAt: new Date()
-                //     }, where:{
-                //         attendance_id: data.get('attendance_id')
-                //     }
-                // })
 
                 if(attendance && attachment){
                     const filename = path.resolve('src/lib/assets/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`

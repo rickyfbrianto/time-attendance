@@ -56,6 +56,10 @@
                 purpose: z.string().trim().min(1),
                 location: z.string().trim().min(1),
                 date: z.tuple([z.string(), z.string()], {message: "Date is not valid"}),
+                sppd_detail: z.array(z.object({
+                    payroll: z.string().trim().min(1),
+                    description: z.string().trim().min(10)
+                }))
             })
             const isValid = valid.safeParse(formSPPD.answer)
             if(isValid.success){            
@@ -216,7 +220,7 @@
             rowInc += row3
             doc.setFont('times', 'normal')
             doc.text("Tujuan", colData[0], rowData + rowInc)
-            doc.text(`: ${val.location}`, colData[1], rowData + rowInc)
+            doc.text(`: ${res.location}`, colData[1], rowData + rowInc)
             rowInc += row1
             doc.setFont('times', 'italic')
             doc.text("Destination", colData[0], rowData + rowInc)
@@ -505,7 +509,7 @@
     })
     
     const getSPPD = async () =>{
-        const req = await fetch(`/api/data?type=sppd_by_payroll&val=${user.payroll}`)
+        const req = await fetch(`/api/data?type=sppd_by_payroll`)
         const res = await req.json()
         formSKPDTemp = [...res]
         return res
@@ -634,7 +638,10 @@
                                                 <MyButton onclick={()=> formSPPD.answer.sppd_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
                                             {/if}
                                         </div>
-                                        <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={list.description}/>
+                                        <div class="flex flex-col">
+                                            <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={list.description}/>
+                                            <span class="italic text-[.8rem]">Minimal 10 character</span>
+                                        </div>
                                     </div>
                                 {/each}
                             </div>
