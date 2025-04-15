@@ -11,7 +11,8 @@ export async function GET({url}){
         const year = url.searchParams.get('year')
 
         if(type == "user"){
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee`)
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`,
+                `%${val}%`)
             return json(req)
         }else if(type == "user_by_dept"){
             const req = await prisma.$queryRawUnsafe(`

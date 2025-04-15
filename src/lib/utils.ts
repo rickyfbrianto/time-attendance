@@ -22,15 +22,12 @@ interface EncryptedData {
     encrypted: string;
 }
 
-export const formatWaktu = (val:string, format:string = "HH:mm:ss") => {
-    const temp = DateTime.fromISO(val, { zone: "UTC" })
-    return temp.toFormat(format).trim()
-}
-
-export const formatTanggal = (val:string, incTime:boolean = true) => {
+export const formatTanggal = (val:string, mode: "date"|"time"|"datetime" = "datetime") => {
     if(!val) return ""
     const temp = DateTime.fromISO(val, { zone: "UTC" })
-    return temp.setLocale('id').toFormat(`yyyy-MM-dd ${incTime ? "HH:mm:ss":""}`).trim()
+    const newMode = mode == "datetime" ? "yyyy-MM-dd HH:mm:ss" : (mode == "date" ? "yyyy-MM-dd" : (mode == "time" ? "HH:mm:ss" : ""))
+    const newFormat = temp.setLocale('id').toFormat(newMode).trim()
+    return newFormat
 }
 
 export const formatTanggalISO = (val:Date | string) =>{
