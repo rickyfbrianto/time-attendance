@@ -26,18 +26,18 @@ export async function GET({url}){
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                    WHERE (user.department like ? AND user.payroll like ?) AND att.check_in like ?
+                    WHERE (user.department like ? AND user.payroll like ?) AND (att.check_in like ? OR user.name like ? OR user.payroll like ?)
                     ORDER by ${sort} ${order}
                     LIMIT ${limit} OFFSET ${offset}`,
-                `%${dept}%`, `%${payroll}%`, `%${search}%`)
+                `%${dept}%`, `%${payroll}%`, `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
             
             const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
                 SELECT att.attendance_id FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                    WHERE (user.department like ? AND user.payroll like ?) AND att.check_in like ?
+                    WHERE (user.department like ? AND user.payroll like ?) AND (att.check_in like ? OR user.name like ? OR user.payroll like ?)
                     ) as tmp`,
-                `%${dept}%`, `%${payroll}%`, `%${search}%`) as {count:number}[]
+                `%${dept}%`, `%${payroll}%`, `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
             const totalItems = Number(count)
             return {items, totalItems}
         })

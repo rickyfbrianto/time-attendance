@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal } from 'flowbite-svelte';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save} from '@lucide/svelte'
+    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
     import {dataSample } from '@lib/store/appstore'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
@@ -168,6 +168,7 @@
     const selectAttendanceUser = async (val: string) =>{
         formAttendance.payroll = val
         tableAttendance.invalidate()
+        tableAttendanceDept.invalidate()
     }
     
     $effect(()=>{
@@ -206,19 +207,17 @@
     <title>Attendance</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
-    {JSON.stringify(formAttendance)}
-    
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#await getAttendance(formAttendance.payroll)}
         <MyLoading message="Loading user"/>
     {:then val}
-        <div class="flex justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
+        <div class={`flex justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${formAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
             <div class="flex flex-col gap-2 min-w-[8rem]">
                 <div class="flex flex-col">
                     <span class="font-bold text-[1.2rem]">{val.name}</span>
                     <span class='font-bold'>{val.payroll}</span>
                     {#if formAttendance.payroll !== user.payroll}
-                        <MyButton className='text-textdark2' onclick={handleBackToMyAttendance}>Get back to my attendance</MyButton>
+                        <MyButton onclick={handleBackToMyAttendance}>Get back to my attendance</MyButton>
                     {/if}
                 </div>
                 <div class="flex items-center gap-2">
@@ -257,14 +256,12 @@
             </Alert>
         {/if}
 
-        {#if !formAttendance.add || !formAttendance.edit}
-            {#if pecahArray(userProfile?.access_attendance, "C")}
-                <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
-            {/if}
+        {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C")}
+            <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
         {/if}
 
         <Tabs contentClass='w-full' tabStyle="underline">
-            <TabItem title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
+            <TabItem open title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                     <div class="flex gap-2 items-start">
                         <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
@@ -308,10 +305,10 @@
                                                 <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out}
-                                                        <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
+                                                        <Badge class='py-1' rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
                                                             {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
                                                             {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
-                                                            {format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}
+                                                            {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
@@ -321,7 +318,7 @@
                                                         {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                         formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
                                                         differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                            ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}`}
+                                                            ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}`}
                                                             : null,
                                                         row.ijin_info
                                                             ? {type:"ijin_info", value: row.ijin_info}
@@ -331,14 +328,14 @@
                                                                 <Badge rounded color={val.type == "kerja" ? "indigo" 
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "yellow" 
-                                                                : val.type == "ijin_info" ? "dark" : "none"} class='capitalize'>{val.value}</Badge>
+                                                                : val.type == "ijin_info" ? "green" : "none"} class='capitalize'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
-                                                    <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
+                                                        <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
                                                         <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
@@ -412,7 +409,14 @@
                                     {#if tableAttendanceDept.rows.length > 0}
                                         {#each tableAttendanceDept.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    <div class="flex items-center gap-2">
+                                                        {row.payroll}
+                                                        {#if formAttendance.payroll != row.payroll}
+                                                            <MyButton onclick={()=> selectAttendanceUser(row.payroll)}><Eye size={12} /></MyButton>
+                                                        {/if}
+                                                    </div>
+                                                </TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
@@ -420,7 +424,7 @@
                                                 <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out}
-                                                        <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
+                                                        <Badge class='py-1' rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
                                                             {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
                                                             {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
                                                             {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
@@ -443,21 +447,20 @@
                                                                 <Badge rounded color={val.type == "kerja" ? "indigo" 
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "yellow" 
-                                                                : val.type == "ijin_info" ? "dark" : "none"} class='capitalize'>{val.value}</Badge>
+                                                                : val.type == "ijin_info" ? "green" : "none"} class='capitalize'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
-                                                        <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
+                                                    {#if formAttendance.payroll != row.payroll && row.payroll != user.payroll}
+                                                        {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
+                                                            <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
+                                                        {/if}
                                                     {/if}
-                                                    {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
+                                                    <!-- {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
                                                         <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
-                                                    {/if}
-                                                    {#if formAttendance.payroll != row.payroll}
-                                                        <MyButton onclick={()=> selectAttendanceUser(row.payroll)}>Seek </MyButton>
-                                                    {/if}
+                                                    {/if} -->
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
@@ -570,11 +573,12 @@
                                     <Radio value="Sick" bind:group={formAttendance.answer.ijin_info}>Sick</Radio>
                                 </div>
                             </div>
+
+                            {#if formAttendance.answer.user_id_machine}
+                                <input class="border self-end" type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
+                            {/if}
                         {/if}                            
                     </div>
-                    {#if formAttendance.answer.user_id_machine}
-                        <input class="border" type="file" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
-                    {/if}
                     <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
                 </form>
             {/if}

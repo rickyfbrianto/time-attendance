@@ -131,7 +131,7 @@
                                                     <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
                                                         {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
                                                         {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
-                                                        {format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}
+                                                        {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
                                                     </Badge>
                                                 {/if}
                                             </TableBodyCell>
@@ -140,7 +140,7 @@
                                                     {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                     formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
                                                     differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                        ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minutes" :""}`}
+                                                        ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}`}
                                                         : null,
                                                     row.ijin_info
                                                         ? {type:"ijin_info", value: row.ijin_info}
@@ -234,7 +234,7 @@
                                                 <Badge rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
                                                     {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
                                                     {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
-                                                    {format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minute" :""}
+                                                    {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
                                                 </Badge>
                                             {/if}
                                         </TableBodyCell>
@@ -243,7 +243,7 @@
                                                 {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                 formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
                                                 differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "mm") != "00" ? format(row.lembur_end, "mm") + " Minutes" :""}`}
+                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minutes" :""}`}
                                                     : null,
                                                 row.ijin_info
                                                     ? {type:"ijin_info", value: row.ijin_info}

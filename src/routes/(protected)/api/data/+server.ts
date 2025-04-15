@@ -79,6 +79,11 @@ export async function GET({url}){
                 return {...newData}
             })
             return json(transact)
+        }else if(type=='get_attendance_summary_payroll'){
+            const req = await prisma.$queryRawUnsafe(`
+                select * from attendance as a
+                `)
+
         }else{
             throw new Error("Parameter Invalid")
         }
