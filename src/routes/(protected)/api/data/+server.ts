@@ -62,6 +62,13 @@ export async function GET({url}){
                     (SELECT CAST(COUNT(*) as CHAR) as count from cuti WHERE payroll = ? AND year(date) = ? and STATUS ='Approved') as Cuti`, 
                     val, val, year) as {'Total Cuti': number, Cuti: number, 'Sisa Cuti': number}[]
 
+                const [ijin] = await tx.$queryRawUnsafe(`
+                    select 
+                        sum(case when status = 'Approved' then 1 else 0 end) AS 'Ijin'
+                        FROM ijin WHERE payroll = ? AND year(date) = ? AND month(date) <= ?`,
+                        val, year, month
+                ) as {'Ijin':string}[]
+
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select 
                         sum(case when type = 'Cuti Bersama' then 1 else 0 end) AS 'Cuti Bersama',
@@ -74,7 +81,7 @@ export async function GET({url}){
                 cuti['Sisa Cuti'] = Number(cuti["Total Cuti"]) - Number(cuti['Cuti']) - Number(getDataLibur['Cuti Bersama'])
                 
                 const newData = Object.fromEntries(
-                    Object.entries({...getDataLibur, ...cuti})
+                    Object.entries({...getDataLibur, ...ijin, ...cuti})
                     .map(([key, value]) => ([key, Number(value)]))
                 )
                 return {...newData}

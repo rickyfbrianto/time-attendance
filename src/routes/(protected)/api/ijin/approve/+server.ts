@@ -13,13 +13,13 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            select c.*, e.name from cuti as c
+            select c.*, e.name from ijin as c
             LEFT JOIN employee as e ON e.payroll = c.payroll
             WHERE c.approval = ? AND c.status = 'Waiting'
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             payroll, limit, offset)
 
-        const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM cuti as c
+        const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM ijin as c
             LEFT JOIN employee as e ON c.payroll = e.payroll
             WHERE e.approver = ? AND c.status = 'Waiting'`,
             payroll) as {count:number}[]
@@ -33,12 +33,12 @@ export async function POST({ request }) {
         const data = await request.json();
         
         const status = await prisma.$transaction(async tx =>{
-            await tx.cuti.update({
+            await tx.ijin.update({
                 data:{ status: data.status },
-                where: { cuti_id: data.cuti_id }
+                where: { ijin_id: data.ijin_id }
             })
 
-            return {message:`Cuti successfully ${data.status}`}
+            return {message:`Ijin successfully ${data.status}`}
         })
 
         return json(status);

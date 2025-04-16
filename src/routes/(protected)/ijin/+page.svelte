@@ -1,42 +1,66 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Select, Alert } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Badge, CalendarCheck, NotebookPen} from '@lucide/svelte'
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Select, Alert, Modal, Timeline, TimelineItem, Badge, Button } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray } from '@lib/utils.js';
-    import { differenceInDays, eachDayOfInterval, getDay } from 'date-fns';
+    import { differenceInDays, eachDayOfInterval, format, getDay, getYear } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
+	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 
     const rowsPerPage = 10
     let {data} = $props()
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
 
-    const headerData = [
-        {title:"Total Cuti", value:18, icon: Calendar, link:""},
-        {title:"Sisa Cuti", value: 2, icon: Calendar, link:""},
-        {title:"Cuti Bersama", value: 1, icon: Calendar, link:""},
-        {title:"Ijin", value: 1, icon: Calendar, link:""},
+    const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
+    const typeList =[
+        ['Pernikahan Saya', 3],
+        ['Pernikahan Keluarga', 4], 
+        ['Kelahiran', 5],
+        ['Kematian', 6],
+        ['Bencana Alam', 7],
+        ['Keluarga Rawat Inap', 8],
+        ['Cuti Khitanan/Baptis',2],
+        ['Ibadah Haji',10]
     ]
     
+    let headerData: {title:string, value:string, icon: any }[] = $state([])
+    
+    let modalHeader = $state({
+        modal:false,
+        val:""
+    })
+
+    const handleDetailHeader = (title: string) => {
+        if(eventCuti.includes(title)){
+            modalHeader.modal = true
+            modalHeader.val = title
+        }
+    }
+    
+    // Table Ijin
     let tableIjin = $state(new TableHandler([], {rowsPerPage}))
     let tableIjinSearch = tableIjin.createSearch()
 
     const formIjinAnswer = {
         answer:{
             ijin_id: "id",
-            date_range:[],
+            date:"",
             type:"",
             askDuration:0,
             description: "",
             payroll: user?.payroll || "",
             dept: user?.department || "",
             status: "Waiting",
+            approval: user?.approver || null,
+            user_approval: user?.employee_employee_approverToemployee?.payroll,
+            user_delegate: user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll,
         },
         success:"",
         error:"",
@@ -50,12 +74,11 @@
     const formIjinSubmit = async () =>{
         try {
             formIjin.loading = true
-            formIjin.error = ""
             const valid = z.object({
-                payroll: z.string().trim().min(1),
-                date_range: z.tuple([z.string().trim().min(1), z.string().trim().min(1)]),
+                date: z.union([z.string().trim().min(1), z.tuple([z.string(), z.string()], {message: "Date is not valid"})]),
+                type: z.string().trim().min(1),
                 description: z.string().trim().min(5),
-                type: z.string().trim().min(1)
+                approval: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formIjin.answer)
             if(isValid.success){
@@ -81,17 +104,17 @@
     
     const formIjinEdit = async (id:string) =>{
         try {
-            formIjin.add = false
-            formIjin.edit = true
             formIjin.loading = true
             const req = await axios.get(`/api/ijin/${id}`)
             const res = await req.data
             
             formIjin.answer = {...res}
             setTimeout(()=>{
-                formIjin.answer.date_range = [formatTanggal(res.start_date, "date"), formatTanggal(res.end_date, "date")]
+                formIjin.answer.date = formatTanggal(res.date, "date")
             }, 100)
             
+            formIjin.edit = true
+            formIjin.add = false
             formIjin.loading = false
         } catch (error) {
             formIjin.loading = false
@@ -110,20 +133,93 @@
         }
     }
 
-    const typeList =[
-        ['Pernikahan Saya', 3],
-        ['Pernikahan Keluarga', 4], 
-        ['Kelahiran', 5],
-        ['Kematian', 6],
-        ['Bencana Alam', 7],
-        ['Keluarga Rawat Inap', 8],
-        ['Cuti Khitanan/Baptis',2],
-        ['Ibadah Haji',10]
-    ]
+    const handleDelegateIjin = async (val: string) => {
+        try {
+            formIjin.answer.ijin_id = val
+            const req = await axios.post('/api/ijin/delegate', formIjin.answer)
+            const res = await req.data
+            formIjinBatal()
+            tableIjin.invalidate()
+            formIjin.error = ""
+            formIjin.success = res.message
+        } catch (error: any) {
+            formIjin.error = error.response.data.message
+            formIjin.success = ""
+        }
+    }
+
+    // Approval Ijin
+    let tableApprovalIjin = $state(new TableHandler([], {rowsPerPage}))
+    
+    const formApprovalIjinAnswer = {
+        answer: {
+            ijin_id: "id",
+            status: "Waiting",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    }
+    
+    let formApprovalIjin = $state({...formApprovalIjinAnswer})
+
+    const handleApproveIjin = async (cuti_id: string, val: string) => {
+        try {
+            formApprovalIjin.answer.ijin_id = cuti_id
+            formApprovalIjin.answer.status = val
+            const req = await axios.post('/api/ijin/approve', formApprovalIjin.answer)
+            const res = await req.data
+            if(userProfile.user_hrd) tableListIjin.invalidate()
+            tableApprovalIjin.invalidate()
+            formApprovalIjin.error = ""
+            formApprovalIjin.success = res.message
+        } catch (error: any) {
+            formApprovalIjin.error = error.response.data.message
+            formApprovalIjin.success = ""
+        }
+    }
+
+    // List Ijin for HRD
+    let tableListIjin = $state(new TableHandler([], {rowsPerPage}))
+    let tableListIjinSearch = tableListIjin.createSearch()
+    
+    const formListIjinAnswer = {
+        answer: {
+            cuti_id: "id",
+            status: "Waiting",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    }
+
+    let formListIjin = $state({...formListIjinAnswer})
+    
+    const getCutiUser = async () =>{
+        const year = getYear(new Date())
+        // const month = getMonth(new Date()) + 1
+        const month = 12
+        const req = await fetch(`/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`)
+        const res = await req.json()
+        headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
+    }
+    
+    const getCutiCalendar = async (v: string) =>{
+        const year = getYear(new Date())
+        // const month = getMonth(new Date()) + 1
+        const month = 12
+        const req = await fetch(`/api/data?type=get_cuti_calendar&val=${v}&year=${year}&month=${month}`)
+        const res = await req.json()
+        return res
+    }
     
     $effect(()=>{
-        if(Array.isArray(formIjin.answer.date_range) && formIjin.answer.date_range[0] && formIjin.answer.date_range[1]){
-            const daysInRange = eachDayOfInterval({ start: formIjin.answer.date_range[0], end: formIjin.answer.date_range[1] });
+        if(Array.isArray(formIjin.answer.date) && formIjin.answer.date[0] && formIjin.answer.date[1]){
+            const daysInRange = eachDayOfInterval({ start: formIjin.answer.date[0], end: formIjin.answer.date[1] });
             
             const dayNames = daysInRange.map(date => getDay(date));
             const dayFree = user?.workhour == 7 ? [0] : [0, 6]
@@ -147,31 +243,94 @@
                 console.log(err.message)
             }
         })
+
+        tableApprovalIjin.load(async (state:State) =>{
+            try {
+                const req = await fetch(`/api/ijin/approve?payroll=${user?.payroll}&dept=${user?.department}`)
+                if(!req.ok) throw new Error('Gagal mengambil data')
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+
+        tableListIjin.load(async (state:State) =>{
+            try {
+                const req = await fetch(`/api/ijin/list`)
+                if(!req.ok) throw new Error('Gagal mengambil data')
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
     })
     
     setTimeout(()=>{
         tableIjin.invalidate()
+        tableApprovalIjin.invalidate()
+        tableListIjin.invalidate()
     }, 1000)
 </script>
 
 <svelte:head>
-    <title>Ijin Page</title>
+    <title>Ijin</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
-    <div class="grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 items-center gap-4">
-            {#each headerData as {title, value, icon: Icon, link}}
-                <a href={link} class="border-[2px] border-slate-200 px-4 py-2 min-w-[10rem] rounded-lg  overflow-hidden overflow-ellipsis whitespace-nowrap">
-                    <span class="text-[.9rem] font-semibold">{title}</span>
-                    <div class="flex justify-between items-center gap-1">
-                        <span class='text-[1.4rem]'>{value}</span>
-                        <Icon size={20}/>
-                    </div>
-                </a>
-            {/each}
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+    {#await getCutiUser()}
+        <MyLoading message={`Loading users data`}/>
+    {:then val}
+        <div class="relative grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
+            <MyButton onclick={getCutiUser} className='absolute left-[50%] translate-x-[-50%] bottom-[-1rem] bg-bgdark'><RotateCw size={14} /></MyButton>
+            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-8 items-center gap-4">
+                {#each headerData as {title, value, icon: Icon}}
+                    <button class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
+                    onclick={() => handleDetailHeader(title)}>
+                        <span class="text-[.9rem] font-semibold">{title}</span>
+                        <div class="flex justify-between items-center gap-2">
+                            <Icon size={16}/>
+                            <span class='text-[1.1rem] font-bold'>{value}</span>
+                        </div>
+                    </button>
+                {/each}
+            </div>
         </div>
-    </div>
+    {/await}
+    
+    <Modal title={modalHeader.val} size={'sm'} bind:open={modalHeader.modal}>
+        {#await getCutiCalendar(modalHeader.val)}
+            <MyLoading message={`Loading ${modalHeader.val} data`}/>
+        {:then val}
+            {#if val.length > 0}
+                <div class="ps-4">
+                    <p class='-ms-3 mb-5'>There {val.length} day{val.length > 1 ? "s":""} on '{modalHeader.val}' events</p>
+                    <Timeline order="vertical">
+                        {#each val as {description, date}}
+                            {#if differenceInDays(date, new Date()) > 0}
+                                <Badge class='ms-2 mb-2'>Upcoming</Badge>
+                            {:else if differenceInDays(date, new Date()) == 0}
+                                <Badge class='ms-2 mb-2' color="green">Today</Badge>
+                            {/if}
+                            <TimelineItem title={formatTanggal(date, "date")} date={format(date, "EEEE")}>
+                                <svelte:fragment slot="icon">
+                                    <span class="flex absolute -start-3 justify-center items-center w-6 h-6 bg-primary-200 rounded-full ring-8 ring-white dark:ring-gray-900 dark:bg-primary-900">
+                                        <CalendarWeekSolid class="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                    </span>
+                                </svelte:fragment>
+                                <p>{description}</p>
+                            </TimelineItem>
+                        {/each}
+                    </Timeline>
+                </div>
+            {:else}
+                <span class='text-center'>There is no events</span>
+            {/if}
+        {/await}
+    </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Ijin">
@@ -187,7 +346,6 @@
                         <span>{formIjin.success}</span>
                     </Alert>
                 {/if}
-                
 
                 <div class="flex gap-2">
                     {#if formIjin.add || formIjin.edit}
@@ -209,8 +367,18 @@
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="ijin_id" disabled={formIjin.edit} bind:value={formIjin.answer.ijin_id}/>
+
+                            <MyInput type='text' title='Payroll' disabled value={user.payroll}/>
+                            <MyInput type='text' title='Name' disabled value={user.name}/>
+                            <MyInput type='text' title='Approval' disabled value={user.employee_employee_approverToemployee.name}/>
+                            <MyInput type='text' title='Substitute' disabled value={user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name}/>
+                            
                             <div class="flex flex-col gap-2">
-                                <MyInput type='daterange' title='Date Range' name="date_range" bind:value={formIjin.answer.date_range}/>
+                                {#if formIjin.add}
+                                    <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                {:else if formIjin.edit}
+                                    <MyInput type='date' title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Select bind:value={formIjin.answer.type}>
@@ -245,11 +413,12 @@
                 <Datatable table={tableIjin}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableIjin} field="ijin_id">Ijin ID</ThSort>
                             <ThSort table={tableIjin} field="name">Name</ThSort>
                             <ThSort table={tableIjin} field="date">Date</ThSort>
                             <ThSort table={tableIjin} field="type">Type</ThSort>
                             <ThSort table={tableIjin} field="description">Description</ThSort>
+                            <ThSort table={tableIjin} field="status">Status</ThSort>
+                            <ThSort table={tableIjin} field="approval_name">Approval</ThSort>
                             <ThSort table={tableIjin} field="">#</ThSort>
                         </TableHead>
 
@@ -262,16 +431,22 @@
                                 {#if tableIjin.rows.length > 0}
                                     {#each tableIjin.rows as row:any}
                                         <TableBodyRow>                                            
-                                            <TableBodyCell>{row.ijin_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.date, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.type}</TableBodyCell>
                                             <TableBodyCell>{row.description}</TableBodyCell>
+                                            <TableBodyCell>{row.status}</TableBodyCell>
+                                            <TableBodyCell>{row.approval_name}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_ijin, "U")}
+                                                {#if pecahArray(userProfile.access_ijin, "U") && row.status !== "Approved"}
                                                     <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
-                                                <MyButton onclick={()=> formIjinDelete(row.ijin_id)}><Trash size={12} /></MyButton>
+                                                {#if pecahArray(userProfile.access_ijin, "D") && row.status !== "Approved"}
+                                                    <MyButton onclick={()=> formIjinDelete(row.ijin_id)}><Trash size={12} /></MyButton>
+                                                {/if}
+                                                {#if row.status !== "Approved" && row.approval == formIjin.answer.user_approval }
+                                                    <MyButton onclick={()=> handleDelegateIjin(row.ijin_id)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
@@ -303,6 +478,176 @@
                 </Datatable>
             </div>
         </TabItem>
+        <TabItem title="Approval Ijin">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                {#if formApprovalIjin.error}
+                    {#each formApprovalIjin.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formApprovalIjin.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formApprovalIjin.success}</span>
+                    </Alert>
+                {/if}
+
+                {#if formApprovalIjin.loading}
+                    <MyLoading message="Get cuti data"/>
+                {/if}
+
+                <div class="flex gap-2">
+                    <MyButton onclick={()=> tableApprovalIjin.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
+                
+                <Datatable table={tableApprovalIjin}>
+                    <Table>
+                        <TableHead>
+                            <ThSort table={tableApprovalIjin} field="name">Payroll</ThSort>
+                            <ThSort table={tableApprovalIjin} field="name">Name</ThSort>
+                            <ThSort table={tableApprovalIjin} field="date">Date</ThSort>
+                            <ThSort table={tableApprovalIjin} field="description">Reason</ThSort>
+                            <ThSort table={tableApprovalIjin} field="">#</ThSort>
+                        </TableHead>
+
+                        {#if tableApprovalIjin.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableApprovalIjin.rows.length > 0}
+                                    {#each tableApprovalIjin.rows as row}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell>{row.payroll}</TableBodyCell>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                            <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {#if row.status !== "Approved"}
+                                                    <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                    <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                {/if}
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                    </TableBodyRow>
+                                {/if}
+                            </TableBody>
+                        {/if}
+                    </Table>
+                    {#if tableApprovalIjin.rows.length > 0}
+                        <div class="flex justify-between items-center gap-2 mt-3">
+                            <p class='text-textdark self-end text-[.9rem]'>
+                                Showing {tableApprovalIjin.rowCount.start} to {tableApprovalIjin.rowCount.end} of {tableApprovalIjin.rowCount.total} rows
+                                <Badge color="dark">Page {tableApprovalIjin.currentPage}</Badge>
+                            </p>
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableApprovalIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                <MyButton onclick={()=> tableApprovalIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                {#each tableApprovalIjin.pages as page}
+                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalIjin.setPage(page)} type="button">{page}</MyButton>
+                                {/each}
+                                <MyButton onclick={()=> tableApprovalIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                <MyButton onclick={()=> tableApprovalIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            </div>
+                        </div>
+                    {/if}
+                </Datatable>
+            </div>
+        </TabItem>
+        {#if userProfile?.user_hrd}
+            <TabItem title="List Ijin">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                    {#if formListIjin.error}
+                        {#each formListIjin.error.split(';') as v}
+                            <Alert dismissable>
+                                <span>{v}</span>
+                            </Alert>
+                        {/each}
+                    {:else if formListIjin.success}
+                        <Alert border color="green" dismissable>
+                            <span>{formListIjin.success}</span>
+                        </Alert>
+                    {/if}
+
+                    {#if formListIjin.loading}
+                        <MyLoading message="Get cuti data"/>
+                    {/if}
+
+                    <div class="flex gap-2">
+                        <select bind:value={tableListIjin.rowsPerPage} onchange={() => tableListIjin.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                        <MyInput type='text' bind:value={tableListIjinSearch.value}/>
+                        <MyButton onclick={()=>tableListIjinSearch.set()}><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableListIjin.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+                    
+                    <Datatable table={tableListIjin}>
+                        <Table>
+                            <TableHead>
+                                <ThSort table={tableListIjin} field="name">Payroll</ThSort>
+                                <ThSort table={tableListIjin} field="name">Name</ThSort>
+                                <ThSort table={tableListIjin} field="date">Date</ThSort>
+                                <ThSort table={tableListIjin} field="description">Reason</ThSort>
+                                <ThSort table={tableListIjin} field="">#</ThSort>
+                            </TableHead>
+
+                            {#if tableListIjin.isLoading}
+                                <div class="flex p-4 items-center">
+                                    <MyLoading message="Loading data"/>
+                                </div>
+                            {:else}
+                                <TableBody tableBodyClass="divide-y">
+                                    {#if tableListIjin.rows.length > 0}
+                                        {#each tableListIjin.rows as row}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    {#if row.payroll != user.payroll}
+                                                        <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Cancelled')} color='dark' class='p-2' pill><Ban size={14} /></Button>
+                                                    {/if}
+                                                </TableBodyCell>
+                                            </TableBodyRow>
+                                        {/each}
+                                    {:else}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                        </TableBodyRow>
+                                    {/if}
+                                </TableBody>
+                            {/if}
+                        </Table>
+                        {#if tableListIjin.rows.length > 0}
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-textdark self-end text-[.9rem]'>
+                                    Showing {tableListIjin.rowCount.start} to {tableListIjin.rowCount.end} of {tableListIjin.rowCount.total} rows
+                                    <Badge color="dark">Page {tableListIjin.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableListIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableListIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableListIjin.pages as page}
+                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableListIjin.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableListIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableListIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
+                            </div>
+                        {/if}
+                    </Datatable>
+                </div>
+            </TabItem>
+        {/if}
     </Tabs>
 </main>
 

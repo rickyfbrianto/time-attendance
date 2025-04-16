@@ -9,12 +9,16 @@
     let {children, data} :LayoutProps = $props()
 
     $effect(()=>{
-        const temp = JSON.parse(localStorage.getItem('appstore') || "")
-        appstore.update(state => ({...state, ...temp}))
-        if(temp.darkMode)
-            document.documentElement.classList.add('dark')
-        else
-            document.documentElement.classList.remove('dark');
+        if(localStorage.getItem('appstore')){
+            const temp = JSON.parse(localStorage.getItem('appstore') || "")
+            appstore.update(state => ({...state, ...temp}))
+            if(temp.darkMode)
+                document.documentElement.classList.add('dark')
+            else
+                document.documentElement.classList.remove('dark');
+        } else {
+            localStorage.setItem('appstore', JSON.stringify($appstore))
+        }
     })
 </script>
 

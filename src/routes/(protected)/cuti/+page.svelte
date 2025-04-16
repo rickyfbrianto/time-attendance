@@ -1,21 +1,24 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert, Button } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X } from '@lucide/svelte'
+	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X, Edit } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray } from '@lib/utils.js';
-	import { eachDayOfInterval, format, getDay, parseISO, getYear, formatISO, differenceInDays } from 'date-fns';
+	import { format, getYear, differenceInDays } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
     
     const rowsPerPage = 10
-    const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
-
+    let {data} = $props()
+    let user = $derived(data.user) 
+    let userProfile = $derived(data.userProfile)
+    
+    const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList =[
         ['Pernikahan Saya', 3],
         ['Pernikahan Keluarga', 4], 
@@ -28,10 +31,6 @@
     ]
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
-
-    let {data} = $props()
-    let user = $derived(data.user) 
-    let userProfile = $derived(data.userProfile)
         
     let modalHeader = $state({
         modal:false,
@@ -74,7 +73,7 @@
         try {
             formCuti.loading = true
             const valid = z.object({
-                date: z.tuple([z.string(), z.string()], {message: "Date is not valid"}),
+                date: z.union([z.string().trim().min(1), z.tuple([z.string(), z.string()], {message: "Date is not valid"})]),
                 type: z.string().trim().min(1),
                 description: z.string().trim().min(5),
                 approval: z.string().trim().min(1),
@@ -109,6 +108,9 @@
             const res = await req.data
             
             formCuti.answer = {...res}
+            setTimeout(()=>{
+                formCuti.answer.date = formatTanggal(res.date, "date")
+            }, 100)
             
             formCuti.edit = true
             formCuti.add = false
@@ -130,38 +132,6 @@
         }
     }
 
-    // List Cuti
-    let tableApprovalCuti = $state(new TableHandler([], {rowsPerPage}))
-    
-    const formApprovalCutiAnswer = {
-        answer: {
-            cuti_id: "id",
-            status: "Waiting",
-        },
-        success:"",
-        error:"",
-        loading:false,
-        add:false,
-        edit:false,
-    }
-    
-    let formListCuti = $state({...formApprovalCutiAnswer})
-
-    const handleApproveCuti = async (cuti_id: string, val: string) => {
-        try {
-            formListCuti.answer.cuti_id = cuti_id
-            formListCuti.answer.status = val
-            const req = await axios.post('/api/cuti/approve', formListCuti.answer)
-            const res = await req.data
-            tableApprovalCuti.invalidate()
-            formListCuti.error = ""
-            formListCuti.success = res.message
-        } catch (error: any) {
-            formListCuti.error = error.response.data.message
-            formListCuti.success = ""
-        }
-    }
-
     const handleDelegateCuti = async (cuti_id: string) => {
         try {
             formCuti.answer.cuti_id = cuti_id
@@ -176,6 +146,57 @@
             formCuti.success = ""
         }
     }
+
+    // Approval Cuti
+    let tableApprovalCuti = $state(new TableHandler([], {rowsPerPage}))
+    
+    const formApprovalCutiAnswer = {
+        answer: {
+            cuti_id: "id",
+            status: "Waiting",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    }
+    
+    let formApprovalCuti = $state({...formApprovalCutiAnswer})
+
+    const handleApproveCuti = async (cuti_id: string, val: string) => {
+        try {
+            formApprovalCuti.answer.cuti_id = cuti_id
+            formApprovalCuti.answer.status = val
+            const req = await axios.post('/api/cuti/approve', formApprovalCuti.answer)
+            const res = await req.data
+            if(userProfile.user_hrd) tableListCuti.invalidate()
+            tableApprovalCuti.invalidate()
+            formApprovalCuti.error = ""
+            formApprovalCuti.success = res.message
+        } catch (error: any) {
+            formApprovalCuti.error = error.response.data.message
+            formApprovalCuti.success = ""
+        }
+    }
+    
+    // List Cuti for HRD
+    let tableListCuti = $state(new TableHandler([], {rowsPerPage}))
+    let tableListCutiSearch = tableListCuti.createSearch()
+    
+    const formListCutiAnswer = {
+        answer: {
+            cuti_id: "id",
+            status: "Waiting",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    }
+
+    let formListCuti = $state({...formListCutiAnswer})
     
     const getCutiUser = async () =>{
         const year = getYear(new Date())
@@ -219,15 +240,28 @@
                 console.log(err.message)
             }
         })
+
+        tableListCuti.load(async (state:State) =>{
+            try {
+                const req = await fetch(`/api/cuti/list`)
+                if(!req.ok) throw new Error('Gagal mengambil data')
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
     })
     
     setTimeout(()=>{
         tableCuti.invalidate()
         tableApprovalCuti.invalidate()
-    }, 1000)    
+        tableListCuti.invalidate()
+    }, 1000)
 </script>
 
-<svelte:head>   
+<svelte:head>
     <title>Cuti</title>
 </svelte:head>
 
@@ -237,11 +271,10 @@
     {:then val}
         <div class="relative grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
             <MyButton onclick={getCutiUser} className='absolute left-[50%] translate-x-[-50%] bottom-[-1rem] bg-bgdark'><RotateCw size={14} /></MyButton>
-            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-8 items-center gap-4">
                 {#each headerData as {title, value, icon: Icon}}
-                    <button onclick={() => handleDetailHeader(title)} class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap
-                    ${eventCuti.includes(title) ? "cursor-pointer":""}
-                    `}>
+                    <button class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
+                        onclick={() => handleDetailHeader(title)}>
                         <span class="text-[.9rem] font-semibold">{title}</span>
                         <div class="flex justify-between items-center gap-2">
                             <Icon size={16}/>
@@ -263,9 +296,9 @@
                     <Timeline order="vertical">
                         {#each val as {description, date}}
                             {#if differenceInDays(date, new Date()) > 0}
-                            <Badge class='ms-2 mb-2'>Upcoming</Badge>
+                                <Badge class='ms-2 mb-2'>Upcoming</Badge>
                             {:else if differenceInDays(date, new Date()) == 0}
-                            <Badge class='ms-2 mb-2' color="green">Today</Badge>
+                                <Badge class='ms-2 mb-2' color="green">Today</Badge>
                             {/if}
                             <TimelineItem  title={formatTanggal(date, "date")} date={format(date, "EEEE")}>
                                 <svelte:fragment slot="icon">
@@ -327,7 +360,11 @@
                             <MyInput type='text' title='Substitute' disabled value={user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name}/>
                             
                             <div class="flex flex-col gap-2">
-                                <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
+                                {#if formCuti.add}
+                                    <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
+                                {:else if formCuti.edit}
+                                    <MyInput type='date' title='Date' name="date" bind:value={formCuti.answer.date}/>
+                                {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Select bind:value={formCuti.answer.type}>
@@ -388,7 +425,7 @@
                                                     <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
                                                 {#if pecahArray(userProfile.access_cuti, "D") && row.status !== "Approved"}
-                                                <MyButton onclick={()=> formCutiDelete(row.cuti_id)}><Trash size={12} /></MyButton>
+                                                    <MyButton onclick={()=> formCutiDelete(row.cuti_id)}><Trash size={12} /></MyButton>
                                                 {/if}
                                                 {#if row.status !== "Approved" && row.approval == formCuti.answer.user_approval }
                                                     <MyButton onclick={()=> handleDelegateCuti(row.cuti_id)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
@@ -426,19 +463,19 @@
         </TabItem>
         <TabItem title="Approval Cuti">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formListCuti.error}
-                    {#each formListCuti.error.split(';') as v}
+                {#if formApprovalCuti.error}
+                    {#each formApprovalCuti.error.split(';') as v}
                         <Alert dismissable>
                             <span>{v}</span>
                         </Alert>
                     {/each}
-                {:else if formListCuti.success}
+                {:else if formApprovalCuti.success}
                     <Alert border color="green" dismissable>
-                        <span>{formListCuti.success}</span>
+                        <span>{formApprovalCuti.success}</span>
                     </Alert>
                 {/if}
 
-                {#if formListCuti.loading}
+                {#if formApprovalCuti.loading}
                     <MyLoading message="Get cuti data"/>
                 {/if}
 
@@ -505,6 +542,95 @@
                 </Datatable>
             </div>
         </TabItem>
+        {#if userProfile?.user_hrd}
+            <TabItem title="List Cuti">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                    {#if formListCuti.error}
+                        {#each formListCuti.error.split(';') as v}
+                            <Alert dismissable>
+                                <span>{v}</span>
+                            </Alert>
+                        {/each}
+                    {:else if formListCuti.success}
+                        <Alert border color="green" dismissable>
+                            <span>{formListCuti.success}</span>
+                        </Alert>
+                    {/if}
+
+                    {#if formListCuti.loading}
+                        <MyLoading message="Get cuti data"/>
+                    {/if}
+
+                    <div class="flex gap-2">
+                        <select bind:value={tableListCuti.rowsPerPage} onchange={() => tableListCuti.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                        <MyInput type='text' bind:value={tableListCutiSearch.value}/>
+                        <MyButton onclick={()=>tableListCutiSearch.set()}><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableListCuti.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+                    
+                    <Datatable table={tableListCuti}>
+                        <Table>
+                            <TableHead>
+                                <ThSort table={tableListCuti} field="name">Payroll</ThSort>
+                                <ThSort table={tableListCuti} field="name">Name</ThSort>
+                                <ThSort table={tableListCuti} field="date">Date</ThSort>
+                                <ThSort table={tableListCuti} field="description">Reason</ThSort>
+                                <ThSort table={tableListCuti} field="">#</ThSort>
+                            </TableHead>
+
+                            {#if tableListCuti.isLoading}
+                                <div class="flex p-4 items-center">
+                                    <MyLoading message="Loading data"/>
+                                </div>
+                            {:else}
+                                <TableBody tableBodyClass="divide-y">
+                                    {#if tableListCuti.rows.length > 0}
+                                        {#each tableListCuti.rows as row}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    {#if row.payroll != user.payroll}
+                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Cancelled')} color='dark' class='p-2' pill><Ban size={14} /></Button>
+                                                    {/if}
+                                                </TableBodyCell>
+                                            </TableBodyRow>
+                                        {/each}
+                                    {:else}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                        </TableBodyRow>
+                                    {/if}
+                                </TableBody>
+                            {/if}
+                        </Table>
+                        {#if tableListCuti.rows.length > 0}
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-textdark self-end text-[.9rem]'>
+                                    Showing {tableListCuti.rowCount.start} to {tableListCuti.rowCount.end} of {tableListCuti.rowCount.total} rows
+                                    <Badge color="dark">Page {tableListCuti.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableListCuti.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableListCuti.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableListCuti.pages as page}
+                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableListCuti.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableListCuti.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableListCuti.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
+                            </div>
+                        {/if}
+                    </Datatable>
+                </div>
+            </TabItem>
+        {/if}
     </Tabs>
 </main>
 

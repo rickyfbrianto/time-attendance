@@ -59,21 +59,21 @@
         {/each}
     </div>
 
-    <div class="flex flex-col my-5 bg-bgside2 px-4 py-6 rounded-xl shadow-xl">
+    <div class="relative flex flex-col my-5 bg-bgside2 px-4 py-6 rounded-xl shadow-xl">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
         <Tooltip>{data.user.name}</Tooltip>
-        <span class="text-[16px] text-center font-normal text-textdark font-[900] ">{data.user.name}</span>
+        <span class="text-[16px] text-center font-normal text-textdark">{data.user.name}</span>
         <Hr hrClass="my-3"/>
         <span class="text-[12px] text-textdark self-start">{data.user.payroll}</span>
         <span class="text-[12px] text-textdark">{data.user.position}</span>
         <span class="text-[12px] text-textdark">{data.user.email}</span>
-    </div>
 
-    {#if data.userProfile.user_hrd}
-        <div class="absolute flex items-center bottom-0 left-[50%] translate-x-[-50%] bg-slate-200 px-5 py-2">
-            <span class='text-[.8rem]'>HRD User</span>
-        </div>
-    {/if}
+        {#if data.userProfile.user_hrd}
+            <div class="absolute h-[2.5rem] flex items-center top-[-2.5rem] left-[50%] translate-x-[-50%] bg-slate-200 px-4 border-white border rounded-t-xl">
+                <span class='font-bold text-[.9rem]'>HRD User</span>
+            </div>
+        {/if}
+    </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>
         <div class="relative grid grid-cols-2 gap-3 items-center justify-center">

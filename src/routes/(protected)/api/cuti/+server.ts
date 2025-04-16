@@ -21,12 +21,13 @@ export async function GET({url}){
             LEFT JOIN employee as approve ON c.approval = approve.payroll
             WHERE e.payroll = ? AND (cuti_id like ?)
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            payroll, `%${search}%`, limit, offset)
+        payroll, `%${search}%`, limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM cuti as c
             LEFT JOIN employee as e ON c.payroll = e.payroll
+            LEFT JOIN employee as approve ON c.approval = approve.payroll
             WHERE e.payroll = ? AND (cuti_id like ?)`, 
-            payroll, `%${search}%`) as {count:number}[]
+        payroll, `%${search}%`) as {count:number}[]
         return {items, totalItems: Number(count)}
     })
     return json(status)
@@ -77,8 +78,8 @@ export async function POST({ request }) {
                 return { message: "Data successfully saved" }
             }else{
                 await tx.$queryRawUnsafe(`
-                    UPDATE ijin SET payroll=?,description=?,start_date=?,end_date=?,status=? WHERE ijin_id=?`,
-                    data.payroll,data.description,data.date[0],data.date[1],data.status,data.ijin_id)
+                    UPDATE cuti SET date=?,description=?,type=? WHERE cuti_id=?`,
+                data.date,data.description,data.type,data.cuti_id)
 
                 return { message: "Data successfully updated" }
             }

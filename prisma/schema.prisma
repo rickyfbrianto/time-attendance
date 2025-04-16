@@ -312,15 +312,16 @@ enum ijin_status {
   Cancelled
 }
 
-enum srl_status {
-  Open
-  Pending
-  Approve
-  Cancel
-}
-
 enum cuti_status {
   Waiting
   Reject
   Approved
+  Cancelled
+}
+
+enum srl_status {
+  Waiting
+  Reject
+  Approved
+  Cancelled
 }

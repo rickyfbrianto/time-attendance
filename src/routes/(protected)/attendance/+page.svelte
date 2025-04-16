@@ -216,9 +216,6 @@
                 <div class="flex flex-col">
                     <span class="font-bold text-[1.2rem]">{val.name}</span>
                     <span class='font-bold'>{val.payroll}</span>
-                    {#if formAttendance.payroll !== user.payroll}
-                        <MyButton onclick={handleBackToMyAttendance}>Get back to my attendance</MyButton>
-                    {/if}
                 </div>
                 <div class="flex items-center gap-2">
                     <Calendar size={18}/>
@@ -227,6 +224,9 @@
                         <span>{format(new Date(), "dd-MM-yyyy")}</span>
                     </div>
                 </div>
+                {#if formAttendance.payroll !== user.payroll}
+                    <MyButton onclick={handleBackToMyAttendance}>Back to my attendance</MyButton>
+                {/if}
             </div>
         
             <div class="hidden lg:flex flex-wrap items-center gap-4">
