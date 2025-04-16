@@ -89,7 +89,7 @@
             
             formIjin.answer = {...res}
             setTimeout(()=>{
-                formIjin.answer.date_range = [formatTanggal(res.start_date), formatTanggal(res.end_date)]
+                formIjin.answer.date_range = [formatTanggal(res.start_date, "date"), formatTanggal(res.end_date, "date")]
             }, 100)
             
             formIjin.loading = false
@@ -260,11 +260,11 @@
                         {:else}
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableIjin.rows.length > 0}
-                                    {#each tableIjin.rows as row}
+                                    {#each tableIjin.rows as row:any}
                                         <TableBodyRow>                                            
                                             <TableBodyCell>{row.ijin_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.date, false) || ""}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.date, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.type}</TableBodyCell>
                                             <TableBodyCell>{row.description}</TableBodyCell>
                                             <TableBodyCell>

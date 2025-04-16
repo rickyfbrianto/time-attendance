@@ -97,7 +97,7 @@
                 formAttendance.error = err.message
             }
         } catch (error: any) {
-            formAttendance.error = error.message
+            formAttendance.error = error.response.data.message
             formAttendance.success = ""
         } finally {
             formAttendance.loading = false
@@ -334,7 +334,7 @@
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
+                                                    {#if pecahArray(userProfile.access_attendance, "U") }
                                                         <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
@@ -453,7 +453,8 @@
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if formAttendance.payroll != row.payroll && row.payroll != user.payroll}
+                                                    <!-- {#if formAttendance.payroll != row.payroll && row.payroll != user.payroll} -->
+                                                    {#if formAttendance.payroll != row.payroll }
                                                         {#if pecahArray(userProfile.access_attendance, "U") && ["HKM"].includes(row.type)}
                                                             <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                         {/if}

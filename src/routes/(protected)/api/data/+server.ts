@@ -1,6 +1,5 @@
 import { error, json } from "@sveltejs/kit";
 import { formatTanggal, prisma } from '@lib/utils'
-import { getMonth, getYear } from "date-fns";
 
 export async function GET({url}){
     try {
@@ -42,10 +41,12 @@ export async function GET({url}){
             return json(req)
         }else if(type=='sppd_by_payroll'){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, s.location
+                SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, s.location, GROUP_CONCAT(sd.payroll SEPARATOR  ',') as payroll
                 FROM sppd as s
+                LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
                 LEFT JOIN skpd ON s.sppd_id = skpd.sppd_id
-                WHERE skpd.sppd_id IS NULL`)
+                WHERE skpd.sppd_id IS NULL
+                group by s.sppd_id`)
             return json(req)
         }else if(type=='get_cuti_calendar'){
             const req = await prisma.$queryRawUnsafe(`
@@ -58,8 +59,8 @@ export async function GET({url}){
                 const [cuti] = await tx.$queryRawUnsafe(`
                     SELECT
                     (SELECT getHakCuti(join_date, now()) as cuti FROM employee WHERE payroll = ?) as 'Total Cuti',
-                    (SELECT CAST(COUNT(*) as CHAR) as count from cuti where year(date) = ? and STATUS ='Approved') as Cuti`, 
-                    val, year) as {'Total Cuti': number, Cuti: number, 'Sisa Cuti': number}[]
+                    (SELECT CAST(COUNT(*) as CHAR) as count from cuti WHERE payroll = ? AND year(date) = ? and STATUS ='Approved') as Cuti`, 
+                    val, val, year) as {'Total Cuti': number, Cuti: number, 'Sisa Cuti': number}[]
 
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select 

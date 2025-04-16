@@ -26,6 +26,7 @@ model employee {
   attendance_attendance_createdByToemployee       attendance[]  @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[]  @relation("attendance_user_id_machineToemployee")
   check_io                                        check_io[]
+  cuti_cuti_approvalToemployee                    cuti[]        @relation("cuti_approvalToemployee")
   cuti                                            cuti[]
   profile                                         profile?      @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
   employee_employee_approverToemployee            employee?     @relation("employee_approverToemployee", fields: [approver], references: [payroll])
@@ -33,6 +34,7 @@ model employee {
   dept                                            dept?         @relation(fields: [department], references: [dept_code])
   employee_employee_substituteToemployee          employee?     @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
   other_employee_employee_substituteToemployee    employee[]    @relation("employee_substituteToemployee")
+  ijin_ijin_approvalToemployee                    ijin[]        @relation("ijin_approvalToemployee")
   ijin                                            ijin[]
   skpd_skpd_createdByToemployee                   skpd[]        @relation("skpd_createdByToemployee")
   skpd_skpd_payrollToemployee                     skpd[]        @relation("skpd_payrollToemployee")
@@ -40,6 +42,7 @@ model employee {
   spl_detail                                      spl_detail[]
   sppd                                            sppd[]
   sppd_detail                                     sppd_detail[]
+  srl_srl_approvalToemployee                      srl[]         @relation("srl_approvalToemployee")
   srl                                             srl[]
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
@@ -162,19 +165,22 @@ model dept {
 }
 
 model srl {
-  srl_id     String       @id @db.VarChar(40)
-  spl_id     String?      @db.VarChar(40)
-  payroll    String?      @db.VarChar(8)
-  real_start DateTime     @db.DateTime(0)
-  real_end   DateTime     @db.DateTime(0)
-  status     srl_status
-  createdAt  DateTime     @db.DateTime(0)
-  employee   employee?    @relation(fields: [payroll], references: [payroll])
-  spl        spl?         @relation(fields: [spl_id], references: [spl_id])
-  srl_detail srl_detail[]
+  srl_id                          String       @id @db.VarChar(40)
+  spl_id                          String?      @db.VarChar(40)
+  payroll                         String?      @db.VarChar(8)
+  real_start                      DateTime     @db.DateTime(0)
+  real_end                        DateTime     @db.DateTime(0)
+  status                          srl_status
+  approval                        String?      @db.VarChar(8)
+  createdAt                       DateTime     @db.DateTime(0)
+  employee_srl_approvalToemployee employee?    @relation("srl_approvalToemployee", fields: [approval], references: [payroll])
+  employee                        employee?    @relation(fields: [payroll], references: [payroll])
+  spl                             spl?         @relation(fields: [spl_id], references: [spl_id])
+  srl_detail                      srl_detail[]
 
   @@index([payroll], map: "payroll")
   @@index([spl_id], map: "spl_id")
+  @@index([approval], map: "approval")
 }
 
 model srl_detail {
@@ -188,17 +194,20 @@ model srl_detail {
 }
 
 model cuti {
-  cuti_id     String      @id @db.VarChar(40)
-  payroll     String?     @db.VarChar(8)
-  type        String      @db.VarChar(50)
-  description String      @db.VarChar(255)
-  date        DateTime    @db.Date
-  year        Int         @db.SmallInt
-  status      cuti_status
-  createdAt   DateTime    @db.DateTime(0)
-  employee    employee?   @relation(fields: [payroll], references: [payroll])
+  cuti_id                          String      @id @db.VarChar(40)
+  payroll                          String?     @db.VarChar(8)
+  type                             String      @db.VarChar(50)
+  description                      String      @db.VarChar(255)
+  date                             DateTime    @db.Date
+  year                             Int         @db.SmallInt
+  status                           cuti_status
+  approval                         String?     @db.VarChar(8)
+  createdAt                        DateTime    @db.DateTime(0)
+  employee_cuti_approvalToemployee employee?   @relation("cuti_approvalToemployee", fields: [approval], references: [payroll])
+  employee                         employee?   @relation(fields: [payroll], references: [payroll])
 
   @@index([payroll], map: "payroll")
+  @@index([approval], map: "approval")
 }
 
 model sppd {
@@ -234,7 +243,7 @@ model sppd_detail {
 }
 
 model skpd {
-  skpd_id                           String      @id @db.VarChar(40)
+  skpd_id                           String      @id @default("getNomorSKPD()") @db.VarChar(40)
   sppd_id                           String?     @db.VarChar(40)
   payroll                           String?     @db.VarChar(8)
   real_start                        DateTime    @db.DateTime(0)
@@ -252,16 +261,19 @@ model skpd {
 }
 
 model ijin {
-  ijin_id     String      @id @db.VarChar(40)
-  payroll     String?     @db.VarChar(8)
-  type        String      @db.VarChar(50)
-  description String      @db.VarChar(255)
-  date        DateTime    @db.Date
-  status      ijin_status
-  createdAt   DateTime    @db.DateTime(0)
-  employee    employee?   @relation(fields: [payroll], references: [payroll])
+  ijin_id                          String      @id @db.VarChar(40)
+  payroll                          String?     @db.VarChar(8)
+  type                             String      @db.VarChar(50)
+  description                      String      @db.VarChar(255)
+  date                             DateTime    @db.Date
+  status                           ijin_status
+  approval                         String?     @db.VarChar(8)
+  createdAt                        DateTime    @db.DateTime(0)
+  employee_ijin_approvalToemployee employee?   @relation("ijin_approvalToemployee", fields: [approval], references: [payroll])
+  employee                         employee?   @relation(fields: [payroll], references: [payroll])
 
   @@index([payroll], map: "payroll")
+  @@index([approval], map: "approval")
 }
 
 enum profile_level {
@@ -293,13 +305,6 @@ enum skpd_status {
   CLOSE
 }
 
-enum cuti_status {
-  Waiting
-  Reject
-  Approved
-  Cancelled
-}
-
 enum ijin_status {
   Waiting
   Reject
@@ -312,4 +317,10 @@ enum srl_status {
   Pending
   Approve
   Cancel
+}
+
+enum cuti_status {
+  Waiting
+  Reject
+  Approved
 }

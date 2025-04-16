@@ -35,7 +35,21 @@ export const handle: Handle = async ({event, resolve}) =>{
                 department:true,
                 location:true,
                 workhour:true,
-                join_date:true
+                join_date:true,
+                approver: true,
+                substitute: true,
+                employee_employee_approverToemployee:{
+                    select:{
+                        payroll: true,
+                        name: true,
+                        employee_employee_substituteToemployee:{
+                            select:{
+                                payroll: true,
+                                name: true
+                            }
+                        }
+                    }
+                }
             },
             where:{payroll},
         })

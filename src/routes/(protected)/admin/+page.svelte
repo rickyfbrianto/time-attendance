@@ -350,7 +350,7 @@
 
             formCalendar.answer.type = res.type.replace('_',' ')
             setTimeout(()=>{
-                formCalendar.answer.date = formatTanggal(res.date, false)
+                formCalendar.answer.date = formatTanggal(res.date, "date")
             }, 100)
             formCalendar.edit = true
             formCalendar.add = false
@@ -977,7 +977,7 @@
                                             <TableBodyRow>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.date, false)}</TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.date, 'date')}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
                                                     <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton>

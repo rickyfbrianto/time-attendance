@@ -57,21 +57,15 @@ export async function POST({request, url}) {
         
         const status = await prisma.$transaction(async (tx) => {
             // untuk mengecek apakah ada attendance dengan tipe cuti bersama atau hari libur, jika ya maka update check in, check out dan type serta keterangan
-            const getTime = await tx.$queryRawUnsafe(`
-            SELECT attendance_id as getTime FROM attendance 
-            WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`, 
-            data.get('user_id_machine'), data.get('check_in'), data.get('check_out')) as {}[]
-
-            if(getTime[0]){
-                const [{description}] = await tx.$queryRawUnsafe(`SELECT description FROM calendar WHERE DATE(date) = DATE(?)`, 
-                    data.get('check_in')) as {description: string}[]
-                await tx.$queryRawUnsafe(`
-                    UPDATE attendance SET check_in=?,check_out=?,type=?,description=?
-                    WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`,
-                    data.get('check_in'), data.get('check_out'),
-                    // `${data.get('date')}T${data.get('check_in')}Z`,  `${data.get('date')}T${data.get('check_out')}Z`,
-                    data?.get('type'), data?.get('description') ? description +","+ data?.get('description'): description, data.get('user_id_machine'),
-                    data.get('check_in'), data.get('check_out'))
+            const [{description}] = await tx.$queryRawUnsafe(`SELECT description FROM calendar WHERE DATE(date) = DATE(?)`, 
+                data.get('check_in')) as {description: string}[]
+            const updateTime = await tx.$executeRawUnsafe(`
+                UPDATE attendance SET check_in=?,check_out=?,type=?,description=?
+                WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`,
+                data.get('check_in'), data.get('check_out'),
+                data?.get('type'), data?.get('description') ? description +","+ data?.get('description'): description, data.get('user_id_machine'),
+                data.get('check_in'), data.get('check_out'))
+            if(updateTime){
                 return {message:"Data successfully updated"}
             }
 

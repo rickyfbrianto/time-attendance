@@ -299,13 +299,24 @@
     
     const formSKPDSubmit = async () =>{
         try {
-            formSKPD.error = ""
             formSKPD.loading = true
-            const req = await axios.post('/api/skpd', formSKPD.answer)
-            const res = await req.data
-            formSKPD.success = res.message
-            formSKPDBatal()
-            tableSKPD.invalidate()
+            const valid = z.object({
+                sppd_id: z.string().trim().min(1),
+                date: z.tuple([z.string().trim().min(1), z.string().trim().min(1)]),
+                status: z.string().trim().min(1),
+            })
+            const isValid = valid.safeParse(formSKPD.answer)
+            if(isValid.success){
+                const req = await axios.post('/api/skpd', formSKPD.answer)
+                const res = await req.data
+                formSKPDBatal()
+                tableSKPD.invalidate()
+                formSKPD.success = res.message
+            } else {
+                const err = fromZodError(isValid.error)
+                formSKPD.success = ""
+                formSKPD.error = err.message
+            }
         } catch (error: any) {
             formSKPD.error = error.response.data.message
             formSKPD.success = ""
@@ -324,7 +335,7 @@
             if(res){
                 formSKPD.answer = {...res}
                 setTimeout(()=>{
-                    formSKPD.answer.date = [formatTanggal(res.real_start), formatTanggal(res.real_end)]
+                    formSKPD.answer.date = [formatTanggal(res.real_start, "date"), formatTanggal(res.real_end, "date")]
                 }, 100)
             }
             
@@ -357,7 +368,6 @@
             unit:"mm",
             format:"a4"
         })
-        doc.addFont("Comic-normal", "normal", "normal")
 
         const rowData = 10
         const colData = [16, 45, 50]
@@ -606,7 +616,7 @@
                             <div class="flex flex-col gap-2 flex-1">
                                 <Label>Department</Label>
                                 <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " | " + v.name}))}/>
+                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
                             </div>
                         {/await}
 
@@ -627,7 +637,7 @@
                                                 <div class="flex flex-col gap-2 flex-1">
                                                     <Label>{`Employee ${i+1}`}</Label>
                                                     <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
-                                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" | "+v.name}))}/>
+                                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}/>
                                                 </div>
                                             {/await}
 
@@ -681,13 +691,13 @@
                         {:else}
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSPPD.rows.length > 0}
-                                    {#each tableSPPD.rows as row}
+                                    {#each tableSPPD.rows as row:any}
                                         <TableBodyRow>
                                             <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.purpose}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.start_date,false)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.end_date,false)}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.start_date, "date")}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.end_date, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if pecahArray(userProfile.access_sppd, "U")}
@@ -728,17 +738,16 @@
         </TabItem>
         <TabItem title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formSKPD.error || formSKPD.success}
-                    <Toast color="red">
-                        <span class='flex gap-2'>
-                            {#if formSKPD.error}
-                            <Ban size={16} color="#d41c08" />
-                            {:else}
-                            <Check size={16} color="#08d42a" />
-                            {/if}
-                            {formSKPD.error || formSKPD.success}
-                        </span>
-                    </Toast>
+                {#if formSKPD.error}
+                    {#each formSKPD.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formSKPD.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formSKPD.success}</span>
+                    </Alert>
                 {/if}
         
                 <div class="flex gap-2">
@@ -764,7 +773,7 @@
                                 <div class="flex flex-col gap-2 flex-1">
                                     <Label>SPPD ID</Label>
                                     <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.sppd_id} 
-                                    options={val.map((v:any) => ({value: v.sppd_id, text:v.sppd_id + " | " + v.purpose, sppd_id: v.sppd_id}))}
+                                    options={val.map((v:any) => ({value: v.sppd_id, text:v.sppd_id.replace(/\_/g, '/') + " - " + v.purpose, sppd_id: v.sppd_id}))}
                                     onChange={(e:any) => fillSKPD(e.sppd_id)}
                                     />
                                 </div>
@@ -777,8 +786,8 @@
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <input type='hidden' name="skpd_id" disabled={formSKPD.edit} bind:value={formSKPD.answer.skpd_id}/>
 
-                                <MyInput type='daterange' title='Date' name="date" bind:value={formSKPD.answer.date}/>
-                                <MyInput type='text' title='Payroll' bind:value={formSKPD.answer.payroll} />
+                                <MyInput type='daterange' disabled title='Date' name="date" bind:value={formSKPD.answer.date}/>
+                                <MyInput type='text' disabled title='Payroll' bind:value={formSKPD.answer.payroll} />
                                 <div class="flex flex-col gap-2">
                                     <Label>Status</Label>
                                     <select bind:value={formSKPD.answer.status}>
@@ -809,6 +818,9 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
+                            <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort>
+                            <ThSort table={tableSKPD} field="payroll">Payroll</ThSort>
+                            <ThSort table={tableSKPD} field="name">Name</ThSort>
                             <ThSort table={tableSKPD} field="location">Location</ThSort>
                             <ThSort table={tableSKPD} field="description">Description</ThSort>
                             <ThSort table={tableSPPD} field="real_start">Start Date</ThSort>
@@ -824,13 +836,16 @@
                         {:else}
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSKPD.rows.length > 0}
-                                    {#each tableSKPD.rows as row}
+                                    {#each tableSKPD.rows as row:any}
                                         <TableBodyRow>
                                             <TableBodyCell>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                            <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                            <TableBodyCell>{row.payroll}</TableBodyCell>
+                                            <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
                                             <TableBodyCell>{row.description}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_start, false)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_end, false)}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.real_start, "date")}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.real_end, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if pecahArray(userProfile.access_skpd, "U")}

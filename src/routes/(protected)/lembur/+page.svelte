@@ -548,7 +548,7 @@
                                             <div class="flex flex-col gap-2 flex-1">
                                                 <Label>{`Employee ${i+1}`}</Label>
                                                 <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
-                                                    options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" | "+v.name}))}
+                                                    options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
                                                 />
                                             </div>
                                         {/await}
@@ -684,7 +684,7 @@
                             <div class="flex flex-col gap-2 flex-1">
                                 <Label>SPL ID</Label>
                                 <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
-                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id.replace(/\_/g, '/') + " | " + v.purpose}))}
+                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id.replace(/\_/g, '/') + " - " + v.purpose}))}
                                     onChange={(e:any) => getSPLAll(e.value)}
                                 />
                             </div>

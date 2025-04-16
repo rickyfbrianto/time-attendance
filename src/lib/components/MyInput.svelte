@@ -33,7 +33,7 @@
         {:else if type == 'datetime'}
             <SveltyPicker bind:value={value} {disabled} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={format} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
         {:else}
-            <input class="w-full rounded-lg border-0 outline-none ring-0 ps-3 bg-bgdark text-textdark" id={name} {name} {disabled} {required} 
+            <input class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} id={name} {name} {disabled} {required} 
             {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
         {/if}
         {#if password}

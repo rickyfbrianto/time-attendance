@@ -56,9 +56,9 @@ export async function POST({ request}) {
                 const dayFree = user?.workhour == 7 ? [0] : [0, 6]
 
                 const temp = daysInRange.filter(v => {
-                    return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), false) == formatTanggal(format(cal.date, "yyyy-MM-dd"), false)) 
+                    return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date")) 
                     && !dayFree.includes(getDay(v))
-                }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), false))
+                }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
                 
                 await tx.ijin.createMany({
                     data: [...temp.map((date) => ({
