@@ -26,22 +26,22 @@
     let tableSPL = $state(new TableHandler([], {rowsPerPage}))
     let tableSPLSearch = tableSPL.createSearch()
     
-    const formSPLAnswer = {
+    const formSPLAnswer = $state({
         answer:{
             spl_id: "id",
             purpose:"",
-            dept: user?.department,
+            get dept() { return user?.department},
             spl_detail:[{payroll:"",description:""}],
             est_start:"",
             est_end:"",
-            createdBy: user?.payroll,
+            get createdBy() {return user?.payroll},
         },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    }
+    })
     
     let formSPL = $state({...formSPLAnswer})
     
@@ -196,7 +196,7 @@
         answer:{
             srl_id: "id",
             spl_id: "",
-            payroll: user?.payroll,
+            payroll: () => user?.payroll,
             real_start: "",
             real_end:"",
             overtime:0,

@@ -1,5 +1,4 @@
 <script lang="ts">
-
     import {Eye, EyeClosed} from '@lucide/svelte'
     import classNames from 'classnames'
     import {fade} from 'svelte/transition'
@@ -8,6 +7,7 @@
     import { id } from 'svelty-picker/i18n'
     let {type, title = '', name = "", className = "", rows=2, disabled = false,
         required = false, value = $bindable(), password = false, placeholder = ``,
+        startDate = "", endDate = "", 
         format="yyyy-mm-dd hh:ii:ss", displayFormatDate="dd MM yyyy"} = $props()
     const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[2px] border-slate-300 bg-bgdark`, className)
 
@@ -27,11 +27,11 @@
         {:else if type == 'daterange'}
             <SveltyPicker bind:value={value} {disabled} autocommit={false} isRange mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark flex" format={format} displayFormat={displayFormatDate}/>
         {:else if type == 'date'}
-            <SveltyPicker bind:value={value} {disabled} mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={"yyyy-mm-dd"} displayFormat={"yyyy-mm-dd"}/>
+            <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={"yyyy-mm-dd"} displayFormat={"yyyy-mm-dd"}/>
         {:else if type == 'time'}
             <SveltyPicker bind:value={value} {disabled} mode={'time'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={"hh:ii:ss"} displayFormat={"hh:ii:ss"}/>
         {:else if type == 'datetime'}
-            <SveltyPicker bind:value={value} {disabled} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={format} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
+            <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={format} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
         {:else}
             <input class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} id={name} {name} {disabled} {required} 
             {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>

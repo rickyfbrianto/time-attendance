@@ -5,7 +5,7 @@
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from '@lucide/svelte'
-    import {formatTanggal, ListAccess, ListLevel, pecahArray} from '@lib/utils'
+    import {formatTanggal, ListAccess, pecahArray} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
@@ -24,30 +24,31 @@
     let tableProfileSearch = tableProfile.createSearch()
     
     const formProfilAnswer = {
-        profile_id: "id",
-        name: "",
-        description: "",
-        level: "",
-        user_hrd: false,
-        access_sppd: "",
-        access_skpd: "",
-        access_attendance: "",
-        access_spl: "",
-        access_srl: "",
-        access_cuti: "",
-        access_calendar: "",
-        access_user: "",
-        access_profile: "",
-    }
-    
-    let formProfileState = $state({
-        answer: {...formProfilAnswer},
+        answer:{
+            profile_id: "id",
+            name: "",
+            description: "",
+            level: "",
+            user_hrd: false,
+            access_sppd: "",
+            access_skpd: "",
+            access_spl: "",
+            access_srl: "",
+            access_cuti: "",
+            access_ijin: "",
+            access_attendance: "",
+            access_calendar: "",
+            access_user: "",
+            access_profile: "",
+        },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+    }
+    
+    let formProfileState = $state( {...formProfilAnswer})
         
     const formProfileEdit = async (id:string) =>{
         try {
@@ -450,6 +451,8 @@
         tableDept.invalidate()
         tableCalendar.invalidate()
     }, 1000)
+    
+    const listLevel = [0,1,2,3,4,5,6,7,8,9].map(v => ({value : v, name : v}))
 </script>
 
 <svelte:head>
@@ -509,7 +512,7 @@
                             
                             <div class="flex flex-col gap-2">
                                 <Label for='level'>Level</Label>
-                                <Select name='level' items={ListLevel} bind:value={formProfileState.answer.level} />
+                                <Select name='level' items={listLevel} bind:value={formProfileState.answer.level} />
                             </div>
                             
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -522,10 +525,6 @@
                                     <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_skpd} />
                                 </div>
                                 <div class="flex flex-col gap-2">
-                                    <Label>Access Attendance</Label>
-                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_attendance} />
-                                </div>
-                                <div class="flex flex-col gap-2">
                                     <Label>Access SPL</Label>
                                     <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_spl} />
                                 </div>
@@ -536,6 +535,14 @@
                                 <div class="flex flex-col gap-2">
                                     <Label>Access Cuti</Label>
                                     <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_cuti} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access Ijin</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_ijin} />
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Access Attendance</Label>
+                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_attendance} />
                                 </div>
                                 <div class="flex flex-col gap-2">
                                     <Label>Access Calendar</Label>
@@ -567,10 +574,11 @@
                     <Datatable table={tableProfile}>
                         <Table >
                             <TableHead>
-                                <ThSort table={tableProfile} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field="description"><TableHeadCell>Description</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field="level"><TableHeadCell>Level</TableHeadCell></ThSort>
-                                <ThSort table={tableProfile} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                                <ThSort table={tableProfile} field="name">Name</ThSort>
+                                <ThSort table={tableProfile} field="description">Description</ThSort>
+                                <ThSort table={tableProfile} field="user_hrd">Level</ThSort>
+                                <ThSort table={tableProfile} field="level">Level</ThSort>
+                                <ThSort table={tableProfile} field="">#</ThSort>
                             </TableHead>
 
                             {#if tableProfile.isLoading}
@@ -584,6 +592,7 @@
                                             <TableBodyRow>
                                                 <TableBodyCell class='bg-bgdark text-textdark'>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
+                                                <TableBodyCell>{row.user_hrd ? "Yes": "No"}</TableBodyCell>
                                                 <TableBodyCell>{row.level}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>

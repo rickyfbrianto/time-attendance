@@ -36,7 +36,7 @@
             dept:"",
             date: [],
             duration: 0,
-            createdBy: user?.payroll || "",
+            get createdBy() { return user?.payroll},
             sppd_detail:[{payroll:"", description:""}]
         },
         success:"",
@@ -282,7 +282,7 @@
             payroll:"",
             date: ["", ""],
             status: "",
-            createdBy: user?.payroll || "",
+            get createdBy() { return user?.payroll},
         },
         success:"",
         error:"",

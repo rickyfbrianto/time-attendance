@@ -51,14 +51,14 @@
     const formCutiAnswer = {
         answer: {
             cuti_id: "id",
-            payroll: user?.payroll,
+            get payroll() { return user?.payroll},
             type: "",
             description: "",
             date:"",
             status: "Waiting",
-            approval: user?.approver || null,
-            user_approval: user?.employee_employee_approverToemployee?.payroll,
-            user_delegate: user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll,
+            get approval() { return user?.approver || null},
+            get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
+            get user_delegate() { return user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null},
         },
         success:"",
         error:"",

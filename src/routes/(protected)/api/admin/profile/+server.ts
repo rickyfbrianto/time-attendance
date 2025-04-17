@@ -20,6 +20,7 @@ export async function GET({url}){
                 name:true,
                 description:true,
                 level:true,
+                user_hrd: true
             },
             where:{
                 OR:[
@@ -48,14 +49,10 @@ export async function GET({url}){
 export async function POST({ request }) {
 	try {
         const data = await request.json();
-		const { isError, errorCount } = checkFieldKosong(data);
-		if (isError) {
-            error(500, { message: `${errorCount} input masih kosong` });
-		}
 
 		await prisma.profile.create({
-				data: { ...data, profile_id: uuid4() },
-			})
+            data: { ...data, profile_id: uuid4() },
+        })
         return json({ message: "Data successfully saved" });
 	} catch (err) {
 		console.log("err catch",err);

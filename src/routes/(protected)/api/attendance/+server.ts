@@ -1,10 +1,11 @@
-import { formatTanggalISO, prismaErrorHandler, safeDate } from "@lib/utils";
+import { cekRules, formatTanggal, formatTanggalISO, prismaErrorHandler, safeDate } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
 import { extname } from "node:path";
 import { v4 as uuid4} from "uuid";
 import { writeFile } from 'fs/promises'
 import path from 'path'
 import { prisma } from '@lib/utils.js'
+import { eachDayOfInterval, formatDate, getYear, format, getDay, parseISO, formatISO } from "date-fns";
 
 export async function GET({url}){
     try {
@@ -49,7 +50,7 @@ export async function GET({url}){
     }
 }
 
-export async function POST({request, url}) {
+export async function POST({request, url, locals}) {
     try {
         const data = await request.formData()
         const attendance_id = uuid4()
@@ -57,17 +58,17 @@ export async function POST({request, url}) {
         
         const status = await prisma.$transaction(async (tx) => {
             // untuk mengecek apakah ada attendance dengan tipe cuti bersama atau hari libur, jika ya maka update check in, check out dan type serta keterangan
-            const [{description}] = await tx.$queryRawUnsafe(`SELECT description FROM calendar WHERE DATE(date) = DATE(?)`, 
-                data.get('check_in')) as {description: string}[]
-            const updateTime = await tx.$executeRawUnsafe(`
-                UPDATE attendance SET check_in=?,check_out=?,type=?,description=?
-                WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`,
-                data.get('check_in'), data.get('check_out'),
-                data?.get('type'), data?.get('description') ? description +","+ data?.get('description'): description, data.get('user_id_machine'),
-                data.get('check_in'), data.get('check_out'))
-            if(updateTime){
-                return {message:"Data successfully updated"}
-            }
+            // const getCalendar = await tx.$queryRawUnsafe(`SELECT description FROM calendar WHERE DATE(date) = DATE(?)`, 
+            //     data.get('check_in')) as {description: string}[]
+            // const updateTime = await tx.$executeRawUnsafe(`
+            //     UPDATE attendance SET check_in=?,check_out=?,type=?,description=?
+            //     WHERE type in ('Cuti Bersama','Hari Libur') AND user_id_machine = ? AND DATE(check_in) = DATE(?) AND DATE(check_out) = DATE(?)`,
+            //     data.get('check_in'), data.get('check_out'),
+            //     data?.get('type'), data?.get('description') ? description +","+ data?.get('description'): description, data.get('user_id_machine'),
+            //     data.get('check_in'), data.get('check_out'))
+            // if(updateTime){
+            //     return {message:"Data successfully updated"}
+            // }
 
             const getAttendance = await tx.attendance.findFirst({
                 where:{attendance_id : data.get('attendance_id')}
@@ -75,63 +76,97 @@ export async function POST({request, url}) {
             
             if(!getAttendance){
                 console.log('insert time attendance baru')
-                const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance
-                    (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,type,ijin_info,description,attachment,createdBy,createdAt)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
-                    attendance_id, 
-                    data.get('user_id_machine'),
-                    data.get('check_in'),
-                    data.get('check_out'),
-                    data.get('check_in2') || null,
-                    data.get('check_out2') || null,
-                    data.get('type'),
-                    data.get('ijin_info'),
-                    data.get('description'),
-                    attachment ? attendance_id + extname(attachment.name) : null,
-                    data.get('createdBy')
-                )
-                
-                const check_io = await tx.check_io.create({
-                    data:{
-                        check_io_id: uuid4(),
-                        user_id_machine: data.get('user_id_machine'),
-                        check_in: new Date(data.get('check_in') + " UTC"),
-                        check_out: new Date(data.get('check_out') + " UTC"),
-                        type: data.get('type'),
+                if(cekRules(locals.user, "access_attendance","C")){
+                    const user = await tx.employee.findUnique({
+                        select:{workhour: true},
+                        where:{user_id_machine: data.get('user_id_machine')}
+                    })
+    
+                    if(data.get('type') == 'Sakit'){
+                        const eventSkip = ['Hari Libur', 'Cuti Bersama', 'Event Kantor', 'Sakit']
+                        const resAttendance = await prisma.$queryRawUnsafe(`SELECT type, check_in as date FROM attendance where DATE(check_in) BETWEEN ? AND ? AND user_id_machine = ?`,
+                        data.get('check_in'), data.get('check_out'), data.get('user_id_machine')) as {type:string, date: string}[]
+                        
+                        const daysInRange = eachDayOfInterval({ start: data.get('check_in'), end: data.get('check_out') })
+                        const dayFree = user?.workhour == 7 ? [0] : [0, 6]
+                        
+                        const temp = daysInRange.filter(v => 
+                            !dayFree.includes(getDay(v))
+                        ).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
+                        
+                        const query = temp.map(async (v: string) => {
+                            return tx.$queryRawUnsafe(`INSERT INTO attendance
+                                (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,
+                                type,ijin_info,description,attachment,createdBy,createdAt)
+                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
+                                uuid4(), 
+                                data.get('user_id_machine'),
+                                v,
+                                v,
+                                data.get('check_in2') || null,
+                                data.get('check_out2') || null,
+                                data.get('type'),
+                                data.get('ijin_info'),
+                                data.get('description'),
+                                attachment ? attendance_id + extname(attachment.name) : null,
+                                data.get('createdBy')
+                            )
+                        })
+                        await Promise.all(query)
+                    }else{
+    
+                        const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance
+                            (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,
+                            type,ijin_info,description,attachment,createdBy,createdAt)
+                            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
+                            attendance_id, 
+                            data.get('user_id_machine'),
+                            data.get('check_in'),
+                            data.get('check_out'),
+                            data.get('check_in2') || null,
+                            data.get('check_out2') || null,
+                            data.get('type'),
+                            data.get('ijin_info'),
+                            data.get('description'),
+                            attachment ? attendance_id + extname(attachment.name) : null,
+                            data.get('createdBy')
+                        )
+        
+                        if(attendance && attachment){
+                            const filename = path.resolve('src/lib/assets/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
+                            await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
+                        }
                     }
-                })
-
-                if(attendance && check_io && attachment){
-                    const filename = path.resolve('src/lib/assets/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
-                    await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
+    
+                    return {message:"Data successfully saved"}
                 }
-
-                return {message:"Data successfully saved"}
             } else {
-                console.log('update time attendance baru')
-                const attendance = await tx.$queryRawUnsafe(`
-                    UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
-                    check_in2=?,check_out2=?,type=?,ijin_info=?,description=?,attachment=?,createdBy=?
-                    WHERE attendance_id = ?`,
-                    data.get('user_id_machine'),
-                    data.get('check_in'),
-                    data.get('check_out'),
-                    data.get('check_in2') || null ,
-                    data.get('check_out2') || null ,
-                    data.get('type'),
-                    data?.get('ijin_info'),
-                    data?.get('description'),
-                    attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
-                    data.get('createdBy'),
-                    data.get('attendance_id')
-                )
-
-                if(attendance && attachment){
-                    const filename = path.resolve('src/lib/assets/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`
-                    await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
+                if(cekRules(locals.user, "access_attendance","U")){
+                    console.log('update time attendance baru')
+                    const attendance = await tx.$queryRawUnsafe(`
+                        UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
+                        check_in2=?,check_out2=?,type=?,ijin_info=?,description=?,attachment=?,createdBy=?
+                        WHERE attendance_id = ?`,
+                        data.get('user_id_machine'),
+                        data.get('check_in'),
+                        data.get('check_out'),
+                        data.get('check_in2') || null ,
+                        data.get('check_out2') || null ,
+                        data.get('type'),
+                        data?.get('ijin_info'),
+                        data?.get('description'),
+                        attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
+                        data.get('createdBy'),
+                        data.get('attendance_id')
+                    )
+    
+                    if(attendance && attachment){
+                        const filename = path.resolve('src/lib/assets/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`
+                        await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
+                    }
+    
+                    return {message:"Data successfully updated"}
                 }
-
-                return {message:"Data successfully updated"}
             }
         })
 

@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="https://unpkg.com/svelecte-element/dist/svelecte.css">
+
 <script lang="ts">
 	import '../../app.css';
 	import '../../style.css';

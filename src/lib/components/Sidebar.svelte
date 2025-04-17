@@ -7,6 +7,7 @@
 	import { Card, Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr } from 'flowbite-svelte';
     import {appstore } from '@lib/store/appstore'
     import { page } from '$app/state';
+	import MyInput from './MyInput.svelte';
 	
     let {data} = $props()
     let pathname:string[] = $state([])
@@ -76,8 +77,7 @@
     </div>
 
     <Modal title="My Account" bind:open={defaultModal} autoclose>
-        <div class="relative grid grid-cols-2 gap-3 items-center justify-center">
-            <!-- <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton> -->
+        <div class="relative grid grid-cols-2 gap-3 items-center justify-center">            <!-- <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton> -->
             <div class="flex flex-col items-center justify-center">
                 <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem] mb-4"/>
                 <span>{data.user.name}</span>
