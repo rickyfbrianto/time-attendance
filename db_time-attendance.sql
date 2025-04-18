@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 17, 2025 at 11:26 AM
+-- Generation Time: Apr 18, 2025 at 05:36 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -157,11 +157,31 @@ INSERT INTO `attendance` (`attendance_id`, `user_id_machine`, `check_in`, `check
 ('01cff88c-b9f0-454f-be45-3bc8725fea9e', '707', '2025-04-07 00:00:00', '2025-04-07 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
 ('1b58214e-b7a0-4035-82ec-7cf066833f1a', '707', '2025-04-09 08:00:00', '2025-04-09 17:00:00', NULL, NULL, 'HKM', '', 'HKM', NULL, '202207', '2025-04-17 15:43:29'),
 ('3399313d-bfb1-407f-ab5e-171ba950345c', '707', '2025-04-08 00:00:00', '2025-04-08 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('471f916f-dda8-457e-b1a9-180b21bab207', '707', '2025-04-04 08:00:00', '2025-04-04 17:00:00', NULL, NULL, 'HKM', '', '', NULL, '214505', '2025-04-18 08:53:41'),
 ('88388b8c-951a-49df-9da5-6d9cbbded135', '707', '2025-04-03 00:00:00', '2025-04-03 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('9438781a-1c05-11f0-b115-0492263d7fc5', '707', '2025-04-04 00:00:00', '2025-04-04 00:00:00', NULL, NULL, 'Cuti Tahunan', '', 'Mau jalan2', NULL, NULL, '2025-04-18 11:31:13'),
 ('a448d1ed-1b36-11f0-b115-0492263d7fc5', '111', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
 ('a448d449-1b36-11f0-b115-0492263d7fc5', '112', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
 ('a448d4e4-1b36-11f0-b115-0492263d7fc5', '229', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
-('c80980a9-9db0-4f0a-b813-e6191cfde50f', '707', '2025-04-04 00:00:00', '2025-04-04 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29');
+('c80980a9-9db0-4f0a-b813-e6191cfde50f', '707', '2025-04-04 00:00:00', '2025-04-04 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('e826e001-1c03-11f0-b115-0492263d7fc5', '112', '2025-04-17 00:00:00', '2025-04-17 00:00:00', NULL, NULL, 'Cuti Tahunan', '', 'Ibadah Haji (asdasdasd)', NULL, NULL, '2025-04-18 11:19:14');
+
+--
+-- Triggers `attendance`
+--
+DELIMITER $$
+CREATE TRIGGER `attendance_update_ondelete` AFTER DELETE ON `attendance` FOR EACH ROW BEGIN
+	DECLARE temp_payroll varchar (8);
+    SELECT payroll INTO temp_payroll FROM employee WHERE user_id_machine = OLD.user_id_machine;
+    
+    IF OLD.type = 'Cuti Tahunan' THEN 
+    	UPDATE cuti SET status = 'Cancelled' WHERE date = DATE(OLD.check_in) AND payroll = temp_payroll COLLATE utf8mb4_unicode_ci;
+   	ELSEIF OLD.type = 'Ijin Resmi' THEN 
+    	UPDATE ijin SET status = 'Cancelled' WHERE date = DATE(OLD.check_in) AND payroll = temp_payroll COLLATE utf8mb4_unicode_ci;
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -248,11 +268,11 @@ CREATE TABLE `check_io` (
 CREATE TABLE `cuti` (
   `cuti_id` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `payroll` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `type` varchar(50) NOT NULL,
-  `description` varchar(255) NOT NULL,
+  `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `date` date NOT NULL,
   `year` smallint(4) NOT NULL,
-  `status` enum('Waiting','Reject','Approved','Cancelled') NOT NULL,
+  `status` enum('Waiting','Reject','Approved','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `approval` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -262,9 +282,11 @@ CREATE TABLE `cuti` (
 --
 
 INSERT INTO `cuti` (`cuti_id`, `payroll`, `type`, `description`, `date`, `year`, `status`, `approval`, `createdAt`) VALUES
-('285c2488-3bc0-4c81-9c2a-d32b3a6bcdbd', '202207', 'Ibadah Haji', 'asdasdasd', '2025-04-30', 2025, 'Waiting', '214505', '2025-04-17 11:14:53'),
-('61c1e9fd-a820-4a26-82cc-4a15d4bd027f', '202207', 'Bencana Alam', 'banjir', '2025-04-17', 2025, 'Approved', '214505', '2025-04-16 17:06:24'),
-('6f91d605-aee3-4b8d-bcfc-9e6ed89fe368', '202207', 'Bencana Alam', 'banjir', '2025-04-21', 2025, 'Waiting', '214505', '2025-04-16 17:06:24');
+('285c2488-3bc0-4c81-9c2a-d32b3a6bcdbd', '213514', 'Ibadah Haji', 'asdasdasd', '2025-04-17', 2025, 'Approved', '214505', '2025-04-17 11:14:53'),
+('4409a274-c25c-458e-bf25-194af6c3255a', '202207', 'Cuti Tahunan', 'Mau jalan2', '2025-04-03', 2025, 'Cancelled', '214505', '2025-04-18 11:29:50'),
+('61c1e9fd-a820-4a26-82cc-4a15d4bd027f', '202207', 'Bencana Alam', 'banjir', '2025-04-17', 2025, 'Cancelled', '214505', '2025-04-16 17:06:24'),
+('6f91d605-aee3-4b8d-bcfc-9e6ed89fe368', '202207', 'Bencana Alam', 'banjir', '2025-04-21', 2025, 'Waiting', '214505', '2025-04-16 17:06:24'),
+('bb104483-734e-4178-b652-5229242a5e30', '202207', 'Cuti Tahunan', 'Mau jalan2', '2025-04-04', 2025, 'Approved', '214505', '2025-04-18 11:29:50');
 
 --
 -- Triggers `cuti`
@@ -272,7 +294,7 @@ INSERT INTO `cuti` (`cuti_id`, `payroll`, `type`, `description`, `date`, `year`,
 DELIMITER $$
 CREATE TRIGGER `cuti_onapproved_insert_attendace` AFTER UPDATE ON `cuti` FOR EACH ROW BEGIN
 	IF NEW.status = 'Approved' THEN
-		INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) SELECT UUID(),user_id_machine,NEW.date,NEW.date, "Cuti", CONCAT(NEW.type," (",NEW.description,")") from employee where payroll=NEW.payroll;
+		INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) SELECT UUID(),user_id_machine,NEW.date,NEW.date, NEW.type, NEW.description from employee where payroll=NEW.payroll;
 	END IF;
 END
 $$
@@ -422,7 +444,7 @@ CREATE TABLE `setting` (
 --
 
 INSERT INTO `setting` (`setting_id`, `start_periode`, `end_periode`) VALUES
-('4efb0119-28da-40ef-b4a0-b3d6cf943093', 17, 16);
+('156d422d-60ae-4c6c-947a-adbfd6f535c0', 17, 16);
 
 -- --------------------------------------------------------
 

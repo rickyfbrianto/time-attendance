@@ -2,8 +2,6 @@ import { sequence } from '@sveltejs/kit/hooks';
 import { handle as authHandle } from '@lib/hooks/auth.server.js';
 import { handle as authAPI } from '@lib/hooks/api.server.js';
 import { redirect, type Handle } from '@sveltejs/kit';
-import jwt from 'jsonwebtoken'
-import { prisma } from '@lib/utils.js'
 
 export const handle = sequence(
     authHandle,

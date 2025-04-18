@@ -53,7 +53,7 @@ export const handle: Handle = async ({event, resolve}) =>{
             },
             where:{payroll},
         })
-                
+
         event.locals.user = data
         event.locals.userProfile = data?.profile || null
         return await resolve(event)

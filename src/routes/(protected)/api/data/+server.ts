@@ -52,6 +52,7 @@ export async function GET({url}){
                     select e.name as Name,
                         sum(case when type IN ('HKC','HKM') then 1 else 0 end) AS 'Day Work',
                         sum(case when type = 'Sakit' then 1 else 0 end) AS 'Sick',
+                        sum(case when type = 'Cuti Bersama' then 1 else 0 end) AS 'Cuti Bersama',
                         sum(case when type = 'Cuti Tahunan' then 1 else 0 end) AS 'Cuti Tahunan',
                         sum(case when type = 'Cuti Resmi' then 1 else 0 end) AS 'Cuti Resmi',
                         sum(case when type = 'Ijin Resmi' then 1 else 0 end) AS 'Ijin Resmi'
@@ -59,7 +60,7 @@ export async function GET({url}){
                     LEFT JOIN employee as e ON e.user_id_machine = a.user_id_machine
                     WHERE e.payroll = ? AND year(check_in) = ? AND month(check_in) <= ?`,
                     val, year, month
-                ) as {"Name":string, 'Day Work':string, 'Sick':string, 'Cuti Tahunan':string, 'Cuti Resmi':string, 'Ijin Resmi':string}[]
+                ) as {"Name":string, 'Day Work':string, 'Sick':string, 'Cuti Bersama': string, 'Cuti Tahunan':string, 'Cuti Resmi':string, 'Ijin Resmi':string}[]
                 
                 const newData = Object.fromEntries(
                     Object.entries({...getDataLibur}).map(([key, value]) => ([key, typeof value == "string" ? value : Number(value)]))

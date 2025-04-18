@@ -444,7 +444,7 @@
                                                 {#if pecahArray(userProfile.access_ijin, "D") && row.status !== "Approved"}
                                                     <MyButton onclick={()=> formIjinDelete(row.ijin_id)}><Trash size={12} /></MyButton>
                                                 {/if}
-                                                {#if row.status !== "Approved" && row.approval == formIjin.answer.user_approval }
+                                                {#if row.status == "Waiting" && row.approval == formIjin.answer.user_approval }
                                                     <MyButton onclick={()=> handleDelegateIjin(row.ijin_id)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
                                                 {/if}
                                             </TableBodyCell>

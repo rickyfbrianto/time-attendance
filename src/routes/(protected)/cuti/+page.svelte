@@ -20,7 +20,7 @@
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList =[
-        ['Pernikahan Saya', 3],
+        ['Cuti Tahunan', 3],
         ['Pernikahan Keluarga', 4], 
         ['Kelahiran', 5],
         ['Kematian', 6],
@@ -427,7 +427,7 @@
                                                 {#if pecahArray(userProfile.access_cuti, "D") && row.status !== "Approved"}
                                                     <MyButton onclick={()=> formCutiDelete(row.cuti_id)}><Trash size={12} /></MyButton>
                                                 {/if}
-                                                {#if row.status !== "Approved" && row.approval == formCuti.answer.user_approval }
+                                                {#if row.status == "Waiting" && row.approval == formCuti.answer.user_approval }
                                                     <MyButton onclick={()=> handleDelegateCuti(row.cuti_id)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
                                                 {/if}
                                             </TableBodyCell>

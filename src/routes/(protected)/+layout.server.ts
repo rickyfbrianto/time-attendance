@@ -1,8 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { prisma } from '@lib/utils.js'
-import {appstore } from '@lib/store/appstore'
 
-export async function load({ url, locals, cookies }) {
+export async function load({ url, locals }) {
     if(url.pathname === '/') redirect(303, `/dashboard`)
     
     const getSetting = await prisma.setting.findFirst()
@@ -12,6 +11,7 @@ export async function load({ url, locals, cookies }) {
 
     return {
         user: locals.user, 
-        userProfile: locals.userProfile
+        userProfile: locals.userProfile,
+        periode: getSetting
     }
 }
