@@ -56,7 +56,6 @@
         name: "",
         success:"",
         error:"",
-        tab: 0,
         modal:false,
         loading:false,
         add:false,
@@ -81,6 +80,7 @@
             
             const isValid = valid.safeParse(formAttendance.answer)
             if(isValid.success){
+                formAttendance.loading = true
                 const req = await axios.post('/api/attendance', formData)
                 const res = await req.data
                 formAttendanceBatal()
@@ -132,7 +132,10 @@
             const res = await req.data
             tableAttendance.invalidate()
             tableListAttendance.invalidate()
-        } catch (error) {
+            formAttendance.success = res.message
+        } catch (error: any) {
+            formAttendance.error = error.response.data.message
+            formAttendance.success = ""
         } finally {
             formAttendance.loading = false
         }
@@ -254,7 +257,7 @@
 
         tableListAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formListAttendance.payroll}`)
+                const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formListAttendance.payroll}&dept=${formListAttendance.dept}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -620,18 +623,29 @@
             {#if userProfile.user_hrd}
                 <TabItem title="Attendance Double (Conflict)">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
-                        <div class="flex gap-2 items-start">
-                            <select bind:value={tableListAttendance.rowsPerPage} onchange={() => tableListAttendance.setPage(1)}>
-                                {#each [10, 20, 50, 100] as option}
-                                    <option value={option}>{option}</option>
-                                {/each}
-                            </select>
-                            <div class="flex w-full flex-col">
-                                <MyInput type='text' bind:value={tableListAttendanceSearch.value}/>
-                                <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex gap-2 items-start">
+                                <select bind:value={tableListAttendance.rowsPerPage} onchange={() => tableListAttendance.setPage(1)}>
+                                    {#each [10, 20, 50, 100] as option}
+                                        <option value={option}>{option}</option>
+                                    {/each}
+                                </select>
+                                <div class="flex w-full flex-col">
+                                    <MyInput type='text' bind:value={tableListAttendanceSearch.value}/>
+                                    <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                </div>
+                                <MyButton onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
-                            <MyButton onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
+                            <div class="flex gap-2 items-start">
+                                {#await getUser(formListAttendance.dept)}
+                                    <MyLoading message="Loading data"/>
+                                {:then val}
+                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formListAttendance.payroll} 
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                        onChange={() => tableListAttendance.invalidate()}/>
+                                {/await}
+                            </div>
                         </div>
                         
                         <Datatable table={tableListAttendance}>

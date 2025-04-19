@@ -15,7 +15,7 @@ export async function DELETE({params}){
         await prisma.profile.delete({
             where:{profile_id:id}
         })
-        return json({ message: "Data successfully deleted" });
+        return json({ message: "Profile successfully deleted" });
     } catch (error) {
         
     }

@@ -12,22 +12,22 @@ export async function GET({url}){
         const search = url.searchParams.get('_search') ?? ""
 
         const year = url.searchParams.get('year')
-
-        let where = "WHERE 1=1 " + (search ? ` AND (dept_code like '%${search}%' OR name like '%${search}%' OR status like '%${search}%')` :"")
         
         const status = await prisma.$transaction(async (tx) => {
             const items = await tx.$queryRawUnsafe(`
-                SELECT * FROM calendar 
+                SELECT c.*, e.name FROM calendar as c
+                LEFT JOIN employee e ON e.payroll = c.createdBy
                 WHERE YEAR(date) = ? AND (description like ? OR type like ? OR date like ?)
                 ORDER by ${sort} ${order}
                 LIMIT ? OFFSET ?`,
                 year, `%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
 
-            const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM calendar 
-                WHERE description like ? OR type like ? OR date like ?`,
-                `%${search}%`,`%${search}%`,`%${search}%`)
+            const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM calendar as c
+                LEFT JOIN employee e ON e.payroll = c.createdBy
+                WHERE YEAR(date) = ? AND (description like ? OR type like ? OR date like ?)`,
+                year, `%${search}%`,`%${search}%`,`%${search}%`) as {count:number}[]
 
-            return {items, totalItems: Number( totalItems[0].count)}
+            return {items, totalItems: Number(count)}
         })
         
         return json(status)
@@ -48,9 +48,8 @@ export async function POST({request}){
 
             if(!getCalendar){
                 await tx.$executeRawUnsafe(`
-                    INSERT INTO calendar (calendar_id, description, type, date) VALUES (?,?,?,?)`,
-                    v4(),data.description, data.type, data.date)
-                
+                    INSERT INTO calendar (calendar_id, description, type, date, createdBy, createdAt) VALUES (?,?,?,?,?,now())`,
+                    v4(),data.description, data.type, data.date, data.createdBy)
                 return {message:"Data successfully saved"}
             }else{
                 await tx.$executeRawUnsafe(`

@@ -21,19 +21,23 @@ export async function GET({url}){
                 att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, att.description, att.type, att.ijin_info 
                 FROM attendance as att
                 LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                WHERE (att.user_id_machine, DATE(att.check_in)) IN (
+                WHERE (user.department like ? AND user.payroll like ?) AND 
+                (att.user_id_machine, DATE(att.check_in)) IN (
                     SELECT user_id_machine, DATE(check_in) FROM attendance 
                     GROUP BY user_id_machine, DATE(check_in) HAVING COUNT(*) > 1
                 ) ORDER by ${sort} ${order}
-                LIMIT ${limit} OFFSET ${offset}`)
+                LIMIT ${limit} OFFSET ${offset}`,
+            `%${dept}%`, `%${payroll}%`)
             
             const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
                 SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out FROM attendance as att
                 LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                WHERE (att.user_id_machine, DATE(att.check_in)) IN (
+                WHERE (user.department like ? AND user.payroll like ?) AND 
+                (att.user_id_machine, DATE(att.check_in)) IN (
                     SELECT user_id_machine, DATE(check_in) FROM attendance
                     GROUP BY user_id_machine, DATE(check_in) HAVING COUNT(*) > 1
-                )) as tmp`) as {count:number}[]
+                )) as tmp`,
+            `%${dept}%`, `%${payroll}%`) as {count:number}[]
             const totalItems = Number(count)
             return {items, totalItems}
         })

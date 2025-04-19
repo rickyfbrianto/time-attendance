@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { checkFieldKosong, prismaErrorHandler } from "@lib/utils";
+import { prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
 
@@ -50,31 +50,26 @@ export async function POST({ request }) {
 	try {
         const data = await request.json();
 
-		await prisma.profile.create({
-            data: { ...data, profile_id: uuid4() },
-        })
-        return json({ message: "Data successfully saved" });
-	} catch (err) {
-		console.log("err catch",err);
-		error(500, { message: prismaErrorHandler(err) });
-	}
-}
+        const status = await prisma.$transaction(async (tx) => {
+            const getProfile = await tx.profile.findFirst({
+                where:{profile_id : data.profile_id}
+            })
 
-export async function PUT({request}){
-    try {
-        const data = await request.json();
-		const { isError, errorCount } = checkFieldKosong(data);
-		if (isError) {
-            error(500, { message: `${errorCount} input masih kosong` });
-		}
-        const {profile_id} = data
-        delete data.profile_id
-
-		await prisma.profile.update({
-            data: { ...data },
-            where:{profile_id}
+            if(!getProfile){
+                await prisma.profile.create({
+                    data: { ...data, profile_id: uuid4() },
+                })
+                return { message: "Profile successfully saved" }
+            }else{
+                await prisma.profile.update({
+                    data:{ ...data },
+                    where:{ profile_id : data.profile_id}
+                })
+                return { message: "Profile successfully updated" }
+            }
         })
-        return json({ message: "Data successfully updated" });
+
+        return json(status)
 	} catch (err) {
 		console.log("err catch",err);
 		error(500, { message: prismaErrorHandler(err) });

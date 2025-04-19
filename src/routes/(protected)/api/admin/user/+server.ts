@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { checkFieldKosong, encryptData, prismaErrorHandler } from "@lib/utils";
+import { encryptData, prismaErrorHandler } from "@lib/utils";
 import { prisma } from '@lib/utils.js'
 
 export async function GET({url}){
@@ -22,10 +22,10 @@ export async function GET({url}){
             ORDER by ${sort} ${order}
             LIMIT ${limit} OFFSET ${offset}`)
 
-        const totalItems = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM employee e
-            LEFT JOIN dept d ON e.department = d.dept_code ${where}`)
+        const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM employee e
+            LEFT JOIN dept d ON e.department = d.dept_code ${where}`) as {count:number}[]
 
-        return {items, totalItems: Number(totalItems[0].count)}
+        return {items, totalItems: Number(count)}
     })
     
     return json(status)
@@ -34,41 +34,32 @@ export async function GET({url}){
 export async function POST({ request }) {
     try {
         const data = await request.json();
-        const { isError, errorCount } = checkFieldKosong(data);
-        if (isError) {
-            error(500, { message: `${errorCount} input masih kosong` });
-        }
 
-        await prisma.employee.create({
-            data:{...data,
-                password: encryptData(data.password, import.meta.env.VITE_KEY)
+        const status = await prisma.$transaction(async (tx) => {
+            const getUser = await tx.employee.findFirst({
+                where:{payroll : data.payroll }
+            })
+
+            if(!getUser){
+                await prisma.employee.create({
+                    data:{...data,
+                        password: encryptData(data.password, import.meta.env.VITE_KEY)
+                    }
+                })
+                
+                return { message: "User successfully saved" }
+            }else{
+                await prisma.employee.update({
+                    data:{ ...data },
+                    where:{ payroll : data.payroll }
+                })
+                return { message: "User successfully updated" }
             }
         })
-        return json({ message: "Data successfully saved" });
+
+        return json(status)
     } catch (err) {
         console.log(err)
         error(500, { message: prismaErrorHandler(err) });
     }
 }
-
-export async function PUT({ request }) {
-    try {
-        const data = await request.json();
-        const { isError, errorCount } = checkFieldKosong(data);
-        if (isError) {
-            error(500, { message: `${errorCount} input masih kosong` });
-        }
-        const {payroll} = data
-        delete data.payroll
-
-        await prisma.employee.update({
-            data:{...data},
-            where:{payroll}
-        })
-        return json({ message: "Data successfully updated" });
-    } catch (err) {
-        console.log(err)
-        error(500, { message: prismaErrorHandler(err) });
-    }
-}
-

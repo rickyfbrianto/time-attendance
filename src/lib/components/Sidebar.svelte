@@ -7,9 +7,10 @@
 	import { Card, Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr } from 'flowbite-svelte';
     import {appstore } from '@lib/store/appstore'
     import { page } from '$app/state';
-	import MyInput from './MyInput.svelte';
 	
     let {data} = $props()
+    let user = $derived(data.user) 
+    let userProfile = $derived(data.userProfile)
     let pathname:string[] = $state([])
 
     $effect(()=>{
@@ -60,16 +61,17 @@
         {/each}
     </div>
 
-    <div class="relative flex flex-col my-5 bg-bgside2 px-4 py-6 rounded-xl shadow-xl">
+    <div class="relative flex flex-col mb-5 mt-12 bg-bgside2 px-4 py-6 rounded-xl shadow-xl">
         <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[8rem] h-[8rem] self-center mb-4"/>
-        <Tooltip>{data.user.name}</Tooltip>
-        <span class="text-[16px] text-center font-normal text-textdark">{data.user.name}</span>
+        <Tooltip class='z-10'>{user.name}</Tooltip>
+        <span class="text-[16px] text-center font-normal text-textdark">{user.name}</span>
         <Hr hrClass="my-3"/>
-        <span class="text-[12px] text-textdark self-start">{data.user.payroll}</span>
-        <span class="text-[12px] text-textdark">{data.user.position}</span>
-        <span class="text-[12px] text-textdark">{data.user.email}</span>
+        <span class="text-[12px] text-textdark self-start">{user.payroll}</span>
+        <span class="text-[12px] text-textdark">{user.position}</span>
+        <span class="text-[12px] text-textdark">Profile ({userProfile.name} - Level {userProfile.level}) </span>
+        <span class="text-[12px] text-textdark">{user.email}</span>
 
-        {#if data.userProfile.user_hrd}
+        {#if userProfile.user_hrd}
             <div class="absolute h-[2.5rem] flex items-center top-[-2.5rem] left-[50%] translate-x-[-50%] bg-slate-200 px-4 border-white border rounded-t-xl">
                 <span class='font-bold text-[.9rem]'>HRD User</span>
             </div>
@@ -80,14 +82,14 @@
         <div class="relative grid grid-cols-2 gap-3 items-center justify-center">            <!-- <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton> -->
             <div class="flex flex-col items-center justify-center">
                 <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem] mb-4"/>
-                <span>{data.user.name}</span>
+                <span>{user.name}</span>
             </div>
             <div class="flex flex-col">
                 <Timeline>
-                    <TimelineItem title={data.user.payroll} date="Payroll"/>
-                    <TimelineItem title={data.user.position} date="Position"/>
-                    <TimelineItem title={data.user.location} date="Location"/>
-                    <TimelineItem title={data.user.email} date="Email"/>
+                    <TimelineItem title={user.payroll} date="Payroll"/>
+                    <TimelineItem title={user.position} date="Position"/>
+                    <TimelineItem title={user.location} date="Location"/>
+                    <TimelineItem title={user.email} date="Email"/>
                 </Timeline>
             </div>
         </div>
