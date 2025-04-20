@@ -43,4 +43,30 @@ select{
 
 .ec{
     width: 100% !important;
+    height: 100%;
+}
+
+.ec-button{
+    background-color: var(--color-bgside);
+    color: var(--color-textdark2);
+    font-size: .9rem;
+    padding: .3rem .5rem;
+    border-radius: 6px;
+    text-transform: capitalize;
+}
+
+.ec-header{
+    border-radius: 6px 6px 0 0;
+}
+.ec-body{
+    /* border-radius: 6px; */
+    border-radius: 0 0 6px 6px;
+}
+
+.ec-body .ec-day-head{
+    background-color: var(--color-bgdark2);
+    color: var(--color-textdark2);
+}
+.ec-day.ec-today{
+    background-color: #006494;
 }

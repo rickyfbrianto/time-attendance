@@ -213,7 +213,7 @@
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=get_cuti_calendar&val=${v}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=get_calendar&val=${v}&year=${year}&month=${month}`)
         const res = await req.json()
         return res
     }

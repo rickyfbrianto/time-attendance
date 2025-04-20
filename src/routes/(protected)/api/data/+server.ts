@@ -68,7 +68,7 @@ export async function GET({url}){
                 return {...newData}
             })
             return json(req)
-        }else if(type=='get_cuti_calendar'){
+        }else if(type=='get_calendar'){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT * FROM calendar 
                 WHERE type like ? AND YEAR(date) = ? AND month(date) <= ?
