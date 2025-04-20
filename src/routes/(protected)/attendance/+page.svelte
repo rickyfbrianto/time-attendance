@@ -191,6 +191,7 @@
 
     const formLogAttendanceAnswer = {
         get payroll() { return user?.payroll},
+        get dept() { return userProfile.user_hrd ? "" : user?.department},
         year: new Date().getFullYear(),
         month: new Date().getMonth(),
         success:"",
@@ -233,7 +234,7 @@
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll || ""}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -245,7 +246,7 @@
 
         tableAttendanceDept.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -257,7 +258,7 @@
 
         tableListAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formListAttendance.payroll}&dept=${formListAttendance.dept}`)
+                const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formListAttendance.payroll || ""}&dept=${formListAttendance.dept || ""}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -269,7 +270,7 @@
 
         tableLogAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formLogAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formLogAttendance.payroll || ""}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -750,7 +751,7 @@
                             <MyButton onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
                             <MyButton onclick={()=>tableLogAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
-                        <div class="flex gap-2 items-start">
+                        <div class="flex gap-2 items-start flex-wrap">
                             <select bind:value={formLogAttendance.year} onchange={e => handleSetPeriode({year:e?.target.value})}>
                                 {#each dataTahun as {title, value}}
                                     <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
@@ -761,12 +762,25 @@
                                     <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
                                 {/each}
                             </select>
-                        </div>
+
+                            {#if userProfile.user_hrd}
+                                {#await getUser(formLogAttendance.dept)}
+                                    <MyLoading message="Loading data"/>
+                                {:then val}
+                                    <Svelecte searchable selectOnTab multiple={false} bind:value={formLogAttendance.payroll} 
+                                        options={val.map((v:any) => ({value: v.payroll, texst:v.payroll + " - " + v.name}))}
+                                        onChange={() => tableLogAttendance.invalidate()}/>
+                                {/await}
+                            {/if}
                     </div>
                     
                     <Datatable table={tableLogAttendance}>
                         <Table>
                             <TableHead>
+                                {#if userProfile.user_hrd}
+                                    <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
+                                    <ThSort table={tableLogAttendance} field="name">Name</ThSort>
+                                {/if}
                                 <ThSort table={tableLogAttendance} field="check_in">Day</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Date</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Clock In</ThSort>
@@ -785,6 +799,10 @@
                                     {#if tableLogAttendance.rows.length > 0}
                                         {#each tableLogAttendance.rows as row}
                                             <TableBodyRow class='h-10'>
+                                                {#if userProfile.user_hrd}
+                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                    <TableBodyCell>{row.name}</TableBodyCell>
+                                                {/if}
                                                 <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>

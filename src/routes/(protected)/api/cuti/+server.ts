@@ -50,15 +50,19 @@ export async function POST({ request }) {
                 
                 const year = getYear(new Date())
                 const month = 12
-                const resCalendar = await prisma.$queryRawUnsafe(`
-                    SELECT date FROM calendar WHERE YEAR(date) = ? AND month(date) <= ?
+                const resCalendar = await tx.$queryRawUnsafe(`SELECT date FROM calendar WHERE YEAR(date) = ? AND month(date) <= ?
                     ORDER BY date asc`, year, month) as {date: string}[]
+
+                const resCuti = await tx.$queryRawUnsafe(`SELECT date FROM cuti WHERE DATE(date) BETWEEN ? AND ?`,
+                    data.date[0], data.date[1]) as {date: string}[]
 
                 const daysInRange = eachDayOfInterval({ start: data.date[0], end: data.date[1] })
                 const dayFree = user?.workhour == 7 ? [0] : [0, 6]
 
                 const temp = daysInRange.filter(v => {
-                    return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date")) && !dayFree.includes(getDay(v))
+                    return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date")) 
+                    && !resCuti.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date"))
+                    && !dayFree.includes(getDay(v))
                 }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
 
                 await tx.cuti.createMany({

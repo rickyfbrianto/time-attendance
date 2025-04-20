@@ -3,7 +3,11 @@
     import { Button, Chart, Dropdown, DropdownItem } from 'flowbite-svelte';
     import { Select, Label } from 'flowbite-svelte';
     import DonutChart from '@lib/components/DonutChart.svelte'
-    // import { Calendar } from '@fullcalendar/core';
+    // import daygridPlugin from '@fullcalendar/daygrid';
+    import '@event-calendar/core/index.css';
+    import Calendar from '@event-calendar/core';
+    import TimeGrid from '@event-calendar/time-grid';
+    import dayGridPlugin from '@fullcalendar/daygrid';
     
     let selected = ""
     
@@ -21,7 +25,17 @@
             {series:0, colors:"#A0B3C1", labels:"Cuti"},
             {series:1, colors:"#E71D36", labels:"Sakit"}
             ]
-        }
+    }
+
+    let plugins = [TimeGrid, dayGridPlugin];
+    let options = {
+        view: 'timeGridWeek',
+        initialView :"dayGridMonth",
+        events: [
+        { title: 'Event 1', start: '2025-04-21T10:00:00', end: '2025-04-21T12:00:00' },
+        { title: 'Event 2', start: '2025-04-22T14:00:00', end: '2025-04-22T16:00:00' }
+        ]
+    };
 </script>
 
 <svelte:head>
@@ -49,10 +63,10 @@
             <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />
         </div>
     </div>
-    <div class="flex">
-        <span>Tes</span>
-        <div id="mycalendar" class="flex">
-
+    <div class="flex flex-1">
+        <div id="mycalendar" class="flex w-full">
+            <!-- <Calendar {plugins} {options} plugins /> -->
+            <Calendar {plugins} options={options} />
         </div>
     </div>
     {#snippet head(d:string)}

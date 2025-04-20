@@ -40,3 +40,7 @@ select{
     outline-style: var(--tw-outline-style);
     outline-width: 0px;
 }
+
+.ec{
+    width: 100% !important;
+}

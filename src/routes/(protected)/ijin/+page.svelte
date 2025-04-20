@@ -17,6 +17,7 @@
     let {data} = $props()
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
+    let periode = $derived(data.periode)
 
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
     const typeList =[
@@ -284,12 +285,26 @@
     {#await getCutiUser()}
         <MyLoading message={`Loading users data`}/>
     {:then val}
-        <div class="relative grid grid-cols-1 justify-between rounded-lg p-6 gap-4 border-[2px] border-slate-200">
-            <MyButton onclick={getCutiUser} className='absolute left-[50%] translate-x-[-50%] bottom-[-1rem] bg-bgdark'><RotateCw size={14} /></MyButton>
-            <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-8 items-center gap-4">
+        <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark`}>
+            <div class="flex flex-col gap-2 min-w-fit">
+                <div class="flex items-center gap-2">
+                    <Calendar size={18}/>
+                    <div class="flex">
+                        <span class="font-bold">Today,</span>
+                        <span>{format(new Date(), "dd-MM-yyyy")}</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <span>Periode</span>
+                    <span class="text-[.9rem] italic">{periode?.start_periode} s/d {periode?.end_periode}</span>
+                </div>
+                <MyButton onclick={getCutiUser}>Refresh</MyButton>
+            </div>
+
+            <div class="hidden md:grid items-end w-full md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-7 items-center gap-4">
                 {#each headerData as {title, value, icon: Icon}}
                     <button class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
-                    onclick={() => handleDetailHeader(title)}>
+                        onclick={() => handleDetailHeader(title)}>
                         <span class="text-[.9rem] font-semibold">{title}</span>
                         <div class="flex justify-between items-center gap-2">
                             <Icon size={16}/>
@@ -430,7 +445,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableIjin.rows.length > 0}
                                     {#each tableIjin.rows as row:any}
-                                        <TableBodyRow>                                            
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.date, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.type}</TableBodyCell>

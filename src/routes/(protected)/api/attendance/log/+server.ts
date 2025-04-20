@@ -17,9 +17,9 @@ export async function GET({url}){
         
         const status = await prisma.$transaction(async (tx) =>{
             const getSetting = await tx.setting.findFirst()
-            const temp = new Date(Number(year), Number(month), getSetting?.start_periode)
+            const temp = new Date(Number(year), Number(month) + 1, getSetting?.start_periode)
             const date1 = format(subMonths(temp, 1), "yyyy-MM-dd")
-            const date2 = format(new Date(Number(year), Number(month), getSetting?.end_periode), "yyyy-MM-dd")
+            const date2 = format(new Date(Number(year), Number(month) + 1, getSetting?.end_periode), "yyyy-MM-dd")
             
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
                 att.description, att.type, att.ijin_info, 

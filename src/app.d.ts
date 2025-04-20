@@ -20,4 +20,6 @@ declare global {
 	}
 }
 
+declare module '@event-calendar/core';
+
 export {};
