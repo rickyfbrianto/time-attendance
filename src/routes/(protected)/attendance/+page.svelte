@@ -270,7 +270,7 @@
 
         tableLogAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formLogAttendance.payroll || ""}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formAttendance.payroll || ""}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -356,9 +356,22 @@
             </Alert>
         {/if}
 
-        {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C") && (userProfile?.user_hrd || userProfile?.level > 1)}
-            <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
-        {/if}
+        <div class="flex gap-4 items-center w-full">
+            {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C") && (userProfile?.user_hrd || userProfile?.level > 1)}
+                <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
+            {/if}
+            {#if userProfile.user_hrd || userProfile.level > 1}
+                <div class="flex flex-1 gap-2">
+                    {#await getUser(formAttendance.dept)}
+                        <MyLoading message="Loading data"/>
+                    {:then val}
+                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                            onChange={() => tableAttendance.invalidate()}/>
+                    {/await}
+                </div>
+            {/if}
+        </div>
 
         <Tabs contentClass='w-full' tabStyle="underline">
             <TabItem  title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
@@ -377,7 +390,7 @@
                             <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
                             <MyButton onclick={()=>tableAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
-                        {#if userProfile.user_hrd || userProfile.level > 1}
+                        <!-- {#if userProfile.user_hrd || userProfile.level > 1}
                             <div class="flex gap-2 items-start">
                                 {#await getUser(formAttendance.dept)}
                                     <MyLoading message="Loading data"/>
@@ -387,7 +400,7 @@
                                         onChange={() => tableAttendance.invalidate()}/>
                                 {/await}
                             </div>
-                        {/if}
+                        {/if} -->
                     </div>
                     
                     <Datatable table={tableAttendance}>
@@ -754,24 +767,15 @@
                         <div class="flex gap-2 items-start flex-wrap">
                             <select bind:value={formLogAttendance.year} onchange={e => handleSetPeriode({year:e?.target.value})}>
                                 {#each dataTahun as {title, value}}
-                                    <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
+                                <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
                                 {/each}
                             </select>
                             <select bind:value={formLogAttendance.month} onchange={e => handleSetPeriode({month: e?.target.value})}>
                                 {#each dataBulan as {title, value}}
-                                    <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
+                                <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
                                 {/each}
                             </select>
-
-                            {#if userProfile.user_hrd}
-                                {#await getUser(formLogAttendance.dept)}
-                                    <MyLoading message="Loading data"/>
-                                {:then val}
-                                    <Svelecte searchable selectOnTab multiple={false} bind:value={formLogAttendance.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, texst:v.payroll + " - " + v.name}))}
-                                        onChange={() => tableLogAttendance.invalidate()}/>
-                                {/await}
-                            {/if}
+                        </div>
                     </div>
                     
                     <Datatable table={tableLogAttendance}>

@@ -36,7 +36,7 @@
         timeZone: 'UTC',
         view: 'dayGridMonth',
         weekNumbers: true,
-        nowIndicator:true,
+        nowIndicator: true,
         headerToolbar:{
             start: 'refresh,custom1 prev,today,next', center: 'title', end: 'listMonth,dayGridMonth,timeGridWeek,timeGridDay'
         },
