@@ -1,18 +1,19 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal } from 'flowbite-svelte';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal } from 'flowbite-svelte';
+    import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
 	import { formatTanggal, pecahArray } from '@lib/utils';
-    import { differenceInHours, format, getMonth, getYear, parseISO, startOfDay } from "date-fns";
+    import { differenceInHours, format, getMonth, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { getParams } from '@lib/data/api.js';
+	import MyCalendar from '@/MyCalendar.svelte';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -51,11 +52,12 @@
             attachment: [],
             get createdBy() { return user?.payroll}
         },
-        get payroll() { return user?.payroll},
         get dept() { return userProfile.user_hrd ? "" : user?.department},
+        get payroll() { return user?.payroll},
         name: "",
         success:"",
         error:"",
+        showCalendar: false,
         modal:false,
         loading:false,
         add:false,
@@ -202,14 +204,10 @@
     }
     
     let formLogAttendance = $state({...formLogAttendanceAnswer})
-
-    const handleSetPeriode = ({month, year}: {month: string, year: string}) =>{
-        tableLogAttendance.invalidate()
-    }
     
     // Fetch
     const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val}`)
+        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
         return await req.json()
     }
 
@@ -223,7 +221,7 @@
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
         const res = await req.json()
         formAttendance.name = res.Name
         
@@ -234,7 +232,7 @@
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll || ""}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -246,7 +244,7 @@
 
         tableAttendanceDept.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendance.dept || ""}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -256,21 +254,23 @@
             }
         })
 
-        tableListAttendance.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formListAttendance.payroll || ""}&dept=${formListAttendance.dept || ""}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if(userProfile.user_hrd){
+            tableListAttendance.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formAttendance.payroll}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
 
         tableLogAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formAttendance.payroll || ""}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -280,11 +280,26 @@
             }
         })
     })
+
+    $effect(()=>{
+        if(formAttendance.payroll){
+            tableAttendance.invalidate()
+            // tableAttendanceDept.invalidate()
+            if(userProfile.user_hrd){
+                tableListAttendance.invalidate()
+            }
+            tableLogAttendance.invalidate()
+        } else {
+            formAttendance.payroll = user?.payroll
+        }
+    })
     
     setTimeout(()=>{
         tableAttendance.invalidate()
         tableAttendanceDept.invalidate()
-        tableListAttendance.invalidate()
+        if(userProfile.user_hrd){
+            tableListAttendance.invalidate()
+        }
         tableLogAttendance.invalidate()
     }, 1000)
 
@@ -294,7 +309,7 @@
         dataTahun.push({value: a, title: a.toString()})
     }
     for(let a = 0; a < 12; a++){
-        dataBulan.push({value: a, title: format(new Date(2000, a, 1), "MMMM")})
+        dataBulan.push({value: Number(a), title: format(new Date(2000, a, 1), "MMMM")})
     }
 </script>
 
@@ -303,45 +318,52 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#await getAttendance(formAttendance.payroll)}
-        <MyLoading message={`Loading users data`}/>
-    {:then val}
-        <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${formAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
-            <div class="flex flex-col gap-2 min-w-fit">
-                <div class="flex flex-col">
-                    <span class="font-bold text-[1.1rem]">{formAttendance.name}</span>
-                    <span class='font-bold  text-[.95rem]'>{formAttendance.payroll}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <Calendar size={18}/>
-                    <div class="flex">
-                        <span class="font-bold">Today,</span>
-                        <span>{format(new Date(), "dd-MM-yyyy")}</span>
+    {#if formAttendance.payroll}
+        {#await getAttendance(formAttendance.payroll)}
+            <MyLoading message={`Loading users data`}/>
+        {:then val}
+            <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${formAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
+                <div class="flex flex-col gap-2 min-w-fit">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-[1.1rem]">{formAttendance.name}</span>
+                        <span class='font-bold  text-[.95rem]'>{formAttendance.payroll}</span>
                     </div>
-                </div>
-                <div class="flex gap-2">
-                    <span>Periode</span>
-                    <span class="text-[.9rem] italic">{periode?.start_periode} s/d {periode?.end_periode}</span>
-                </div>
-                {#if formAttendance.payroll !== user.payroll}
-                    <MyButton onclick={handleBackToMyAttendance}>Back to my attendance</MyButton>
-                {/if}
-            </div>
-            
-            <div class="hidden md:grid w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
-                {#each headerData as {title, value, icon: Icon}}
-                    <div class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
-                        <!-- onclick={() => handleDetailHeader(title)}> -->
-                        <span class="text-[.9rem] font-semibold">{title}</span>
-                        <div class="flex justify-between items-center gap-2">
-                            <Icon size={16}/>
-                            <span class='text-[1.1rem] font-bold'>{value}</span>
+                    <div class="flex items-center gap-2">
+                        <Calendar size={18}/>
+                        <div class="flex gap-2">
+                            <span class="font-bold">Today,</span>
+                            <span>{format(new Date(), "dd-MM-yyyy")}</span>
                         </div>
                     </div>
-                {/each}
+                    <div class="flex gap-2">
+                        <span>Periode</span>
+                        <span class="text-[.9rem] italic">{periode?.start_periode} s/d {periode?.end_periode}</span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col w-full gap-4">
+                    <div class="hidden md:grid  md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
+                        {#each headerData as {title, value, icon: Icon}}
+                            <div class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
+                                <!-- onclick={() => handleDetailHeader(title)}> -->
+                                <span class="text-[.9rem] font-semibold">{title}</span>
+                                <div class="flex justify-between items-center gap-2">
+                                    <Icon size={16}/>
+                                    <span class='text-[1.1rem] font-bold'>{value}</span>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                    <div class="flex gap-4">
+                        {#if formAttendance.payroll !== user?.payroll}
+                        <MyButton onclick={handleBackToMyAttendance}>Back to my attendance</MyButton>
+                        {/if}
+                        <MyButton className='flex items-center gap-2' onclick={()=> formAttendance.showCalendar = true}><Calendar size={16} /> Calendar</MyButton>
+                    </div>
+                </div>
             </div>
-        </div>
-    {/await}
+        {/await}
+    {/if}
     
     <div class="flex flex-col items-start gap-2 p-4 border-slate-300 border rounded-lg">
         {#if formAttendance.error}
@@ -357,24 +379,35 @@
         {/if}
 
         <div class="flex gap-4 items-center w-full">
+            <!-- Tombol Add -->
             {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C") && (userProfile?.user_hrd || userProfile?.level > 1)}
                 <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
             {/if}
+            <!-- {#if userProfile.user_hrd}
+                <div class="flex flex-1 gap-2">
+                    {#await getDept()}
+                        <MyLoading message="Loading data"/>
+                    {:then val}
+                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} 
+                            options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
+                    {/await}
+                </div>                
+            {/if} -->
+
             {#if userProfile.user_hrd || userProfile.level > 1}
                 <div class="flex flex-1 gap-2">
                     {#await getUser(formAttendance.dept)}
                         <MyLoading message="Loading data"/>
                     {:then val}
-                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
-                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
-                            onChange={() => tableAttendance.invalidate()}/>
+                        <Svelecte name='payroll' required searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}/>
                     {/await}
-                </div>
+                </div>                
             {/if}
         </div>
 
         <Tabs contentClass='w-full' tabStyle="underline">
-            <TabItem  title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
+            <TabItem open title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -472,7 +505,9 @@
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
@@ -519,7 +554,7 @@
                                     {#await getDept()}
                                         <MyLoading message="Loading data"/>
                                     {:then val}
-                                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendanceDept.dept} 
+                                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} 
                                             options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
                                             onChange={() => tableAttendanceDept.invalidate()}/>
                                     {/await}
@@ -651,7 +686,7 @@
                                 <MyButton onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
                                 <MyButton onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
-                            <div class="flex gap-2 items-start">
+                            <!-- <div class="flex gap-2 items-start">
                                 {#await getUser(formListAttendance.dept)}
                                     <MyLoading message="Loading data"/>
                                 {:then val}
@@ -659,7 +694,7 @@
                                         options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
                                         onChange={() => tableListAttendance.invalidate()}/>
                                 {/await}
-                            </div>
+                            </div> -->
                         </div>
                         
                         <Datatable table={tableListAttendance}>
@@ -765,14 +800,14 @@
                             <MyButton onclick={()=>tableLogAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
                         <div class="flex gap-2 items-start flex-wrap">
-                            <select bind:value={formLogAttendance.year} onchange={e => handleSetPeriode({year:e?.target.value})}>
+                            <select bind:value={formLogAttendance.year} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataTahun as {title, value}}
-                                <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
+                                    <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
                                 {/each}
                             </select>
-                            <select bind:value={formLogAttendance.month} onchange={e => handleSetPeriode({month: e?.target.value})}>
+                            <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataBulan as {title, value}}
-                                <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
+                                    <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
                                 {/each}
                             </select>
                         </div>
@@ -871,6 +906,12 @@
             </TabItem>
         </Tabs>
     </div>
+
+    <Modal bind:open={formAttendance.showCalendar} size={"xl"} >
+        <div class="flex flex-col mt-7 p-4 gap-4">
+            <MyCalendar/>
+        </div>
+    </Modal>
 
     <Modal bind:open={formAttendance.modal} size={"xl"} classBody="overflow-visible">
         <div class="flex flex-col mt-7 p-4 gap-4 border border-slate-400 rounded-lg">

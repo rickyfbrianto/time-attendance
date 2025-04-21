@@ -8,7 +8,8 @@ export async function GET({params}){
             spl_id: true,
             est_start: true,
             est_end: true,
-            createdBy:true,
+            approval1:true,
+            approval2:true,
             purpose:true,
             spl_detail: {
                 select: { 

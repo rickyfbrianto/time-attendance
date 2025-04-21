@@ -7,6 +7,7 @@
     import Sidebar from '@/Sidebar.svelte'
     import {appstore } from '@lib/store/appstore'
 	import type { LayoutProps } from './$types';
+    import '@event-calendar/core/index.css';
 
     let {children, data} :LayoutProps = $props()
 

@@ -692,7 +692,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSPPD.rows.length > 0}
                                     {#each tableSPPD.rows as row:any}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.purpose}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
@@ -709,8 +709,8 @@
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>
@@ -837,7 +837,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSKPD.rows.length > 0}
                                     {#each tableSKPD.rows as row:any}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
@@ -859,8 +859,8 @@
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>

@@ -61,10 +61,9 @@ export async function POST({ request,  }) {
                 newID = `${lastID}-SRL${separator}${dept}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO srl (srl_id, spl_id, payroll, real_start, real_end, status, createdAt) 
-                    VALUES(?,?,?,?,?,?, now())`,
-                    newID, data.spl_id, data.payroll, new Date(data.real_start + " UTC"), 
-                    new Date(data.real_end + " UTC"), "OPEN")
+                    INSERT INTO srl (srl_id, spl_id, payroll, real_start, real_end, approval1,approval2,createdAt) 
+                    VALUES(?,?,?,?,?,?,?,now())`,
+                    newID, data.spl_id, data.payroll, data.real_start, data.real_end, data.approval1, data.approval2)
 
                 await tx.srl_detail.createMany({
                     data: dataSRLDetail.map(({status, description}) => ({
@@ -76,13 +75,18 @@ export async function POST({ request,  }) {
 
                 return { message: "Data successfully saved" }
             }else{
-                await tx.srl.update({
-                    data:{
-                        real_start: new Date(data.real_start + " UTC"),
-                        real_end: new Date(data.real_end + " UTC"),
-                    },
-                    where:{ srl_id: data.srl_id }
-                })
+                await tx.$queryRawUnsafe(`
+                    UPDATE SRL SET real_start=?,real_end=?,approval1=?,approval2=? WHERE srl_id=?`,
+                    data.real_start, data.real_end, data.approval1, data.approval2, data.srl_id
+                )
+
+                // await tx.srl.update({
+                //     data:{
+                //         real_start: new Date(data.real_start + " UTC"),
+                //         real_end: new Date(data.real_end + " UTC"),
+                //     },
+                //     where:{ srl_id: data.srl_id }
+                // })
 
                 await tx.srl_detail.deleteMany({
                     where : { srl_id: data.srl_id }

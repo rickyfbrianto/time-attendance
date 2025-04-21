@@ -25,7 +25,6 @@ model employee {
   signature                                       String        @db.VarChar(250)
   attendance_attendance_createdByToemployee       attendance[]  @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[]  @relation("attendance_user_id_machineToemployee")
-  calendar                                        calendar[]
   check_io                                        check_io[]
   cuti_cuti_approvalToemployee                    cuti[]        @relation("cuti_approvalToemployee")
   cuti                                            cuti[]
@@ -39,7 +38,8 @@ model employee {
   ijin                                            ijin[]
   skpd_skpd_createdByToemployee                   skpd[]        @relation("skpd_createdByToemployee")
   skpd_skpd_payrollToemployee                     skpd[]        @relation("skpd_payrollToemployee")
-  spl_spl_createdByToemployee                     spl[]         @relation("spl_createdByToemployee")
+  spl_spl_approval1Toemployee                     spl[]         @relation("spl_approval1Toemployee")
+  spl_spl_approval2Toemployee                     spl[]         @relation("spl_approval2Toemployee")
   spl_detail                                      spl_detail[]
   sppd                                            sppd[]
   sppd_detail                                     sppd_detail[]
@@ -70,8 +70,6 @@ model profile {
   access_calendar   String     @db.VarChar(4)
   access_user       String     @db.VarChar(4)
   access_profile    String     @db.VarChar(4)
-  access_dept       String     @db.VarChar(4)
-  access_setting    String     @db.VarChar(4)
   employee          employee[]
 }
 
@@ -105,10 +103,6 @@ model attendance {
 
   @@index([createdBy], map: "createdBy")
   @@index([user_id_machine], map: "user_id_mesin")
-  @@index([check_in], map: "check_in")
-  @@index([check_in2], map: "check_in2")
-  @@index([check_out], map: "check_out")
-  @@index([check_out2], map: "check_out2")
 }
 
 model temp_check_io {
@@ -125,11 +119,6 @@ model calendar {
   description String?        @db.VarChar(255)
   type        calendar_type?
   date        DateTime?      @unique(map: "date") @db.Date
-  createdAt   DateTime       @default(now()) @db.DateTime(0)
-  createdBy   String?        @db.VarChar(8)
-  employee    employee?      @relation(fields: [createdBy], references: [payroll])
-
-  @@index([createdBy], map: "createdBy")
 }
 
 model setting {
@@ -139,19 +128,24 @@ model setting {
 }
 
 model spl {
-  spl_id             String       @id @db.VarChar(40)
-  purpose            String       @db.VarChar(255)
-  est_start          DateTime     @db.DateTime(0)
-  est_end            DateTime     @db.DateTime(0)
-  createdBy          String?      @db.VarChar(8)
-  createdAt          DateTime     @default(now()) @db.DateTime(0)
-  employee_createdBy employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll], map: "spl_createBy_by_fkey")
-  spl_detail         spl_detail[]
-  srl                srl[]
+  spl_id                           String       @id @db.VarChar(40)
+  purpose                          String       @db.VarChar(255)
+  est_start                        DateTime     @db.DateTime(0)
+  est_end                          DateTime     @db.DateTime(0)
+  status1                          spl_status1
+  approval1                        String?      @db.VarChar(8)
+  status2                          spl_status2
+  approval2                        String?      @db.VarChar(8)
+  createdAt                        DateTime     @default(now()) @db.DateTime(0)
+  employee_spl_approval1Toemployee employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
+  employee_spl_approval2Toemployee employee?    @relation("spl_approval2Toemployee", fields: [approval2], references: [payroll])
+  spl_detail                       spl_detail[]
+  srl                              srl[]
 
-  @@index([createdBy], map: "createdBy")
   @@index([est_end], map: "est_end")
   @@index([est_start], map: "est_start")
+  @@index([approval1], map: "approval1")
+  @@index([approval2], map: "approval2")
 }
 
 model spl_detail {
@@ -229,7 +223,6 @@ model cuti {
 
   @@index([payroll], map: "payroll")
   @@index([approval], map: "approval")
-  @@index([date], map: "date")
 }
 
 model sppd {
@@ -249,8 +242,6 @@ model sppd {
 
   @@index([createdBy], map: "createdBy")
   @@index([dept], map: "dept")
-  @@index([end_date], map: "end_date")
-  @@index([start_date], map: "start_date")
 }
 
 model sppd_detail {
@@ -282,8 +273,6 @@ model skpd {
   @@index([createdBy], map: "createdBy")
   @@index([payroll], map: "payroll")
   @@index([sppd_id], map: "sppd_id")
-  @@index([real_end], map: "real_end")
-  @@index([real_start], map: "real_start")
 }
 
 model ijin {
@@ -300,7 +289,6 @@ model ijin {
 
   @@index([payroll], map: "payroll")
   @@index([approval], map: "approval")
-  @@index([date], map: "date")
 }
 
 enum calendar_type {
@@ -341,6 +329,20 @@ enum srl_status1 {
 }
 
 enum srl_status2 {
+  Waiting
+  Reject
+  Approved
+  Cancelled
+}
+
+enum spl_status1 {
+  Waiting
+  Reject
+  Approved
+  Cancelled
+}
+
+enum spl_status2 {
   Waiting
   Reject
   Approved

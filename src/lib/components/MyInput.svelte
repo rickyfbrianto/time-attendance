@@ -24,15 +24,15 @@
     {/if}
     <div class={myClass}>
         {#if type == "textarea"}
-            <textarea class='w-full rounded-lg border-0 outline-none ring-0 ps-3 bg-bgdark text-textdark' {disabled} {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
+            <textarea class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} {disabled} {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
         {:else if type == 'daterange'}
-            <SveltyPicker bind:value={value}  {disabled} autocommit={false} isRange mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark flex" format={formatDateTime} displayFormat={displayFormatDate}/>
+            <SveltyPicker bind:value={value}  {disabled} autocommit={false} isRange mode={'date'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDateTime} displayFormat={displayFormatDate}/>
         {:else if type == 'date'}
-            <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'date'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={formatDate} displayFormat={formatDate}/>
+            <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'date'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDate} displayFormat={formatDate}/>
         {:else if type == 'time'}
-            <SveltyPicker bind:value={value} {disabled} mode={'time'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={formatTime} displayFormat={formatTime}/>
+            <SveltyPicker bind:value={value} {disabled} mode={'time'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatTime} displayFormat={formatTime}/>
         {:else if type == 'datetime'}
-            <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'datetime'} inputClasses="w-full rounded-lg border-0 ring-0 ps-3 bg-bgdark text-textdark" format={formatDateTime} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
+            <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'datetime'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDateTime} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
         {:else}
             <input class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} id={name} {name} {disabled} {required} 
             {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>

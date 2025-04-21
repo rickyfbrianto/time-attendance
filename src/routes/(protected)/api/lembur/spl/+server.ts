@@ -5,9 +5,6 @@ import { prisma } from '@lib/utils.js'
 import { format } from "date-fns";
 
 export async function GET({url}){
-    const start_periode = url.searchParams.get('start_periode')
-    const end_periode = url.searchParams.get('end_periode')
-
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -17,14 +14,16 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT spl_id, purpose, est_start, est_end, e.name, createdAt FROM SPL
-            LEFT JOIN employee as e ON e.payroll = SPL.createdBy
+            SELECT spl_id, purpose, est_start, est_end, approval1.name as approval1, status1, approval2.name as approval2, status2 FROM SPL
+            LEFT JOIN employee as approval1 ON approval1.payroll = SPL.approval1
+            LEFT JOIN employee as approval2 ON approval2.payroll = SPL.approval2
             WHERE spl_id like ? OR purpose like ? OR est_start like ? OR est_end like ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
         `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM SPL 
-            LEFT JOIN employee as e ON e.payroll = SPL.createdBy 
+            LEFT JOIN employee as approval1 ON approval1.payroll = SPL.approval1
+            LEFT JOIN employee as approval2 ON approval2.payroll = SPL.approval2
             WHERE spl_id like ? OR purpose like ? OR est_start like ? OR est_end like ?`,
         `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
                     
@@ -68,8 +67,8 @@ export async function POST({ request,  }) {
                 newID = `${lastID}-SPL${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
                 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO SPL (spl_id,purpose,est_start,est_end,createdBy) VALUES (?,?,?,?,?)`,
-                    newID, data.purpose, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.createdBy
+                    INSERT INTO SPL (spl_id,purpose,est_start,est_end,approval1,approval2,createdBy) VALUES (?,?,?,?,?)`,
+                    newID, data.purpose, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.createdBy, data.approval1, data.approval2
                 )
 
                 await tx.spl_detail.createMany({
@@ -80,14 +79,10 @@ export async function POST({ request,  }) {
                     }))
                 })
             }else{
-                await tx.spl.update({
-                    data:{
-                        purpose: data.purpose,
-                        est_start: new Date(data.est_start + " UTC"),
-                        est_end: new Date(data.est_end + " UTC"),
-                    },
-                    where:{ spl_id: data.spl_id }
-                })
+                await tx.$queryRawUnsafe(`
+                    UPDATE SPL SET purpose=?,est_start=?,est_end=?,approval1=?,approval2=? WHERE spl_id=?`,
+                    data.purpose, data.est_start, data.est_end, data.approval1, data.approval2, data.spl_id
+                )
 
                 await tx.spl_detail.deleteMany({
                     where : { spl_id: data.spl_id }

@@ -664,7 +664,7 @@
                                 <TableBody tableBodyClass="divide-y">
                                     {#if tableProfile.rows.length > 0}
                                         {#each tableProfile.rows as row}
-                                            <TableBodyRow>
+                                            <TableBodyRow class='h-10'>
                                                 <TableBodyCell class='bg-bgdark text-textdark'>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.user_hrd ? "Yes": "No"}</TableBodyCell>
@@ -676,7 +676,9 @@
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
@@ -802,7 +804,7 @@
                                 <TableBody tableBodyClass="divide-y">
                                     {#if tableUser.rows.length > 0}
                                         {#each tableUser.rows as row}
-                                            <TableBodyRow>
+                                            <TableBodyRow class='h-10'>
                                                 <TableBodyCell>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.position}</TableBodyCell>
@@ -816,7 +818,9 @@
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
@@ -918,7 +922,7 @@
                                 <TableBody tableBodyClass="divide-y">
                                     {#if tableDept.rows.length > 0}
                                         {#each tableDept.rows as row}
-                                            <TableBodyRow>
+                                            <TableBodyRow class='h-10'>
                                                 <TableBodyCell>{row.dept_code}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.initial}</TableBodyCell>
@@ -1067,7 +1071,7 @@
                                     <TableBody tableBodyClass="divide-y">
                                         {#if tableCalendar.rows.length > 0}
                                             {#each tableCalendar.rows as row}
-                                                <TableBodyRow>
+                                                <TableBodyRow class='h-10'>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>{row.description}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.date, 'date')}</TableBodyCell>

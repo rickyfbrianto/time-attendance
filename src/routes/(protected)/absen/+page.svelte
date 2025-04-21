@@ -158,9 +158,9 @@
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell><span>No data available</span></TableBodyCell>
-                                    </TableBodyRow> 
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                    </TableBodyRow>
                                 {/if}
                             </TableBody>
                         {/if}
@@ -261,9 +261,9 @@
                                     </TableBodyRow>
                                 {/each}
                             {:else}
-                                <TableBodyRow>
-                                    <TableBodyCell><span>No data available</span></TableBodyCell>
-                                </TableBodyRow> 
+                                <TableBodyRow class='h-10'>
+                                    <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                </TableBodyRow>
                             {/if}
                         </TableBody>                            
                         {/if}

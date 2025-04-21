@@ -33,8 +33,8 @@ export async function GET({url}){
                 FROM
                     spl s, spl_detail sd, employee e, attendance a
                 WHERE sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in )= DATE (s.est_start) 
-                AND NOT EXISTS (SELECT 1 FROM srl WHERE s.spl_id = srl.spl_id)
-                AND sd.payroll = ?`, 
+                    AND NOT EXISTS (SELECT 1 FROM srl WHERE s.spl_id = srl.spl_id)
+                    AND sd.payroll = ? AND s.status1 = 'Approved' AND s.status2 = 'Approved'`, 
                 val) as any []
             return json(req)
         }else if(type=='sppd_by_payroll'){
@@ -46,7 +46,7 @@ export async function GET({url}){
                 WHERE skpd.sppd_id IS NULL
                 group by s.sppd_id`)
             return json(req)
-        }else if(type=='attendance_by_payroll'){
+        }else if(type=='sum_attendance_by_payroll'){
             const req = await prisma.$transaction(async tx => {
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select e.name as Name,

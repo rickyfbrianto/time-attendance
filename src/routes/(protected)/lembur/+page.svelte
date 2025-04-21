@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Toast, Badge, Select, Label, Alert } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Select, Label, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
@@ -29,11 +29,7 @@
     const formSPLAnswer = $state({
         answer:{
             spl_id: "id",
-            purpose:"",
-            get dept() { return user?.department},
-            spl_detail:[{payroll:"",description:""}],
-            est_start:"",
-            est_end:"",
+            status:"",
             get createdBy() {return user?.payroll},
         },
         success:"",
@@ -57,7 +53,8 @@
                 })),
                 est_start: z.string().trim().min(1),
                 est_end: z.string().trim().min(1),
-                createdBy: z.string().trim().min(1),
+                approval1: z.string().trim().min(1),
+                approval2: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
@@ -188,6 +185,75 @@
         doc.save(`${id}.pdf`);
     }
     
+    // SPL approval 1
+    let tableSPLApproval1 = $state(new TableHandler([], {rowsPerPage}))
+    let tableSPLApproval1Search = tableSPLApproval1.createSearch()
+    
+    const formSPLApproval1Answer = $state({
+        answer:{
+            spl_id: "id",
+            status:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    })
+    
+    let formSPLApproval1 = $state({...formSPLApproval1Answer})
+    
+    const handleApproveSPL1 = async (spl_id: string, val: string) => {
+        try {
+            formSPLApproval1.answer.spl_id = spl_id
+            formSPLApproval1.answer.status = val
+            const req = await axios.post('/api/lembur/spl/approve1', formSPLApproval1.answer)
+            const res = await req.data
+            tableSPLApproval1.invalidate()
+            tableSPLApproval2.invalidate()
+            tableSPL.invalidate()
+            formSPLApproval1.error = ""
+            formSPLApproval1.success = res.message
+        } catch (error: any) {
+            formSPLApproval1.error = error.response.data.message
+            formSPLApproval1.success = ""
+        }
+    }
+    
+    // SPL approval 2
+    let tableSPLApproval2 = $state(new TableHandler([], {rowsPerPage}))
+    let tableApproval2Search = tableSPLApproval2.createSearch()
+    
+    const formSPLApproval2Answer = $state({
+        answer:{
+            spl_id: "id",
+            status:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    })
+    
+    let formSPLApproval2 = $state({...formSPLApproval2Answer})
+    
+    const handleApproveSPL2 = async (spl_id: string, val: string) => {
+        try {
+            formSPLApproval2.answer.spl_id = spl_id
+            formSPLApproval2.answer.status = val
+            const req = await axios.post('/api/lembur/spl/approve2', formSPLApproval2.answer)
+            const res = await req.data
+            tableSPLApproval2.invalidate()
+            tableSPL.invalidate()
+            formSPLApproval2.error = ""
+            formSPLApproval2.success = res.message
+        } catch (error: any) {
+            formSPLApproval2.error = error.response.data.message
+            formSPLApproval2.success = ""
+        }
+    }
+    
     // SRL
     let tableSRL = $state(new TableHandler([], {rowsPerPage}))
     let tableSRLSearch = tableSRL.createSearch()
@@ -196,9 +262,11 @@
         answer:{
             srl_id: "id",
             spl_id: "",
-            payroll: () => user?.payroll,
+            get payroll() {return user?.payroll},
             real_start: "",
             real_end:"",
+            approval1:"",
+            approval2:"",
             overtime:0,
             srl_detail:[{description:"", status: ""}],
         },
@@ -431,7 +499,7 @@
         })
         return res
     }
-    
+
     const getUserByDept = $derived.by(() => {
         return async () =>{
             const req = await fetch(`/api/data?type=user_by_dept&val=${user.department}`)
@@ -439,7 +507,7 @@
             return res
         }
     })
-
+    
     const getSPLAll = (id:string) =>{
         const {description, overtime, est_start, est_end} = formSRLDetailAnswer.find((v:any) => v.spl_id == id) as any
         formSRL.answer.real_start = formatTanggal(est_start)
@@ -469,6 +537,28 @@
             }
         })
 
+        tableSPLApproval1.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/spl/approve1?${getParams(state)}&payroll=${user.payroll}`)
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+
+        tableSPLApproval2.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/spl/approve2?${getParams(state)}&payroll=${user.payroll}`)
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+
         tableSRL.load(async (state:State) => {
             try {
                 const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
@@ -484,6 +574,8 @@
     
     setTimeout(()=>{
         tableSPL.invalidate()
+        tableSPLApproval1.invalidate()
+        tableSPLApproval2.invalidate()
         tableSRL.invalidate()
     }, 1000)
 </script>
@@ -500,7 +592,7 @@
             </div>
         </TabItem>
         <TabItem open title="Surat Perintah Lembur">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
                 {#if formSPL.error}
                     {#each formSPL.error.split(';') as v}
                         <Alert dismissable>
@@ -538,6 +630,22 @@
                             
                             <MyInput type='datetime' title='Estimated Start' name="est_start" bind:value={formSPL.answer.est_start}/>
                             <MyInput type='datetime' title='Estimated End' name="est_end" bind:value={formSPL.answer.est_end}/>
+                            {#await getUserByDept() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Approval 1</Label>
+                                    <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval1} 
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                    />
+                                </div>
+                            {/await}
+                            {#await getUserByDept() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Approval 2</Label>
+                                    <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval2} 
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                    />
+                                </div>
+                            {/await}
                         </div>
 
                         <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
@@ -589,7 +697,10 @@
                             <ThSort table={tableSPL} field="purpose">Purpose</ThSort>
                             <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
                             <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
-                            <ThSort table={tableSPL} field="createdAt">Created At</ThSort>
+                            <ThSort table={tableSPL} field="approval1">Approval 1</ThSort>
+                            <ThSort table={tableSPL} field="status1">Status 1</ThSort>
+                            <ThSort table={tableSPL} field="approval2">Approval 2</ThSort>
+                            <ThSort table={tableSPL} field="status1">Status 2</ThSort>
                             {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
                                 <ThSort table={tableSPL} field="">#</ThSort>
                             {/if}
@@ -603,12 +714,15 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSPL.rows.length > 0}
                                     {#each tableSPL.rows as row}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
                                             <TableBodyCell>{row.purpose}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.createdAt)}</TableBodyCell>
+                                            <TableBodyCell>{row.approval1}</TableBodyCell>
+                                            <TableBodyCell>{row.status1}</TableBodyCell>
+                                            <TableBodyCell>{row.approval2}</TableBodyCell>
+                                            <TableBodyCell>{row.status2}</TableBodyCell>
                                             {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
                                                 <TableBodyCell>
                                                     {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
@@ -619,8 +733,8 @@
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>
@@ -640,6 +754,160 @@
                                 {/each}
                                 <MyButton onclick={()=> tableSPL.setPage('next')}><ChevronRight size={16} /></MyButton>
                                 <MyButton onclick={()=> tableSPL.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            </div>
+                        </div>
+                    {/if}
+                </Datatable>
+            </div>
+        </TabItem>
+        <TabItem title="Approval SPL 1">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                {#if formSPLApproval1.error}
+                    {#each formSPLApproval1.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formSPLApproval1.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formSPLApproval1.success}</span>
+                    </Alert>
+                {/if}
+
+                <div class="flex gap-2">
+                    <MyButton onclick={()=> tableSPLApproval1.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
+                
+                <Datatable table={tableSPLApproval1}>
+                    <Table>
+                        <TableHead>
+                            <ThSort table={tableSPLApproval1} field="purpose">Purpose</ThSort>
+                            <ThSort table={tableSPLApproval1} field="est_start">Est Start</ThSort>
+                            <ThSort table={tableSPLApproval1} field="est_end">Est End</ThSort>
+                            <ThSort table={tableSPLApproval1} field="approval1">Approval 1</ThSort>
+                            <ThSort table={tableSPLApproval1} field="">#</ThSort>
+                        </TableHead>
+
+                        {#if tableSPLApproval1.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableSPLApproval1.rows.length > 0}
+                                    {#each tableSPLApproval1.rows as row}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell>{row.purpose}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                            <TableBodyCell>{row.approval1}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {#if row.status1 == "Waiting"}
+                                                    <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                    <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                {/if}
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                    </TableBodyRow>
+                                {/if}
+                            </TableBody>
+                        {/if}
+                    </Table>
+                    {#if tableSPLApproval1.rows.length > 0}
+                        <div class="flex justify-between items-center gap-2 mt-3">
+                            <p class='text-textdark self-end text-[.9rem]'>
+                                Showing {tableSPLApproval1.rowCount.start} to {tableSPLApproval1.rowCount.end} of {tableSPLApproval1.rowCount.total} rows
+                                <Badge color="dark">Page {tableSPLApproval1.currentPage}</Badge>
+                            </p>
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableSPLApproval1.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                <MyButton onclick={()=> tableSPLApproval1.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                {#each tableSPLApproval1.pages as page}
+                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPLApproval1.setPage(page)} type="button">{page}</MyButton>
+                                {/each}
+                                <MyButton onclick={()=> tableSPLApproval1.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                <MyButton onclick={()=> tableSPLApproval1.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            </div>
+                        </div>
+                    {/if}
+                </Datatable>
+            </div>
+        </TabItem>
+        <TabItem title="Approval SPL 2">
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                {#if formSPLApproval2.error}
+                    {#each formSPLApproval2.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formSPLApproval2.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formSPLApproval2.success}</span>
+                    </Alert>
+                {/if}
+
+                <div class="flex gap-2">
+                    <MyButton onclick={()=> tableSPLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
+                </div>
+                
+                <Datatable table={tableSPLApproval2}>
+                    <Table>
+                        <TableHead>
+                            <ThSort table={tableSPLApproval2} field="purpose">Purpose</ThSort>
+                            <ThSort table={tableSPLApproval2} field="est_start">Est Start</ThSort>
+                            <ThSort table={tableSPLApproval2} field="est_end">Est End</ThSort>
+                            <ThSort table={tableSPLApproval2} field="approval2">Approval 2</ThSort>
+                            <ThSort table={tableSPLApproval2} field="">#</ThSort>
+                        </TableHead>
+
+                        {#if tableSPLApproval2.isLoading}
+                            <div class="flex p-4 items-center">
+                                <MyLoading message="Loading data"/>
+                            </div>
+                        {:else}
+                            <TableBody tableBodyClass="divide-y">
+                                {#if tableSPLApproval2.rows.length > 0}
+                                    {#each tableSPLApproval2.rows as row}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell>{row.purpose}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
+                                            <TableBodyCell>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                            <TableBodyCell>{row.approval2}</TableBodyCell>
+                                            <TableBodyCell>
+                                                {#if row.status2 == "Waiting"}
+                                                    <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                    <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                {/if}
+                                            </TableBodyCell>
+                                        </TableBodyRow>
+                                    {/each}
+                                {:else}
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                    </TableBodyRow>
+                                {/if}
+                            </TableBody>
+                        {/if}
+                    </Table>
+                    {#if tableSPLApproval2.rows.length > 0}
+                        <div class="flex justify-between items-center gap-2 mt-3">
+                            <p class='text-textdark self-end text-[.9rem]'>
+                                Showing {tableSPLApproval2.rowCount.start} to {tableSPLApproval2.rowCount.end} of {tableSPLApproval2.rowCount.total} rows
+                                <Badge color="dark">Page {tableSPLApproval2.currentPage}</Badge>
+                            </p>
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableSPLApproval2.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                <MyButton onclick={()=> tableSPLApproval2.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                {#each tableSPLApproval2.pages as page}
+                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPLApproval2.setPage(page)} type="button">{page}</MyButton>
+                                {/each}
+                                <MyButton onclick={()=> tableSPLApproval2.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                <MyButton onclick={()=> tableSPLApproval2.setPage('last')}><ChevronLast size={16} /></MyButton>
                             </div>
                         </div>
                     {/if}
@@ -695,6 +963,22 @@
                             {#if formSRL.answer.spl_id}
                                 <MyInput type='datetime' disabled title='Real Start' name="real_start" bind:value={formSRL.answer.real_start}/>
                                 <MyInput type='datetime' disabled title='Real End' name="real_end" bind:value={formSRL.answer.real_end}/>
+                                {#await getUserByDept() then val}
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Approval 1</Label>
+                                        <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.approval1} 
+                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                        />
+                                    </div>
+                                {/await}
+                                {#await getUserByDept() then val}
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Approval 2</Label>
+                                        <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.approval2} 
+                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                        />
+                                    </div>
+                                {/await}
                                 <MyInput type='text' title='Overtime (hours)' name="overtime" bind:value={formSRL.answer.overtime} disabled/>
                             {/if}
                         </div>
@@ -762,7 +1046,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSRL.rows.length > 0}
                                     {#each tableSRL.rows as row}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.srl_id.replace(/\_/g, '/')}</TableBodyCell>
                                             <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
@@ -782,8 +1066,8 @@
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>
