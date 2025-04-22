@@ -11,7 +11,8 @@ export async function GET({params}){
                 payroll:true,
                 real_start:true,
                 real_end:true,
-                status:true,
+                approval1:true,
+                approval2:true,
                 createdAt:true,
                 srl_detail:{
                     select:{
@@ -21,7 +22,9 @@ export async function GET({params}){
                 }
             },
             where:{
-                srl_id: id
+                srl_id: id,
+                status1: "Waiting",
+                status2: "Waiting",
             }
         }) 
         

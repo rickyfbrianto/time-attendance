@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -7,19 +7,18 @@ export async function GET({url}){
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
     const sort = url.searchParams.get('_sort') ?? "srl_id"
     const order = url.searchParams.get('_order') ?? "asc"
-    const search = url.searchParams.get('_search') ?? ""
     
     const payroll = url.searchParams.get('payroll')
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            select s.spl_id, s.purpose, s.est_start, s.est_end, approval1.name as approval1, s.status1 from spl as s
+            select s.srl_id, s.payroll, s.real_start, s.real_end, approval1.name as approval1, s.status1 from srl as s
             LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
             WHERE (s.approval1 = ? AND s.status1 = 'Waiting' AND s.status2 = 'Waiting')
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             payroll, limit, offset)
 
-        const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM spl as s
+        const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM srl as s
             LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
             WHERE (s.approval1 = ? AND s.status1 = 'Waiting' AND s.status2 = 'Waiting')`,
             payroll) as {count:number}[]
@@ -33,17 +32,20 @@ export async function POST({ request }) {
         const data = await request.json();
         
         const status = await prisma.$transaction(async tx =>{
-            await tx.spl.update({
+            await tx.srl.update({
                 data:{ status1: data.status },
-                where: { spl_id: data.spl_id }
+                where: { 
+                    srl_id: data.srl_id,
+                    status1: "Waiting",
+                    status2: "Waiting",
+                }
             })
 
-            return {message:`SPL Approval 1 successfully ${data.status}`}
+            return {message:`SRL Approval 1 successfully ${data.status}`}
         })
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

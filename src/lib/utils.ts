@@ -128,16 +128,16 @@ export function prismaErrorHandler(error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         switch (error.code) {
             case 'P2002':
-                return 'Data sudah ada (duplikat)'
+                return "Data is already exist (duplicate)"
             case 'P2025':
-                return 'Data tidak ditemukan'
+                return "No Data Found"
             case 'P2003':
-                return 'Foreign key tidak valid'
+                return "Foreign key not valid"
             default:
-                return  'Kesalahan database'
+                return "Database failure"
+            }
         }
-    }
-    return 'Terjadi kesalahan server'
+    return `There is error cause (${error.message || "Server error"})`
 }
 
 export function pecahArray(value : string, check:string){

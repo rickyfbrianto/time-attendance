@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({params}){
     const {id} = params
@@ -30,21 +30,11 @@ export async function GET({params}){
                 }
             },
         },
-        where:{spl_id:id},
+        where:{
+            spl_id:id,
+            status1: "Waiting",
+            status2: "Waiting",
+        },
     })
     return json(req)
-}
-
-export async function DELETE({params}){
-    try {
-        const {id} = params
-        const req = await prisma.spl.delete({
-            where:{
-                spl_id:id
-            }
-        })
-        return json({message:"Data successfully deleted"})
-    } catch (err) {
-        
-    }
 }

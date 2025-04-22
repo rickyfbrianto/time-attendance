@@ -493,87 +493,89 @@
                 </Datatable>
             </div>
         </TabItem>
-        <TabItem title="Approval Ijin">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formApprovalIjin.error}
-                    {#each formApprovalIjin.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
+        {#if userProfile.level > 1}
+            <TabItem title="Approval Ijin">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                    {#if formApprovalIjin.error}
+                        {#each formApprovalIjin.error.split(';') as v}
+                            <Alert dismissable>
+                                <span>{v}</span>
+                            </Alert>
+                        {/each}
+                    {:else if formApprovalIjin.success}
+                        <Alert border color="green" dismissable>
+                            <span>{formApprovalIjin.success}</span>
                         </Alert>
-                    {/each}
-                {:else if formApprovalIjin.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formApprovalIjin.success}</span>
-                    </Alert>
-                {/if}
-
-                {#if formApprovalIjin.loading}
-                    <MyLoading message="Get cuti data"/>
-                {/if}
-
-                <div class="flex gap-2">
-                    <MyButton onclick={()=> tableApprovalIjin.invalidate()}><RefreshCw size={16}/></MyButton>
-                </div>
-                
-                <Datatable table={tableApprovalIjin}>
-                    <Table>
-                        <TableHead>
-                            <ThSort table={tableApprovalIjin} field="name">Payroll</ThSort>
-                            <ThSort table={tableApprovalIjin} field="name">Name</ThSort>
-                            <ThSort table={tableApprovalIjin} field="date">Date</ThSort>
-                            <ThSort table={tableApprovalIjin} field="description">Reason</ThSort>
-                            <ThSort table={tableApprovalIjin} field="">#</ThSort>
-                        </TableHead>
-
-                        {#if tableApprovalIjin.isLoading}
-                            <div class="flex p-4 items-center">
-                                <MyLoading message="Loading data"/>
-                            </div>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
-                                {#if tableApprovalIjin.rows.length > 0}
-                                    {#each tableApprovalIjin.rows as row}
-                                        <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{row.payroll}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
-                                            <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if row.status !== "Approved"}
-                                                    <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
-                                                    <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
-                                                {/if}
-                                            </TableBodyCell>
-                                        </TableBodyRow>
-                                    {/each}
-                                {:else}
-                                    <TableBodyRow class='h-10'>
-                                        <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
-                                    </TableBodyRow>
-                                {/if}
-                            </TableBody>
-                        {/if}
-                    </Table>
-                    {#if tableApprovalIjin.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-textdark self-end text-[.9rem]'>
-                                Showing {tableApprovalIjin.rowCount.start} to {tableApprovalIjin.rowCount.end} of {tableApprovalIjin.rowCount.total} rows
-                                <Badge color="dark">Page {tableApprovalIjin.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableApprovalIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableApprovalIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableApprovalIjin.pages as page}
-                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalIjin.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableApprovalIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableApprovalIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
                     {/if}
-                </Datatable>
-            </div>
-        </TabItem>
+
+                    {#if formApprovalIjin.loading}
+                        <MyLoading message="Get cuti data"/>
+                    {/if}
+
+                    <div class="flex gap-2">
+                        <MyButton onclick={()=> tableApprovalIjin.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+                    
+                    <Datatable table={tableApprovalIjin}>
+                        <Table>
+                            <TableHead>
+                                <ThSort table={tableApprovalIjin} field="name">Payroll</ThSort>
+                                <ThSort table={tableApprovalIjin} field="name">Name</ThSort>
+                                <ThSort table={tableApprovalIjin} field="date">Date</ThSort>
+                                <ThSort table={tableApprovalIjin} field="description">Reason</ThSort>
+                                <ThSort table={tableApprovalIjin} field="">#</ThSort>
+                            </TableHead>
+
+                            {#if tableApprovalIjin.isLoading}
+                                <div class="flex p-4 items-center">
+                                    <MyLoading message="Loading data"/>
+                                </div>
+                            {:else}
+                                <TableBody tableBodyClass="divide-y">
+                                    {#if tableApprovalIjin.rows.length > 0}
+                                        {#each tableApprovalIjin.rows as row}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    {#if row.status !== "Approved"}
+                                                        <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                        <Button onclick={()=> handleApproveIjin(row.ijin_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                    {/if}
+                                                </TableBodyCell>
+                                            </TableBodyRow>
+                                        {/each}
+                                    {:else}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                        </TableBodyRow>
+                                    {/if}
+                                </TableBody>
+                            {/if}
+                        </Table>
+                        {#if tableApprovalIjin.rows.length > 0}
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-textdark self-end text-[.9rem]'>
+                                    Showing {tableApprovalIjin.rowCount.start} to {tableApprovalIjin.rowCount.end} of {tableApprovalIjin.rowCount.total} rows
+                                    <Badge color="dark">Page {tableApprovalIjin.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableApprovalIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableApprovalIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableApprovalIjin.pages as page}
+                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalIjin.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableApprovalIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableApprovalIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
+                            </div>
+                        {/if}
+                    </Datatable>
+                </div>
+            </TabItem>
+        {/if}
         {#if userProfile?.user_hrd}
             <TabItem title="List Ijin">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">

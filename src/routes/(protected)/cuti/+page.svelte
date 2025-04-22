@@ -476,87 +476,89 @@
                 </Datatable>
             </div>
         </TabItem>
-        <TabItem title="Approval Cuti">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formApprovalCuti.error}
-                    {#each formApprovalCuti.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
+        {#if userProfile.level > 1}
+            <TabItem title="Approval Cuti">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                    {#if formApprovalCuti.error}
+                        {#each formApprovalCuti.error.split(';') as v}
+                            <Alert dismissable>
+                                <span>{v}</span>
+                            </Alert>
+                        {/each}
+                    {:else if formApprovalCuti.success}
+                        <Alert border color="green" dismissable>
+                            <span>{formApprovalCuti.success}</span>
                         </Alert>
-                    {/each}
-                {:else if formApprovalCuti.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formApprovalCuti.success}</span>
-                    </Alert>
-                {/if}
-
-                {#if formApprovalCuti.loading}
-                    <MyLoading message="Get cuti data"/>
-                {/if}
-
-                <div class="flex gap-2">
-                    <MyButton onclick={()=>tableApprovalCuti.invalidate()}><RefreshCw size={16}/></MyButton>
-                </div>
-                
-                <Datatable table={tableApprovalCuti}>
-                    <Table>
-                        <TableHead>
-                            <ThSort table={tableApprovalCuti} field="name">Payroll</ThSort>
-                            <ThSort table={tableApprovalCuti} field="name">Name</ThSort>
-                            <ThSort table={tableApprovalCuti} field="date">Date</ThSort>
-                            <ThSort table={tableApprovalCuti} field="description">Reason</ThSort>
-                            <ThSort table={tableApprovalCuti} field="">#</ThSort>
-                        </TableHead>
-
-                        {#if tableApprovalCuti.isLoading}
-                            <div class="flex p-4 items-center">
-                                <MyLoading message="Loading data"/>
-                            </div>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
-                                {#if tableApprovalCuti.rows.length > 0}
-                                    {#each tableApprovalCuti.rows as row}
-                                        <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{row.payroll}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
-                                            <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if row.status !== "Approved"}
-                                                    <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
-                                                    <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
-                                                {/if}
-                                            </TableBodyCell>
-                                        </TableBodyRow>
-                                    {/each}
-                                {:else}
-                                    <TableBodyRow class='h-10'>
-                                        <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
-                                    </TableBodyRow>
-                                {/if}
-                            </TableBody>
-                        {/if}
-                    </Table>
-                    {#if tableApprovalCuti.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-textdark self-end text-[.9rem]'>
-                                Showing {tableApprovalCuti.rowCount.start} to {tableApprovalCuti.rowCount.end} of {tableApprovalCuti.rowCount.total} rows
-                                <Badge color="dark">Page {tableApprovalCuti.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableApprovalCuti.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableApprovalCuti.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableApprovalCuti.pages as page}
-                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalCuti.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableApprovalCuti.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableApprovalCuti.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
                     {/if}
-                </Datatable>
-            </div>
-        </TabItem>
+
+                    {#if formApprovalCuti.loading}
+                        <MyLoading message="Get cuti data"/>
+                    {/if}
+
+                    <div class="flex gap-2">
+                        <MyButton onclick={()=>tableApprovalCuti.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+                    
+                    <Datatable table={tableApprovalCuti}>
+                        <Table>
+                            <TableHead>
+                                <ThSort table={tableApprovalCuti} field="name">Payroll</ThSort>
+                                <ThSort table={tableApprovalCuti} field="name">Name</ThSort>
+                                <ThSort table={tableApprovalCuti} field="date">Date</ThSort>
+                                <ThSort table={tableApprovalCuti} field="description">Reason</ThSort>
+                                <ThSort table={tableApprovalCuti} field="">#</ThSort>
+                            </TableHead>
+
+                            {#if tableApprovalCuti.isLoading}
+                                <div class="flex p-4 items-center">
+                                    <MyLoading message="Loading data"/>
+                                </div>
+                            {:else}
+                                <TableBody tableBodyClass="divide-y">
+                                    {#if tableApprovalCuti.rows.length > 0}
+                                        {#each tableApprovalCuti.rows as row}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    {#if row.status !== "Approved"}
+                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                    {/if}
+                                                </TableBodyCell>
+                                            </TableBodyRow>
+                                        {/each}
+                                    {:else}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                        </TableBodyRow>
+                                    {/if}
+                                </TableBody>
+                            {/if}
+                        </Table>
+                        {#if tableApprovalCuti.rows.length > 0}
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-textdark self-end text-[.9rem]'>
+                                    Showing {tableApprovalCuti.rowCount.start} to {tableApprovalCuti.rowCount.end} of {tableApprovalCuti.rowCount.total} rows
+                                    <Badge color="dark">Page {tableApprovalCuti.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableApprovalCuti.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableApprovalCuti.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableApprovalCuti.pages as page}
+                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalCuti.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableApprovalCuti.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableApprovalCuti.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
+                            </div>
+                        {/if}
+                    </Datatable>
+                </div>
+            </TabItem>
+        {/if}
         {#if userProfile?.user_hrd}
             <TabItem title="List Cuti">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">

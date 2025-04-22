@@ -8,43 +8,44 @@ datasource db {
 }
 
 model employee {
-  payroll                                         String        @id @db.VarChar(8)
-  user_id_machine                                 String        @unique(map: "user_id_mesin") @db.VarChar(6)
-  profile_id                                      String?       @db.VarChar(50)
-  email                                           String        @unique(map: "Employee_Email_key") @db.VarChar(100)
-  name                                            String        @db.VarChar(250)
-  password                                        String        @db.VarChar(250)
-  position                                        String        @db.VarChar(100)
-  department                                      String?       @db.VarChar(6)
-  location                                        String        @db.VarChar(100)
-  phone                                           String        @db.VarChar(13)
-  workhour                                        Int           @default(8) @db.SmallInt
-  approver                                        String?       @db.VarChar(8)
-  substitute                                      String?       @db.VarChar(8)
-  join_date                                       DateTime      @default(now()) @db.Date
-  signature                                       String        @db.VarChar(250)
-  attendance_attendance_createdByToemployee       attendance[]  @relation("attendance_createdByToemployee")
-  attendance_attendance_user_id_machineToemployee attendance[]  @relation("attendance_user_id_machineToemployee")
+  payroll                                         String          @id @db.VarChar(8)
+  user_id_machine                                 String          @unique(map: "user_id_mesin") @db.VarChar(6)
+  profile_id                                      String?         @db.VarChar(50)
+  email                                           String          @unique(map: "Employee_Email_key") @db.VarChar(100)
+  name                                            String          @db.VarChar(250)
+  password                                        String          @db.VarChar(250)
+  position                                        String          @db.VarChar(100)
+  department                                      String?         @db.VarChar(6)
+  location                                        String          @db.VarChar(100)
+  phone                                           String          @db.VarChar(13)
+  workhour                                        Int             @default(8) @db.SmallInt
+  approver                                        String?         @db.VarChar(8)
+  substitute                                      String?         @db.VarChar(8)
+  join_date                                       DateTime        @default(now()) @db.Date
+  signature                                       String          @db.VarChar(250)
+  status                                          employee_status @default(Aktif)
+  attendance_attendance_createdByToemployee       attendance[]    @relation("attendance_createdByToemployee")
+  attendance_attendance_user_id_machineToemployee attendance[]    @relation("attendance_user_id_machineToemployee")
   check_io                                        check_io[]
-  cuti_cuti_approvalToemployee                    cuti[]        @relation("cuti_approvalToemployee")
+  cuti_cuti_approvalToemployee                    cuti[]          @relation("cuti_approvalToemployee")
   cuti                                            cuti[]
-  profile                                         profile?      @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
-  employee_employee_approverToemployee            employee?     @relation("employee_approverToemployee", fields: [approver], references: [payroll])
-  other_employee_employee_approverToemployee      employee[]    @relation("employee_approverToemployee")
-  dept                                            dept?         @relation(fields: [department], references: [dept_code])
-  employee_employee_substituteToemployee          employee?     @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
-  other_employee_employee_substituteToemployee    employee[]    @relation("employee_substituteToemployee")
-  ijin_ijin_approvalToemployee                    ijin[]        @relation("ijin_approvalToemployee")
+  profile                                         profile?        @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  employee_employee_approverToemployee            employee?       @relation("employee_approverToemployee", fields: [approver], references: [payroll])
+  other_employee_employee_approverToemployee      employee[]      @relation("employee_approverToemployee")
+  dept                                            dept?           @relation(fields: [department], references: [dept_code])
+  employee_employee_substituteToemployee          employee?       @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
+  other_employee_employee_substituteToemployee    employee[]      @relation("employee_substituteToemployee")
+  ijin_ijin_approvalToemployee                    ijin[]          @relation("ijin_approvalToemployee")
   ijin                                            ijin[]
-  skpd_skpd_createdByToemployee                   skpd[]        @relation("skpd_createdByToemployee")
-  skpd_skpd_payrollToemployee                     skpd[]        @relation("skpd_payrollToemployee")
-  spl_spl_approval1Toemployee                     spl[]         @relation("spl_approval1Toemployee")
-  spl_spl_approval2Toemployee                     spl[]         @relation("spl_approval2Toemployee")
+  skpd_skpd_createdByToemployee                   skpd[]          @relation("skpd_createdByToemployee")
+  skpd_skpd_payrollToemployee                     skpd[]          @relation("skpd_payrollToemployee")
+  spl_spl_approval1Toemployee                     spl[]           @relation("spl_approval1Toemployee")
+  spl_spl_approval2Toemployee                     spl[]           @relation("spl_approval2Toemployee")
   spl_detail                                      spl_detail[]
   sppd                                            sppd[]
   sppd_detail                                     sppd_detail[]
-  srl_srl_approval1Toemployee                     srl[]         @relation("srl_approval1Toemployee")
-  srl_srl_approval2Toemployee                     srl[]         @relation("srl_approval2Toemployee")
+  srl_srl_approval1Toemployee                     srl[]           @relation("srl_approval1Toemployee")
+  srl_srl_approval2Toemployee                     srl[]           @relation("srl_approval2Toemployee")
   srl                                             srl[]
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
@@ -70,6 +71,8 @@ model profile {
   access_calendar   String     @db.VarChar(4)
   access_user       String     @db.VarChar(4)
   access_profile    String     @db.VarChar(4)
+  access_dept       String     @db.VarChar(4)
+  access_setting    String     @db.VarChar(4)
   employee          employee[]
 }
 
@@ -132,9 +135,9 @@ model spl {
   purpose                          String       @db.VarChar(255)
   est_start                        DateTime     @db.DateTime(0)
   est_end                          DateTime     @db.DateTime(0)
-  status1                          spl_status1
+  status1                          spl_status1  @default(Waiting)
   approval1                        String?      @db.VarChar(8)
-  status2                          spl_status2
+  status2                          spl_status2  @default(Waiting)
   approval2                        String?      @db.VarChar(8)
   createdAt                        DateTime     @default(now()) @db.DateTime(0)
   employee_spl_approval1Toemployee employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
@@ -179,9 +182,9 @@ model srl {
   payroll                          String?      @db.VarChar(8)
   real_start                       DateTime     @db.DateTime(0)
   real_end                         DateTime     @db.DateTime(0)
-  status1                          srl_status1
+  status1                          srl_status1  @default(Waiting)
   approval1                        String?      @db.VarChar(8)
-  status2                          srl_status2
+  status2                          srl_status2  @default(Waiting)
   approval2                        String?      @db.VarChar(8)
   createdAt                        DateTime     @db.DateTime(0)
   employee_srl_approval1Toemployee employee?    @relation("srl_approval1Toemployee", fields: [approval1], references: [payroll])
@@ -347,4 +350,9 @@ enum spl_status2 {
   Reject
   Approved
   Cancelled
+}
+
+enum employee_status {
+  Aktif
+  Nonaktif
 }

@@ -1,6 +1,6 @@
 import { error, json } from "@sveltejs/kit";
 import { v4 as uuid4 } from "uuid";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 import { format } from "date-fns";
 
 export async function GET({url}){
@@ -13,18 +13,23 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {        
         const items = await tx.$queryRawUnsafe(`
-            SELECT srl_id, spl_id, srl.payroll, real_start, real_end, e.name FROM srl
+            SELECT srl_id, spl_id, srl.payroll, real_start, real_end, e.name,
+            approval1.name as approval1, status1, approval2.name as approval2, status2 FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
+            LEFT JOIN employee as approval1 ON approval1.payroll = srl.approval1
+            LEFT JOIN employee as approval2 ON approval2.payroll = srl.approval2
             WHERE srl_id LIKE ? OR spl_id LIKE ? OR srl.payroll LIKE ? OR e.name LIKE ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,limit, offset)
 
-        const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as COUNT FROM srl
+        const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as COUNT FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
+            LEFT JOIN employee as approval1 ON approval1.payroll = srl.approval1
+            LEFT JOIN employee as approval2 ON approval2.payroll = srl.approval2
             WHERE srl_id LIKE ? OR spl_id LIKE ? OR srl.payroll LIKE ? OR e.name LIKE ?`,
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`)
+            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
                     
-        return {items, totalItems: Number(totalItems[0].count)}
+        return {items, totalItems: Number(count)}
     })
 
     return json(status)
@@ -75,18 +80,12 @@ export async function POST({ request,  }) {
 
                 return { message: "Data successfully saved" }
             }else{
-                await tx.$queryRawUnsafe(`
-                    UPDATE SRL SET real_start=?,real_end=?,approval1=?,approval2=? WHERE srl_id=?`,
-                    data.real_start, data.real_end, data.approval1, data.approval2, data.srl_id
+                const updateSRL = await tx.$executeRawUnsafe(`
+                    UPDATE SRL SET real_start=?,real_end=?,approval1=?,approval2=? WHERE srl_id=? AND status1 = ? AND status2 = ?`,
+                    data.real_start, data.real_end, data.approval1, data.approval2, data.srl_id, 'Waiting', 'Waiting'
                 )
 
-                // await tx.srl.update({
-                //     data:{
-                //         real_start: new Date(data.real_start + " UTC"),
-                //         real_end: new Date(data.real_end + " UTC"),
-                //     },
-                //     where:{ srl_id: data.srl_id }
-                // })
+                if(!updateSRL) throw new Error("Cant update SRL, because status is changed")
 
                 await tx.srl_detail.deleteMany({
                     where : { srl_id: data.srl_id }
@@ -106,7 +105,6 @@ export async function POST({ request,  }) {
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

@@ -67,8 +67,8 @@ export async function POST({ request,  }) {
                 newID = `${lastID}-SPL${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
                 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO SPL (spl_id,purpose,est_start,est_end,approval1,approval2,createdBy) VALUES (?,?,?,?,?)`,
-                    newID, data.purpose, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.createdBy, data.approval1, data.approval2
+                    INSERT INTO SPL (spl_id,purpose,est_start,est_end,approval1,approval2, createdAt) VALUES (?,?,?,?,?,?, now())`,
+                    newID, data.purpose, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.approval1, data.approval2
                 )
 
                 await tx.spl_detail.createMany({
@@ -78,11 +78,15 @@ export async function POST({ request,  }) {
                         payroll, step, description
                     }))
                 })
+
+                return { message: "Data successfully saved" }
             }else{
-                await tx.$queryRawUnsafe(`
-                    UPDATE SPL SET purpose=?,est_start=?,est_end=?,approval1=?,approval2=? WHERE spl_id=?`,
-                    data.purpose, data.est_start, data.est_end, data.approval1, data.approval2, data.spl_id
+                const updateSPL = await tx.$executeRawUnsafe(`
+                    UPDATE SPL SET purpose=?,est_start=?,est_end=?,approval1=?,approval2=? WHERE spl_id=? AND status1 = ? AND status2 = ?`,
+                    data.purpose, data.est_start, data.est_end, data.approval1, data.approval2, data.spl_id, 'Waiting', 'Waiting'
                 )
+
+                if(!updateSPL) throw new Error("Cant update SPL, because status is changed")
 
                 await tx.spl_detail.deleteMany({
                     where : { spl_id: data.spl_id }
@@ -95,13 +99,13 @@ export async function POST({ request,  }) {
                         payroll, step, description
                     }))
                 })
+
+                return { message: "Data successfully updated" }
             }
-            return { message: "Data successfully saved" }
         })
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }
