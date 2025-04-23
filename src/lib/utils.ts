@@ -52,24 +52,6 @@ export function handleLoginRedirect (e : RequestEvent, pesan: string = "You need
     return '/login?redirectTo=' + encodeURIComponent(redirectTo) + "&pesan=" + encodeURIComponent(pesan)
 }
 
-export function checkFieldKosong(data:any){
-    let isError = false
-    let errors : PesanProps[] = []
-    let errorCount = 0
-    Object.entries(data).forEach(([key, value]) => {
-        if (
-            (value === null) ||
-            (typeof value == "string" && !value.trim()) ||
-            (Array.isArray(value) && value.length == 0 && value.every(val => val !== ""))
-        ){
-            errors.push({"message":"Ada yang kosong", id: key})
-            isError = true
-            errorCount += 1
-        }
-    })
-    return {isError, errors, errorCount}
-}
-
 export function isEmpty(obj: any): boolean {
     for(let key in obj){
         //if the value is 'object'
@@ -150,9 +132,4 @@ export function getPeriode ({start_periode, end_periode, date}:{start_periode:nu
     const newEnd = (start_periode < end_periode) ? startOfDay(setDate(date, end_periode)) : startOfDay(setDate(date, end_periode))
 
     return {start_periode: format(newStart, "yyyy-MM-dd"), end_periode: format(newEnd, "yyyy-MM-dd")}
-}
-
-export const safeDate = (val: string) =>{
-    const temp = (val == 'null' || val == '') ? null : val
-    return temp
 }

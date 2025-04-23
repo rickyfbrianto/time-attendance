@@ -1,13 +1,13 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal } from 'flowbite-svelte';
-    import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
+    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
 	import { formatTanggal, pecahArray } from '@lib/utils';
-    import { differenceInHours, format, getMonth, getYear } from "date-fns";
+    import { addMonths, differenceInHours, format, getYear, isBefore, startOfDay, subMonths } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
@@ -20,6 +20,12 @@
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     let periode = $derived(data.periode)
+
+    const sekarang = format(startOfDay(new Date()), "yyyy-MM-dd")
+    let temp1 = new Date(Number(format(sekarang, "yyyy")), Number(format(sekarang, "MM")) - 1, periode?.start_periode)
+    let temp2 = new Date(Number(format(sekarang, "yyyy")), Number(format(sekarang, "MM")) - 1, periode?.end_periode)
+    const periode1 = isBefore(sekarang, temp1) ? format(subMonths(temp1, 1), "yyyy-MM-dd") : format(temp1, "yyyy-MM-dd")
+    const periode2 = isBefore(sekarang, temp1) ? format(temp2, "yyyy-MM-dd") : format(addMonths(temp2, 1), "yyyy-MM-dd")
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
         
@@ -39,14 +45,13 @@
     const formAttendanceAnswer = {
         answer: {
             attendance_id: "id",
-            // user_id_machine: "",
-            user_id_machine: "707",
+            user_id_machine: "",
             date:"",
-            check_in: "2025-04-02",
-            check_out: "2025-04-08",
+            check_in: "",
+            check_out: "",
             check_in2: "",
             check_out2: "",
-            type: "Sakit",
+            type: "",
             ijin_info: "",
             description: "",
             attachment: [],
@@ -117,6 +122,7 @@
                 formAttendance.answer.check_out = formatTanggal(res.check_out)
                 formAttendance.answer.check_in2 = formatTanggal(res.check_in2)
                 formAttendance.answer.check_out2 = formatTanggal(res.check_out2)
+                formAttendance.answer.createdBy = user?.payroll
             }, 100)
             formAttendance.answer.attachment = []
             formAttendance.edit = true
@@ -230,9 +236,12 @@
     }
     
     $effect(()=>{
+    })
+    
+    $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll}&start_date=${periode1}&end_date=${periode2}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -242,17 +251,19 @@
             }
         })
 
-        tableAttendanceDept.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendance.dept || ""}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if (userProfile.level > 1){
+            tableAttendanceDept.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendance.dept || ""}&start_date=${periode1}&end_date=${periode2}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
 
         if(userProfile.user_hrd){
             tableListAttendance.load(async (state:State) =>{
@@ -280,26 +291,13 @@
             }
         })
     })
-
-    $effect(()=>{
-        if(formAttendance.payroll){
-            tableAttendance.invalidate()
-            // tableAttendanceDept.invalidate()
-            if(userProfile.user_hrd){
-                tableListAttendance.invalidate()
-            }
-            tableLogAttendance.invalidate()
-        } else {
-            formAttendance.payroll = user?.payroll
-        }
-    })
     
     setTimeout(()=>{
         tableAttendance.invalidate()
-        tableAttendanceDept.invalidate()
-        if(userProfile.user_hrd){
+        if (userProfile.level > 1)
+            tableAttendanceDept.invalidate()
+        if(userProfile.user_hrd)
             tableListAttendance.invalidate()
-        }
         tableLogAttendance.invalidate()
     }, 1000)
 
@@ -335,9 +333,12 @@
                             <span>{format(new Date(), "dd-MM-yyyy")}</span>
                         </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-center">
                         <span>Periode</span>
-                        <span class="text-[.9rem] italic">{periode?.start_periode} s/d {periode?.end_periode}</span>
+                        <div class="flex flex-col gap-2">
+                            <Badge color='indigo'>{periode1}</Badge>
+                            <Badge color='indigo'>{periode2}</Badge>
+                        </div>
                     </div>
                 </div>
                 
@@ -365,42 +366,38 @@
         {/await}
     {/if}
     
-    <div class="flex flex-col items-start gap-2 p-4 border-slate-300 border rounded-lg">
-        {#if formAttendance.error}
-            {#each formAttendance.error.split(';') as v}
-                <Alert dismissable>
-                    <span>{v}</span>
+    <div class="flex flex-col gap-3 p-4 border-slate-300 border rounded-lg">
+        {#if !formAttendance.modal}
+            {#if formAttendance.error}
+                {#each formAttendance.error.split(';') as v}
+                    <Alert dismissable>
+                        <span>{v}</span>
+                    </Alert>
+                {/each}
+            {:else if formAttendance.success}
+                <Alert border color="green" dismissable>
+                    <span>{formAttendance.success}</span>
                 </Alert>
-            {/each}
-        {:else if formAttendance.success}
-            <Alert border color="green" dismissable>
-                <span>{formAttendance.success}</span>
-            </Alert>
+            {/if}
         {/if}
 
+        <!-- Tombol Add -->
         <div class="flex gap-4 items-center w-full">
-            <!-- Tombol Add -->
             {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C") && (userProfile?.user_hrd || userProfile?.level > 1)}
                 <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
             {/if}
-            <!-- {#if userProfile.user_hrd}
-                <div class="flex flex-1 gap-2">
-                    {#await getDept()}
-                        <MyLoading message="Loading data"/>
-                    {:then val}
-                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} 
-                            options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
-                    {/await}
-                </div>                
-            {/if} -->
-
             {#if userProfile.user_hrd || userProfile.level > 1}
                 <div class="flex flex-1 gap-2">
                     {#await getUser(formAttendance.dept)}
                         <MyLoading message="Loading data"/>
                     {:then val}
                         <Svelecte name='payroll' required searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
-                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}/>
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                            onChange={() => {
+                                tableAttendance.invalidate()
+                                tableAttendanceDept.invalidate()
+                                tableLogAttendance.invalidate()
+                            }}/>
                     {/await}
                 </div>                
             {/if}
@@ -783,7 +780,7 @@
                     </div>
                 </TabItem>
             {/if}
-            <TabItem open title="Attendance Log">
+            <TabItem title="Attendance Log">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -807,19 +804,18 @@
                             </select>
                             <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataBulan as {title, value}}
-                                    <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
+                                    <option value={value}>{title} {value.toString() == format(periode1, "M") ? "Now" : null}</option>
                                 {/each}
                             </select>
                         </div>
                     </div>
+                    {Number(format(periode1, "M")) - 1}
                     
                     <Datatable table={tableLogAttendance}>
                         <Table>
                             <TableHead>
-                                {#if userProfile.user_hrd}
-                                    <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
-                                    <ThSort table={tableLogAttendance} field="name">Name</ThSort>
-                                {/if}
+                                <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
+                                <ThSort table={tableLogAttendance} field="name">Name</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Day</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Date</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Clock In</ThSort>
@@ -838,10 +834,8 @@
                                     {#if tableLogAttendance.rows.length > 0}
                                         {#each tableLogAttendance.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                {#if userProfile.user_hrd}
-                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
-                                                {/if}
+                                                <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
@@ -915,6 +909,20 @@
 
     <Modal bind:open={formAttendance.modal} size={"xl"} classBody="overflow-visible">
         <div class="flex flex-col mt-7 p-4 gap-4 border border-slate-400 rounded-lg">
+            {#if formAttendance.modal}
+                {#if formAttendance.error}
+                    {#each formAttendance.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formAttendance.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formAttendance.success}</span>
+                    </Alert>
+                {/if}
+            {/if}
+            
             <div class="flex gap-2">
                 {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
                     <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>
