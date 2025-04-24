@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { formatTanggal, formatTanggalISO, } from "@lib/utils";
+import { formatTanggal, formatTanggalISO, prismaErrorHandler, } from "@lib/utils";
 import { prisma } from '@lib/utils.js'
 import { eachDayOfInterval, format, formatISO, getDay, getYear } from "date-fns";
 import { v4 as uuid4 } from "uuid";
@@ -81,17 +81,18 @@ export async function POST({ request }) {
                 
                 return { message: "Data successfully saved" }
             }else{
-                await tx.$queryRawUnsafe(`
+                const updateCuti = await tx.$executeRawUnsafe(`
                     UPDATE cuti SET date=?,description=?,type=? WHERE cuti_id=?`,
                 data.date,data.description,data.type,data.cuti_id)
 
+                if(!updateCuti) throw new Error("Cant update SPL, because data is changed")
+                
                 return { message: "Data successfully updated" }
             }
         })
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

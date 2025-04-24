@@ -62,7 +62,7 @@ export async function POST({ request,  }) {
                     SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '${separator}', 2), '${separator}', -1) = ? AND
                     SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '${separator}', -1), '-', 1) = month(now()) AND 
                     SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '${separator}', -1), '-', -1) = year(now())`,
-                dept?.initial) as {id: number}[]
+                    dept?.initial) as {id: number}[]
                 const lastID = Number(id) + 1
                 newID = `${lastID}-SPL${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
                 
@@ -86,7 +86,7 @@ export async function POST({ request,  }) {
                     data.purpose, data.est_start, data.est_end, data.approval1, data.approval2, data.spl_id, 'Waiting', 'Waiting'
                 )
 
-                if(!updateSPL) throw new Error("Cant update SPL, because status is changed")
+                if(!updateSPL) throw new Error("Cant update SPL, because data is changed")
 
                 await tx.spl_detail.deleteMany({
                     where : { spl_id: data.spl_id }

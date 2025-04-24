@@ -7,7 +7,7 @@
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, pecahArray } from '@lib/utils.js';
+	import { formatTanggal, pecahArray, generatePeriode } from '@lib/utils.js';
 	import { format, getYear, differenceInDays } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
@@ -17,7 +17,8 @@
     let {data} = $props()
     let user = $derived(data.user) 
     let userProfile = $derived(data.userProfile)
-    let periode = $derived(data.periode)
+    let setting = $derived(data.periode)
+    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList =[
@@ -63,6 +64,7 @@
         },
         success:"",
         error:"",
+        modalDelete: false,
         loading:false,
         add:false,
         edit:false,
@@ -105,37 +107,50 @@
     const formCutiEdit = async (id:string) =>{
         try {
             formCuti.loading = true
-            const req = await axios.get(`/api/cuti/${id}`)
+            const req = await axios.get(`/api/cuti/${id}/edit`)
             const res = await req.data
             
-            formCuti.answer = {...res}
-            setTimeout(()=>{
-                formCuti.answer.date = formatTanggal(res.date, "date")
-            }, 100)
-            
-            formCuti.edit = true
-            formCuti.add = false
-            formCuti.loading = false
+            if(res){
+                formCuti.answer = {...res}
+                setTimeout(()=>{
+                    formCuti.answer.date = formatTanggal(res.date, "date")
+                }, 100)
+                
+                formCuti.edit = true
+                formCuti.add = false
+                formCuti.loading = false
+            }else{
+                formCuti.error = "Cant edit data"
+                formCuti.success = ""
+            }
         } catch (error) {
             formCuti.loading = false
+        } finally {
+            formCuti.loading = false
+            tableCuti.invalidate()
         }
     }
 
     const formCutiDelete = async (id:string) =>{
         try {
             formCuti.loading = true
-            const req = await axios.delete(`/api/cuti/${id}`)
+            const req = await axios.delete(`/api/cuti/${id}/delete`)
             const res = await req.data
-            tableCuti.invalidate()
+            formCuti.error = ""
+            formCuti.success = res.message
         } catch (error) {
+            formCuti.error = "Cant delete Cuti"
+            formCuti.success = ""
         } finally {
             formCuti.loading = false
+            tableCuti.invalidate()
         }
     }
 
-    const handleDelegateCuti = async (cuti_id: string) => {
+    const handleDelegateCuti = async (cuti_id: string, approval: string) => {
         try {
             formCuti.answer.cuti_id = cuti_id
+            formCuti.answer.approval = approval
             const req = await axios.post('/api/cuti/delegate', formCuti.answer)
             const res = await req.data
             formCutiBatal()
@@ -155,6 +170,7 @@
         answer: {
             cuti_id: "id",
             status: "Waiting",
+            approval: ""
         },
         success:"",
         error:"",
@@ -165,10 +181,11 @@
     
     let formApprovalCuti = $state({...formApprovalCutiAnswer})
 
-    const handleApproveCuti = async (cuti_id: string, val: string) => {
+    const handleApproveCuti = async (cuti_id: string, approval: string, status: string) => {
         try {
             formApprovalCuti.answer.cuti_id = cuti_id
-            formApprovalCuti.answer.status = val
+            formApprovalCuti.answer.approval = approval
+            formApprovalCuti.answer.status = status
             const req = await axios.post('/api/cuti/approve', formApprovalCuti.answer)
             const res = await req.data
             if(userProfile.user_hrd) tableListCuti.invalidate()
@@ -274,29 +291,34 @@
             <div class="flex flex-col gap-2 min-w-fit">
                 <div class="flex items-center gap-2">
                     <Calendar size={18}/>
-                    <div class="flex">
+                    <div class="flex gap-2">
                         <span class="font-bold">Today,</span>
                         <span>{format(new Date(), "dd-MM-yyyy")}</span>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center">
                     <span>Periode</span>
-                    <span class="text-[.9rem] italic">{periode?.start_periode} s/d {periode?.end_periode}</span>
+                    <div class="flex flex-col gap-2">
+                        <Badge color='indigo'>{periode.start}</Badge>
+                        <Badge color='indigo'>{periode.end}</Badge>
+                    </div>
                 </div>
-                <MyButton onclick={getCutiUser}>Refresh</MyButton>
             </div>
 
-            <div class="hidden md:grid items-end w-full md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-7 items-center gap-4">
-                {#each headerData as {title, value, icon: Icon}}
-                    <button class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
-                        onclick={() => handleDetailHeader(title)}>
-                        <span class="text-[.9rem] font-semibold">{title}</span>
-                        <div class="flex justify-between items-center gap-2">
-                            <Icon size={16}/>
-                            <span class='text-[1.1rem] font-bold'>{value}</span>
-                        </div>
-                    </button>
-                {/each}
+            <div class="flex flex-col w-full gap-4">
+                <div class="hidden md:grid items-end w-full md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-7 items-center gap-4">
+                    {#each headerData as {title, value, icon: Icon}}
+                        <button class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
+                            onclick={() => handleDetailHeader(title)}>
+                            <span class="text-[.9rem] font-semibold">{title}</span>
+                            <div class="flex justify-between items-center gap-2">
+                                <Icon size={16}/>
+                                <span class='text-[1.1rem] font-bold'>{value}</span>
+                            </div>
+                        </button>
+                    {/each}
+                </div>
+                <MyButton className='self-start' onclick={getCutiUser}>Refresh</MyButton>
             </div>
         </div>
     {/await}
@@ -330,6 +352,16 @@
                 <span class='text-center'>There is no events</span>
             {/if}
         {/await}
+    </Modal>
+
+    <Modal bind:open={formCuti.modalDelete} autoclose>
+        <div class="flex flex-col gap-6">
+            <h3>Delete Cuti ?</h3>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='green' disabled={formCuti.loading} onclick={() => formCutiDelete(formCuti.answer.cuti_id)}>Yes, delete this data</Button>
+            <Button color='red' onclick={() => formCuti.modalDelete = false}>No</Button>
+        </svelte:fragment>
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
@@ -436,14 +468,17 @@
                                             <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>{row.approval_name}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_cuti, "U") && row.status !== "Approved"}
+                                                {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
                                                     <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
-                                                {#if pecahArray(userProfile.access_cuti, "D") && row.status !== "Approved"}
-                                                    <MyButton onclick={()=> formCutiDelete(row.cuti_id)}><Trash size={12} /></MyButton>
+                                                {#if pecahArray(userProfile.access_cuti, "D") && row.status == "Waiting"}
+                                                    <MyButton onclick={()=> {
+                                                        formCuti.modalDelete = true
+                                                        formCuti.answer.cuti_id = row.cuti_id
+                                                    }}><Trash size={12} /></MyButton>
                                                 {/if}
                                                 {#if row.status == "Waiting" && row.approval == formCuti.answer.user_approval }
-                                                    <MyButton onclick={()=> handleDelegateCuti(row.cuti_id)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                    <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
@@ -523,9 +558,9 @@
                                                 <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
                                                 <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if row.status !== "Approved"}
-                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
-                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                    {#if row.status == "Waiting"}
+                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, row.approval, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, row.approval, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
                                                     {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
@@ -595,8 +630,10 @@
                                 <ThSort table={tableListCuti} field="name">Payroll</ThSort>
                                 <ThSort table={tableListCuti} field="name">Name</ThSort>
                                 <ThSort table={tableListCuti} field="date">Date</ThSort>
+                                <ThSort table={tableListCuti} field="approval_name">Approval</ThSort>
                                 <ThSort table={tableListCuti} field="description">Reason</ThSort>
-                                <ThSort table={tableListCuti} field="">#</ThSort>
+                                <ThSort table={tableListCuti} field="status">Status</ThSort>
+                                <!-- <ThSort table={tableListCuti} field="">#</ThSort> -->
                             </TableHead>
 
                             {#if tableListCuti.isLoading}
@@ -611,12 +648,14 @@
                                                 <TableBodyCell><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
-                                                <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell>{row.approval_name}</TableBodyCell>
+                                                <TableBodyCell>{row.description}</TableBodyCell>
+                                                <TableBodyCell>{row.status}</TableBodyCell>
+                                                <!-- <TableBodyCell>
                                                     {#if row.payroll != user.payroll}
-                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, 'Cancelled')} color='dark' class='p-2' pill><Ban size={14} /></Button>
+                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, row.approval, 'Cancelled')} color='dark' class='p-2' pill><Ban size={14} /></Button>
                                                     {/if}
-                                                </TableBodyCell>
+                                                </TableBodyCell> -->
                                             </TableBodyRow>
                                         {/each}
                                     {:else}

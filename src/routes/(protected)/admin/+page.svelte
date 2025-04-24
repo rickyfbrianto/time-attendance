@@ -606,9 +606,9 @@
                         <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                             <input type='hidden' name="profile_id" disabled={formProfileState.edit} bind:value={formProfileState.answer.profile_id}/>
                             <div class="flex flex-col md:flex-row gap-4">
-                                <div class="flex flex-col gap-4 flex-1">
-                                    <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
-                                    <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <MyInput type='text'  title='Nama' name="name" bind:value={formProfileState.answer.name}/>
+                                    <Checkbox class='' bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
                                 </div>
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
                             </div>

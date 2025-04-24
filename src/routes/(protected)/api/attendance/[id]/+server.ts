@@ -1,5 +1,5 @@
-import { json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { error, json } from "@sveltejs/kit";
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({params}){
     const {id} = params
@@ -10,9 +10,13 @@ export async function GET({params}){
 }
 
 export async function DELETE({params}){
-    const {id} = params
-    const req = await prisma.attendance.delete({
-        where:{attendance_id:id},
-    })
-    return json(req)
+    try {
+        const {id} = params
+        const req = await prisma.attendance.delete({
+            where:{attendance_id:id},
+        })
+        return json(req)
+    } catch (err) {
+        error(500, prismaErrorHandler(err))
+    }
 }

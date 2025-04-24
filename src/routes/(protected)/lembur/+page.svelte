@@ -98,11 +98,12 @@
                 formSPL.add = false
             }else{
                 formSPL.error = "Cant edit data"
-                tableSPL.invalidate()
+                formSPL.success = ""
             }
         } catch (error) {
         } finally {
             formSPL.loading = false
+            tableSPL.invalidate()
         }
     }
     

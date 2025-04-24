@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({params}){
     const {id} = params
@@ -22,6 +22,6 @@ export async function DELETE({params}){
         })
         return json({message:"Data successfully deleted"})
     } catch (err) {
-        
+        error(500, prismaErrorHandler(err))
     }
 }

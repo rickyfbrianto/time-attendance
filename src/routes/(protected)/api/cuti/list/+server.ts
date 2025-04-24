@@ -11,40 +11,17 @@ export async function GET({url}){
 
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT c.*, e.name FROM cuti as c
+            SELECT c.*, e.name, approval.name as approval_name FROM cuti as c
             LEFT JOIN employee as e ON e.payroll = c.payroll
-            WHERE c.status = 'Approved'
+            LEFT JOIN employee as approval ON approval.payroll = c.approval
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM cuti as c
             LEFT JOIN employee as e ON e.payroll = c.payroll
-            WHERE c.status = 'Approved'`,
+            LEFT JOIN employee as approval ON approval.payroll = c.approval`,
             ) as {count:number}[]
         return {items, totalItems: Number(count)}
     })
     return json(status)
-}
-
-export async function POST({ request }) {
-    try {        
-        const data = await request.json();
-        
-        const status = await prisma.$transaction(async tx =>{
-            await tx.cuti.update({
-                data:{ status: data.status },
-                where: { 
-                    cuti_id: data.cuti_id,
-                    
-                }
-            })
-
-            return {message:"Data successfully updated"}
-        })
-
-        return json(status);
-    } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
-    }
 }

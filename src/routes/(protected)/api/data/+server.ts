@@ -13,7 +13,7 @@ export async function GET({url}){
             const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`, `%${val}%`)
             return json(req)
         }else if(type == "user_by_dept"){
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee WHERE department LIKE ?`, `%${val}%`)
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee WHERE department LIKE ? ORDER BY name`, `%${val}%`)
             return json(req)
         }else if(type=='dept'){
             const req = await prisma.$queryRawUnsafe(`SELECT * FROM DEPT WHERE dept_code LIKE ?`, `%${val}%`)

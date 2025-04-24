@@ -11,15 +11,15 @@ export async function GET({url}){
 
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT i.*, e.name FROM ijin as i
+            SELECT i.*, e.name, approval.name as approval_name FROM ijin as i
             LEFT JOIN employee as e ON e.payroll = i.payroll
-            WHERE i.status = 'Approved'
+            LEFT JOIN employee as approval ON approval.payroll = i.approval
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM ijin as i
             LEFT JOIN employee as e ON e.payroll = i.payroll
-            WHERE i.status = 'Approved'`,
+            LEFT JOIN employee as approval ON approval.payroll = i.approval`,
             ) as {count:number}[]
         return {items, totalItems: Number(count)}
     })

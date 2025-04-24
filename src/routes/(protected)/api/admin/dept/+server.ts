@@ -1,5 +1,5 @@
 import {error, json} from '@sveltejs/kit'
-import {prisma } from '@lib/utils'
+import {prisma, prismaErrorHandler } from '@lib/utils'
 import { v4 } from 'uuid'
 
 export async function GET({url}){
@@ -67,6 +67,6 @@ export async function POST({request}){
 
         return json(status)
     } catch (err: any) {
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

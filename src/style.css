@@ -22,9 +22,27 @@ td{
     border: 2px solid var(--color-slate-300)!;
 }
 
-.sv-input--text, .sv-control--selection, .sv-input--sizer{
-    border: none !important;
-    outline: none !important;
+.sv-control{
+    border: 2px solid var(--color-slate-300) !important;
+    border-radius: var(--radius-lg) !important;
+    background-color: var(--color-bgdark) !important;
+}
+
+.sv_dropdown, .sv-dropdown-scroll{
+    background-color: var(--color-bgdark) !important;
+    box-shadow: none !important;
+}
+
+.sv-dropdown-content{
+    background-color: var(--color-bgdark) !important;
+}
+
+.sv-item--wrap:hover{
+    background-color: var(--color-bgdark2) !important;
+}
+
+.in-dropdown.is-selected {
+    background-color: var(--color-bgside) !important;
 }
 
 .std-component-wrap{
@@ -38,6 +56,7 @@ select{
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
     outline-style: var(--tw-outline-style);
     outline-width: 0px;
+    background-color: var(--color-bgdark) !important;
 }
 
 .ec{

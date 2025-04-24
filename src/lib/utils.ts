@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
-import { format, setDate, startOfDay, subMonths } from "date-fns";
+import { addMonths, format, isBefore, setDate, startOfDay, subMonths } from "date-fns";
 import { PrismaClient } from '@prisma/client';
 
 export const prisma = new PrismaClient({
@@ -112,7 +112,7 @@ export function prismaErrorHandler(error: any) {
             case 'P2002':
                 return "Data is already exist (duplicate)"
             case 'P2025':
-                return "No Data Found"
+                return "No data found, please refresh data"
             case 'P2003':
                 return "Foreign key not valid"
             default:
@@ -132,4 +132,13 @@ export function getPeriode ({start_periode, end_periode, date}:{start_periode:nu
     const newEnd = (start_periode < end_periode) ? startOfDay(setDate(date, end_periode)) : startOfDay(setDate(date, end_periode))
 
     return {start_periode: format(newStart, "yyyy-MM-dd"), end_periode: format(newEnd, "yyyy-MM-dd")}
+}
+
+export function generatePeriode(start: number, end: number){
+    const sekarang = format(startOfDay(new Date()), "yyyy-MM-dd")
+    let temp1 = new Date(Number(format(sekarang, "yyyy")), Number(format(sekarang, "MM")) - 1, start)
+    let temp2 = new Date(Number(format(sekarang, "yyyy")), Number(format(sekarang, "MM")) - 1, end)
+    const periode1 = isBefore(sekarang, temp1) ? format(subMonths(temp1, 1), "yyyy-MM-dd") : format(temp1, "yyyy-MM-dd")
+    const periode2 = isBefore(sekarang, temp1) ? format(temp2, "yyyy-MM-dd") : format(addMonths(temp2, 1), "yyyy-MM-dd")
+    return {start: periode1, end: periode2}
 }
