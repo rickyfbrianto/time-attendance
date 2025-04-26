@@ -1,24 +1,26 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal } from 'flowbite-svelte';
-    import {Calendar, SquareArrowUpRight, SquareArrowDownRight, TicketsPlane, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
+    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray } from '@lib/utils';
-    import { differenceInHours, format, getMonth, getYear, parseISO, startOfDay } from "date-fns";
+	import { formatTanggal, pecahArray, generatePeriode } from '@lib/utils';
+    import { differenceInHours, format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { getParams } from '@lib/data/api.js';
+	import MyCalendar from '@/MyCalendar.svelte';
 
     const rowsPerPage = 10
     let {data} = $props()
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
-    let periode = $derived(data.periode)
+    let setting = $derived(data.periode)
+    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
         
@@ -38,25 +40,26 @@
     const formAttendanceAnswer = {
         answer: {
             attendance_id: "id",
-            // user_id_machine: "",
-            user_id_machine: "707",
+            user_id_machine: "",
             date:"",
-            check_in: "2025-04-02",
-            check_out: "2025-04-08",
+            check_in: "",
+            check_out: "",
             check_in2: "",
             check_out2: "",
-            type: "Sakit",
+            type: "",
             ijin_info: "",
             description: "",
             attachment: [],
             get createdBy() { return user?.payroll}
         },
-        get payroll() { return user?.payroll},
         get dept() { return userProfile.user_hrd ? "" : user?.department},
+        get payroll() { return user?.payroll},
         name: "",
         success:"",
         error:"",
+        showCalendar: false,
         modal:false,
+        modalDelete:false,
         loading:false,
         add:false,
         edit:false,
@@ -115,6 +118,7 @@
                 formAttendance.answer.check_out = formatTanggal(res.check_out)
                 formAttendance.answer.check_in2 = formatTanggal(res.check_in2)
                 formAttendance.answer.check_out2 = formatTanggal(res.check_out2)
+                formAttendance.answer.createdBy = user?.payroll
             }, 100)
             formAttendance.answer.attachment = []
             formAttendance.edit = true
@@ -131,7 +135,9 @@
             const req = await axios.delete(`/api/attendance/${id}`)
             const res = await req.data
             tableAttendance.invalidate()
+            tableAttendanceDept.invalidate()
             tableListAttendance.invalidate()
+            tableLogAttendance.invalidate()
             formAttendance.success = res.message
         } catch (error: any) {
             formAttendance.error = error.response.data.message
@@ -139,12 +145,6 @@
         } finally {
             formAttendance.loading = false
         }
-    }
-
-    const selectAttendanceUser = async (val: string) =>{
-        formAttendance.payroll = val
-        tableAttendance.invalidate()
-        tableAttendanceDept.invalidate()
     }
     
     const handleBackToMyAttendance = () =>{
@@ -156,60 +156,30 @@
     // Attendance dept
     let tableAttendanceDept = $state(new TableHandler([], {rowsPerPage}))
     let tableAttendanceDeptSearch = tableAttendanceDept.createSearch()
-
-    const formAttendanceDeptAnswer = {
-        get dept() { return user?.department},
-        type: "",
-        success:"",
-        error:"",
-        loading:false,
-        add:false,
-        edit:false,
-    }
-    
-    let formAttendanceDept = $state({...formAttendanceDeptAnswer})
     
     // Attendance List for HRD
     let tableListAttendance = $state(new TableHandler([], {rowsPerPage}))
     let tableListAttendanceSearch = tableListAttendance.createSearch()
-
-    const formListAttendanceAnswer = {
-        get payroll() { return user?.payroll},
-        get dept() { return userProfile.user_hrd ? "" : user?.department},
-        success:"",
-        error:"",
-        loading:false,
-        add:false,
-        edit:false,
-    }
-    
-    let formListAttendance = $state({...formListAttendanceAnswer})
 
     // Attendance Log for HRD
     let tableLogAttendance = $state(new TableHandler([], {rowsPerPage}))
     let tableLogAttendanceSearch = tableLogAttendance.createSearch()
 
     const formLogAttendanceAnswer = {
-        get payroll() { return user?.payroll},
-        get dept() { return userProfile.user_hrd ? "" : user?.department},
+        attendance_id:"",
         year: new Date().getFullYear(),
         month: new Date().getMonth(),
-        success:"",
         error:"",
+        success:"",
+        modalDelete: false,
         loading:false,
-        add:false,
-        edit:false,
     }
     
     let formLogAttendance = $state({...formLogAttendanceAnswer})
-
-    const handleSetPeriode = ({month, year}: {month: string, year: string}) =>{
-        tableLogAttendance.invalidate()
-    }
     
     // Fetch
     const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val}`)
+        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
         return await req.json()
     }
 
@@ -223,7 +193,7 @@
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
         const res = await req.json()
         formAttendance.name = res.Name
         
@@ -232,9 +202,13 @@
     }
     
     $effect(()=>{
+        if(!formAttendance.payroll) formAttendance.payroll = user.payroll
+    })
+    
+    $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll || ""}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -244,33 +218,37 @@
             }
         })
 
-        tableAttendanceDept.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if (userProfile.level > 1){
+            tableAttendanceDept.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendance.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
 
-        tableListAttendance.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formListAttendance.payroll || ""}&dept=${formListAttendance.dept || ""}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if(userProfile.user_hrd){
+            tableListAttendance.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formAttendance.payroll}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
 
         tableLogAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formLogAttendance.payroll || ""}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -283,8 +261,10 @@
     
     setTimeout(()=>{
         tableAttendance.invalidate()
-        tableAttendanceDept.invalidate()
-        tableListAttendance.invalidate()
+        if (userProfile.level > 1)
+            tableAttendanceDept.invalidate()
+        if(userProfile.user_hrd)
+            tableListAttendance.invalidate()
         tableLogAttendance.invalidate()
     }, 1000)
 
@@ -294,7 +274,7 @@
         dataTahun.push({value: a, title: a.toString()})
     }
     for(let a = 0; a < 12; a++){
-        dataBulan.push({value: a, title: format(new Date(2000, a, 1), "MMMM")})
+        dataBulan.push({value: Number(a), title: format(new Date(2000, a, 1), "MMMM")})
     }
 </script>
 
@@ -303,65 +283,95 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#await getAttendance(formAttendance.payroll)}
-        <MyLoading message={`Loading users data`}/>
-    {:then val}
-        <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${formAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
-            <div class="flex flex-col gap-2 min-w-fit">
-                <div class="flex flex-col">
-                    <span class="font-bold text-[1.1rem]">{formAttendance.name}</span>
-                    <span class='font-bold  text-[.95rem]'>{formAttendance.payroll}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <Calendar size={18}/>
-                    <div class="flex">
-                        <span class="font-bold">Today,</span>
-                        <span>{format(new Date(), "dd-MM-yyyy")}</span>
+    {#if formAttendance.payroll}
+        {#await getAttendance(formAttendance.payroll)}
+            <MyLoading message={`Loading users data`}/>
+        {:then val}
+            <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${formAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
+                <div class="flex flex-col gap-2 min-w-fit">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-[1.1rem]">{formAttendance.name}</span>
+                        <span class='font-bold  text-[.95rem]'>{formAttendance.payroll}</span>
                     </div>
-                </div>
-                <div class="flex gap-2">
-                    <span>Periode</span>
-                    <span class="text-[.9rem] italic">{periode?.start_periode} s/d {periode?.end_periode}</span>
-                </div>
-                {#if formAttendance.payroll !== user.payroll}
-                    <MyButton onclick={handleBackToMyAttendance}>Back to my attendance</MyButton>
-                {/if}
-            </div>
-            
-            <div class="hidden md:grid w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
-                {#each headerData as {title, value, icon: Icon}}
-                    <div class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
-                        <!-- onclick={() => handleDetailHeader(title)}> -->
-                        <span class="text-[.9rem] font-semibold">{title}</span>
-                        <div class="flex justify-between items-center gap-2">
-                            <Icon size={16}/>
-                            <span class='text-[1.1rem] font-bold'>{value}</span>
+                    <div class="flex items-center gap-2">
+                        <Calendar size={18}/>
+                        <div class="flex gap-2">
+                            <span class="font-bold">Today,</span>
+                            <span>{format(new Date(), "dd-MM-yyyy")}</span>
                         </div>
                     </div>
-                {/each}
+                    <div class="flex gap-2 items-center">
+                        <span>Periode</span>
+                        <div class="flex flex-col gap-2">
+                            <Badge color='indigo'>{periode.start}</Badge>
+                            <Badge color='indigo'>{periode.end}</Badge>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col w-full gap-4">
+                    <div class="hidden md:grid  md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
+                        {#each headerData as {title, value, icon: Icon}}
+                            <div class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
+                                <!-- onclick={() => handleDetailHeader(title)}> -->
+                                <span class="text-[.9rem] font-semibold">{title}</span>
+                                <div class="flex justify-between items-center gap-2">
+                                    <Icon size={16}/>
+                                    <span class='text-[1.1rem] font-bold'>{value}</span>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                    <div class="flex gap-4">
+                        <MyButton className='flex items-center gap-2' onclick={()=> formAttendance.showCalendar = true}><Calendar size={16} /> Calendar</MyButton>
+                    </div>
+                </div>
             </div>
-        </div>
-    {/await}
+        {/await}
+    {/if}
     
-    <div class="flex flex-col items-start gap-2 p-4 border-slate-300 border rounded-lg">
-        {#if formAttendance.error}
-            {#each formAttendance.error.split(';') as v}
-                <Alert dismissable>
-                    <span>{v}</span>
+    <div class="flex flex-col gap-3 p-4 border-slate-300 border rounded-lg">
+        {#if !formAttendance.modal}
+            {#if formAttendance.error}
+                {#each formAttendance.error.split(';') as v}
+                    <Alert dismissable>
+                        <span>{v}</span>
+                    </Alert>
+                {/each}
+            {:else if formAttendance.success}
+                <Alert border color="green" dismissable>
+                    <span>{formAttendance.success}</span>
                 </Alert>
-            {/each}
-        {:else if formAttendance.success}
-            <Alert border color="green" dismissable>
-                <span>{formAttendance.success}</span>
-            </Alert>
+            {/if}
         {/if}
 
-        {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C") && (userProfile?.user_hrd || userProfile?.level > 1)}
-            <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
-        {/if}
+        <!-- Tombol Add -->
+        <div class="flex gap-4 items-center w-full">
+            {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C") && (userProfile?.user_hrd || userProfile?.level > 1)}
+                <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
+            {/if}
+            {#if userProfile.user_hrd || userProfile.level > 1}
+                <div class="flex flex-1 gap-2">
+                    {#await getUser(formAttendance.dept)}
+                        <MyLoading message="Loading data"/>
+                    {:then val}
+                        <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                            onChange={() => {
+                                tableAttendance.invalidate()
+                                tableListAttendance.invalidate()
+                                tableLogAttendance.invalidate()
+                        }}/>
+                        {#if formAttendance.payroll !== user?.payroll}
+                            <Button onclick={handleBackToMyAttendance}>Back to my attendance</Button>
+                        {/if}
+                    {/await}
+                </div>                
+            {/if}
+        </div>
 
         <Tabs contentClass='w-full' tabStyle="underline">
-            <TabItem  title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
+            <TabItem open title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -377,7 +387,7 @@
                             <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
                             <MyButton onclick={()=>tableAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
-                        {#if userProfile.user_hrd || userProfile.level > 1}
+                        <!-- {#if userProfile.user_hrd || userProfile.level > 1}
                             <div class="flex gap-2 items-start">
                                 {#await getUser(formAttendance.dept)}
                                     <MyLoading message="Loading data"/>
@@ -387,7 +397,7 @@
                                         onChange={() => tableAttendance.invalidate()}/>
                                 {/await}
                             </div>
-                        {/if}
+                        {/if} -->
                     </div>
                     
                     <Datatable table={tableAttendance}>
@@ -417,31 +427,31 @@
                                                 <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out && ['HKM','HKC'].includes(row.type)}
-                                                        <Badge class='py-1' rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
-                                                            {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
-                                                            {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
-                                                            {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
+                                                    {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
+                                                        <Badge rounded color={"green"}>
+                                                            {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
+                                                            {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
+                                                            {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    <div class="flex flex-col gap-1 items-start">
+                                                    <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
-                                                        differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                            ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}`}
-                                                            : null,
-                                                        row.ijin_info
-                                                            ? {type:"ijin_info", value: row.ijin_info}
-                                                            : null
-                                                        ] as val}
+                                                            formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                            differenceInHours(row.check_out, row.lembur_start) > 0 
+                                                                ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                : null,
+                                                            row.ijin_info
+                                                                ? {type:"ijin_info", value: row.ijin_info}
+                                                                : null
+                                                            ] as val}
                                                             {#if val}
                                                                 <Badge rounded color={val.type == "kerja" ? "indigo" 
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "yellow" 
-                                                                : val.type == "ijin_info" ? "green" : "none"} class='capitalize'>{val.value}</Badge>
+                                                                : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>
@@ -452,14 +462,20 @@
                                                             <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                         {/if}
                                                         {#if pecahArray(userProfile.access_attendance, "D") && !["HKC"].includes(row.type)}
-                                                            <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
+                                                            <MyButton onclick={()=> {
+                                                                formAttendance.modalDelete = true
+                                                                formAttendance.answer.attendance_id = row.attendance_id
+                                                            }}><Trash size={12} /></MyButton>
+                                                            <!-- <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton> -->
                                                         {/if}
                                                     {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
@@ -506,7 +522,7 @@
                                     {#await getDept()}
                                         <MyLoading message="Loading data"/>
                                     {:then val}
-                                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendanceDept.dept} 
+                                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} 
                                             options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
                                             onChange={() => tableAttendanceDept.invalidate()}/>
                                     {/await}
@@ -538,45 +554,38 @@
                                         {#if tableAttendanceDept.rows.length > 0}
                                             {#each tableAttendanceDept.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell>
-                                                        <div class="flex items-center gap-3">
-                                                            <span class="min-w-[1rem]">{row.payroll}</span>
-                                                            {#if formAttendance.payroll != row.payroll}
-                                                                <MyButton onclick={()=> selectAttendanceUser(row.payroll)}><Eye size={12} /></MyButton>
-                                                            {/if}
-                                                        </div>
-                                                    </TableBodyCell>
+                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
                                                     <TableBodyCell>{row.name}</TableBodyCell>
                                                     <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
                                                     <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out}
-                                                            <Badge class='py-1' rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
-                                                                {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
-                                                                {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
-                                                                {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
+                                                        {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
+                                                            <Badge rounded color={"green"}>
+                                                                {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
+                                                                {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
+                                                                {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
                                                             </Badge>
                                                         {/if}
                                                     </TableBodyCell>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        <div class="flex flex-col gap-1 items-start">
+                                                        <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                            formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
-                                                            differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                                ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hour"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}`}
-                                                                : null,
-                                                            row.ijin_info
-                                                                ? {type:"ijin_info", value: row.ijin_info}
-                                                                : null
-                                                            ] as val}
+                                                                formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                                differenceInHours(row.check_out, row.lembur_start) > 0 
+                                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                    : null,
+                                                                row.ijin_info
+                                                                    ? {type:"ijin_info", value: row.ijin_info}
+                                                                    : null
+                                                                ] as val}
                                                                 {#if val}
                                                                     <Badge rounded color={val.type == "kerja" ? "indigo" 
                                                                     : val.type == "late" ? "red" 
                                                                     : val.type == "lembur" ? "yellow" 
-                                                                    : val.type == "ijin_info" ? "green" : "none"} class='capitalize'>{val.value}</Badge>
+                                                                    : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
@@ -638,15 +647,6 @@
                                 <MyButton onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
                                 <MyButton onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
-                            <div class="flex gap-2 items-start">
-                                {#await getUser(formListAttendance.dept)}
-                                    <MyLoading message="Loading data"/>
-                                {:then val}
-                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formListAttendance.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
-                                        onChange={() => tableListAttendance.invalidate()}/>
-                                {/await}
-                            </div>
                         </div>
                         
                         <Datatable table={tableListAttendance}>
@@ -680,29 +680,32 @@
                                                     <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        <div class="flex flex-col gap-1 items-start">
+                                                        <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                            formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
-                                                            differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                                ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hour"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}`}
-                                                                : null,
-                                                            row.ijin_info
-                                                                ? {type:"ijin_info", value: row.ijin_info}
-                                                                : null
-                                                            ] as val}
+                                                                formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                                differenceInHours(row.check_out, row.lembur_start) > 0 
+                                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                    : null,
+                                                                row.ijin_info
+                                                                    ? {type:"ijin_info", value: row.ijin_info}
+                                                                    : null
+                                                                ] as val}
                                                                 {#if val}
                                                                     <Badge rounded color={val.type == "kerja" ? "indigo" 
                                                                     : val.type == "late" ? "red" 
                                                                     : val.type == "lembur" ? "yellow" 
-                                                                    : val.type == "ijin_info" ? "green" : "none"} class='capitalize'>{val.value}</Badge>
+                                                                    : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if formListAttendance.payroll != row.payroll && row.payroll != user.payroll}
+                                                        {#if row.payroll != user.payroll}
                                                             {#if pecahArray(userProfile.access_attendance, "D")}
-                                                                <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
+                                                                <MyButton onclick={()=> {
+                                                                    formAttendance.modalDelete = true
+                                                                    formAttendance.answer.attendance_id = row.attendance_id
+                                                                }}><Trash size={12} /></MyButton>
                                                             {/if}
                                                         {/if}
                                                     </TableBodyCell>
@@ -735,7 +738,7 @@
                     </div>
                 </TabItem>
             {/if}
-            <TabItem open title="Attendance Log">
+            <TabItem title="Attendance Log">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -752,35 +755,24 @@
                             <MyButton onclick={()=>tableLogAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
                         <div class="flex gap-2 items-start flex-wrap">
-                            <select bind:value={formLogAttendance.year} onchange={e => handleSetPeriode({year:e?.target.value})}>
+                            <select bind:value={formLogAttendance.year} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataTahun as {title, value}}
                                     <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
                                 {/each}
                             </select>
-                            <select bind:value={formLogAttendance.month} onchange={e => handleSetPeriode({month: e?.target.value})}>
+                            <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataBulan as {title, value}}
-                                    <option value={value}>{title} {value.toString() == new Date().getMonth().toString() ? "Now" : null}</option>
+                                    <option value={value}>{title} {value.toString() == format(periode.start, "M") ? "Now" : null}</option>
                                 {/each}
                             </select>
-
-                            {#if userProfile.user_hrd}
-                                {#await getUser(formLogAttendance.dept)}
-                                    <MyLoading message="Loading data"/>
-                                {:then val}
-                                    <Svelecte searchable selectOnTab multiple={false} bind:value={formLogAttendance.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, texst:v.payroll + " - " + v.name}))}
-                                        onChange={() => tableLogAttendance.invalidate()}/>
-                                {/await}
-                            {/if}
+                        </div>
                     </div>
                     
                     <Datatable table={tableLogAttendance}>
                         <Table>
                             <TableHead>
-                                {#if userProfile.user_hrd}
-                                    <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
-                                    <ThSort table={tableLogAttendance} field="name">Name</ThSort>
-                                {/if}
+                                <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
+                                <ThSort table={tableLogAttendance} field="name">Name</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Day</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Date</ThSort>
                                 <ThSort table={tableLogAttendance} field="check_in">Clock In</ThSort>
@@ -799,40 +791,38 @@
                                     {#if tableLogAttendance.rows.length > 0}
                                         {#each tableLogAttendance.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                {#if userProfile.user_hrd}
-                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
-                                                {/if}
+                                                <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
                                                 <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if differenceInHours(row.lembur_end, row.lembur_start) !== 0 && row.check_in != row.check_out && ['HKM','HKC'].includes(row.type)}
-                                                        <Badge class='py-1' rounded color={differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "green":"red"}>
-                                                            {differenceInHours(row.lembur_end, row.lembur_start) > 0 ? "+" : (differenceInHours(row.lembur_end, row.lembur_start) < 0 ? "-":"") }
-                                                            {differenceInHours(row.lembur_end, row.lembur_start) !== 0 ? differenceInHours(row.lembur_end, row.lembur_start) + " Hour": ""}
-                                                            {format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}
+                                                    {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
+                                                        <Badge rounded color={"green"}>
+                                                            {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
+                                                            {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
+                                                            {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    <div class="flex flex-col gap-1 items-start">
+                                                    <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
-                                                        differenceInHours(row.lembur_end, row.lembur_start) > 0 
-                                                            ? {type:"lembur", value:`Overtime ${differenceInHours(row.lembur_end, row.lembur_start)} ${differenceInHours(row.lembur_end, row.lembur_start) == 1 ? " Hour":" Hours"} ${format(row.lembur_end, "m") != "0" ? format(row.lembur_end, "m") + " Minute" :""}`}
-                                                            : null,
-                                                        row.ijin_info
-                                                            ? {type:"ijin_info", value: row.ijin_info}
-                                                            : null
-                                                        ] as val}
+                                                            formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                            differenceInHours(row.check_out, row.lembur_start) > 0 
+                                                                ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                : null,
+                                                            row.ijin_info
+                                                                ? {type:"ijin_info", value: row.ijin_info}
+                                                                : null
+                                                            ] as val}
                                                             {#if val}
                                                                 <Badge rounded color={val.type == "kerja" ? "indigo" 
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "yellow" 
-                                                                : val.type == "ijin_info" ? "green" : "none"} class='capitalize'>{val.value}</Badge>
+                                                                : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>
@@ -868,8 +858,38 @@
         </Tabs>
     </div>
 
+    <Modal bind:open={formAttendance.modalDelete} autoclose>
+        <div class="flex flex-col gap-6">
+            <h3>Delete Attendance ?</h3>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='green' disabled={formAttendance.loading} onclick={() => formAttendanceDelete(formAttendance.answer.attendance_id)}>Yes, delete this data</Button>
+            <Button color='red' onclick={() => formAttendance.modalDelete = false}>No</Button>
+        </svelte:fragment>
+    </Modal>
+    
+    <Modal bind:open={formAttendance.showCalendar} size={"xl"} >
+        <div class="flex flex-col mt-7 p-4 gap-4">
+            <MyCalendar payroll={formAttendance.payroll}/>
+        </div>
+    </Modal>
+
     <Modal bind:open={formAttendance.modal} size={"xl"} classBody="overflow-visible">
         <div class="flex flex-col mt-7 p-4 gap-4 border border-slate-400 rounded-lg">
+            {#if formAttendance.modal}
+                {#if formAttendance.error}
+                    {#each formAttendance.error.split(';') as v}
+                        <Alert dismissable>
+                            <span>{v}</span>
+                        </Alert>
+                    {/each}
+                {:else if formAttendance.success}
+                    <Alert border color="green" dismissable>
+                        <span>{formAttendance.success}</span>
+                    </Alert>
+                {/if}
+            {/if}
+            
             <div class="flex gap-2">
                 {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
                     <MyButton onclick={formAttendanceBatal}><Ban size={16} /></MyButton>

@@ -13,7 +13,7 @@ export async function GET({url}){
             const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`, `%${val}%`)
             return json(req)
         }else if(type == "user_by_dept"){
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee WHERE department LIKE ?`, `%${val}%`)
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee WHERE department LIKE ? ORDER BY name`, `%${val}%`)
             return json(req)
         }else if(type=='dept'){
             const req = await prisma.$queryRawUnsafe(`SELECT * FROM DEPT WHERE dept_code LIKE ?`, `%${val}%`)
@@ -33,8 +33,8 @@ export async function GET({url}){
                 FROM
                     spl s, spl_detail sd, employee e, attendance a
                 WHERE sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in )= DATE (s.est_start) 
-                AND NOT EXISTS (SELECT 1 FROM srl WHERE s.spl_id = srl.spl_id)
-                AND sd.payroll = ?`, 
+                    AND NOT EXISTS (SELECT 1 FROM srl WHERE s.spl_id = srl.spl_id)
+                    AND sd.payroll = ? AND s.status1 = 'Approved' AND s.status2 = 'Approved'`, 
                 val) as any []
             return json(req)
         }else if(type=='sppd_by_payroll'){
@@ -46,7 +46,7 @@ export async function GET({url}){
                 WHERE skpd.sppd_id IS NULL
                 group by s.sppd_id`)
             return json(req)
-        }else if(type=='attendance_by_payroll'){
+        }else if(type=='sum_attendance_by_payroll'){
             const req = await prisma.$transaction(async tx => {
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select e.name as Name,
@@ -72,9 +72,16 @@ export async function GET({url}){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT * FROM calendar 
                 WHERE type like ? AND YEAR(date) = ? AND month(date) <= ?
-                ORDER BY date asc`, `%${val}%`, year, month)
+                ORDER BY date asc`, 
+                `%${val}%`, year, month)
+            return json(req)    
+        }else if(type=='get_attendance_by_payroll'){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT a.check_in, a.type, a.description FROM attendance as a 
+                LEFT JOIN employee as e ON e.user_id_machine = a.user_id_machine
+                WHERE e.payroll = ? AND YEAR(a.check_in) = ? AND month(a.check_in) <= ? AND type != 'Cuti Bersama' AND type != ''`, 
+                val, year, month)
             return json(req)
-            
         }else if(type=='get_cuti_user'){
             const req = await prisma.$transaction(async tx => {
                 const [cuti] = await tx.$queryRawUnsafe(`

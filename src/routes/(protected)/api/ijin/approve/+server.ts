@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -29,13 +29,17 @@ export async function GET({url}){
 }
 
 export async function POST({ request }) {
-    try {        
+    try {
         const data = await request.json();
-        
+
         const status = await prisma.$transaction(async tx =>{
             await tx.ijin.update({
                 data:{ status: data.status },
-                where: { ijin_id: data.ijin_id }
+                where: { 
+                    ijin_id: data.ijin_id,
+                    status: "Waiting",
+                    approval: data.approval
+                }
             })
 
             return {message:`Ijin successfully ${data.status}`}
@@ -43,7 +47,6 @@ export async function POST({ request }) {
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

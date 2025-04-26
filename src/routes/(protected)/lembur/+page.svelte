@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Toast, Badge, Select, Label, Alert } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Select, Label, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
@@ -26,22 +26,23 @@
     let tableSPL = $state(new TableHandler([], {rowsPerPage}))
     let tableSPLSearch = tableSPL.createSearch()
     
-    const formSPLAnswer = $state({
+    const formSPLAnswer = {
         answer:{
             spl_id: "id",
             purpose:"",
-            get dept() { return user?.department},
+            get dept() {return user?.department},
             spl_detail:[{payroll:"",description:""}],
             est_start:"",
-            est_end:"",
-            get createdBy() {return user?.payroll},
+            est_end:"",            
+            approval1:"",
+            approval2:"",            
         },
         success:"",
         error:"",
         loading:false,
         add:false,
         edit:false,
-    })
+    }
     
     let formSPL = $state({...formSPLAnswer})
     
@@ -51,13 +52,14 @@
             const valid = z.object({
                 spl_id: z.string().trim().min(1),
                 purpose: z.string().trim().min(5),
+                est_start: z.string().trim().min(1),
+                est_end: z.string().trim().min(1),
+                approval1: z.string().trim().min(1),
+                approval2: z.string().trim().min(1),
                 spl_detail: z.array(z.object({
                     payroll: z.string().trim().min(1).max(8),
                     description: z.string().trim().min(1).max(255),
                 })),
-                est_start: z.string().trim().min(1),
-                est_end: z.string().trim().min(1),
-                createdBy: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
@@ -84,32 +86,45 @@
     const formSPLEdit = async (id:string) =>{
         try {
             formSPL.loading = true
-            const req = await axios.get(`/api/lembur/spl/${id}`)
+            const req = await axios.get(`/api/lembur/spl/${id}/edit`)
             const res = await req.data
-            
-            formSPL.answer = {...res,
-                est_start: formatTanggal(res.est_start),
-                est_end: formatTanggal(res.est_end),
-                spl_detail: res.spl_detail.map(({payroll, description}) => ({payroll, description: description.trim() }))
+            if(res){
+                formSPL.answer = {...res,
+                    est_start: formatTanggal(res.est_start),
+                    est_end: formatTanggal(res.est_end),
+                    spl_detail: res.spl_detail.map(({payroll, description}) => ({payroll, description: description.trim() }))
+                }
+                formSPL.edit = true
+                formSPL.add = false
+            }else{
+                formSPL.error = "Cant edit data"
+                formSPL.success = ""
             }
-            formSPL.edit = true
-            formSPL.add = false
-            formSPL.loading = false
         } catch (error) {
+        } finally {
             formSPL.loading = false
+            tableSPL.invalidate()
         }
     }
     
     const formSPLDelete = async (id:string) =>{
-        formSPL.error = ""
-        const req = await axios.delete(`/api/lembur/spl/${id}`)
-        const res = await req.data
-        formSPL.success = res.message
-        tableSPL.invalidate()
+        try {
+            formSPL.loading = true
+            const req = await axios.delete(`/api/lembur/spl/${id}/delete`)
+            const res = await req.data
+            formSPL.error = ""
+            formSPL.success = res.message
+        } catch (error) {
+            formSPL.error = "Cant delete SPL"
+            formSPL.success = ""            
+        } finally {
+            formSPL.loading = false
+            tableSPL.invalidate()
+        }
     }
 
     const handleCetakSPL= async (id:string) =>{
-        const req = await axios.get(`/api/lembur/spl/${id}`)
+        const req = await axios.get(`/api/lembur/spl/${id}/print`)
         const res = await req.data
 
         const doc = new jsPDF({
@@ -188,17 +203,86 @@
         doc.save(`${id}.pdf`);
     }
     
+    // SPL approval 1
+    let tableSPLApproval1 = $state(new TableHandler([], {rowsPerPage}))
+    
+    const formSPLApproval1Answer = {
+        answer:{
+            spl_id: "id",
+            status:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    }
+    
+    let formSPLApproval1 = $state({...formSPLApproval1Answer})
+    
+    const handleApproveSPL1 = async (spl_id: string, val: string) => {
+        try {
+            formSPLApproval1.answer.spl_id = spl_id
+            formSPLApproval1.answer.status = val
+            const req = await axios.post('/api/lembur/spl/approve1', formSPLApproval1.answer)
+            const res = await req.data
+            tableSPLApproval1.invalidate()
+            tableSPLApproval2.invalidate()
+            tableSPL.invalidate()
+            formSPLApproval1.error = ""
+            formSPLApproval1.success = res.message
+        } catch (error: any) {
+            formSPLApproval1.error = error.response.data.message
+            formSPLApproval1.success = ""
+        }
+    }
+    
+    // SPL approval 2
+    let tableSPLApproval2 = $state(new TableHandler([], {rowsPerPage}))
+    
+    const formSPLApproval2Answer = {
+        answer:{
+            spl_id: "id",
+            status:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    }
+    
+    let formSPLApproval2 = $state({...formSPLApproval2Answer})
+    
+    const handleApproveSPL2 = async (spl_id: string, val: string) => {
+        try {
+            formSPLApproval2.answer.spl_id = spl_id
+            formSPLApproval2.answer.status = val
+            const req = await axios.post('/api/lembur/spl/approve2', formSPLApproval2.answer)
+            const res = await req.data
+            tableSPLApproval2.invalidate()
+            tableSPL.invalidate()
+            formSPLApproval2.error = ""
+            formSPLApproval2.success = res.message
+        } catch (error: any) {
+            formSPLApproval2.error = error.response.data.message
+            formSPLApproval2.success = ""
+        }
+    }
+    
     // SRL
     let tableSRL = $state(new TableHandler([], {rowsPerPage}))
     let tableSRLSearch = tableSRL.createSearch()
     
     const formSRLAnswer = {
         answer:{
+            get payroll() {return user?.payroll},
             srl_id: "id",
             spl_id: "",
-            payroll: () => user?.payroll,
             real_start: "",
             real_end:"",
+            approval1:"",
+            approval2:"",
             overtime:0,
             srl_detail:[{description:"", status: ""}],
         },
@@ -218,6 +302,8 @@
             formSRL.loading = true
             const valid = z.object({
                 spl_id: z.string().trim().min(1),
+                approval1: z.string().trim().min(1),
+                approval2: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formSRL.answer)
             if(isValid.success){
@@ -244,24 +330,44 @@
     const formSRLEdit = async (id:string) =>{
         try {
             formSRL.loading = true
-            const req = await axios.get(`/api/lembur/srl/${id}`)
+            const req = await axios.get(`/api/lembur/srl/${id}/edit`)
             const res = await req.data
-            
-            formSRL.answer = {...res,
-                real_start: formatTanggal(res.real_start),
-                real_end: formatTanggal(res.real_end),
+            if(res){
+                formSRL.answer = {...res,
+                    real_start: formatTanggal(res.real_start),
+                    real_end: formatTanggal(res.real_end),
+                    overtime: differenceInHours(res.real_end,res.real_start)
+                }
+                formSRL.edit = true
+                formSRL.add = false
+            }else{
+                formSRL.error = "Cant edit data"
+                tableSRL.invalidate()
             }
-
-            formSRL.edit = true
-            formSRL.add = false
-            formSRL.loading = false
         } catch (error) {
+        } finally {
             formSRL.loading = false
         }
     }
 
+    const formSRLDelete = async (id:string) => {
+        try {
+            formSRL.loading = true
+            const req = await axios.delete(`/api/lembur/srl/${id}/delete`)
+            const res = await req.data
+            formSRL.error = ""
+            formSRL.success = res.message
+        } catch (error) {
+            formSRL.error = "Cant delete SRL"
+            formSRL.success = ""            
+        } finally {
+            formSRL.loading = false
+            tableSRL.invalidate()
+        }
+    }
+
     const handleCetakSRL= async (id:string) =>{
-        const req = await axios.get(`/api/sppd/${id}`)
+        const req = await axios.get(`/api/lembur/srl/${id}/print`)
         const res = await req.data
 
         const doc = new jsPDF({
@@ -416,6 +522,73 @@
         
         doc.save(`${res.sppd_id}.pdf`);
     }
+
+    // SRL approval 1
+    let tableSRLApproval1 = $state(new TableHandler([], {rowsPerPage}))
+    
+    const formSRLApproval1Answer = $state({
+        answer:{
+            srl_id: "",
+            status:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    })
+    
+    let formSRLApproval1 = $state({...formSRLApproval1Answer})
+    
+    const handleApproveSRL1 = async (srl_id: string, val: string) => {
+        try {
+            formSRLApproval1.answer.srl_id = srl_id
+            formSRLApproval1.answer.status = val
+            const req = await axios.post('/api/lembur/srl/approve1', formSRLApproval1.answer)
+            const res = await req.data
+            tableSRLApproval1.invalidate()
+            tableSRLApproval2.invalidate()
+            tableSRL.invalidate()
+            formSRLApproval1.error = ""
+            formSRLApproval1.success = res.message
+        } catch (error: any) {
+            formSRLApproval1.error = error.response.data.message
+            formSRLApproval1.success = ""
+        }
+    }
+    
+    // SPL approval 2
+    let tableSRLApproval2 = $state(new TableHandler([], {rowsPerPage}))
+    
+    const formSRLApproval2Answer = $state({
+        answer:{
+            srl_id: "",
+            status:"",
+        },
+        success:"",
+        error:"",
+        loading:false,
+        add:false,
+        edit:false,
+    })
+    
+    let formSRLApproval2 = $state({...formSRLApproval2Answer})
+    
+    const handleApproveSRL2 = async (srl_id: string, val: string) => {
+        try {
+            formSRLApproval2.answer.srl_id = srl_id
+            formSRLApproval2.answer.status = val
+            const req = await axios.post('/api/lembur/srl/approve2', formSRLApproval2.answer)
+            const res = await req.data
+            tableSRLApproval2.invalidate()
+            tableSRL.invalidate()
+            formSRLApproval2.error = ""
+            formSRLApproval2.success = res.message
+        } catch (error: any) {
+            formSRLApproval2.error = error.response.data.message
+            formSRLApproval2.success = ""
+        }
+    }
     
     const getSPL = async () =>{
         const req = await fetch(`/api/data?type=spl_by_status&val=${user.payroll}`)
@@ -431,7 +604,7 @@
         })
         return res
     }
-    
+
     const getUserByDept = $derived.by(() => {
         return async () =>{
             const req = await fetch(`/api/data?type=user_by_dept&val=${user.department}`)
@@ -439,7 +612,7 @@
             return res
         }
     })
-
+    
     const getSPLAll = (id:string) =>{
         const {description, overtime, est_start, est_end} = formSRLDetailAnswer.find((v:any) => v.spl_id == id) as any
         formSRL.answer.real_start = formatTanggal(est_start)
@@ -469,6 +642,28 @@
             }
         })
 
+        tableSPLApproval1.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/spl/approve1?${getParams(state)}&payroll=${user.payroll}`)
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+
+        tableSPLApproval2.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/spl/approve2?${getParams(state)}&payroll=${user.payroll}`)
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+        
         tableSRL.load(async (state:State) => {
             try {
                 const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
@@ -480,11 +675,37 @@
                 console.log(err.message)
             }
         })
+
+        tableSRLApproval1.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/srl/approve1?${getParams(state)}&payroll=${user.payroll}`)
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
+
+        tableSRLApproval2.load(async (state:State) => {
+            try {
+                const req = await fetch(`/api/lembur/srl/approve2?${getParams(state)}&payroll=${user.payroll}`)
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
+            } catch (err:any) {
+                console.log(err.message)
+            }
+        })
     })
     
     setTimeout(()=>{
         tableSPL.invalidate()
+        tableSPLApproval1.invalidate()
+        tableSPLApproval2.invalidate()
         tableSRL.invalidate()
+        tableSRLApproval1.invalidate()
+        tableSRLApproval2.invalidate()
     }, 1000)
 </script>
 
@@ -492,322 +713,699 @@
     <title>Lembur</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem  title="Dashboard">
+        <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Overtime Page</span>
             </div>
         </TabItem>
-        <TabItem open title="Surat Perintah Lembur">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                {#if formSPL.error}
-                    {#each formSPL.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
-                        </Alert>
-                    {/each}
-                {:else if formSPL.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formSPL.success}</span>
-                    </Alert>
-                {/if}
-
-                <div class="flex gap-2">                        
-                    {#if formSPL.add || formSPL.edit}
-                        {#if pecahArray(userProfile?.access_spl, "C") || pecahArray(userProfile.access_spl, "U")}
-                            <MyButton onclick={formSPLBatal}><Ban size={16} /></MyButton>
-                            <MyButton disabled={formSPL.loading} onclick={formSPLSubmit}><Save size={16}/></MyButton>
+        <TabItem title="Surat Perintah Lembur">
+            <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
+                <TabItem open title="List">
+                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
+                        {#if formSPL.error}
+                            {#each formSPL.error.split(';') as v}
+                                <Alert dismissable>
+                                    <span>{v}</span>
+                                </Alert>
+                            {/each}
+                        {:else if formSPL.success}
+                            <Alert border color="green" dismissable>
+                                <span>{formSPL.success}</span>
+                            </Alert>
                         {/if}
-                    {:else}
-                        {#if pecahArray(userProfile?.access_spl, "C")}
-                            <MyButton onclick={()=> formSPL.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    {/if}
-                </div>
-
-                {#if formSPL.loading}
-                    <MyLoading message="Get SPL data"/>
-                {/if}
-                {#if formSPL.add || formSPL.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
-                            
-                            <MyInput type='datetime' title='Estimated Start' name="est_start" bind:value={formSPL.answer.est_start}/>
-                            <MyInput type='datetime' title='Estimated End' name="est_end" bind:value={formSPL.answer.est_end}/>
+        
+                        <div class="flex gap-2">                        
+                            {#if formSPL.add || formSPL.edit}
+                                {#if pecahArray(userProfile?.access_spl, "C") || pecahArray(userProfile.access_spl, "U")}
+                                    <MyButton onclick={formSPLBatal}><Ban size={16} /></MyButton>
+                                    <MyButton disabled={formSPL.loading} onclick={formSPLSubmit}><Save size={16}/></MyButton>
+                                {/if}
+                            {:else}
+                                {#if pecahArray(userProfile?.access_spl, "C") && userProfile.level > 1}
+                                    <MyButton onclick={()=> formSPL.add = true}><Plus size={16}/></MyButton>
+                                {/if}
+                            {/if}
                         </div>
-
-                        <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
-                            {#each formSPL.answer.spl_detail as list, i}
-                                <div class="flex flex-col gap-2">
-                                    <div class="flex gap-2 items-end">
+        
+                        {#if formSPL.loading}
+                            <MyLoading message="Loading data"/>
+                        {/if}
+                        {#if formSPL.add || formSPL.edit}
+                            <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                                <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
+                                
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
+                                    
+                                    <MyInput type='datetime' title='Estimated Start' name="est_start" bind:value={formSPL.answer.est_start}/>
+                                    <MyInput type='datetime' title='Estimated End' name="est_end" bind:value={formSPL.answer.est_end}/>
+                                    {#await getUserByDept() then val}
+                                        <div class="flex flex-col gap-2 flex-1">
+                                            <Label>Approval 1</Label>
+                                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval1} 
+                                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                            />
+                                        </div>
+                                    {/await}
+                                    {#await getUserByDept() then val}
+                                        <div class="flex flex-col gap-2 flex-1">
+                                            <Label>Approval 2</Label>
+                                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval2} 
+                                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                            />
+                                        </div>
+                                    {/await}
+                                </div>
+        
+                                <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
+                                    {#each formSPL.answer.spl_detail as list, i}
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex gap-2 items-end">
+                                                {#await getUserByDept() then val}
+                                                    <div class="flex flex-col gap-2 flex-1">
+                                                        <Label>{`Employee ${i+1}`}</Label>
+                                                        <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
+                                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                                        />
+                                                    </div>
+                                                {/await}
+                                                
+                                                {#if i == formSPL.answer.spl_detail.length - 1}
+                                                    <MyButton onclick={()=>formSPL.answer.spl_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
+                                                {/if}
+                                                {#if formSPL.answer.spl_detail.length > 1}
+                                                    <MyButton onclick={()=> formSPL.answer.spl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
+                                                {/if}
+                                            </div>
+                                            <div class="flex flex-1 flex-col">
+                                                <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
+                                                <span class='text-[.8rem] italic'>For several jobs use comas as separator (,)</span>
+                                            </div>
+                                        </div>
+                                    {/each}
+                                </div>
+                                <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
+                            </form>
+                        {/if}
+                        
+                        <div class="flex gap-2">
+                            <select bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
+                                {#each [10, 20, 50, 100] as option}
+                                    <option value={option}>{option}</option>
+                                {/each}
+                            </select>
+                            <MyInput type='text' bind:value={tableSPLSearch.value}/>
+                            <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
+                            <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
+                        </div>
+                        
+                        <Datatable table={tableSPL}>
+                            <Table>
+                                <TableHead class="bg-slate-500" >
+                                    <ThSort table={tableSPL} field="spl_id">SPL ID</ThSort>
+                                    <ThSort table={tableSPL} field="purpose">Purpose</ThSort>
+                                    <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
+                                    <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
+                                    <ThSort table={tableSPL} field="approval1">Approval 1</ThSort>
+                                    <ThSort table={tableSPL} field="status1">Status 1</ThSort>
+                                    <ThSort table={tableSPL} field="approval2">Approval 2</ThSort>
+                                    <ThSort table={tableSPL} field="status1">Status 2</ThSort>
+                                    {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
+                                        <ThSort table={tableSPL} field="">#</ThSort>
+                                    {/if}
+                                </TableHead>
+        
+                                {#if tableSPL.isLoading}
+                                    <div class="flex p-4 items-center">
+                                        <MyLoading message="Loading data"/>
+                                    </div>
+                                {:else}
+                                    <TableBody tableBodyClass="divide-y">
+                                        {#if tableSPL.rows.length > 0}
+                                            {#each tableSPL.rows as row}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
+                                                    <TableBodyCell>{row.purpose}</TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
+                                                    <TableBodyCell>{row.approval1}</TableBodyCell>
+                                                    <TableBodyCell>{row.status1}</TableBodyCell>
+                                                    <TableBodyCell>{row.approval2}</TableBodyCell>
+                                                    <TableBodyCell>{row.status2}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        {#if (pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting' && userProfile.level > 1}
+                                                            {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                            {#if pecahArray(userProfile.access_spl, "D")}<MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if}
+                                                        {/if}
+                                                        {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
+                                                            <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
+                                                        {/if}
+                                                    </TableBodyCell>
+                                                </TableBodyRow>
+                                            {/each}
+                                        {:else}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                            </TableBodyRow>
+                                        {/if}
+                                    </TableBody>
+                                {/if}
+                            </Table>
+                            {#if tableSPL.rows.length > 0}
+                                <div class="flex justify-between items-center gap-2 mt-3">
+                                    <p class='text-muted self-end text-[.9rem]'>
+                                        Showing {tableSPL.rowCount.start} to {tableSPL.rowCount.end} of {tableSPL.rowCount.total} rows
+                                        <Badge color="dark">Page {tableSPL.currentPage}</Badge>
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <MyButton onclick={()=> tableSPL.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                        <MyButton onclick={()=> tableSPL.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                        {#each tableSPL.pages as page}
+                                            <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableSPL.setPage(page)} type="button">{page}</MyButton>
+                                        {/each}
+                                        <MyButton onclick={()=> tableSPL.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                        <MyButton onclick={()=> tableSPL.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                    </div>
+                                </div>
+                            {/if}
+                        </Datatable>
+                    </div>
+                </TabItem>
+                {#if userProfile.level > 1}
+                    <TabItem title="Approval SPL 1">
+                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                            {#if formSPLApproval1.error}
+                                {#each formSPLApproval1.error.split(';') as v}
+                                    <Alert dismissable>
+                                        <span>{v}</span>
+                                    </Alert>
+                                {/each}
+                            {:else if formSPLApproval1.success}
+                                <Alert border color="green" dismissable>
+                                    <span>{formSPLApproval1.success}</span>
+                                </Alert>
+                            {/if}
+            
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableSPLApproval1.invalidate()}><RefreshCw size={16}/></MyButton>
+                            </div>
+                            
+                            <Datatable table={tableSPLApproval1}>
+                                <Table>
+                                    <TableHead>
+                                        <ThSort table={tableSPLApproval1} field="purpose">Purpose</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="est_start">Est Start</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="est_end">Est End</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="approval1">Approval 1</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="">#</ThSort>
+                                    </TableHead>
+            
+                                    {#if tableSPLApproval1.isLoading}
+                                        <div class="flex p-4 items-center">
+                                            <MyLoading message="Loading data"/>
+                                        </div>
+                                    {:else}
+                                        <TableBody tableBodyClass="divide-y">
+                                            {#if tableSPLApproval1.rows.length > 0}
+                                                {#each tableSPLApproval1.rows as row}
+                                                    <TableBodyRow class='h-10'>
+                                                        <TableBodyCell>{row.purpose}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.status1 == "Waiting"}
+                                                                <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    </TableBodyRow>
+                                                {/each}
+                                            {:else}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                                </TableBodyRow>
+                                            {/if}
+                                        </TableBody>
+                                    {/if}
+                                </Table>
+                                {#if tableSPLApproval1.rows.length > 0}
+                                    <div class="flex justify-between items-center gap-2 mt-3">
+                                        <p class='text-textdark self-end text-[.9rem]'>
+                                            Showing {tableSPLApproval1.rowCount.start} to {tableSPLApproval1.rowCount.end} of {tableSPLApproval1.rowCount.total} rows
+                                            <Badge color="dark">Page {tableSPLApproval1.currentPage}</Badge>
+                                        </p>
+                                        <div class="flex gap-2">
+                                            <MyButton onclick={()=> tableSPLApproval1.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSPLApproval1.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                            {#each tableSPLApproval1.pages as page}
+                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPLApproval1.setPage(page)} type="button">{page}</MyButton>
+                                            {/each}
+                                            <MyButton onclick={()=> tableSPLApproval1.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSPLApproval1.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                        </div>
+                                    </div>
+                                {/if}
+                            </Datatable>
+                        </div>
+                    </TabItem>
+                    <TabItem title="Approval SPL 2">
+                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                            {#if formSPLApproval2.error}
+                                {#each formSPLApproval2.error.split(';') as v}
+                                    <Alert dismissable>
+                                        <span>{v}</span>
+                                    </Alert>
+                                {/each}
+                            {:else if formSPLApproval2.success}
+                                <Alert border color="green" dismissable>
+                                    <span>{formSPLApproval2.success}</span>
+                                </Alert>
+                            {/if}
+            
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableSPLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
+                            </div>
+                            
+                            <Datatable table={tableSPLApproval2}>
+                                <Table>
+                                    <TableHead>
+                                        <ThSort table={tableSPLApproval2} field="purpose">Purpose</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="est_start">Est Start</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="est_end">Est End</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="approval2">Approval 2</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="">#</ThSort>
+                                    </TableHead>
+            
+                                    {#if tableSPLApproval2.isLoading}
+                                        <div class="flex p-4 items-center">
+                                            <MyLoading message="Loading data"/>
+                                        </div>
+                                    {:else}
+                                        <TableBody tableBodyClass="divide-y">
+                                            {#if tableSPLApproval2.rows.length > 0}
+                                                {#each tableSPLApproval2.rows as row}
+                                                    <TableBodyRow class='h-10'>
+                                                        <TableBodyCell>{row.purpose}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{row.approval2}</TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.status2 == "Waiting"}
+                                                                <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    </TableBodyRow>
+                                                {/each}
+                                            {:else}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                                </TableBodyRow>
+                                            {/if}
+                                        </TableBody>
+                                    {/if}
+                                </Table>
+                                {#if tableSPLApproval2.rows.length > 0}
+                                    <div class="flex justify-between items-center gap-2 mt-3">
+                                        <p class='text-textdark self-end text-[.9rem]'>
+                                            Showing {tableSPLApproval2.rowCount.start} to {tableSPLApproval2.rowCount.end} of {tableSPLApproval2.rowCount.total} rows
+                                            <Badge color="dark">Page {tableSPLApproval2.currentPage}</Badge>
+                                        </p>
+                                        <div class="flex gap-2">
+                                            <MyButton onclick={()=> tableSPLApproval2.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSPLApproval2.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                            {#each tableSPLApproval2.pages as page}
+                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPLApproval2.setPage(page)} type="button">{page}</MyButton>
+                                            {/each}
+                                            <MyButton onclick={()=> tableSPLApproval2.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSPLApproval2.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                        </div>
+                                    </div>
+                                {/if}
+                            </Datatable>
+                        </div>
+                    </TabItem>
+                {/if}
+            </Tabs>
+        </TabItem>
+        
+        <TabItem title="Surat Realisasi Lembur">
+            <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
+                <TabItem open title="List">
+                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
+                        {#if formSRL.error}
+                            {#each formSRL.error.split(';') as v}
+                                <Alert dismissable>
+                                    <span>{v}</span>
+                                </Alert>
+                            {/each}
+                        {:else if formSRL.success}
+                            <Alert color="green" dismissable>
+                                <span>{formSRL.success}</span>
+                            </Alert>
+                        {/if}
+        
+                        <div class="flex gap-2">                        
+                            {#if formSRL.add || formSRL.edit}
+                                {#if pecahArray(userProfile?.access_srl, "C") || pecahArray(userProfile.access_srl, "U")}
+                                    <MyButton onclick={formSRLBatal}><Ban size={16} /></MyButton>
+                                    <MyButton disabled={formSRL.loading} onclick={formSRLSubmit}><Save size={16}/></MyButton>
+                                {/if}
+                            {:else}
+                                {#if pecahArray(userProfile?.access_srl, "C")}
+                                    <MyButton onclick={()=> formSRL.add = true}><Plus size={16}/></MyButton>
+                                {/if}
+                            {/if}
+                        </div>
+        
+                        {#if formSRL.loading}
+                            <MyLoading message="Get SPL data"/>
+                        {/if}
+                        {#if formSRL.add || formSRL.edit}
+                            <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                                {#if formSRL.add}
+                                    {#await getSPL()}
+                                        <MyLoading message="Loading data..."/>
+                                    {:then val}
+                                        <div class="flex flex-col gap-2 flex-1">
+                                            <Label>SPL ID</Label>
+                                            <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
+                                                options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id.replace(/\_/g, '/') + " - " + v.purpose}))}
+                                                onChange={(e:any) => getSPLAll(e.value)}
+                                            />
+                                        </div>
+                                    {/await}
+                                {/if}
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {#if formSRL.answer.spl_id}
+                                        {#if formSRL.edit}
+                                            <MyInput type='text' disabled title='SPL ID' name="spl_id" bind:value={formSRL.answer.spl_id}/>    
+                                            <MyInput type='text' disabled title='SRL ID' name="srl_id" bind:value={formSRL.answer.srl_id}/>    
+                                        {/if}
+                                        <MyInput type='datetime' disabled title='Real Start' name="real_start" bind:value={formSRL.answer.real_start}/>
+                                        <MyInput type='datetime' disabled title='Real End' name="real_end" bind:value={formSRL.answer.real_end}/>
                                         {#await getUserByDept() then val}
                                             <div class="flex flex-col gap-2 flex-1">
-                                                <Label>{`Employee ${i+1}`}</Label>
-                                                <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
+                                                <Label>Approval 1</Label>
+                                                <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.approval1} 
                                                     options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
                                                 />
                                             </div>
                                         {/await}
-                                        
-                                        {#if i == formSPL.answer.spl_detail.length - 1}
-                                            <MyButton onclick={()=>formSPL.answer.spl_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
-                                        {/if}
-                                        {#if formSPL.answer.spl_detail.length > 1}
-                                            <MyButton onclick={()=> formSPL.answer.spl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
-                                        {/if}
+                                        {#await getUserByDept() then val}
+                                            <div class="flex flex-col gap-2 flex-1">
+                                                <Label>Approval 2</Label>
+                                                <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.approval2} 
+                                                    options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                                />
+                                            </div>
+                                        {/await}
+                                        <MyInput type='text' title='Overtime (hours)' name="overtime" bind:value={formSRL.answer.overtime} disabled/>
+                                    {/if}
+                                </div>
+        
+                                {#if formSRL.answer.spl_id}
+                                    <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
+                                        {#each formSRL.answer.srl_detail as list, i}
+                                            <div class="flex flex-col gap-2">
+                                                <div class="flex gap-2 items-end">
+                                                    <div class="flex flex-1 flex-col gap-2">
+                                                        <Label>Status {i + 1}</Label>
+                                                        <select bind:value={list.status}>
+                                                            {#each ["Hold", "On Progress", "Completed"] as option}
+                                                                <option value={option}>{option}</option>
+                                                            {/each}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <MyInput type='textarea' disabled title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
+                                            </div>
+                                        {/each}
                                     </div>
-                                    <div class="flex flex-1 flex-col">
-                                        <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
-                                        <span class='text-[.8rem] italic'>For several jobs use comas as separator (,)</span>
+                                {/if}
+                                <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
+                            </form>
+                        {/if}
+                        
+                        <div class="flex gap-2">
+                            <select bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
+                                {#each [10, 20, 50, 100] as option}
+                                    <option value={option}>{option}</option>
+                                {/each}
+                            </select>
+                            <MyInput type='text' bind:value={tableSRLSearch.value}/>
+                            <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
+                            <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
+                        </div>
+                        
+                        <Datatable table={tableSRL}>
+                            <Table>
+                                <TableHead class="bg-slate-500" >
+                                    <ThSort table={tableSRL} field="srl_id">SRL ID</ThSort>
+                                    <ThSort table={tableSRL} field="spl_id">SPL ID</ThSort>
+                                    <ThSort table={tableSRL} field="name">Name</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Start</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">End</ThSort>
+                                    <ThSort table={tableSRL} field="real_end">Duration</ThSort>
+                                    <ThSort table={tableSRL} field="approval1">Approval 1</ThSort>
+                                    <ThSort table={tableSRL} field="status1">Status 1</ThSort>
+                                    <ThSort table={tableSRL} field="approval2">Approval 2</ThSort>
+                                    <ThSort table={tableSRL} field="status2">Status 2</ThSort>
+                                    <ThSort table={tableSRL} field="">#</ThSort>
+                                </TableHead>
+        
+                                {#if tableSRL.isLoading}
+                                    <div class="flex p-4 items-center">
+                                        <MyLoading message="Loading data"/>
+                                    </div>
+                                {:else}
+                                    <TableBody tableBodyClass="divide-y">
+                                        {#if tableSRL.rows.length > 0}
+                                            {#each tableSRL.rows as row}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell>{row.srl_id.replace(/\_/g, '/')}</TableBodyCell>
+                                                    <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
+                                                    <TableBodyCell>{row.name}</TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        {differenceInHours(row.real_end,row.real_start)}  Hour
+                                                        {format(row.real_end, "mm") != "00" ? format(row.real_end, "mm") + " Minute" :""}
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>{row.approval1}</TableBodyCell>
+                                                    <TableBodyCell>{row.status1}</TableBodyCell>
+                                                    <TableBodyCell>{row.approval2}</TableBodyCell>
+                                                    <TableBodyCell>{row.status2}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        {#if (pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting'}
+                                                            {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                            {#if pecahArray(userProfile.access_srl, "D")}<MyButton onclick={()=> formSRLDelete(row.srl_id)}><Trash size={12} /></MyButton>{/if}
+                                                        {/if}
+                                                        {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
+                                                            <MyButton onclick={()=> handleCetakSRL(row.srl_id)}><Printer size={12} /></MyButton>
+                                                        {/if}
+                                                    </TableBodyCell>
+                                                </TableBodyRow>
+                                            {/each}
+                                        {:else}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                            </TableBodyRow>
+                                        {/if}
+                                    </TableBody>
+                                {/if}
+                            </Table>
+                            {#if tableSRL.rows.length > 0}
+                                <div class="flex justify-between items-center gap-2 mt-3">
+                                    <p class='text-muted self-end text-[.9rem]'>
+                                        Showing {tableSRL.rowCount.start} to {tableSRL.rowCount.end} of {tableSRL.rowCount.total} rows
+                                        <Badge color="dark">Page {tableSRL.currentPage}</Badge>
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <MyButton onclick={()=> tableSRL.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                        <MyButton onclick={()=> tableSRL.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                        {#each tableSRL.pages as page}
+                                            <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableSRL.setPage(page)} type="button">{page}</MyButton>
+                                        {/each}
+                                        <MyButton onclick={()=> tableSRL.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                        <MyButton onclick={()=> tableSRL.setPage('last')}><ChevronLast size={16} /></MyButton>
                                     </div>
                                 </div>
-                            {/each}
-                        </div>
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
-                    </form>
-                {/if}
-                
-                <div class="flex gap-2">
-                    <select bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
-                        {#each [10, 20, 50, 100] as option}
-                            <option value={option}>{option}</option>
-                        {/each}
-                    </select>
-                    <MyInput type='text' bind:value={tableSPLSearch.value}/>
-                    <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
-                    <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
-                </div>
-                
-                <Datatable table={tableSPL}>
-                    <Table>
-                        <TableHead class="bg-slate-500" >
-                            <ThSort table={tableSPL} field="spl_id">SPL ID</ThSort>
-                            <ThSort table={tableSPL} field="purpose">Purpose</ThSort>
-                            <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
-                            <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
-                            <ThSort table={tableSPL} field="createdAt">Created At</ThSort>
-                            {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
-                                <ThSort table={tableSPL} field="">#</ThSort>
                             {/if}
-                        </TableHead>
-
-                        {#if tableSPL.isLoading}
-                            <div class="flex p-4 items-center">
-                                <MyLoading message="Loading data"/>
-                            </div>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
-                                {#if tableSPL.rows.length > 0}
-                                    {#each tableSPL.rows as row}
-                                        <TableBodyRow>
-                                            <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
-                                            <TableBodyCell>{row.purpose}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.createdAt)}</TableBodyCell>
-                                            {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
-                                                <TableBodyCell>
-                                                    {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                    {#if pecahArray(userProfile.access_spl, "D")}<MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if}
-                                                    <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
-                                                </TableBodyCell>
-                                            {/if}
-                                        </TableBodyRow>
-                                    {/each}
-                                {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
-                                    </TableBodyRow>
-                                {/if}
-                            </TableBody>
-                        {/if}
-                    </Table>
-                    {#if tableSPL.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
-                                Showing {tableSPL.rowCount.start} to {tableSPL.rowCount.end} of {tableSPL.rowCount.total} rows
-                                <Badge color="dark">Page {tableSPL.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableSPL.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSPL.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableSPL.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableSPL.setPage(page)} type="button">{page}</MyButton>
+                        </Datatable>
+                    </div>
+                </TabItem>
+                {#if userProfile.level > 1}
+                    <TabItem title="Approval SRL 1">
+                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                            {#if formSRLApproval1.error}
+                                {#each formSRLApproval1.error.split(';') as v}
+                                    <Alert dismissable>
+                                        <span>{v}</span>
+                                    </Alert>
                                 {/each}
-                                <MyButton onclick={()=> tableSPL.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSPL.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            {:else if formSRLApproval1.success}
+                                <Alert border color="green" dismissable>
+                                    <span>{formSRLApproval1.success}</span>
+                                </Alert>
+                            {/if}
+            
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableSRLApproval1.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
-                        </div>
-                    {/if}
-                </Datatable>
-            </div>
-        </TabItem>
-        <TabItem title="Surat Realisasi Lembur">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                {#if formSRL.error}
-                    {#each formSRL.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
-                        </Alert>
-                    {/each}
-                {:else if formSRL.success}
-                    <Alert color="green" dismissable>
-                        <span>{formSRL.success}</span>
-                    </Alert>
-                {/if}
-
-                <div class="flex gap-2">                        
-                    {#if formSRL.add || formSRL.edit}
-                        {#if pecahArray(userProfile?.access_srl, "C") || pecahArray(userProfile.access_srl, "U")}
-                            <MyButton onclick={formSRLBatal}><Ban size={16} /></MyButton>
-                            <MyButton disabled={formSRL.loading} onclick={formSRLSubmit}><Save size={16}/></MyButton>
-                        {/if}
-                    {:else}
-                        {#if pecahArray(userProfile?.access_srl, "C")}
-                            <MyButton onclick={()=> formSRL.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    {/if}
-                </div>
-
-                {#if formSRL.loading}
-                    <MyLoading message="Get SPL data"/>
-                {/if}
-                {#if formSRL.add || formSRL.edit}
-                    <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        {#await getSPL()}
-                            <MyLoading message="Loading data..."/>
-                        {:then val}
-                            <div class="flex flex-col gap-2 flex-1">
-                                <Label>SPL ID</Label>
-                                <Svelecte class='rounded-lg' disabled={formSRL.edit} clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.spl_id} 
-                                    options={val.map((v:any) => ({value: v.spl_id, text:v.spl_id.replace(/\_/g, '/') + " - " + v.purpose}))}
-                                    onChange={(e:any) => getSPLAll(e.value)}
-                                />
-                            </div>
-                        {/await}
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <input type='hidden' name="srl_id" disabled={formSRL.edit} bind:value={formSRL.answer.srl_id}/>
                             
-                            {#if formSRL.answer.spl_id}
-                                <MyInput type='datetime' disabled title='Real Start' name="real_start" bind:value={formSRL.answer.real_start}/>
-                                <MyInput type='datetime' disabled title='Real End' name="real_end" bind:value={formSRL.answer.real_end}/>
-                                <MyInput type='text' title='Overtime (hours)' name="overtime" bind:value={formSRL.answer.overtime} disabled/>
-                            {/if}
-                        </div>
-
-                        {#if formSRL.answer.spl_id}
-                            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
-                                {#each formSRL.answer.srl_detail as list, i}
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex gap-2 items-end">
-                                            <div class="flex flex-1 flex-col gap-2">
-                                                <Label>Status {i + 1}</Label>
-                                                <select bind:value={list.status}>
-                                                    {#each ["Hold", "On Progress", "Completed"] as option}
-                                                        <option value={option}>{option}</option>
-                                                    {/each}
-                                                </select>
-                                            </div>
-
-                                            <!-- {#if i == formSRL.answer.srl_detail.length - 1}
-                                                <MyButton onclick={()=>formSRL.answer.srl_detail.push({status:"", description:""})}><Plus size={14} color='green' /></MyButton>
-                                            {/if}
-                                            {#if formSRL.answer.srl_detail.length > 1}
-                                                <MyButton onclick={()=> formSRL.answer.srl_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
-                                            {/if} -->
+                            <Datatable table={tableSRLApproval1}>
+                                <Table>
+                                    <TableHead>
+                                        <ThSort table={tableSRLApproval1} field="payroll">Payroll</ThSort>
+                                        <ThSort table={tableSRLApproval1} field="real_start">Real Start</ThSort>
+                                        <ThSort table={tableSRLApproval1} field="real_end">Real End</ThSort>
+                                        <ThSort table={tableSRLApproval1} field="approval1">Approval 1</ThSort>
+                                        <ThSort table={tableSRLApproval1} field="">#</ThSort>
+                                    </TableHead>
+            
+                                    {#if tableSRLApproval1.isLoading}
+                                        <div class="flex p-4 items-center">
+                                            <MyLoading message="Loading data"/>
                                         </div>
-                                        <MyInput type='textarea' disabled title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
-                                    </div>
-                                {/each}
-                            </div>
-                        {/if}
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
-                    </form>
-                {/if}
-                
-                <div class="flex gap-2">
-                    <select bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
-                        {#each [10, 20, 50, 100] as option}
-                            <option value={option}>{option}</option>
-                        {/each}
-                    </select>
-                    <MyInput type='text' bind:value={tableSRLSearch.value}/>
-                    <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
-                    <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
-                </div>
-                
-                <Datatable table={tableSRL}>
-                    <Table>
-                        <TableHead class="bg-slate-500" >
-                            <ThSort table={tableSRL} field="srl_id">SRL ID</ThSort>
-                            <ThSort table={tableSRL} field="spl_id">SPL ID</ThSort>
-                            <ThSort table={tableSRL} field="name">Name</ThSort>
-                            <ThSort table={tableSRL} field="real_start">Start</ThSort>
-                            <ThSort table={tableSRL} field="real_start">End</ThSort>
-                            <ThSort table={tableSRL} field="real_end">Duration</ThSort>
-                            {#if pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")}
-                                <ThSort table={tableSRL} field="">#</ThSort>
-                            {/if}
-                        </TableHead>
-
-                        {#if tableSRL.isLoading}
-                            <div class="flex p-4 items-center">
-                                <MyLoading message="Loading data"/>
-                            </div>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
-                                {#if tableSRL.rows.length > 0}
-                                    {#each tableSRL.rows as row}
-                                        <TableBodyRow>
-                                            <TableBodyCell>{row.srl_id.replace(/\_/g, '/')}</TableBodyCell>
-                                            <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {differenceInHours(row.real_end,row.real_start)}  Hour
-                                                {format(row.real_end, "mm") != "00" ? format(row.real_end, "mm") + " Minute" :""}
-                                            </TableBodyCell>
-                                            {#if pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")}
-                                                <TableBodyCell>
-                                                    {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                    <MyButton onclick={()=> handleCetakSRL(row.srl_id)}><Printer size={12} /></MyButton>
-                                                    <!-- {#if pecahArray(userProfile.access_srl, "D")}<MyButton onclick={()=> formSRLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if} -->
-                                                </TableBodyCell>
+                                    {:else}
+                                        <TableBody tableBodyClass="divide-y">
+                                            {#if tableSRLApproval1.rows.length > 0}
+                                                {#each tableSRLApproval1.rows as row}
+                                                    <TableBodyRow class='h-10'>
+                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.status1 == "Waiting"}
+                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    </TableBodyRow>
+                                                {/each}
+                                            {:else}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                                </TableBodyRow>
                                             {/if}
-                                        </TableBodyRow>
-                                    {/each}
-                                {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
-                                    </TableBodyRow>
+                                        </TableBody>
+                                    {/if}
+                                </Table>
+                                {#if tableSRLApproval1.rows.length > 0}
+                                    <div class="flex justify-between items-center gap-2 mt-3">
+                                        <p class='text-textdark self-end text-[.9rem]'>
+                                            Showing {tableSRLApproval1.rowCount.start} to {tableSRLApproval1.rowCount.end} of {tableSRLApproval1.rowCount.total} rows
+                                            <Badge color="dark">Page {tableSRLApproval1.currentPage}</Badge>
+                                        </p>
+                                        <div class="flex gap-2">
+                                            <MyButton onclick={()=> tableSRLApproval1.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSRLApproval1.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                            {#each tableSRLApproval1.pages as page}
+                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSRLApproval1.setPage(page)} type="button">{page}</MyButton>
+                                            {/each}
+                                            <MyButton onclick={()=> tableSRLApproval1.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSRLApproval1.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                        </div>
+                                    </div>
                                 {/if}
-                            </TableBody>
-                        {/if}
-                    </Table>
-                    {#if tableSRL.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
-                                Showing {tableSRL.rowCount.start} to {tableSRL.rowCount.end} of {tableSRL.rowCount.total} rows
-                                <Badge color="dark">Page {tableSRL.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableSRL.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSRL.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableSRL.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableSRL.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableSRL.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSRL.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
+                            </Datatable>
                         </div>
-                    {/if}
-                </Datatable>
-            </div>
+                    </TabItem>
+                    <TabItem title="Approval SRL 2">
+                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                            {#if formSRLApproval2.error}
+                                {#each formSRLApproval2.error.split(';') as v}
+                                    <Alert dismissable>
+                                        <span>{v}</span>
+                                    </Alert>
+                                {/each}
+                            {:else if formSRLApproval2.success}
+                                <Alert border color="green" dismissable>
+                                    <span>{formSRLApproval2.success}</span>
+                                </Alert>
+                            {/if}
+            
+                            <div class="flex gap-2">
+                                <MyButton onclick={()=> tableSRLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
+                            </div>
+                            
+                            {JSON.stringify(tableSRLApproval2.rows)}
+                            <Datatable table={tableSRLApproval2}>
+                                <Table>
+                                    <TableHead>
+                                        <ThSort table={tableSRLApproval2} field="payroll">Payroll</ThSort>
+                                        <ThSort table={tableSRLApproval2} field="real_start">Real Start</ThSort>
+                                        <ThSort table={tableSRLApproval2} field="real_end">Real End</ThSort>
+                                        <ThSort table={tableSRLApproval2} field="approval2">Approval 2</ThSort>
+                                        <ThSort table={tableSRLApproval2} field="">#</ThSort>
+                                    </TableHead>
+            
+                                    {#if tableSRLApproval2.isLoading}
+                                        <div class="flex p-4 items-center">
+                                            <MyLoading message="Loading data"/>
+                                        </div>
+                                    {:else}
+                                        <TableBody tableBodyClass="divide-y">
+                                            {#if tableSRLApproval2.rows.length > 0}
+                                                {#each tableSRLApproval2.rows as row}
+                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.status1 == "Waiting"}
+                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    <TableBodyRow class='h-10'>
+                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{row.approval2}</TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.status2 == "Waiting"}
+                                                                <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    </TableBodyRow>
+                                                {/each}
+                                            {:else}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
+                                                </TableBodyRow>
+                                            {/if}
+                                        </TableBody>
+                                    {/if}
+                                </Table>
+                                {#if tableSRLApproval2.rows.length > 0}
+                                    <div class="flex justify-between items-center gap-2 mt-3">
+                                        <p class='text-textdark self-end text-[.9rem]'>
+                                            Showing {tableSRLApproval2.rowCount.start} to {tableSRLApproval2.rowCount.end} of {tableSRLApproval2.rowCount.total} rows
+                                            <Badge color="dark">Page {tableSRLApproval2.currentPage}</Badge>
+                                        </p>
+                                        <div class="flex gap-2">
+                                            <MyButton onclick={()=> tableSRLApproval2.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSRLApproval2.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                            {#each tableSRLApproval2.pages as page}
+                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSRLApproval2.setPage(page)} type="button">{page}</MyButton>
+                                            {/each}
+                                            <MyButton onclick={()=> tableSRLApproval2.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                            <MyButton onclick={()=> tableSRLApproval2.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                        </div>
+                                    </div>
+                                {/if}
+                            </Datatable>
+                        </div>
+                    </TabItem>
+                {/if}
+            </Tabs>
         </TabItem>
     </Tabs>
 </main>

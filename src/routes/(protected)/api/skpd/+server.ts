@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -11,7 +11,7 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT skpd_id, s.sppd_id, sppd.location, sd.description, e.name, e.payroll, real_start, real_end, status FROM SKPD as s
+            SELECT skpd_id, s.sppd_id, sppd.location, sd.description, e.name, e.payroll, real_start, real_end, s.status FROM SKPD as s
             LEFT JOIN employee as e ON e.payroll = s.payroll
             LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
@@ -62,7 +62,6 @@ export async function POST({ request,  }) {
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

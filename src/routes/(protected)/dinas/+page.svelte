@@ -1,8 +1,8 @@
 <script lang="ts">    
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, MultiSelect, Modal, Alert } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import { Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
+    import { Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
@@ -32,8 +32,8 @@
         answer:{
             sppd_id: "id",
             purpose:"",
+            get dept() { return userProfile.user_hrd ? "" : user?.department},
             location:"",
-            dept:"",
             date: [],
             duration: 0,
             get createdBy() { return user?.payroll},
@@ -41,6 +41,7 @@
         },
         success:"",
         error:"",
+        modalDelete:false,
         loading:false,
         add:false,
         edit:false,
@@ -286,11 +287,12 @@
         },
         success:"",
         error:"",
+        cetakPDFID:"",
+        cetakPDF:false,
+        modalDelete:false,
         loading:false,
         add:false,
         edit:false,
-        cetakPDF:false,
-        cetakPDFID:"",
     }
     
     let formSKPD = $state({...formSKPDAnswer})
@@ -612,13 +614,15 @@
                 {/if}
                 {#if formSPPD.add || formSPPD.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        {#await getDept() then val}
-                            <div class="flex flex-col gap-2 flex-1">
-                                <Label>Department</Label>
-                                <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
-                            </div>
-                        {/await}
+                        {#if userProfile.user_hrd}
+                            {#await getDept() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Department</Label>
+                                    <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
+                                        options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
+                                </div>
+                            {/await}
+                        {/if}
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>
@@ -692,7 +696,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSPPD.rows.length > 0}
                                     {#each tableSPPD.rows as row:any}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.purpose}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
@@ -703,14 +707,19 @@
                                                 {#if pecahArray(userProfile.access_sppd, "U")}
                                                     <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
-                                                <MyButton onclick={()=> formSPPDDelete(row.sppd_id)}><Trash size={12} /></MyButton>
+                                                {#if pecahArray(userProfile.access_sppd, "D")}
+                                                    <MyButton onclick={()=> {
+                                                        formSPPD.modalDelete = true
+                                                        formSPPD.answer.sppd_id = row.sppd_id
+                                                    }}><Trash size={12} /></MyButton>
+                                                {/if}                                                
                                                 <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>
@@ -837,7 +846,7 @@
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableSKPD.rows.length > 0}
                                     {#each tableSKPD.rows as row:any}
-                                        <TableBodyRow>
+                                        <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
@@ -852,15 +861,18 @@
                                                 <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>
                                                 {/if}
                                                 {#if pecahArray(userProfile.access_skpd, "D")}
-                                                    <MyButton onclick={()=> formSKPDDelete(row.skpd_id)}><Trash size={12} /></MyButton>
-                                                    {/if}
+                                                    <MyButton onclick={()=> {
+                                                        formSKPD.modalDelete = true
+                                                        formSKPD.answer.skpd_id = row.skpd_id
+                                                    }}><Trash size={12} /></MyButton>
+                                                {/if}                                                
                                                 <MyButton onclick={()=> handleCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}
                                 {:else}
-                                    <TableBodyRow>
-                                        <TableBodyCell>No data available</TableBodyCell>
+                                    <TableBodyRow class='h-10'>
+                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
                                     </TableBodyRow>
                                 {/if}
                             </TableBody>
@@ -899,5 +911,26 @@
             </Modal>
         </TabItem>
     </Tabs>
+
+    <Modal bind:open={formSPPD.modalDelete} autoclose>
+        <div class="flex flex-col gap-6">
+            <h3>Delete SPPD ?</h3>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='green' disabled={formSPPD.loading} onclick={() => formSPPDDelete(formSPPD.answer.sppd_id)}>Yes, delete this data</Button>
+            <Button color='red' onclick={() => formSPPD.modalDelete = false}>No</Button>
+        </svelte:fragment>
+    </Modal>
+
+    <Modal bind:open={formSKPD.modalDelete} autoclose>
+        <div class="flex flex-col gap-6">
+            <h3>Delete SKPD ?</h3>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='green' disabled={formSKPD.loading} onclick={() => formSKPDDelete(formSKPD.answer.skpd_id)}>Yes, delete this data</Button>
+            <Button color='red' onclick={() => formSKPD.modalDelete = false}>No</Button>
+        </svelte:fragment>
+    </Modal>
+    
 </main>
 

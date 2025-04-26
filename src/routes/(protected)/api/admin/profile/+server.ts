@@ -71,7 +71,6 @@ export async function POST({ request }) {
 
         return json(status)
 	} catch (err) {
-		console.log("err catch",err);
-		error(500, { message: prismaErrorHandler(err) });
+		error(500, prismaErrorHandler(err))
 	}
 }

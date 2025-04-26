@@ -81,17 +81,18 @@ export async function POST({ request}) {
 
                 return { message: "Data successfully saved" }
             }else{
-                await tx.$queryRawUnsafe(`
+                const updateIjin = await tx.$executeRawUnsafe(`
                     UPDATE ijin SET date=?,description=?,type=? WHERE ijin_id=?`,
                     data.date,data.description,data.type,data.ijin_id)
 
+                if(!updateIjin) throw new Error("Cant update SPL, because data is changed")
+                    
                 return { message: "Data successfully updated" }
             }
         })
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

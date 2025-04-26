@@ -1,6 +1,6 @@
 import { error, json } from "@sveltejs/kit";
 import { v4 as uuid4 } from "uuid";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 import { format } from "date-fns";
 
 export async function GET({url}){
@@ -95,7 +95,6 @@ export async function POST({ request,  }) {
 
         return json(status);
     } catch (err:any) {
-        console.log("err catch",err);
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

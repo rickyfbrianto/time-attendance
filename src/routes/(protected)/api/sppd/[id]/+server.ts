@@ -1,5 +1,5 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma } from '@lib/utils.js'
+import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
 export async function GET({params}){
     const {id} = params
@@ -36,14 +36,6 @@ export async function GET({params}){
         },
         where:{sppd_id:id},
     })
-
-    // const req = await prisma.$queryRawUnsafe(`
-    //     SELECT s.*, e.name, d.name as dept FROM sppd as s
-    //     LEFT JOIN sppd_detail as sd ON sd.sppd_id = s.sppd_id
-    //     LEFT JOIN dept d ON d.dept_code = e.department
-    //     LEFT JOIN employee e ON e.payroll = skpd.payroll
-    //     WHERE s.sppd_id = ?`,
-    // id) as {}[]
     
     return json(req)
 }
@@ -58,6 +50,6 @@ export async function DELETE({params}){
         })
         return json({message:"Data successfully deleted"})
     } catch (err) {
-        
+        error(500, prismaErrorHandler(err))
     }
 }

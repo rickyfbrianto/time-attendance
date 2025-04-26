@@ -1,11 +1,11 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge, Alert } from 'flowbite-svelte';
+    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
     import MyInput from '@lib/components/MyInput.svelte'
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check } from '@lucide/svelte'
-    import {formatTanggal, ListAccess, pecahArray} from '@lib/utils'
+    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check, KeyRound } from '@lucide/svelte'
+    import {formatTanggal,  pecahArray} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
 	import { getParams } from '@lib/data/api';
@@ -14,6 +14,7 @@
 	import { getYear } from 'date-fns';
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
+	import { invalidateAll } from '$app/navigation';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -24,6 +25,13 @@
 
     const rowsPerPage = 10
     const listLevel = [0,1,2,3,4,5,6,7,8,9].map(v => ({value : v, name : v}))
+    
+    const ListAccess = [
+    {value:"C", name:"Create"},
+    {value:"R", name:"Read"},
+    {value:"U", name:"Update"},
+    {value:"D", name:"Delete"},
+]
     
     let openRow: string[] = $state([]) 
     const toggleRow = (i: string) => {
@@ -45,38 +53,41 @@
             description: "",
             level: "",
             user_hrd: false,
-            access_sppd: "",
-            access_skpd: "",
-            access_spl: "",
-            access_srl: "",
-            access_cuti: "",
-            access_ijin: "",
-            access_attendance: "",
-            access_calendar: "",
-            access_user: "",
-            access_profile: "",
-            access_dept: "",
-            access_setting: "",
+            access_sppd: [],
+            access_skpd: [],
+            access_spl: [],
+            access_srl: [],
+            access_cuti: [],
+            access_ijin: [],
+            access_attendance: [],
+            access_calendar: [],
+            access_user: [],
+            access_profile: [],
+            access_dept: [],
+            access_setting: [],
         },
         success:"",
         error:"",
+        modal:false,
         loading:false,
         add:false,
         edit:false,
     }
     
-    let formProfileState = $state( {...formProfilAnswer})
+    let formProfileState = $state({...formProfilAnswer})
         
     const formProfileEdit = async (id:string) =>{
         try {
-            formProfileState.loading = true
-            const req = await axios.get(`/api/admin/profile/${id}`)
-            formProfileState.answer = {...await req.data}
             formProfileState.edit = true
+            const req = await axios.get(`/api/admin/profile/${id}`)
+            const res = await req.data
+            formProfileState.answer = {...res}
+            Object.entries(res).map(([key, value]) => {
+                if(key.startsWith("access_")) formProfileState.answer[key] = value.split("")
+            })
             formProfileState.add = false
-            formProfileState.loading = false
         } catch (error) {
-            formProfileState.loading = false
+        } finally {
         }
     }
 
@@ -112,6 +123,7 @@
                 formProfileState.loading = true
                 const req = await axios.post('/api/admin/profile', formProfileState.answer)
                 const res = await req.data
+                await invalidateAll()
                 formProfileBatal()
                 tableProfile.invalidate()
                 formProfileState.success = res.message
@@ -165,9 +177,12 @@
             approver: "",
             substitute: "",
             signature:"",
+            status:"",
         },
         success:"",
         error:"",
+        modalDelete:false,
+        modalChangePassword:false,
         loading:false,
         add:false,
         edit:false,
@@ -213,6 +228,7 @@
             if(isValid.success){
                 const req = await axios.post('/api/admin/user', formUserState.answer)
                 const res = await req.data
+                await invalidateAll()
                 formUserBatal()
                 tableUser.invalidate()
                 formUserState.success = res.message
@@ -237,6 +253,26 @@
             formUserState.loading = true
             const req = await axios.delete(`/api/admin/user/${id}`)
             const res = await req.data
+            formUserState.success = res.message
+        } catch (error) {
+            formUserState.error = ""
+            formUserState.success = ""
+        }finally{
+            tableUser.invalidate()
+            formUserState.loading = false
+        }
+    }
+
+    const formUserChangePassword = async (id:string) =>{
+        try {
+            formUserState.error = ""
+            formUserState.loading = true
+            const req = await axios.post(`/api/admin/user/${id}/password`, {
+                payroll: formUserState.answer.payroll,
+                password: formUserState.answer.password,
+            })
+            const res = await req.data
+            formUserBatal()
             formUserState.success = res.message
         } catch (error) {
             formUserState.error = ""
@@ -452,6 +488,18 @@
     
     const formCalendarBatal = () => formCalendar = {...formCalendarAnswer}
     
+    const getDept = async () =>{
+        const req = await fetch('/api/data?type=dept')
+        const res = await req.json()
+        return res
+    }
+
+    const getProfile = async () =>{
+        const req = await fetch('/api/data?type=profile')
+        const res = await req.json()
+        return res
+    }
+    
     $effect(()=>{
         tableProfile.load(async(state: State) => {
             try {
@@ -501,36 +549,24 @@
             }
         })
     })
-
-    const getDept = async () =>{
-        const req = await fetch('/api/data?type=dept')
-        const res = await req.json()
-        return res
-    }
-
-    const getProfile = async () =>{
-        const req = await fetch('/api/data?type=profile')
-        const res = await req.json()
-        return res
-    }
     
     setTimeout(()=>{
-        tableProfile.invalidate()
-        tableUser.invalidate()
-        tableDept.invalidate()
-        tableCalendar.invalidate()
+        if (pecahArray(userProfile?.access_profile, "R"))tableProfile.invalidate()
+        if (pecahArray(userProfile?.access_user, "R")) tableUser.invalidate()
+        if (pecahArray(userProfile?.access_dept, "R")) tableDept.invalidate()
+        if (pecahArray(userProfile?.access_calendar, "R")) tableCalendar.invalidate()
     }, 1000)
 </script>
 
 <svelte:head>
-    <title>Admin Page</title>
+    <title>Admin</title>
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#if urlTab}
-        <Toast class='my-2'>
-            {urlMessage}
-        </Toast>
+        <Alert class='my-2'>
+            <span>{urlMessage}</span>
+        </Alert>
     {/if}
 
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
@@ -570,9 +606,9 @@
                         <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                             <input type='hidden' name="profile_id" disabled={formProfileState.edit} bind:value={formProfileState.answer.profile_id}/>
                             <div class="flex flex-col md:flex-row gap-4">
-                                <div class="flex flex-col gap-4 flex-1">
-                                    <MyInput type='text' title='Nama' name="name" bind:value={formProfileState.answer.name}/>
-                                    <Checkbox bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <MyInput type='text'  title='Nama' name="name" bind:value={formProfileState.answer.name}/>
+                                    <Checkbox class='' bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
                                 </div>
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
                             </div>
@@ -629,7 +665,7 @@
                                 </div>
                                 <div class="flex flex-col gap-2">
                                     <Label>Access Setting (Admin)</Label>
-                                    <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_setting} />
+                                    <MultiSelect items={ListAccess} bind:value={formProfileState.answer.access_setting} />
                                 </div>
                             </div>
                         </form>
@@ -664,7 +700,7 @@
                                 <TableBody tableBodyClass="divide-y">
                                     {#if tableProfile.rows.length > 0}
                                         {#each tableProfile.rows as row}
-                                            <TableBodyRow>
+                                            <TableBodyRow class='h-10'>
                                                 <TableBodyCell class='bg-bgdark text-textdark'>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.user_hrd ? "Yes": "No"}</TableBodyCell>
@@ -676,7 +712,9 @@
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
@@ -761,13 +799,19 @@
                             <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
                             <div class="flex flex-col">
                                 <div class="flex gap-2">
-
                                     <MyInput type='text' title='Approver' name="approver" bind:value={formUserState.answer.approver}/>
                                     <MyInput type='text' title='Substitute' name="substitute" bind:value={formUserState.answer.substitute}/>
                                 </div>
                                 <span class='text-[.8rem] italic'>Handle who delegate and substitute</span>
                             </div>
                             <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/>
+                            <div class="flex flex-col gap-2">
+                                <Label for='level'>Status</Label>
+                                <Select name='level' items={[
+                                    {value:"Aktif", name:"Aktif"},
+                                    {value:"Nonaktif", name:"Nonaktif"},
+                                ]} bind:value={formUserState.answer.status} />
+                            </div>
                         </form>
                     {/if}
 
@@ -802,7 +846,7 @@
                                 <TableBody tableBodyClass="divide-y">
                                     {#if tableUser.rows.length > 0}
                                         {#each tableUser.rows as row}
-                                            <TableBodyRow>
+                                            <TableBodyRow class='h-10'>
                                                 <TableBodyCell>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.position}</TableBodyCell>
@@ -811,35 +855,64 @@
                                                 <TableBodyCell>{row.email}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
-                                                    <MyButton onclick={()=> formUserDelete(row.payroll)}><Trash size={12} /></MyButton>
+                                                    <MyButton onclick={()=> {
+                                                        formUserState.answer.payroll = row.payroll
+                                                        formUserState.modalDelete = true
+                                                    }}><Trash size={12} /></MyButton>
+                                                    <MyButton onclick={()=> {
+                                                        formUserState.answer.payroll = row.payroll
+                                                        formUserState.modalChangePassword = true
+                                                    }}><KeyRound size={12} /></MyButton>
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
                         </Table>
                         {#if tableUser.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
-                                Showing {tableUser.rowCount.start} to {tableUser.rowCount.end} of {tableUser.rowCount.total} rows
-                                <Badge color="dark" border>Page {tableUser.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableUser.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableUser.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableUser.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableUser.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableUser.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableUser.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-muted self-end text-[.9rem]'>
+                                    Showing {tableUser.rowCount.start} to {tableUser.rowCount.end} of {tableUser.rowCount.total} rows
+                                    <Badge color="dark" border>Page {tableUser.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableUser.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableUser.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableUser.pages as page}
+                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableUser.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableUser.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableUser.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
                             </div>
-                        </div>
                         {/if}
                     </Datatable>
                 </div>
+
+                <Modal bind:open={formUserState.modalDelete} autoclose>
+                    <div class="flex flex-col gap-6">
+                        <h3>Delete User {formUserState.answer.payroll} ?</h3>
+                        <div class="flex gap-2">
+                            <Button color='green' onclick={()=> formUserDelete(formUserState.answer.payroll)}>Yes</Button>
+                            <Button color='red' onclick={()=> formUserState.modalDelete = false}>No</Button>
+                        </div>
+                    </div>
+                </Modal>
+                <Modal bind:open={formUserState.modalChangePassword} autoclose>
+                    <div class="flex flex-col gap-6">
+                        <h3>Delete User {formUserState.answer.payroll} ?</h3>
+                        <MyInput type='password' title='New Password' name="password" bind:value={formUserState.answer.password}/>
+                        <div class="flex gap-2">
+                            <Button color='green' onclick={()=> formUserChangePassword(formUserState.answer.payroll)}>Change Password</Button>
+                            <Button color='red' onclick={()=> formUserState.modalDelete = false}>No</Button>
+                        </div>
+                    </div>
+                </Modal>
             </TabItem>
         {/if}
         {#if pecahArray(userProfile?.access_dept, "R")}
@@ -918,7 +991,7 @@
                                 <TableBody tableBodyClass="divide-y">
                                     {#if tableDept.rows.length > 0}
                                         {#each tableDept.rows as row}
-                                            <TableBodyRow>
+                                            <TableBodyRow class='h-10'>
                                                 <TableBodyCell>{row.dept_code}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{row.initial}</TableBodyCell>
@@ -1054,8 +1127,6 @@
                                     <ThSort table={tableCalendar} field="type">Type</ThSort>
                                     <ThSort table={tableCalendar} field="description">Description</ThSort>
                                     <ThSort table={tableCalendar} field="date">Date</ThSort>
-                                    <ThSort table={tableCalendar} field="name">Created By</ThSort>
-                                    <ThSort table={tableCalendar} field="createdAt">Created At</ThSort>
                                     <ThSort table={tableCalendar} field="">#</ThSort>
                                 </TableHead>
 
@@ -1067,12 +1138,10 @@
                                     <TableBody tableBodyClass="divide-y">
                                         {#if tableCalendar.rows.length > 0}
                                             {#each tableCalendar.rows as row}
-                                                <TableBodyRow>
+                                                <TableBodyRow class='h-10'>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>{row.description}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.date, 'date')}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.createdAt, 'datetime')}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
                                                         <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton>

@@ -15,15 +15,13 @@ export async function GET({url}){
         
         const status = await prisma.$transaction(async (tx) => {
             const items = await tx.$queryRawUnsafe(`
-                SELECT c.*, e.name FROM calendar as c
-                LEFT JOIN employee e ON e.payroll = c.createdBy
+                SELECT c.* FROM calendar as c
                 WHERE YEAR(date) = ? AND (description like ? OR type like ? OR date like ?)
                 ORDER by ${sort} ${order}
                 LIMIT ? OFFSET ?`,
                 year, `%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
 
             const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM calendar as c
-                LEFT JOIN employee e ON e.payroll = c.createdBy
                 WHERE YEAR(date) = ? AND (description like ? OR type like ? OR date like ?)`,
                 year, `%${search}%`,`%${search}%`,`%${search}%`) as {count:number}[]
 
@@ -62,7 +60,6 @@ export async function POST({request}){
 
         return json(status)
     } catch (err: any) {
-        console.log(err.message)
-        error(500, err.message)
+        error(500, prismaErrorHandler(err))
     }
 }

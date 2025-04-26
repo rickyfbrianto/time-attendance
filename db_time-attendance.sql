@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 19, 2025 at 04:33 AM
+-- Generation Time: Apr 24, 2025 at 12:45 PM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -22,6 +22,28 @@ SET time_zone = "+00:00";
 --
 
 DELIMITER $$
+--
+-- Procedures
+--
+CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_daily_attendance` ()   BEGIN
+    DECLARE today_date DATE;
+    SET today_date = CURDATE();
+
+    -- Hanya insert jika belum ada data untuk tanggal hari ini
+    INSERT INTO attendance 
+(attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,type,ijin_info,description)
+    SELECT 
+uuid(), e.user_id_machine, CONCAT(today_date, ' 00:00:00'),CONCAT(today_date, ' 00:00:00'),
+null,null,'','',''
+    FROM 
+        employee e
+    WHERE NOT EXISTS (
+        SELECT 1 FROM attendance a
+        WHERE DATE(a.check_in) = today_date
+        AND a.user_id_machine = e.user_id_machine
+    );
+END$$
+
 --
 -- Functions
 --
@@ -154,16 +176,29 @@ CREATE TABLE `attendance` (
 --
 
 INSERT INTO `attendance` (`attendance_id`, `user_id_machine`, `check_in`, `check_out`, `check_in2`, `check_out2`, `type`, `ijin_info`, `description`, `attachment`, `createdBy`, `createdAt`) VALUES
-('1c9ef00a-1cb2-11f0-9568-7c10c99f4b22', '111', '2025-04-22 00:00:00', '2025-04-22 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-19 08:06:11'),
-('1c9ef3e8-1cb2-11f0-9568-7c10c99f4b22', '112', '2025-04-22 00:00:00', '2025-04-22 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-19 08:06:11'),
-('1c9ef5c0-1cb2-11f0-9568-7c10c99f4b22', '229', '2025-04-22 00:00:00', '2025-04-22 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-19 08:06:11'),
-('1c9ef6ff-1cb2-11f0-9568-7c10c99f4b22', '707', '2025-04-22 00:00:00', '2025-04-22 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-19 08:06:11'),
-('4e844ac8-1cc2-11f0-9568-7c10c99f4b22', '111', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Isra miraj', NULL, NULL, '2025-04-19 10:02:07'),
-('4e844c8f-1cc2-11f0-9568-7c10c99f4b22', '112', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Isra miraj', NULL, NULL, '2025-04-19 10:02:07'),
-('4e844d91-1cc2-11f0-9568-7c10c99f4b22', '123', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Isra miraj', NULL, NULL, '2025-04-19 10:02:07'),
-('4e844e59-1cc2-11f0-9568-7c10c99f4b22', '229', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Isra miraj', NULL, NULL, '2025-04-19 10:02:07'),
-('4e844f22-1cc2-11f0-9568-7c10c99f4b22', '707', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Isra miraj', NULL, NULL, '2025-04-19 10:02:07'),
-('62f789b6-1cbb-11f0-9568-7c10c99f4b22', '123', '2025-04-22 00:00:00', '2025-04-22 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-19 09:12:35');
+('01cff88c-b9f0-454f-be45-3bc8725fea9e', '707', '2025-04-07 00:00:00', '2025-04-07 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('1b58214e-b7a0-4035-82ec-7cf066833f1a', '707', '2025-04-09 08:00:00', '2025-04-09 17:00:00', NULL, NULL, 'HKM', '', 'HKM', NULL, '202207', '2025-04-17 15:43:29'),
+('266bfd60-205c-11f0-acd8-80c5f2f97990', '111', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, 'HKM', '', '', NULL, NULL, '2025-04-24 00:01:00'),
+('266bfea0-205c-11f0-acd8-80c5f2f97990', '112', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, 'HKM', '', '', NULL, NULL, '2025-04-24 00:01:00'),
+('266bff63-205c-11f0-acd8-80c5f2f97990', '229', '2025-04-24 08:03:00', '2025-04-24 18:40:00', NULL, NULL, 'HKC', '', '', NULL, NULL, '2025-04-24 00:01:00'),
+('266c0171-205c-11f0-acd8-80c5f2f97990', '707', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-24 00:01:00'),
+('3399313d-bfb1-407f-ab5e-171ba950345c', '707', '2025-04-08 00:00:00', '2025-04-08 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('3d432474-35c6-4ce6-a7ca-686083c31064', '707', '2025-04-14 08:00:00', '2025-04-14 19:00:00', NULL, NULL, 'HKM', '', '', NULL, '202207', '2025-04-21 17:01:47'),
+('471f916f-dda8-457e-b1a9-180b21bab207', '707', '2025-04-04 08:00:00', '2025-04-04 17:00:00', NULL, NULL, 'HKM', '', '', NULL, '214505', '2025-04-18 08:53:41'),
+('4d183c71-20da-11f0-acd8-80c5f2f97990', '707', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Khitanan/Baptis', '', 'Khitanan', NULL, NULL, '2025-04-24 15:04:01'),
+('88388b8c-951a-49df-9da5-6d9cbbded135', '707', '2025-04-03 00:00:00', '2025-04-03 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('a448d1ed-1b36-11f0-b115-0492263d7fc5', '111', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
+('a448d449-1b36-11f0-b115-0492263d7fc5', '112', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
+('a448d4e4-1b36-11f0-b115-0492263d7fc5', '229', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
+('b964d0dc-1f49-11f0-b2eb-0492263d7fc5', NULL, '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-22 15:16:36'),
+('b964eec7-1f49-11f0-b2eb-0492263d7fc5', NULL, '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-22 15:16:36'),
+('bdf4736c-20da-11f0-acd8-80c5f2f97990', '707', '2025-04-21 00:00:00', '2025-04-21 00:00:00', NULL, NULL, 'Bencana Alam', '', 'banjir', NULL, NULL, '2025-04-24 15:07:10'),
+('dfd081f9-20dd-11f0-acd8-80c5f2f97990', '707', '2025-04-28 00:00:00', '2025-04-28 00:00:00', NULL, NULL, 'Cuti Khitanan/Baptis', '', 'Khitanan', NULL, NULL, '2025-04-24 15:29:35'),
+('e826e001-1c03-11f0-b115-0492263d7fc5', '112', '2025-04-17 00:00:00', '2025-04-17 00:00:00', NULL, NULL, 'Cuti Tahunan', '', 'Ibadah Haji (asdasdasd)', NULL, NULL, '2025-04-18 11:19:14'),
+('f0cc4b3f-200c-11f0-acd8-80c5f2f97990', '111', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
+('f0cc4d47-200c-11f0-acd8-80c5f2f97990', '112', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
+('f0cc4e23-200c-11f0-acd8-80c5f2f97990', '229', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
+('f0cc5527-200c-11f0-acd8-80c5f2f97990', '707', '2025-04-23 08:00:00', '2025-04-23 18:22:00', NULL, NULL, 'HKM', '', '', NULL, '214505', '2025-04-23 14:34:00');
 
 --
 -- Triggers `attendance`
@@ -192,18 +227,16 @@ CREATE TABLE `calendar` (
   `calendar_id` varchar(40) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
   `type` enum('Hari Libur','Cuti Bersama','Event Kantor') DEFAULT NULL,
-  `date` date DEFAULT NULL,
-  `createdAt` datetime NOT NULL DEFAULT current_timestamp(),
-  `createdBy` varchar(8) DEFAULT NULL
+  `date` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `calendar`
 --
 
-INSERT INTO `calendar` (`calendar_id`, `description`, `type`, `date`, `createdAt`, `createdBy`) VALUES
-('a03f37fa-3ede-42a3-8bb6-cae3248e226a', 'Isra miraj', 'Cuti Bersama', '2025-04-25', '2025-04-19 10:02:07', '202207'),
-('f47c319f-a493-457c-ba57-fe4372560673', 'Cuti Bersama Paskah', 'Cuti Bersama', '2025-04-22', '2025-04-19 09:49:49', '202207');
+INSERT INTO `calendar` (`calendar_id`, `description`, `type`, `date`) VALUES
+('123', 'Tes', 'Cuti Bersama', '2025-04-02'),
+('1f03f582-57f1-492b-90f4-f51e2ff99fa7', 'Cuti Bersama Paskah', 'Cuti Bersama', '2025-04-18');
 
 --
 -- Triggers `calendar`
@@ -279,6 +312,18 @@ CREATE TABLE `cuti` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Dumping data for table `cuti`
+--
+
+INSERT INTO `cuti` (`cuti_id`, `payroll`, `type`, `description`, `date`, `year`, `status`, `approval`, `createdAt`) VALUES
+('285c2488-3bc0-4c81-9c2a-d32b3a6bcdbd', '213514', 'Ibadah Haji', 'asdasdasd', '2025-04-17', 2025, 'Approved', '214505', '2025-04-17 11:14:53'),
+('2b210154-e333-464a-a8fb-4a01011605d4', '213514', 'Ibadah Haji', 'tsrtrsts', '2025-04-29', 2025, 'Waiting', '214505', '2025-04-24 15:04:47'),
+('abf4af45-5d08-4015-9804-c2990519e954', '213514', 'Ibadah Haji', 'tsrtrsts', '2025-04-24', 2025, 'Waiting', '214505', '2025-04-24 15:04:47'),
+('ad21af16-6474-46b6-8747-7e049b90ed79', '213514', 'Ibadah Haji', 'tsrtrsts', '2025-04-25', 2025, 'Waiting', '214505', '2025-04-24 15:04:47'),
+('bb104483-734e-4178-b652-5229242a5e30', '202207', 'Cuti Tahunan', 'Mau jalan2', '2025-04-04', 2025, 'Cancelled', '214505', '2025-04-18 11:29:50'),
+('c0f99077-cdb3-4e6c-8fb2-27c642e6f351', '213514', 'Ibadah Haji', 'tsrtrsts', '2025-04-28', 2025, 'Waiting', '214505', '2025-04-24 15:04:47');
+
+--
 -- Triggers `cuti`
 --
 DELIMITER $$
@@ -309,6 +354,7 @@ CREATE TABLE `dept` (
 --
 
 INSERT INTO `dept` (`dept_id`, `dept_code`, `initial`, `name`, `status`) VALUES
+('11165938-324f-4adb-9301-ce525a0f33ce', '5001', 'FA', 'Finance And Accounting', 'Aktif'),
 ('9f251207-0bf9-41cd-82f4-08ed9f6eae95', '1004', 'CAT', 'Cementing & assembly', 'Aktif'),
 ('a3b885be-a168-46ba-9124-c9fbd7a188e3', '5003', 'MIS', 'Management Information System', 'Aktif');
 
@@ -333,19 +379,19 @@ CREATE TABLE `employee` (
   `approver` varchar(8) DEFAULT NULL,
   `substitute` varchar(8) DEFAULT NULL,
   `join_date` date NOT NULL DEFAULT current_timestamp(),
-  `signature` varchar(250) NOT NULL
+  `signature` varchar(250) NOT NULL,
+  `status` enum('Aktif','Nonaktif') NOT NULL DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `employee`
 --
 
-INSERT INTO `employee` (`payroll`, `user_id_machine`, `profile_id`, `email`, `name`, `password`, `position`, `department`, `location`, `phone`, `workhour`, `approver`, `substitute`, `join_date`, `signature`) VALUES
-('123456', '123', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'anglklingdarma@gmail.com', 'Asfami', 'U2FsdGVkX18xsRWbCTc2cpo3v+yafWvOIKwwm+NQbXg=', 'Staff IT', '5003', 'Samarinda', '085245368842', 8, '214505', '213514', '2025-04-19', 'tes'),
-('202201', '111', 'Profile1', 'tes@gmail.com', 'Ryan', 'U2FsdGVkX1/SPfgIOaR9AhC8lsxFFKt94qWGZ+u7GKc=', 'Staff IT', '1004', 'Samarinda', '081234561234', 8, '214505', '213514', '2025-02-11', 'tes'),
-('202207', '707', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'ricky@sagatade.co.id', 'Tjoa Ricky Febrianto', 'U2FsdGVkX1/SPfgIOaR9AhC8lsxFFKt94qWGZ+u7GKc=', 'Staff IT', '5003', 'Samarinda', '085245368842', 8, '214505', '213514', '2024-03-25', '123'),
-('213514', '112', 'Profile1', 'dedy@sagatrade.co.id', 'Dedy Setiawan', 'U2FsdGVkX1/SPfgIOaR9AhC8lsxFFKt94qWGZ+u7GKc=', 'Staff', '5003', 'Samarinda', '081234561234', 8, '214505', '202201', '2025-04-16', 'Tes'),
-('214505', '229', 'Profile1', 'syamsuddin@sagatrade.co.id', 'Udhin', 'U2FsdGVkX1/SPfgIOaR9AhC8lsxFFKt94qWGZ+u7GKc=', 'Kasi IT', '5003', 'Samarinda', '081244608676', 8, NULL, '213514', '2023-02-10', 'x_x');
+INSERT INTO `employee` (`payroll`, `user_id_machine`, `profile_id`, `email`, `name`, `password`, `position`, `department`, `location`, `phone`, `workhour`, `approver`, `substitute`, `join_date`, `signature`, `status`) VALUES
+('202201', '111', 'Profile1', 'ryan@gmail.com', 'Ryan', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=', 'Staff', '1004', 'Samarinda', '081234561234', 8, '202201', '213514', '2025-02-11', 'tes', 'Aktif'),
+('202207', '707', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'ricky@sagatade.co.id', 'Tjoa Ricky Febrianto', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=\r\n', 'Staff IT Mantap', '5003', 'Samarinda', '085245368842', 8, '214505', '213514', '2024-03-25', '123', 'Aktif'),
+('213514', '112', 'Profile1', 'dedy@sagatrade.co.id', 'Dedy Setiawan', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=', 'Staff', '5003', 'Samarinda', '081234561234', 8, '214505', '202201', '2025-04-16', 'Tes', 'Aktif'),
+('214505', '229', 'Profile1', 'syamsuddin@sagatrade.co.id', 'Udhin', 'U2FsdGVkX188LpB9pGAmAAk1XBoNev3syuN5vNX4pMs=', 'Kasi IT', '5003', 'Samarinda', '081244608676', 8, NULL, '213514', '2023-02-10', 'x_x', 'Aktif');
 
 --
 -- Triggers `employee`
@@ -373,6 +419,13 @@ CREATE TABLE `ijin` (
   `approval` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ijin`
+--
+
+INSERT INTO `ijin` (`ijin_id`, `payroll`, `type`, `description`, `date`, `status`, `approval`, `createdAt`) VALUES
+('9b605d59-8138-4cfd-a0db-dddb330a05aa', '202207', 'Cuti Khitanan/Baptis', 'Khitanan', '2025-04-28', 'Reject', '214505', '2025-04-24 14:40:34');
 
 --
 -- Triggers `ijin`
@@ -417,9 +470,8 @@ CREATE TABLE `profile` (
 --
 
 INSERT INTO `profile` (`profile_id`, `name`, `description`, `level`, `user_hrd`, `access_sppd`, `access_skpd`, `access_attendance`, `access_spl`, `access_srl`, `access_cuti`, `access_ijin`, `access_calendar`, `access_user`, `access_profile`, `access_dept`, `access_setting`) VALUES
-('4483d746-9046-45d3-a08b-f5ff80d81e54', 'Staff IT', 'Staff IT', 2, 1, 'CRUD', 'C', 'CRUD', 'C', 'C', 'C', 'C', 'CR', 'CR', 'CRUD', 'CR', 'CRU'),
-('ad19245f-2e70-46ce-b480-a246488ec683', 'Kasi IT', 'Kasi IT', 2, 0, 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'CR', 'RC', 'CR', 'CR', 'CR'),
-('Profile1', 'Kasubsi IT', 'Kasubsi IT', 2, 1, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CR', 'CR', 'CRUD', '', '');
+('4483d746-9046-45d3-a08b-f5ff80d81e54', 'Staff IT', 'Staff IT', 2, 0, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CR', 'CRDU', 'CRUD', 'CRUD', 'CUDR'),
+('Profile1', 'Kasubsi IT', 'Kasubsi IT', 2, 1, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CR', 'CR', 'CRUD', 'CRUD', 'CRUD');
 
 -- --------------------------------------------------------
 
@@ -438,7 +490,7 @@ CREATE TABLE `setting` (
 --
 
 INSERT INTO `setting` (`setting_id`, `start_periode`, `end_periode`) VALUES
-('id', 13, 16);
+('id', 23, 22);
 
 -- --------------------------------------------------------
 
@@ -468,9 +520,19 @@ CREATE TABLE `spl` (
   `purpose` varchar(255) NOT NULL,
   `est_start` datetime NOT NULL,
   `est_end` datetime NOT NULL,
-  `createdBy` varchar(8) DEFAULT NULL,
+  `status1` enum('Waiting','Reject','Approved','Cancelled') NOT NULL DEFAULT 'Waiting',
+  `approval1` varchar(8) DEFAULT NULL,
+  `status2` enum('Waiting','Reject','Approved','Cancelled') NOT NULL DEFAULT 'Waiting',
+  `approval2` varchar(8) DEFAULT NULL,
   `createdAt` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `spl`
+--
+
+INSERT INTO `spl` (`spl_id`, `purpose`, `est_start`, `est_end`, `status1`, `approval1`, `status2`, `approval2`, `createdAt`) VALUES
+('1-SPL_MIS_STM_04-2025', 'Tes lembur', '2025-04-14 17:00:00', '2025-04-14 21:00:00', 'Reject', '214505', 'Waiting', '214505', '2025-04-22 13:46:02');
 
 -- --------------------------------------------------------
 
@@ -485,6 +547,13 @@ CREATE TABLE `spl_detail` (
   `payroll` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `spl_detail`
+--
+
+INSERT INTO `spl_detail` (`spl_detail_id`, `step`, `spl_id`, `payroll`, `description`) VALUES
+('beeb4407-7e4b-44eb-933a-258b3d8f320a', 0, '1-SPL_MIS_STM_04-2025', '202207', 'tes, react');
 
 -- --------------------------------------------------------
 
@@ -530,12 +599,19 @@ CREATE TABLE `srl` (
   `payroll` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `real_start` datetime NOT NULL,
   `real_end` datetime NOT NULL,
-  `status1` enum('Waiting','Reject','Approved','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status1` enum('Waiting','Reject','Approved','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting',
   `approval1` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status2` enum('Waiting','Reject','Approved','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status2` enum('Waiting','Reject','Approved','Cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Waiting',
   `approval2` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `createdAt` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `srl`
+--
+
+INSERT INTO `srl` (`srl_id`, `spl_id`, `payroll`, `real_start`, `real_end`, `status1`, `approval1`, `status2`, `approval2`, `createdAt`) VALUES
+('1-SRL_MIS_STM_04-2025', '1-SPL_MIS_STM_04-2025', '202207', '2025-04-14 17:00:00', '2025-04-14 19:00:00', 'Approved', '214505', 'Approved', '214505', '2025-04-22 13:50:28');
 
 -- --------------------------------------------------------
 
@@ -549,6 +625,14 @@ CREATE TABLE `srl_detail` (
   `description` varchar(255) NOT NULL,
   `status` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `srl_detail`
+--
+
+INSERT INTO `srl_detail` (`srl_detail_id`, `srl_id`, `description`, `status`) VALUES
+('38678004-2ee4-45cd-864e-93e7f5b7dfe7', '1-SRL_MIS_STM_04-2025', 'react', 'Completed'),
+('a094df59-48f2-4e46-bac5-b94f85e77136', '1-SRL_MIS_STM_04-2025', 'tes', 'Completed');
 
 -- --------------------------------------------------------
 
@@ -611,15 +695,15 @@ ALTER TABLE `attendance`
   ADD KEY `check_in` (`check_in`),
   ADD KEY `check_out` (`check_out`),
   ADD KEY `check_in2` (`check_in2`),
-  ADD KEY `check_out2` (`check_out2`);
+  ADD KEY `check_out2` (`check_out2`),
+  ADD KEY `type` (`type`);
 
 --
 -- Indexes for table `calendar`
 --
 ALTER TABLE `calendar`
   ADD PRIMARY KEY (`calendar_id`),
-  ADD UNIQUE KEY `date` (`date`),
-  ADD KEY `createdBy` (`createdBy`);
+  ADD UNIQUE KEY `date` (`date`);
 
 --
 -- Indexes for table `check_io`
@@ -686,16 +770,15 @@ ALTER TABLE `skpd`
   ADD PRIMARY KEY (`skpd_id`),
   ADD KEY `sppd_id` (`sppd_id`),
   ADD KEY `payroll` (`payroll`),
-  ADD KEY `createdBy` (`createdBy`),
-  ADD KEY `real_start` (`real_start`),
-  ADD KEY `real_end` (`real_end`);
+  ADD KEY `createdBy` (`createdBy`);
 
 --
 -- Indexes for table `spl`
 --
 ALTER TABLE `spl`
   ADD PRIMARY KEY (`spl_id`),
-  ADD KEY `createdBy` (`createdBy`),
+  ADD KEY `approval1` (`approval1`),
+  ADD KEY `approval2` (`approval2`),
   ADD KEY `est_start` (`est_start`),
   ADD KEY `est_end` (`est_end`);
 
@@ -713,9 +796,7 @@ ALTER TABLE `spl_detail`
 ALTER TABLE `sppd`
   ADD PRIMARY KEY (`sppd_id`),
   ADD KEY `dept` (`dept`),
-  ADD KEY `createdBy` (`createdBy`),
-  ADD KEY `start_date` (`start_date`),
-  ADD KEY `end_date` (`end_date`);
+  ADD KEY `createdBy` (`createdBy`);
 
 --
 -- Indexes for table `sppd_detail`
@@ -769,12 +850,6 @@ ALTER TABLE `attendance`
   ADD CONSTRAINT `Attendance_user_id_machine_fkey` FOREIGN KEY (`user_id_machine`) REFERENCES `employee` (`user_id_machine`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Constraints for table `calendar`
---
-ALTER TABLE `calendar`
-  ADD CONSTRAINT `calendar_createdBy_fkey` FOREIGN KEY (`createdBy`) REFERENCES `employee` (`payroll`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
 -- Constraints for table `check_io`
 --
 ALTER TABLE `check_io`
@@ -815,7 +890,8 @@ ALTER TABLE `skpd`
 -- Constraints for table `spl`
 --
 ALTER TABLE `spl`
-  ADD CONSTRAINT `spl_createBy_by_fkey` FOREIGN KEY (`createdBy`) REFERENCES `employee` (`payroll`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `spl_approval1_fkey` FOREIGN KEY (`approval1`) REFERENCES `employee` (`payroll`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `spl_approval2_fkey` FOREIGN KEY (`approval2`) REFERENCES `employee` (`payroll`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `spl_detail`
@@ -852,6 +928,14 @@ ALTER TABLE `srl`
 --
 ALTER TABLE `srl_detail`
   ADD CONSTRAINT `srl_detail_srl_id_fkey` FOREIGN KEY (`srl_id`) REFERENCES `srl` (`srl_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+DELIMITER $$
+--
+-- Events
+--
+CREATE DEFINER=`root`@`localhost` EVENT `event_insert_attendance` ON SCHEDULE EVERY 1 HOUR STARTS '2025-04-23 00:01:00' ON COMPLETION NOT PRESERVE ENABLE DO CALL insert_daily_attendance()$$
+
+DELIMITER ;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

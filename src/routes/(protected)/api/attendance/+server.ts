@@ -1,11 +1,11 @@
-import { cekRules, formatTanggal, formatTanggalISO, prismaErrorHandler, safeDate } from "@lib/utils";
+import { cekRules, formatTanggal, formatTanggalISO, prismaErrorHandler } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
 import { extname } from "node:path";
 import { v4 as uuid4} from "uuid";
 import { writeFile } from 'fs/promises'
 import path from 'path'
 import { prisma } from '@lib/utils.js'
-import { eachDayOfInterval, formatDate, getYear, format, getDay, parseISO, formatISO } from "date-fns";
+import { eachDayOfInterval, format, getDay } from "date-fns";
 
 export async function GET({url}){
     try {
@@ -18,6 +18,8 @@ export async function GET({url}){
         
         const dept = url.searchParams.get('dept') || ""
         const payroll = url.searchParams.get('payroll') || ""
+        const start_date = url.searchParams.get('start_date') || ""
+        const end_date = url.searchParams.get('end_date') || ""
         
         const status = await prisma.$transaction(async (tx) =>{
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
@@ -27,18 +29,20 @@ export async function GET({url}){
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                    WHERE (user.department like ? AND user.payroll like ?) AND (att.check_in like ? OR user.name like ? OR user.payroll like ?)
+                    WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
+                    AND user.department like ? AND user.payroll like ? AND DATE(check_in) BETWEEN ? AND ?
                     ORDER by ${sort} ${order}
                     LIMIT ${limit} OFFSET ${offset}`,
-                `%${dept}%`, `%${payroll}%`, `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
+                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, start_date, end_date) as {count:number}[]
             
             const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
                 SELECT att.attendance_id FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
-                    WHERE (user.department like ? AND user.payroll like ?) AND (att.check_in like ? OR user.name like ? OR user.payroll like ?)
+                    WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
+                    AND user.department like ? AND user.payroll like ? AND DATE(check_in) BETWEEN ? AND ?
                     ) as tmp`,
-                `%${dept}%`, `%${payroll}%`, `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
+                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, start_date, end_date) as {count:number}[]
             const totalItems = Number(count)
             return {items, totalItems}
         })
@@ -172,7 +176,6 @@ export async function POST({request, url, locals}) {
 
         return json(status)
     } catch (err) {
-        console.log(err)
-        error(500, { message: prismaErrorHandler(err) });
+        error(500, prismaErrorHandler(err))
     }
 }
