@@ -1,5 +1,8 @@
 import { error, json } from "@sveltejs/kit";
 import { encryptData, prismaErrorHandler } from "@lib/utils";
+import { extname } from "node:path";
+import { writeFile } from 'fs/promises'
+import path from 'path'
 import { prisma } from '@lib/utils.js'
 
 export async function GET({url}){
@@ -33,26 +36,69 @@ export async function GET({url}){
 
 export async function POST({ request }) {
     try {
-        const data = await request.json();
+        const data = await request.formData()
+        const signature = data.get('signature')
+        const fileSignature = data.get('payroll') + extname(signature.name)
+        const temp = Object.fromEntries(data.entries())
+        console.log(temp, fileSignature)
 
         const status = await prisma.$transaction(async (tx) => {
             const getUser = await tx.employee.findFirst({
-                where:{payroll : data.payroll }
+                where:{payroll : data.get('payroll') }
             })
 
             if(!getUser){
-                await prisma.employee.create({
-                    data:{...data,
-                        password: encryptData(data.password, import.meta.env.VITE_KEY)
+                const createUser = await prisma.employee.create({
+                    data:{
+                        payroll: data.get('payroll'),
+                        profile_id: data.get('profile_id'),
+                        user_id_machine: data.get('user_id_machine'),
+                        name: data.get('name'),
+                        password: encryptData(data.get('password'), import.meta.env.VITE_KEY),
+                        position: data.get('position'),
+                        department: data.get('department'),
+                        location: data.get('location'),
+                        phone: data.get('phone'),
+                        workhour: Number(data.get('workhour')),
+                        email: data.get('email'),
+                        approver: data.get('approver'),
+                        substitute: data.get('substitute'),
+                        signature: signature ? fileSignature : null,
+                        status: data.get('status'),
                     }
                 })
                 
+                if(createUser && signature){
+                    const filename = path.resolve('src/lib/assets/attach_signature') + `/${fileSignature}`
+                    await writeFile(filename, Buffer.from(await signature?.arrayBuffer()));
+                }
+                
                 return { message: "User successfully saved" }
             }else{
-                await prisma.employee.update({
-                    data:{ ...data },
-                    where:{ payroll : data.payroll }
+                const updateUser = await prisma.employee.update({
+                    data:{ 
+                        profile_id: data.get('profile_id'),
+                        user_id_machine: data.get('user_id_machine'),
+                        name: data.get('name'),
+                        position: data.get('position'),
+                        department: data.get('department'),
+                        location: data.get('location'),
+                        phone: data.get('phone'),
+                        workhour: Number(data.get('workhour')),
+                        email: data.get('email'),
+                        approver: data.get('approver'),
+                        substitute: data.get('substitute'),
+                        signature: signature ? fileSignature : null,
+                        status: data.get('status'),
+                    },
+                    where:{ payroll : data.get('payroll') }
                 })
+
+                if(updateUser && signature){
+                    const filename = path.resolve('src/lib/assets/attach_signature') + `/${fileSignature}`
+                    await writeFile(filename, Buffer.from(await signature?.arrayBuffer()));
+                }
+                
                 return { message: "User successfully updated" }
             }
         })

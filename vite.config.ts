@@ -9,12 +9,13 @@ export default defineConfig({
         host: "0.0.0.0",
         allowedHosts: ['ricky']
     },
-    // preview:{
-    //     allowedHosts: ['ricky.dev', 'ricky'],
-    // },
-    // resolve: {
-    //     alias: {
-    //         ".prisma/client/index-browser": "./node_modules/.prisma/client/index-browser.js",
-    //     }
-    // },
+    preview:{
+        port: 1000,
+        allowedHosts: ['ricky.dev', 'ricky'],
+    },
+    resolve: {
+        alias: {
+            ".prisma/client/index-browser": "./node_modules/.prisma/client/index-browser.js",
+        }
+    },
 });

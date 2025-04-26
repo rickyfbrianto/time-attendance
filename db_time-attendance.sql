@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 24, 2025 at 12:45 PM
+-- Generation Time: Apr 26, 2025 at 11:17 AM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -177,25 +177,46 @@ CREATE TABLE `attendance` (
 
 INSERT INTO `attendance` (`attendance_id`, `user_id_machine`, `check_in`, `check_out`, `check_in2`, `check_out2`, `type`, `ijin_info`, `description`, `attachment`, `createdBy`, `createdAt`) VALUES
 ('01cff88c-b9f0-454f-be45-3bc8725fea9e', '707', '2025-04-07 00:00:00', '2025-04-07 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
+('02c43f88-226d-11f0-acd8-80c5f2f97990', '803', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-26 15:06:42'),
+('02c44290-226d-11f0-acd8-80c5f2f97990', '803', '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-26 15:06:42'),
 ('1b58214e-b7a0-4035-82ec-7cf066833f1a', '707', '2025-04-09 08:00:00', '2025-04-09 17:00:00', NULL, NULL, 'HKM', '', 'HKM', NULL, '202207', '2025-04-17 15:43:29'),
-('266bfd60-205c-11f0-acd8-80c5f2f97990', '111', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, 'HKM', '', '', NULL, NULL, '2025-04-24 00:01:00'),
+('266bfd60-205c-11f0-acd8-80c5f2f97990', '121', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, 'HKM', '', '', NULL, NULL, '2025-04-24 00:01:00'),
 ('266bfea0-205c-11f0-acd8-80c5f2f97990', '112', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, 'HKM', '', '', NULL, NULL, '2025-04-24 00:01:00'),
 ('266bff63-205c-11f0-acd8-80c5f2f97990', '229', '2025-04-24 08:03:00', '2025-04-24 18:40:00', NULL, NULL, 'HKC', '', '', NULL, NULL, '2025-04-24 00:01:00'),
 ('266c0171-205c-11f0-acd8-80c5f2f97990', '707', '2025-04-24 00:00:00', '2025-04-24 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-24 00:01:00'),
+('335d9214-226d-11f0-acd8-80c5f2f97990', '124', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-26 15:08:04'),
+('335e0ce2-226d-11f0-acd8-80c5f2f97990', '124', '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-26 15:08:04'),
 ('3399313d-bfb1-407f-ab5e-171ba950345c', '707', '2025-04-08 00:00:00', '2025-04-08 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
 ('3d432474-35c6-4ce6-a7ca-686083c31064', '707', '2025-04-14 08:00:00', '2025-04-14 19:00:00', NULL, NULL, 'HKM', '', '', NULL, '202207', '2025-04-21 17:01:47'),
 ('471f916f-dda8-457e-b1a9-180b21bab207', '707', '2025-04-04 08:00:00', '2025-04-04 17:00:00', NULL, NULL, 'HKM', '', '', NULL, '214505', '2025-04-18 08:53:41'),
-('4d183c71-20da-11f0-acd8-80c5f2f97990', '707', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Khitanan/Baptis', '', 'Khitanan', NULL, NULL, '2025-04-24 15:04:01'),
+('4d183c71-20da-11f0-acd8-80c5f2f97990', '707', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, 'Cuti Resmi', '', 'Cuti Khitanan/Baptis', NULL, '181124', '2025-04-24 15:04:01'),
+('512ce5d9-2125-11f0-acd8-80c5f2f97990', '121', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-25 00:01:00'),
+('512ce6b3-2125-11f0-acd8-80c5f2f97990', '112', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-25 00:01:00'),
+('512ce72e-2125-11f0-acd8-80c5f2f97990', '229', '2025-04-25 00:00:00', '2025-04-25 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-25 00:01:00'),
+('718d836f-227e-11f0-acd8-80c5f2f97990', '111', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-26 17:11:29'),
+('718d8b5b-227e-11f0-acd8-80c5f2f97990', '111', '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-26 17:11:29'),
+('7befb511-21ee-11f0-acd8-80c5f2f97990', '121', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 00:01:00'),
+('7befb789-21ee-11f0-acd8-80c5f2f97990', '112', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 00:01:00'),
+('7befb8bc-21ee-11f0-acd8-80c5f2f97990', '229', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 00:01:00'),
+('7befb9d1-21ee-11f0-acd8-80c5f2f97990', '707', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 00:01:00'),
 ('88388b8c-951a-49df-9da5-6d9cbbded135', '707', '2025-04-03 00:00:00', '2025-04-03 00:00:00', NULL, NULL, 'Sakit', '', '', NULL, '202207', '2025-04-17 15:43:29'),
-('a448d1ed-1b36-11f0-b115-0492263d7fc5', '111', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
+('8e4bff37-226c-11f0-acd8-80c5f2f97990', '024', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-26 15:03:27'),
+('8e4c525e-226c-11f0-acd8-80c5f2f97990', '024', '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-26 15:03:27'),
+('94d1364a-226e-11f0-acd8-80c5f2f97990', '024', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 15:17:57'),
+('94d137a3-226e-11f0-acd8-80c5f2f97990', '124', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 15:17:57'),
+('94d13919-226e-11f0-acd8-80c5f2f97990', '803', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 15:17:57'),
+('94d1397f-226e-11f0-acd8-80c5f2f97990', '826', '2025-04-26 00:00:00', '2025-04-26 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-26 15:17:57'),
+('a448d1ed-1b36-11f0-b115-0492263d7fc5', '121', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
 ('a448d449-1b36-11f0-b115-0492263d7fc5', '112', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
 ('a448d4e4-1b36-11f0-b115-0492263d7fc5', '229', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-17 10:49:54'),
 ('b964d0dc-1f49-11f0-b2eb-0492263d7fc5', NULL, '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-22 15:16:36'),
 ('b964eec7-1f49-11f0-b2eb-0492263d7fc5', NULL, '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-22 15:16:36'),
 ('bdf4736c-20da-11f0-acd8-80c5f2f97990', '707', '2025-04-21 00:00:00', '2025-04-21 00:00:00', NULL, NULL, 'Bencana Alam', '', 'banjir', NULL, NULL, '2025-04-24 15:07:10'),
-('dfd081f9-20dd-11f0-acd8-80c5f2f97990', '707', '2025-04-28 00:00:00', '2025-04-28 00:00:00', NULL, NULL, 'Cuti Khitanan/Baptis', '', 'Khitanan', NULL, NULL, '2025-04-24 15:29:35'),
+('d839a4ac-226c-11f0-acd8-80c5f2f97990', '826', '2025-04-02 00:00:00', '2025-04-02 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Tes', NULL, NULL, '2025-04-26 15:05:31'),
+('d839d2e0-226c-11f0-acd8-80c5f2f97990', '826', '2025-04-18 00:00:00', '2025-04-18 00:00:00', NULL, NULL, 'Cuti Bersama', '', 'Cuti Bersama Paskah', NULL, NULL, '2025-04-26 15:05:31'),
+('dfd081f9-20dd-11f0-acd8-80c5f2f97990', '707', '2025-04-28 00:00:00', '2025-04-28 00:00:00', NULL, NULL, 'Cuti Resmi', '', 'Khitanan', NULL, NULL, '2025-04-24 15:29:35'),
 ('e826e001-1c03-11f0-b115-0492263d7fc5', '112', '2025-04-17 00:00:00', '2025-04-17 00:00:00', NULL, NULL, 'Cuti Tahunan', '', 'Ibadah Haji (asdasdasd)', NULL, NULL, '2025-04-18 11:19:14'),
-('f0cc4b3f-200c-11f0-acd8-80c5f2f97990', '111', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
+('f0cc4b3f-200c-11f0-acd8-80c5f2f97990', '121', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
 ('f0cc4d47-200c-11f0-acd8-80c5f2f97990', '112', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
 ('f0cc4e23-200c-11f0-acd8-80c5f2f97990', '229', '2025-04-23 00:00:00', '2025-04-23 00:00:00', NULL, NULL, '', '', '', NULL, NULL, '2025-04-23 14:34:00'),
 ('f0cc5527-200c-11f0-acd8-80c5f2f97990', '707', '2025-04-23 08:00:00', '2025-04-23 18:22:00', NULL, NULL, 'HKM', '', '', NULL, '214505', '2025-04-23 14:34:00');
@@ -329,7 +350,7 @@ INSERT INTO `cuti` (`cuti_id`, `payroll`, `type`, `description`, `date`, `year`,
 DELIMITER $$
 CREATE TRIGGER `cuti_onapproved_insert_attendace` AFTER UPDATE ON `cuti` FOR EACH ROW BEGIN
 	IF NEW.status = 'Approved' THEN
-		INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) SELECT UUID(),user_id_machine,NEW.date,NEW.date, NEW.type, NEW.description from employee where payroll=NEW.payroll;
+		INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) SELECT UUID(),user_id_machine,NEW.date,NEW.date, "Cuti Resmi", Concat(NEW.type, " - " ,NEW.description) from employee where payroll=NEW.payroll;
 	END IF;
 END
 $$
@@ -388,10 +409,15 @@ CREATE TABLE `employee` (
 --
 
 INSERT INTO `employee` (`payroll`, `user_id_machine`, `profile_id`, `email`, `name`, `password`, `position`, `department`, `location`, `phone`, `workhour`, `approver`, `substitute`, `join_date`, `signature`, `status`) VALUES
-('202201', '111', 'Profile1', 'ryan@gmail.com', 'Ryan', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=', 'Staff', '1004', 'Samarinda', '081234561234', 8, '202201', '213514', '2025-02-11', 'tes', 'Aktif'),
+('111111', '111', 'Profile1', 'itofficer5@sagatrade.co.id', 'Liner Hanger', 'U2FsdGVkX1/O7apo7/xtbz9S4XAhD0y2FunIsxguNEQ=', 'Head of the Music Division', '1004', 'Jakarta', '081245637890', 8, '202207', '214505', '2025-04-26', '111111.pdf', 'Aktif'),
+('140826', '826', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'harry@sagatrade.co.id', 'Harry Gumbira Ramadhan', 'U2FsdGVkX1+4Rm+/D7R6GOd0Z2CyJlti85WRbSZDRW8=', 'Staff IT', '5003', 'Jakarta', '0818-0737-354', 8, '202201', '202201', '2025-04-26', '123', 'Nonaktif'),
+('181124', '124', 'd80b49f2-a2ef-418f-aafb-9176e2a7345a', 'luvi@sagatrade.co.id', 'Luviana Riska', 'U2FsdGVkX19FlOOeNhhn9thgv8pJgolRSQgt2iFcLAs=', 'Staff HRD', '5003', 'Jakarta', '0813-8473-847', 8, '202201', '202201', '2025-04-26', 'tes', 'Aktif'),
+('202201', '121', 'Profile1', 'ryan@gmail.com', 'Ryan', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=', 'Staff', '1004', 'Samarinda', '081234561234', 8, '202201', '213514', '2025-02-11', 'tes', 'Aktif'),
 ('202207', '707', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'ricky@sagatade.co.id', 'Tjoa Ricky Febrianto', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=\r\n', 'Staff IT Mantap', '5003', 'Samarinda', '085245368842', 8, '214505', '213514', '2024-03-25', '123', 'Aktif'),
 ('213514', '112', 'Profile1', 'dedy@sagatrade.co.id', 'Dedy Setiawan', 'U2FsdGVkX1+3TI3S25xViylQlkOJSAlttKWbP8gUX44=', 'Staff', '5003', 'Samarinda', '081234561234', 8, '214505', '202201', '2025-04-16', 'Tes', 'Aktif'),
-('214505', '229', 'Profile1', 'syamsuddin@sagatrade.co.id', 'Udhin', 'U2FsdGVkX188LpB9pGAmAAk1XBoNev3syuN5vNX4pMs=', 'Kasi IT', '5003', 'Samarinda', '081244608676', 8, NULL, '213514', '2023-02-10', 'x_x', 'Aktif');
+('214505', '229', 'Profile1', 'syamsuddin@sagatrade.co.id', 'Udhin', 'U2FsdGVkX188LpB9pGAmAAk1XBoNev3syuN5vNX4pMs=', 'Kasi IT', '5003', 'Samarinda', '081244608676', 8, NULL, '213514', '2023-02-10', 'x_x', 'Aktif'),
+('220803', '803', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'aziz@sagatrade.co.id', 'Abdul Aziz Arrofiq', 'U2FsdGVkX19jac9Vb9wYSlewT4forOItAiPkYZ8WMWI=', 'Staff IT', '5003', 'Jakarta', '0899-8921-062', 8, '202201', '202201', '2025-04-26', 'tes', 'Aktif'),
+('291024', '024', '4483d746-9046-45d3-a08b-f5ff80d81e54', 'paulus@sagatrade.co.id', 'Paulus Hendro Nugroho', 'U2FsdGVkX18N+AhWVrCccBhyztPBJHQwCIEvvEmsqsc=', 'Head of the IT', '5003', 'Jakarta', '0818-0627-127', 8, '202201', '202201', '2025-04-26', 'tes', 'Aktif');
 
 --
 -- Triggers `employee`
@@ -425,7 +451,10 @@ CREATE TABLE `ijin` (
 --
 
 INSERT INTO `ijin` (`ijin_id`, `payroll`, `type`, `description`, `date`, `status`, `approval`, `createdAt`) VALUES
-('9b605d59-8138-4cfd-a0db-dddb330a05aa', '202207', 'Cuti Khitanan/Baptis', 'Khitanan', '2025-04-28', 'Reject', '214505', '2025-04-24 14:40:34');
+('961b6095-2bfa-4532-be41-1295c1370b96', '202207', 'Bencana Alam', 'Mantap', '2025-04-25', 'Waiting', '214505', '2025-04-25 15:26:55'),
+('9b605d59-8138-4cfd-a0db-dddb330a05aa', '202207', 'Cuti Khitanan/Baptis', 'Khitanan', '2025-04-28', 'Reject', '214505', '2025-04-24 14:40:34'),
+('ae914e76-8ac1-4192-9219-3c716228ae3c', '202207', 'Bencana Alam', 'Mantap', '2025-04-29', 'Waiting', '214505', '2025-04-25 15:26:55'),
+('fbf4b37b-d565-46a5-98e0-b48138605db9', '202207', 'Bencana Alam', 'Mantap', '2025-04-30', 'Waiting', '214505', '2025-04-25 15:26:55');
 
 --
 -- Triggers `ijin`
@@ -433,7 +462,7 @@ INSERT INTO `ijin` (`ijin_id`, `payroll`, `type`, `description`, `date`, `status
 DELIMITER $$
 CREATE TRIGGER `ijin_onapproved_insert_atttendance` AFTER UPDATE ON `ijin` FOR EACH ROW BEGIN
 	IF NEW.Status<>OLD.Status and NEW.Status='Approved' THEN
-		INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) SELECT UUID(),user_id_machine,NEW.date,NEW.date,NEW.type,NEW.description from employee where payroll=NEW.payroll;
+		INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) SELECT UUID(),user_id_machine,NEW.date,NEW.date, "Ijin Resmi", Concat(NEW.type, " - " ,NEW.description) from employee where payroll=NEW.payroll;
 	END IF;
 END
 $$
@@ -470,8 +499,9 @@ CREATE TABLE `profile` (
 --
 
 INSERT INTO `profile` (`profile_id`, `name`, `description`, `level`, `user_hrd`, `access_sppd`, `access_skpd`, `access_attendance`, `access_spl`, `access_srl`, `access_cuti`, `access_ijin`, `access_calendar`, `access_user`, `access_profile`, `access_dept`, `access_setting`) VALUES
-('4483d746-9046-45d3-a08b-f5ff80d81e54', 'Staff IT', 'Staff IT', 2, 0, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CR', 'CRDU', 'CRUD', 'CRUD', 'CUDR'),
-('Profile1', 'Kasubsi IT', 'Kasubsi IT', 2, 1, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CR', 'CR', 'CRUD', 'CRUD', 'CRUD');
+('4483d746-9046-45d3-a08b-f5ff80d81e54', 'Staff IT!', 'Staff IT', 1, 0, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD'),
+('d80b49f2-a2ef-418f-aafb-9176e2a7345a', 'Staff HRD', 'Staff HRD', 1, 1, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD'),
+('Profile1', 'Kasubsi IT!!!', 'Kasubsi IT', 2, 0, 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD', 'CRUD');
 
 -- --------------------------------------------------------
 
@@ -933,7 +963,7 @@ DELIMITER $$
 --
 -- Events
 --
-CREATE DEFINER=`root`@`localhost` EVENT `event_insert_attendance` ON SCHEDULE EVERY 1 HOUR STARTS '2025-04-23 00:01:00' ON COMPLETION NOT PRESERVE ENABLE DO CALL insert_daily_attendance()$$
+CREATE DEFINER=`root`@`localhost` EVENT `event_insert_attendance` ON SCHEDULE EVERY 10 MINUTE STARTS '2025-04-23 00:01:00' ON COMPLETION NOT PRESERVE ENABLE DO CALL insert_daily_attendance()$$
 
 DELIMITER ;
 COMMIT;

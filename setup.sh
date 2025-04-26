@@ -1,19 +1,16 @@
 #First action for setup
 
 echo "----------------------------- Installing all dependencies...";
-npm install
+pnpm install
 
 echo "----------------------------- Syncing Prisma...";
-npx prisma db pull && npx prisma generate
+pnpm prisma db pull && pnpm prisma generate
 
 echo "----------------------------- Prepare Svelte 5...";
-npm run prepare
-
-echo "----------------------------- Check dependencies";
-npm run check
+pnpm run prepare
 
 echo "----------------------------- Build program";
-npm run build
+pnpm run build
 
 echo "----------------------------- Jalankan program setelah build";
-npm run preview
+pnpm run preview

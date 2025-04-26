@@ -22,7 +22,13 @@ export async function GET({url}){
             const req = await prisma.setting.findFirst()
             return json(req)
         } else if(type == "profile"){
-            const req = await prisma.profile.findMany()
+            const req = await prisma.profile.findMany({
+                select:{
+                    profile_id: true,
+                    name: true,
+                    description: true
+                }
+            })
             return json(req)
         }else if(type=='spl_by_status'){
             const req = await prisma.$queryRawUnsafe(`

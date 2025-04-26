@@ -13,6 +13,7 @@
     import { page } from '$app/stores';
 	import { getYear } from 'date-fns';
 	import { z } from 'zod';
+    import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
 	import { invalidateAll } from '$app/navigation';
     
@@ -176,7 +177,7 @@
             email:"",
             approver: "",
             substitute: "",
-            signature:"",
+            signature: [],
             status:"",
         },
         success:"",
@@ -204,7 +205,7 @@
     }
     
     const formUserSubmit = async () =>{
-        try {
+        try {        
             formUserState.loading = true
             const valid = z.object({                
                 payroll: z.string().trim().length(6),
@@ -219,14 +220,21 @@
                 workhour: z.number(),
                 approver: z.string().trim().min(1),
                 substitute: z.string().trim().min(1),
-                signature: z.string().trim().min(1),
+                // signature: z.string().trim().min(1),
+                status: z.string().trim().min(1),
             })
             if(formUserState.add){
                 valid.extend({ password: z.string().trim().min(1) })
             }
+
+            const formData = new FormData()
+            Object.entries(formUserState.answer).forEach(val=>{
+                formData.append(val[0], val[1])
+            })  
+            
             const isValid = valid.safeParse(formUserState.answer)
             if(isValid.success){
-                const req = await axios.post('/api/admin/user', formUserState.answer)
+                const req = await axios.post('/api/admin/user', formData)
                 const res = await req.data
                 await invalidateAll()
                 formUserBatal()
@@ -487,6 +495,11 @@
     }
     
     const formCalendarBatal = () => formCalendar = {...formCalendarAnswer}
+
+    const getUser = async (val: string = "") =>{
+        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
+        return await req.json()
+    }
     
     const getDept = async () =>{
         const req = await fetch('/api/data?type=dept')
@@ -768,13 +781,14 @@
                         <MyLoading message="Get user data"/>
                     {/if}
                     {#if formUserState.add || formUserState.edit}
-                        <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
+                        <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                             <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
 
                             {#await getProfile() then val}
                                 <div class="flex flex-col gap-2">
                                     <Label>Profile ID</Label>
-                                    <Select bind:value={formUserState.answer.profile_id} items={val.map((v:any) => ({value:v.profile_id, name:v.name}))}/>
+                                    <Svelecte class='border-none' optionClass='p-2' name='profile_id' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.profile_id} 
+                                        options={val.map((v:any) => ({value: v.profile_id, text:v.name }))}/>
                                 </div>
                             {/await}
                             
@@ -788,7 +802,8 @@
                             {#await getDept() then val}
                                 <div class="flex flex-col gap-2">
                                     <Label>Department</Label>
-                                    <Select bind:value={formUserState.answer.department} items={val.map((v:any) => ({value:v.dept_code, name:v.name}))}/>
+                                    <Svelecte class='border-none' optionClass='p-2' name='department' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.department} 
+                                    options={val.map((v:any) => ({value: v.dept_code, text:v.name }))}/>
                                 </div>
                             {/await}
                             
@@ -798,13 +813,33 @@
                             <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
                             <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
                             <div class="flex flex-col">
-                                <div class="flex gap-2">
-                                    <MyInput type='text' title='Approver' name="approver" bind:value={formUserState.answer.approver}/>
-                                    <MyInput type='text' title='Substitute' name="substitute" bind:value={formUserState.answer.substitute}/>
-                                </div>
-                                <span class='text-[.8rem] italic'>Handle who delegate and substitute</span>
+                                {#await getUser()}
+                                    <MyLoading message="Loading data"/>
+                                {:then val}
+                                    <div class="flex gap-2">
+                                        <div class="flex flex-1 flex-col gap-2">
+                                            <Label>Approver</Label>
+                                            <Svelecte class='border-none' optionClass='p-2' name='substitute' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.substitute} 
+                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                            <!-- <MyInput type='text' title='Approver' name="approver" bind:value={formUserState.answer.approver}/>
+                                            <MyInput type='text' title='Substitute' name="substitute" bind:value={formUserState.answer.substitute}/> -->
+                                        </div>
+                                        <div class="flex flex-1 flex-col gap-2">
+                                            <Label>Substitute</Label>
+                                            <Svelecte class='border-none' optionClass='p-2' name='approver' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.approver} 
+                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                        </div>
+                                    </div>
+                                    <span class='text-[.8rem] italic'>Handle who delegate and substitute</span>
+                                {/await}
                             </div>
-                            <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/>
+                            <!-- <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/> -->
+
+                            <div class="flex flex-col gap-2">
+                                <Label>Signature</Label>
+                                <input class="border" type="file" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
+                            </div>
+                            
                             <div class="flex flex-col gap-2">
                                 <Label for='level'>Status</Label>
                                 <Select name='level' items={[
@@ -829,7 +864,7 @@
                     <Datatable table={tableUser}>
                         <Table>
                             <TableHead>
-                                <ThSort table={tableUser} field="payroll"><TableHeadCell>Profile ID</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
                                 <ThSort table={tableUser} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
                                 <ThSort table={tableUser} field="position"><TableHeadCell>Position</TableHeadCell></ThSort>
                                 <ThSort table={tableUser} field="department"><TableHeadCell>Department</TableHeadCell></ThSort>

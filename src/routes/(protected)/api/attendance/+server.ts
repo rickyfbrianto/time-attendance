@@ -56,8 +56,8 @@ export async function GET({url}){
 
 export async function POST({request, url, locals}) {
     try {
-        const data = await request.formData()
         const attendance_id = uuid4()
+        const data = await request.formData()
         const attachment = data.get('attachment')
         
         const status = await prisma.$transaction(async (tx) => {
@@ -99,7 +99,7 @@ export async function POST({request, url, locals}) {
                         ).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
                         
                         const query = temp.map(async (v: string) => {
-                            return tx.$queryRawUnsafe(`INSERT INTO attendance
+                            return tx.$executeRawUnsafe(`INSERT INTO attendance
                                 (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,
                                 type,ijin_info,description,attachment,createdBy,createdAt)
                                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
@@ -118,8 +118,8 @@ export async function POST({request, url, locals}) {
                         })
                         await Promise.all(query)
                     }else{
-    
-                        const attendance = await tx.$queryRawUnsafe(`INSERT INTO attendance
+                        
+                        const attendance = await tx.$executeRawUnsafe(`INSERT INTO attendance
                             (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,
                             type,ijin_info,description,attachment,createdBy,createdAt)
                             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
@@ -147,7 +147,7 @@ export async function POST({request, url, locals}) {
             } else {
                 if(cekRules(locals.user, "access_attendance","U")){
                     console.log('update time attendance baru')
-                    const attendance = await tx.$queryRawUnsafe(`
+                    const attendance = await tx.$executeRawUnsafe(`
                         UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
                         check_in2=?,check_out2=?,type=?,ijin_info=?,description=?,attachment=?,createdBy=?
                         WHERE attendance_id = ?`,

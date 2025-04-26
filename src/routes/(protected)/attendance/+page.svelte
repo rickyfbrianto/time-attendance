@@ -83,7 +83,6 @@
             
             const isValid = valid.safeParse(formAttendance.answer)
             if(isValid.success){
-                formAttendance.loading = true
                 const req = await axios.post('/api/attendance', formData)
                 const res = await req.data
                 formAttendanceBatal()

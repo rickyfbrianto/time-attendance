@@ -8,7 +8,10 @@ export async function POST({ cookies, request}){
         let {payroll, password, remember_me} = await request.json()
         const data = await prisma.employee.findUnique({
             select:{payroll:true, password:true},
-            where:{ payroll },
+            where:{ 
+                payroll,
+                status: "Aktif"
+            },
         })
 
         if(data){
@@ -16,7 +19,8 @@ export async function POST({ cookies, request}){
                 const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: remember_me ? "1w" : '3h' })
                 cookies.set("token", token, {
                     path:"/",
-                    httpOnly:true
+                    secure:false, 
+                    // httpOnly:true
                 })
                 return json({"message":"Login berhasil", token})
             }else{

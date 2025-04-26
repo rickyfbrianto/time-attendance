@@ -26,6 +26,8 @@ td{
     border: 2px solid var(--color-slate-300) !important;
     border-radius: var(--radius-lg) !important;
     background-color: var(--color-bgdark) !important;
+    height: 100%;
+    padding-inline: calc(var(--spacing) * 1);
 }
 
 .sv_dropdown, .sv-dropdown-scroll{
