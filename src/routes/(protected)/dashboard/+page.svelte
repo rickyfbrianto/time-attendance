@@ -5,13 +5,12 @@
     import DonutChart from '@lib/components/DonutChart.svelte'
 	import MyCalendar from '@/MyCalendar.svelte';
 
-        
-    let selected = $state("")
-    let formState = $state({
-        refresh: false
-    })
+    let {data} = $props()
+    let user = $derived(data.user)
     
-    const data = [
+    let selected = $state("")
+    
+    const filterDate = [
         {name:"year", value:"This Year"},
         {name:"month", value:"This Month"},
         {name:"date", value:"This Date"},
@@ -39,22 +38,28 @@
         <div class="col-start-1 col-end-6 md:col-start-1 md:col-end-4 flex flex-col items-center p-4 gap-4 border-[2px] border-[var(--color-bgside)] rounded-lg">
             <div class="flex justify-between items-center w-full">
                 <span class="font-poppins text-[16px]">Report 1</span>
-                <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
+                <Select color="primary" items={filterDate} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
             </div>
 
             <DonutChart {dataChart} />
         </div>
         <div class="col-start-1 col-end-13 order-3 md:order-2 md:col-start-4 md:col-end-9 flex items-center p-4 gap-4 border-[2px] border-[var(--color-bgside)] rounded-lg">
-            <span class="font-poppins text-[16px]">Report 2</span>
-            
-            <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />
+            <div class="flex justify-between items-center w-full">
+                <span class="font-poppins text-[16px]">Report 2</span>
+                <Select color="primary" items={filterDate} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
+            </div>
+
+            <DonutChart {dataChart} />
         </div>
         <div class="order-2 md:order-3 col-start-6 col-end-13 md:col-start-9 md:col-end-13 flex items-center p-4 gap-4 border-[2px] border-[var(--color-bgside)] rounded-lg">
-            <span class="font-poppins text-[16px]">Report 3</span>
-            
-            <Select color="primary" items={data} underline bind:value={selected} placeholder="Pilih" class="w-[5rem]" />
+            <div class="flex justify-between items-center w-full">
+                <span class="font-poppins text-[16px]">Report 3</span>
+                <Select color="primary" items={filterDate} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
+            </div>
+
+            <DonutChart {dataChart} />
         </div>
     </div>
 
-    <MyCalendar/>
+    <MyCalendar payroll={user?.payroll}/>
 </main>

@@ -12,6 +12,7 @@
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
+    import Svelecte from 'svelecte';
     
     const rowsPerPage = 10
     let {data} = $props()
@@ -23,13 +24,9 @@
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList =[
         ['Cuti Tahunan', 3],
-        ['Pernikahan Keluarga', 4], 
-        ['Kelahiran', 5],
-        ['Kematian', 6],
-        ['Bencana Alam', 7],
-        ['Keluarga Rawat Inap', 8],
-        ['Cuti Khitanan/Baptis',2],
-        ['Ibadah Haji',10]
+        ['Cuti Hamil & Melahirkan', 4], 
+        ['Cuti Keguguran', 5],
+        ['Cuti Haid', 6],
     ]
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
@@ -414,11 +411,14 @@
                                 {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
+                                    <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formCuti.answer.type} 
+                                        options={typeList.map(([v, duration]) => ({value: v, text: v + " - " + duration}))}/>                                    
+                                    <!-- <Label>Type</Label>
                                     <Select bind:value={formCuti.answer.type}>
                                         {#each typeList as [item], i}
                                             <option value={item}>{item}</option>
                                         {/each}
-                                    </Select>
+                                    </Select> -->
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">

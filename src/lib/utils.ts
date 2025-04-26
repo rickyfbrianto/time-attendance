@@ -1,9 +1,9 @@
 import { DateTime } from "luxon";
-import { Prisma } from '@prisma/client';
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
-import { addMonths, format, isBefore, setDate, startOfDay, subMonths } from "date-fns";
-import { PrismaClient } from '@prisma/client';
+import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths } from "date-fns";
+import { Prisma, PrismaClient } from '@prisma/client';
+// import { Prisma, PrismaClient} from '@lib/prisma/client'
 
 export const prisma = new PrismaClient({
     transactionOptions:{
@@ -141,4 +141,35 @@ export function generatePeriode(start: number, end: number){
     const periode1 = isBefore(sekarang, temp1) ? format(subMonths(temp1, 1), "yyyy-MM-dd") : format(temp1, "yyyy-MM-dd")
     const periode2 = isBefore(sekarang, temp1) ? format(temp2, "yyyy-MM-dd") : format(addMonths(temp2, 1), "yyyy-MM-dd")
     return {start: periode1, end: periode2}
+}
+
+export const getColorCalendar = (val: string) =>{
+    const type = [
+        {type:'Calendar', color:'#B0413E'},
+        {type:'Cuti Tahunan', color:'#F7CE5B'},
+        {type:'Cuti Resmi', color:'#008DD5'},
+        {type:'Ijin Resmi', color:'#008DD5'},
+        {type:'Lembur', color:'#1D2D44'},
+        {type:'Sakit', color:'#E43F6F'},
+        {type:'HKC', color:'#99D17B'},
+        {type:'HKM', color:'#99D17B'}
+    ]
+    const newType = type.find((v) => v.type == val)
+    return newType?.color || '#1D2D44'
+}
+
+export function getLastIjinDate(startDate: string, daysToAdd: number, workhour: number) {
+    let date = new Date(startDate);
+    let addedDays = 1;
+
+    while (addedDays < daysToAdd) {        
+        date = addDays(date, 1);
+        const isLibur = workhour == 7 ? ['Sunday'] : workhour == 8 ? ['Saturday','Sunday'] : []
+
+        if (!isLibur.includes(format(date, 'EEEE'))) {   
+            addedDays++;
+        }
+    }
+
+    return date;
 }

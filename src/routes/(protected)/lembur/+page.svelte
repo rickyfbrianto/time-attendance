@@ -1334,6 +1334,7 @@
                                 <MyButton onclick={()=> tableSRLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
                             
+                            {JSON.stringify(tableSRLApproval2.rows)}
                             <Datatable table={tableSRLApproval2}>
                                 <Table>
                                     <TableHead>
@@ -1352,6 +1353,16 @@
                                         <TableBody tableBodyClass="divide-y">
                                             {#if tableSRLApproval2.rows.length > 0}
                                                 {#each tableSRLApproval2.rows as row}
+                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.status1 == "Waiting"}
+                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                            {/if}
+                                                        </TableBodyCell>
                                                     <TableBodyRow class='h-10'>
                                                         <TableBodyCell>{row.payroll}</TableBodyCell>
                                                         <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>

@@ -1,13 +1,13 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Eye} from '@lucide/svelte'
+    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
 	import { formatTanggal, pecahArray, generatePeriode } from '@lib/utils';
-    import { addMonths, differenceInHours, format, getYear, isBefore, startOfDay, subMonths } from "date-fns";
+    import { differenceInHours, format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
@@ -870,7 +870,7 @@
     
     <Modal bind:open={formAttendance.showCalendar} size={"xl"} >
         <div class="flex flex-col mt-7 p-4 gap-4">
-            <MyCalendar/>
+            <MyCalendar payroll={formAttendance.payroll}/>
         </div>
     </Modal>
 

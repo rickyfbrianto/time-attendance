@@ -1,8 +1,6 @@
-import { cekRules, formatTanggal, formatTanggalISO, prismaErrorHandler } from "@lib/utils";
+import { prismaErrorHandler } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
-import { v4 as uuid4} from "uuid";
 import { prisma } from '@lib/utils.js'
-import { eachDayOfInterval, formatDate, getYear, format, getDay, parseISO, formatISO } from "date-fns";
 
 export async function GET({url}){
     try {
@@ -43,8 +41,7 @@ export async function GET({url}){
         })
                 
         return json(status)
-    } catch (error) {
-        console.log("err catch",error);
-        return {error}
+    } catch (err) {
+        error(500, prismaErrorHandler(err))
     }
 }

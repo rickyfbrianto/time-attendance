@@ -1,9 +1,9 @@
 <script lang="ts">
     import { fade, slide } from 'svelte/transition'
     import { Tabs, TabItem } from 'flowbite-svelte';
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Checkbox, Button, Modal, Label, Input, ImagePlaceholder, Badge } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Checkbox, Button, Badge } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import { Calendar, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ClockArrowDown, ClockArrowUp, RefreshCw, Search } from '@lucide/svelte';
+	import { Calendar, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '@lib/components/MyButton.svelte'
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';

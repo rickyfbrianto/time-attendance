@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { pecahArray, generatePeriode } from "@lib/utils.js";
+import { pecahArray, generatePeriode, getColorCalendar, getLastIjinDate } from "@lib/utils.js";
 
-describe("Fungsi Pecah Array", () => {
+describe("Test Pecah Array", () => {
 	it("harus mengembalikan nilai true", () => {
 		expect(pecahArray("CRUD", "R")).toEqual(true);
 	});
@@ -10,7 +10,8 @@ describe("Fungsi Pecah Array", () => {
 	});
 });
 
-describe("Fungsi Generate Periode", () => {
+describe("Test Generate Periode", () => {
+	// unit testing ini akan bernilai false karena nilai return berdasarkan dari tanggal now()
 	it("return nilai periode bulan depan apabila start < now()", () => {
 		expect(generatePeriode(23, 22)).toEqual({ start: "2025-04-23", end: "2025-05-22" });
 	});
@@ -18,6 +19,24 @@ describe("Fungsi Generate Periode", () => {
 		expect(generatePeriode(24, 23)).toEqual({ start: "2025-04-24", end: "2025-05-23" });
 	});
 	it("return nilai periode bulan sebelumnya apabila start > now()", () => {
-		expect(generatePeriode(25, 24)).toEqual({ start: "2025-03-25", end: "2025-04-24" });
+		expect(generatePeriode(25, 24)).toEqual({ start: "2025-04-25", end: "2025-05-24" });
+	});
+});
+
+describe("Test Get Calendar Color", () => {
+	it("return nilai color yang sesuai calendar type", () => {
+		expect(getColorCalendar("Calendar")).toEqual("#B0413E");
+	});
+	it("return nilai color apabila tidak ada type yang sesuai calendar", () => {
+		expect(getColorCalendar("Tes")).toEqual("#1D2D44");
+	});
+});
+
+describe("Tes Tanggal terakhir ijin Calendar", () => {
+	it("Mendapatkan nilai terakir date ijin apabila WH == 8", () => {
+		expect(getLastIjinDate("2025-04-25", 3, 8)).toEqual(new Date("2025-04-29"));
+	});
+	it("Mendapatkan nilai terakir date ijin apabila WH == 7", () => {
+		expect(getLastIjinDate("2025-04-25", 3, 7)).toEqual(new Date("2025-04-28"));
 	});
 });

@@ -1,8 +1,8 @@
 <script lang="ts">    
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, TableSearch, Label, ImagePlaceholder, Dropdown, DropdownItem, Button, Modal, Alert } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import { Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
+    import { Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
@@ -32,8 +32,8 @@
         answer:{
             sppd_id: "id",
             purpose:"",
+            get dept() { return userProfile.user_hrd ? "" : user?.department},
             location:"",
-            dept:"",
             date: [],
             duration: 0,
             get createdBy() { return user?.payroll},
@@ -614,13 +614,15 @@
                 {/if}
                 {#if formSPPD.add || formSPPD.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        {#await getDept() then val}
-                            <div class="flex flex-col gap-2 flex-1">
-                                <Label>Department</Label>
-                                <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
-                            </div>
-                        {/await}
+                        {#if userProfile.user_hrd}
+                            {#await getDept() then val}
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Department</Label>
+                                    <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
+                                        options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
+                                </div>
+                            {/await}
+                        {/if}
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>

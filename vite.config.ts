@@ -6,6 +6,15 @@ export default defineConfig({
 	plugins: [sveltekit(), tailwindcss()],
     server:{
         port: 1100,
-        host: "0.0.0.0"
-    }
+        host: "0.0.0.0",
+        allowedHosts: ['ricky']
+    },
+    // preview:{
+    //     allowedHosts: ['ricky.dev', 'ricky'],
+    // },
+    // resolve: {
+    //     alias: {
+    //         ".prisma/client/index-browser": "./node_modules/.prisma/client/index-browser.js",
+    //     }
+    // },
 });

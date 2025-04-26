@@ -1,17 +1,18 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, ImagePlaceholder, Select, Alert, Modal, Timeline, TimelineItem, Badge, Button } from 'flowbite-svelte';
+    import { Tabs, MultiSelect, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Alert, Modal, Timeline, TimelineItem, Badge, Button, Checkbox } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, generatePeriode, pecahArray } from '@lib/utils.js';
-    import { differenceInDays, eachDayOfInterval, format, getDay, getYear } from 'date-fns';
+	import { formatTanggal, generatePeriode, pecahArray, getLastIjinDate } from '@lib/utils.js';
+    import { addDays, differenceInDays, eachDayOfInterval, format, getDay, getYear, isWeekend } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
+	import Svelecte from 'svelecte';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -22,23 +23,23 @@
 
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
     const typeList =[
-        ['Pernikahan Saya', 3],
-        ['Pernikahan Keluarga', 4], 
-        ['Kelahiran', 5],
-        ['Kematian', 6],
-        ['Bencana Alam', 7],
-        ['Keluarga Rawat Inap', 8],
-        ['Cuti Khitanan/Baptis',2],
-        ['Ibadah Haji',10]
+        ['Pernikahan', 3], 
+        ['Pernikahan Anak/Saudara Kandung', 3],
+        ['Kelahiran Anak', 3],
+        ['Kematian Anggota Keluarga', 3],
+        ['Bencana Alam', 4],
+        ['Keluarga Rawat Inap', 4],
+        ['Cuti Khitanan/Baptis', 4],
+        ['Ibadah Haji', 3]
     ]
-    
+
     let headerData: {title:string, value:string, icon: any }[] = $state([])
     
     let modalHeader = $state({
         modal:false,
         val:""
     })
-
+    
     const handleDetailHeader = (title: string) => {
         if(eventCuti.includes(title)){
             modalHeader.modal = true
@@ -53,7 +54,7 @@
     const formIjinAnswer = {
         answer:{
             ijin_id: "id",
-            date:"",
+            date: "",
             type:"",
             askDuration:0,
             description: "",
@@ -64,6 +65,7 @@
             get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
             get user_delegate() { return user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null},
         },
+        autoWeekend: false,
         success:"",
         error:"",
         modalDelete:false,
@@ -380,6 +382,12 @@
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Ijin">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                {#if formIjin.loading}
+                    <MyLoading message="Get ijin data"/>
+                {/if}
+                {#if formIjin.modalDelete}
+                    <MyLoading message="Deleting data"/>
+                {/if}
                 {#if formIjin.error}
                     {#each formIjin.error.split(';') as v}
                         <Alert dismissable>
@@ -426,14 +434,8 @@
                                 {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
-                                    <Select bind:value={formIjin.answer.type}>
-                                        {#each typeList as [item], i}
-                                            <option value={item}>{item}</option>
-                                        {/each}
-                                    </Select>
-                                </div>
-                                <div class="flex flex-1 flex-col gap-2">
-                                    <span class="text-[.8rem]">Your ask <span>{formIjin.answer.askDuration}</span></span>
+                                    <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formIjin.answer.type} 
+                                        options={typeList.map(([v, duration]) => ({value: v, text: v + " - " + duration}))}/>
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">

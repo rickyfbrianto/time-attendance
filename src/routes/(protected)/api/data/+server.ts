@@ -72,9 +72,16 @@ export async function GET({url}){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT * FROM calendar 
                 WHERE type like ? AND YEAR(date) = ? AND month(date) <= ?
-                ORDER BY date asc`, `%${val}%`, year, month)
+                ORDER BY date asc`, 
+                `%${val}%`, year, month)
+            return json(req)    
+        }else if(type=='get_attendance_by_payroll'){
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT a.check_in, a.type, a.description FROM attendance as a 
+                LEFT JOIN employee as e ON e.user_id_machine = a.user_id_machine
+                WHERE e.payroll = ? AND YEAR(a.check_in) = ? AND month(a.check_in) <= ? AND type != 'Cuti Bersama' AND type != ''`, 
+                val, year, month)
             return json(req)
-            
         }else if(type=='get_cuti_user'){
             const req = await prisma.$transaction(async tx => {
                 const [cuti] = await tx.$queryRawUnsafe(`
