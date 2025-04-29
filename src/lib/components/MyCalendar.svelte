@@ -30,7 +30,6 @@
                 click: ()=> getCalendar('')
             },
         },
-        selectable:true,
         events: [],
     });
 
@@ -53,13 +52,11 @@
     }
 </script>
 
-<main>
-    <div class="flex flex-col flex-1 gap-2 p-4 border-[var(--color-bgside)] border-[2px] rounded-lg">
-        <span class="text-[1.5rem] font-bold">Calendar {payroll}</span>
-        {#await getCalendar('')}
-            <MyLoading message="Loading calendar data"/>
-        {:then val}
-            <Calendar {plugins} options={opsiCalendar} />
-        {/await}
-    </div>
-</main>
+<div class="flex flex-col flex-1 gap-2 p-4 border-[var(--color-bgside)] border-[2px] rounded-lg">
+    <span class="text-[1.5rem] font-bold">Calendar {payroll}</span>
+    {#await getCalendar('')}
+        <MyLoading message="Loading calendar data"/>
+    {:then val}
+        <Calendar {plugins} options={opsiCalendar} />
+    {/await}
+</div>

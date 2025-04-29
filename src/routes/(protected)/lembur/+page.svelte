@@ -816,7 +816,9 @@
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
-                            <MyInput type='text' bind:value={tableSPLSearch.value}/>
+                            <MyInput type='text' bind:value={tableSPLSearch.value} onkeydown={(e: KeyboardEvent) => {
+                                if(e.key.toLowerCase() === 'enter') tableSPLSearch.set()
+                            }}/>
                             <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
                             <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
@@ -1156,7 +1158,9 @@
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
-                            <MyInput type='text' bind:value={tableSRLSearch.value}/>
+                            <MyInput type='text' bind:value={tableSRLSearch.value} onkeydown={(e: KeyboardEvent) => {
+                                if(e.key.toLowerCase() === 'enter') tableSRLSearch.set()
+                            }}/>
                             <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
                             <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
@@ -1334,7 +1338,6 @@
                                 <MyButton onclick={()=> tableSRLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
                             
-                            {JSON.stringify(tableSRLApproval2.rows)}
                             <Datatable table={tableSRLApproval2}>
                                 <Table>
                                     <TableHead>

@@ -7,7 +7,12 @@ export default defineConfig({
     server:{
         port: 1100,
         host: "0.0.0.0",
-        allowedHosts: ['ricky']
+        allowedHosts: ['ricky'],
+        fs: {
+            allow: [
+                "C:/Users/RICKY/Desktop/time-attendance/static/media/attach_signature/"
+            ]
+        }
     },
     preview:{
         port: 1000,

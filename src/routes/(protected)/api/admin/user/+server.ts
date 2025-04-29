@@ -2,6 +2,7 @@ import { error, json } from "@sveltejs/kit";
 import { encryptData, prismaErrorHandler } from "@lib/utils";
 import { extname } from "node:path";
 import { writeFile } from 'fs/promises'
+import { writeFileSync } from 'fs'
 import path from 'path'
 import { prisma } from '@lib/utils.js'
 
@@ -38,9 +39,8 @@ export async function POST({ request }) {
     try {
         const data = await request.formData()
         const signature = data.get('signature')
-        const fileSignature = data.get('payroll') + extname(signature.name)
-        const temp = Object.fromEntries(data.entries())
-        console.log(temp, fileSignature)
+        const isSignature = typeof signature == "object" ? true : false
+        const fileSignature = isSignature ? data.get('payroll') + extname(signature?.name || "") : ""
 
         const status = await prisma.$transaction(async (tx) => {
             const getUser = await tx.employee.findFirst({
@@ -63,14 +63,19 @@ export async function POST({ request }) {
                         email: data.get('email'),
                         approver: data.get('approver'),
                         substitute: data.get('substitute'),
-                        signature: signature ? fileSignature : null,
+                        signature: isSignature ? fileSignature : "",
                         status: data.get('status'),
                     }
                 })
                 
-                if(createUser && signature){
-                    const filename = path.resolve('src/lib/assets/attach_signature') + `/${fileSignature}`
-                    await writeFile(filename, Buffer.from(await signature?.arrayBuffer()));
+                if(createUser && isSignature){
+                    // const filename = path.resolve('src/lib/assets/media/attach_signature') + `/${fileSignature}`
+                    // const filename = path.resolve(import.meta.env.VITE_ATTACH_SIGNATURE) + `/${fileSignature}`
+                    // await writeFile(filename, Buffer.from(await signature?.arrayBuffer()));
+
+                    const uploadsDir = path.resolve("src/lib/assets/media/attach_signature") 
+                    const filePath = path.join(uploadsDir, fileSignature);
+                    writeFileSync(filePath, Buffer.from(await signature?.arrayBuffer()));
                 }
                 
                 return { message: "User successfully saved" }
@@ -88,15 +93,16 @@ export async function POST({ request }) {
                         email: data.get('email'),
                         approver: data.get('approver'),
                         substitute: data.get('substitute'),
-                        signature: signature ? fileSignature : null,
+                        signature: isSignature ? fileSignature : signature,
                         status: data.get('status'),
                     },
                     where:{ payroll : data.get('payroll') }
                 })
-
-                if(updateUser && signature){
-                    const filename = path.resolve('src/lib/assets/attach_signature') + `/${fileSignature}`
-                    await writeFile(filename, Buffer.from(await signature?.arrayBuffer()));
+                
+                if(updateUser && isSignature){
+                    const uploadsDir = path.resolve("src/lib/assets/media/attach_signature") 
+                    const filePath = path.join(uploadsDir, fileSignature);
+                    writeFileSync(filePath, Buffer.from(await signature?.arrayBuffer()));
                 }
                 
                 return { message: "User successfully updated" }

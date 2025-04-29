@@ -57,23 +57,24 @@ model employee {
 }
 
 model profile {
-  profile_id        String     @id @db.VarChar(50)
-  name              String     @db.VarChar(100)
-  description       String     @db.VarChar(255)
-  level             Int        @db.TinyInt
+  profile_id        String         @id @db.VarChar(50)
+  name              String         @db.VarChar(100)
+  description       String         @db.VarChar(255)
+  level             Int            @db.TinyInt
   user_hrd          Boolean
-  access_sppd       String     @db.VarChar(4)
-  access_skpd       String     @db.VarChar(4)
-  access_attendance String     @db.VarChar(4)
-  access_spl        String     @db.VarChar(4)
-  access_srl        String     @db.VarChar(4)
-  access_cuti       String     @db.VarChar(4)
-  access_ijin       String     @db.VarChar(4)
-  access_calendar   String     @db.VarChar(4)
-  access_user       String     @db.VarChar(4)
-  access_profile    String     @db.VarChar(4)
-  access_dept       String     @db.VarChar(4)
-  access_setting    String     @db.VarChar(4)
+  access_sppd       String         @db.VarChar(4)
+  access_skpd       String         @db.VarChar(4)
+  access_attendance String         @db.VarChar(4)
+  access_spl        String         @db.VarChar(4)
+  access_srl        String         @db.VarChar(4)
+  access_cuti       String         @db.VarChar(4)
+  access_ijin       String         @db.VarChar(4)
+  access_calendar   String         @db.VarChar(4)
+  access_user       String         @db.VarChar(4)
+  access_profile    String         @db.VarChar(4)
+  access_dept       String         @db.VarChar(4)
+  access_setting    String         @db.VarChar(4)
+  status            profile_status
   employee          employee[]
 }
 
@@ -361,6 +362,11 @@ enum spl_status2 {
 }
 
 enum employee_status {
+  Aktif
+  Nonaktif
+}
+
+enum profile_status {
   Aktif
   Nonaktif
 }

@@ -66,10 +66,12 @@
             access_profile: [],
             access_dept: [],
             access_setting: [],
+            status:"",
         },
         success:"",
         error:"",
         modal:false,
+        modalDelete:false,
         loading:false,
         add:false,
         edit:false,
@@ -116,7 +118,8 @@
                 access_user: z.string().trim().min(1),
                 access_profile: z.string().trim().min(1),
                 access_dept: z.string().trim().min(1),
-                access_setting: z.string().trim().min(1),                
+                access_setting: z.string().trim().min(1),
+                status: z.string().trim().min(1),
             })
             
             const isValid = valid.safeParse(formProfileState.answer)
@@ -424,6 +427,7 @@
         year: getYear(new Date()),
         success:"",
         error:"",
+        modalDelete:false,
         loading:false,
         add:false,
         edit:false,
@@ -613,7 +617,7 @@
                     </div>
 
                     {#if formProfileState.loading}
-                        <MyLoading message="Get profile data"/>
+                        <MyLoading message="Load data"/>
                     {/if}
                     {#if formProfileState.add || formProfileState.edit}
                         <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
@@ -680,6 +684,14 @@
                                     <Label>Access Setting (Admin)</Label>
                                     <MultiSelect items={ListAccess} bind:value={formProfileState.answer.access_setting} />
                                 </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <Label for='level'>Status</Label>
+                                    <Select name='level' items={[
+                                        {value:"Aktif", name:"Aktif"},
+                                        {value:"Nonaktif", name:"Nonaktif"},
+                                    ]} bind:value={formProfileState.answer.status} />
+                                </div>
                             </div>
                         </form>
                     {/if}
@@ -720,7 +732,10 @@
                                                 <TableBodyCell>{row.level}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
-                                                    <MyButton onclick={()=> formProfileDelete(row.profile_id)}><Trash size={12} /></MyButton>
+                                                    <MyButton onclick={()=> {
+                                                        formProfileState.answer.profile_id = row.profile_id
+                                                        formProfileState.modalDelete = true
+                                                    }}><Trash size={12} /></MyButton>
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
@@ -751,6 +766,11 @@
                         {/if}
                     </Datatable>
                 </div>
+
+                <Modal title={'Delete Profile'} bind:open={formProfileState.modalDelete} autoclose>
+                    <Button color='green' onclick={()=> formProfileDelete(formProfileState.answer.profile_id)}>Yes</Button>
+                    <Button color='red' onclick={()=> formProfileState.modalDelete = false}>No</Button>
+                </Modal>
             </TabItem>
         {/if}
         {#if pecahArray(userProfile?.access_user, "R")}
@@ -778,7 +798,7 @@
                     </div>
 
                     {#if formUserState.loading}
-                        <MyLoading message="Get user data"/>
+                        <MyLoading message="Load data"/>
                     {/if}
                     {#if formUserState.add || formUserState.edit}
                         <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
@@ -812,32 +832,25 @@
                             <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
                             <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
                             <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
-                            <div class="flex flex-col">
-                                {#await getUser()}
-                                    <MyLoading message="Loading data"/>
-                                {:then val}
-                                    <div class="flex gap-2">
-                                        <div class="flex flex-1 flex-col gap-2">
-                                            <Label>Approver</Label>
-                                            <Svelecte class='border-none' optionClass='p-2' name='substitute' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.substitute} 
-                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                            <!-- <MyInput type='text' title='Approver' name="approver" bind:value={formUserState.answer.approver}/>
-                                            <MyInput type='text' title='Substitute' name="substitute" bind:value={formUserState.answer.substitute}/> -->
-                                        </div>
-                                        <div class="flex flex-1 flex-col gap-2">
-                                            <Label>Substitute</Label>
-                                            <Svelecte class='border-none' optionClass='p-2' name='approver' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.approver} 
-                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                        </div>
-                                    </div>
-                                    <span class='text-[.8rem] italic'>Handle who delegate and substitute</span>
-                                {/await}
-                            </div>
-                            <!-- <MyInput type='text' title='Signature' name="signature" bind:value={formUserState.answer.signature}/> -->
+
+                            {#await getUser()}
+                                <MyLoading message="Loading data"/>
+                            {:then val}
+                                <div class="flex flex-1 flex-col gap-2">
+                                    <Label>Approver</Label>
+                                    <Svelecte class='border-none' optionClass='p-2' name='approver' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.approver} 
+                                    options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                </div>
+                                <div class="flex flex-1 flex-col gap-2">
+                                    <Label>Substitute</Label>
+                                    <Svelecte class='border-none' optionClass='p-2' name='substitute' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.substitute} 
+                                    options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                </div>
+                            {/await}
 
                             <div class="flex flex-col gap-2">
                                 <Label>Signature</Label>
-                                <input class="border" type="file" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
+                                <input class="border" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
                             </div>
                             
                             <div class="flex flex-col gap-2">
@@ -929,24 +942,19 @@
                     </Datatable>
                 </div>
 
-                <Modal bind:open={formUserState.modalDelete} autoclose>
+                <Modal title={`Delete User ${formUserState.answer.payroll}`} bind:open={formUserState.modalDelete} autoclose>
+                    <Button color='green' onclick={()=> formUserDelete(formUserState.answer.payroll)}>Yes</Button>
+                    <Button color='red' onclick={()=> formUserState.modalDelete = false}>No</Button>
+                </Modal>                
+                
+                <Modal title={`Change password ${formUserState.answer.payroll}`} bind:open={formUserState.modalChangePassword} autoclose>
                     <div class="flex flex-col gap-6">
-                        <h3>Delete User {formUserState.answer.payroll} ?</h3>
-                        <div class="flex gap-2">
-                            <Button color='green' onclick={()=> formUserDelete(formUserState.answer.payroll)}>Yes</Button>
-                            <Button color='red' onclick={()=> formUserState.modalDelete = false}>No</Button>
-                        </div>
-                    </div>
-                </Modal>
-                <Modal bind:open={formUserState.modalChangePassword} autoclose>
-                    <div class="flex flex-col gap-6">
-                        <h3>Delete User {formUserState.answer.payroll} ?</h3>
                         <MyInput type='password' title='New Password' name="password" bind:value={formUserState.answer.password}/>
-                        <div class="flex gap-2">
-                            <Button color='green' onclick={()=> formUserChangePassword(formUserState.answer.payroll)}>Change Password</Button>
-                            <Button color='red' onclick={()=> formUserState.modalDelete = false}>No</Button>
-                        </div>
                     </div>
+                    <svelte:fragment slot="footer">
+                        <Button color='green' onclick={()=> formUserChangePassword(formUserState.answer.payroll)}>Change Password</Button>
+                        <Button color='red' onclick={()=> formUserState.modalDelete = false}>No</Button>
+                    </svelte:fragment>
                 </Modal>
             </TabItem>
         {/if}
@@ -975,7 +983,7 @@
                     </div>
 
                     {#if formDeptState.loading}
-                        <MyLoading message="Get department data"/>
+                        <MyLoading message="Load data"/>
                     {/if}
                     {#if formDeptState.add || formDeptState.edit}
                         <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
@@ -1063,7 +1071,7 @@
                 </div>
             </TabItem>
         {/if}
-        {#if pecahArray(userProfile?.access_setting, "R")}
+        {#if pecahArray(userProfile?.access_setting, "R") && userProfile.user_hrd}
             <TabItem title="Setting" open={urlTab == 'setting'}>
                 <div class="flex flex-col gap-4">                
                     {#if formSettingState.error}
@@ -1096,7 +1104,7 @@
                 </div>
             </TabItem>
         {/if}
-        {#if pecahArray(userProfile?.access_calendar, "R")}
+        {#if pecahArray(userProfile?.access_calendar, "R") && userProfile.user_hrd}
             <TabItem title="Calendar">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     <div class="flex flex-col gap-4">                
@@ -1122,7 +1130,7 @@
                         </div>
 
                         {#if formCalendar.loading}
-                            <MyLoading message="Get calendar data"/>
+                            <MyLoading message="Load data"/>
                         {/if}
                         {#if formCalendar.add || formCalendar.edit}
                             <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
@@ -1179,7 +1187,11 @@
                                                     <TableBodyCell>{formatTanggal(row.date, 'date')}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
-                                                        <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton>
+                                                        <MyButton onclick={()=> {
+                                                            formCalendar.answer.calendar_id = row.calendar_id
+                                                            formCalendar.modalDelete = true
+                                                        }}><Trash size={12} /></MyButton>
+                                                        <!-- <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton> -->
                                                     </TableBodyCell>
                                                 </TableBodyRow>
                                             {/each}
@@ -1209,6 +1221,11 @@
                         </Datatable>
                     </div>
                 </div>
+
+                <Modal title={'Delete Calendar'} bind:open={formCalendar.modalDelete} autoclose>
+                    <Button color='green' onclick={()=> formCalendarDelete(formCalendar.answer.calendar_id)}>Yes</Button>
+                    <Button color='red' onclick={()=> formCalendar.modalDelete = false}>No</Button>
+                </Modal>
             </TabItem>
         {/if}
     </Tabs>

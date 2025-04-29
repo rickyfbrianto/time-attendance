@@ -39,6 +39,7 @@
             get createdBy() { return user?.payroll},
             sppd_detail:[{payroll:"", description:""}]
         },
+        get payroll() { return userProfile.user_hrd ? "" : user?.payroll},
         success:"",
         error:"",
         modalDelete:false,
@@ -285,6 +286,7 @@
             status: "",
             get createdBy() { return user?.payroll},
         },
+        get payroll() {return userProfile.user_hrd ? "" : user?.payroll},
         success:"",
         error:"",
         cetakPDFID:"",
@@ -539,7 +541,7 @@
     $effect(()=>{
         tableSPPD.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/sppd?${getParams(state)}`)
+                const req = await fetch(`/api/sppd?${getParams(state)}&payroll=${formSPPD.payroll}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items
@@ -550,7 +552,7 @@
 
         tableSKPD.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/skpd?${getParams(state)}`)
+                const req = await fetch(`/api/skpd?${getParams(state)}&payroll=${formSKPD.payroll}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items
@@ -595,19 +597,21 @@
                         <span>{formSPPD.success}</span>
                     </Alert>
                 {/if}
-
-                <div class="flex gap-2">
-                    {#if formSPPD.add || formSPPD.edit}
-                        {#if pecahArray(userProfile?.access_sppd, "C") || pecahArray(userProfile.access_sppd, "U")}
-                            <MyButton onclick={formSPPDBatal}><Ban size={16} /></MyButton>
-                            <MyButton disabled={formSPPD.loading} onclick={formSPPDSubmit}><Save size={16}/></MyButton>
+                
+                {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                    <div class="flex gap-2">
+                        {#if formSPPD.add || formSPPD.edit}
+                            {#if pecahArray(userProfile?.access_sppd, "C") || pecahArray(userProfile.access_sppd, "U")}
+                                <MyButton onclick={formSPPDBatal}><Ban size={16} /></MyButton>
+                                <MyButton disabled={formSPPD.loading} onclick={formSPPDSubmit}><Save size={16}/></MyButton>
+                            {/if}
+                        {:else}
+                            {#if pecahArray(userProfile?.access_sppd, "C")}
+                                <MyButton onclick={()=> formSPPD.add = true}><Plus size={16}/></MyButton>
+                            {/if}
                         {/if}
-                    {:else}
-                        {#if pecahArray(userProfile?.access_sppd, "C")}
-                            <MyButton onclick={()=> formSPPD.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    {/if}
-                </div>
+                    </div>
+                {/if}
 
                 {#if formSPPD.loading}
                     <MyLoading message="Get SPPD data"/>
@@ -671,7 +675,9 @@
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableSPPDSearch.value}/>
+                    <MyInput type='text' bind:value={tableSPPDSearch.value} onkeydown={(e: KeyboardEvent) => {
+                        if(e.key.toLowerCase() === 'enter') tableSPPDSearch.set()
+                    }}/>
                     <MyButton onclick={()=>tableSPPDSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableSPPD.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
@@ -704,15 +710,17 @@
                                             <TableBodyCell>{formatTanggal(row.end_date, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_sppd, "U")}
-                                                    <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
+                                                {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                                                    {#if pecahArray(userProfile.access_sppd, "U")}
+                                                        <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
+                                                    {/if}
+                                                    {#if pecahArray(userProfile.access_sppd, "D")}
+                                                        <MyButton onclick={()=> {
+                                                            formSPPD.modalDelete = true
+                                                            formSPPD.answer.sppd_id = row.sppd_id
+                                                        }}><Trash size={12} /></MyButton>
+                                                    {/if}
                                                 {/if}
-                                                {#if pecahArray(userProfile.access_sppd, "D")}
-                                                    <MyButton onclick={()=> {
-                                                        formSPPD.modalDelete = true
-                                                        formSPPD.answer.sppd_id = row.sppd_id
-                                                    }}><Trash size={12} /></MyButton>
-                                                {/if}                                                
                                                 <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
@@ -759,18 +767,20 @@
                     </Alert>
                 {/if}
         
-                <div class="flex gap-2">
-                    {#if formSKPD.add || formSKPD.edit}
-                        {#if pecahArray(userProfile?.access_skpd, "C") || pecahArray(userProfile.access_skpd, "U")}
-                            <MyButton onclick={formSKPDBatal}><Ban size={16} /></MyButton>
-                            <MyButton disabled={formSKPD.loading} onclick={formSKPDSubmit}><Save size={16}/></MyButton>
+                {#if (userProfile?.user_hrd)}
+                    <div class="flex gap-2">
+                        {#if formSKPD.add || formSKPD.edit}
+                            {#if pecahArray(userProfile?.access_skpd, "C") || pecahArray(userProfile.access_skpd, "U")}
+                                <MyButton onclick={formSKPDBatal}><Ban size={16} /></MyButton>
+                                <MyButton disabled={formSKPD.loading} onclick={formSKPDSubmit}><Save size={16}/></MyButton>
+                            {/if}
+                        {:else}
+                            {#if pecahArray(userProfile?.access_skpd, "C")}
+                                <MyButton onclick={()=> formSKPD.add = true}><Plus size={16}/></MyButton>
+                            {/if}
                         {/if}
-                    {:else}
-                        {#if pecahArray(userProfile?.access_skpd, "C")}
-                            <MyButton onclick={()=> formSKPD.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    {/if}
-                </div>
+                    </div>
+                {/if}
         
                 {#if formSKPD.loading}
                     <MyLoading message="Get SKPD data"/>
@@ -818,7 +828,9 @@
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableSKPDSearch.value}/>
+                    <MyInput type='text' bind:value={tableSKPDSearch.value} onkeydown={(e: KeyboardEvent) => {
+                        if(e.key.toLowerCase() === 'enter') tableSKPDSearch.set()
+                    }}/>
                     <MyButton onclick={()=>tableSKPDSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableSKPD.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>

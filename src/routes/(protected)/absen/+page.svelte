@@ -11,7 +11,6 @@
 	import { formatTanggal, generatePeriode } from '@lib/utils.js';
 	import { differenceInHours, format } from 'date-fns';
 	import Svelecte from 'svelecte';
-    import { MultiSelect } from 'flowbite-svelte';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -154,7 +153,9 @@
                         {/each}
                     </select>
                     <div class="flex w-full flex-col">
-                        <MyInput type='text' bind:value={tableAbsenSearch.value}/>
+                        <MyInput type='text' bind:value={tableAbsenSearch.value} onkeydown={(e: KeyboardEvent) => {
+                            if(e.key.toLowerCase() === 'enter') tableAbsenSearch.set()
+                        }}/>
                         <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                     </div>
                     <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
@@ -183,8 +184,12 @@
                                     {#each tableAbsen.rows as row}
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
-                                            <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                            </TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                            </TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                             <TableBodyCell>
@@ -268,7 +273,9 @@
                             {/each}
                         </select>
                         <div class="flex w-full flex-col">
-                            <MyInput type='text' bind:value={tableAbsenDeptSearch.value}/>
+                            <MyInput type='text' bind:value={tableAbsenDeptSearch.value} onkeydown={(e: KeyboardEvent) => {
+                                if(e.key.toLowerCase() === 'enter') tableAbsenDeptSearch.set()
+                            }}/>
                             <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                         </div>
                         <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
@@ -299,8 +306,12 @@
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{format(row.check_in, "EEEE")}</TableBodyCell>
-                                            <TableBodyCell>{format(row.check_in, "dd MMMM yyyy")}</TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                            </TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                            </TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                             <TableBodyCell>

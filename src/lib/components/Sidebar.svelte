@@ -30,7 +30,7 @@
         {type:"separator", title:"Admin"},
         {link:"/admin", title:"Admin", icon: ShieldUser},
     ]
-    let defaultModal = $state(false)
+    let defaultModal = $state(false)    
 </script>
 
 {#if $appstore.showSidebar}
@@ -68,7 +68,7 @@
         <Hr hrClass="my-3"/>
         <span class="text-[12px] text-textdark self-start">{user.payroll}</span>
         <span class="text-[12px] text-textdark">{user.position}</span>
-        <span class="text-[12px] text-textdark">Profile ({userProfile.name} - Level {userProfile.level}) </span>
+        <span class="text-[12px] text-textdark">Profile ({userProfile?.name} - Level {userProfile?.level}) </span>
         <span class="text-[12px] text-textdark">{user.email}</span>
 
         {#if userProfile.user_hrd}
@@ -78,11 +78,13 @@
         {/if}
     </div>
 
-    <Modal title="My Account" bind:open={defaultModal} autoclose>
-        <div class="relative grid grid-cols-2 gap-3 items-center justify-center">            <!-- <MyButton className='absolute top-[.1rem] left-[.1rem]' onclick={()=>defaultModal = false}><a href='/account'>My Profile</a></MyButton> -->
-            <div class="flex flex-col items-center justify-center">
-                <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem] mb-4"/>
-                <span>{user.name}</span>
+    <Modal title={"My Account"} bind:open={defaultModal} autoclose>
+        <div class="relative grid grid-cols-2 gap-3 items-center justify-center">
+            <div class="flex flex-col gap-2 items-center justify-center">
+                <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem]"/>
+                <span class='italic'>{user.name}</span>
+                <img src={import.meta.env.VITE_ATTACH_SIGNATURE+user.signature} alt="Signature" class="border border-slate-300 rounded-xl w-[7rem] h-[7rem] p-2"/>
+                <span class='italic'>Signature</span>
             </div>
             <div class="flex flex-col">
                 <Timeline>

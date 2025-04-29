@@ -23,7 +23,7 @@ export async function GET({url}){
         
         const status = await prisma.$transaction(async (tx) =>{
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
-                att.description, att.type, att.ijin_info, 
+                att.description, att.type, att.ijin_info, att.attachment,
                 GetStartOvertime( att.check_in, att.check_out, user.workhour) AS lembur_start,
                 RoundCheckOut( att.check_in, att.check_out) as lembur_end
                 FROM
@@ -59,6 +59,8 @@ export async function POST({request, url, locals}) {
         const attendance_id = uuid4()
         const data = await request.formData()
         const attachment = data.get('attachment')
+        const isAttachment = typeof attachment == "object" ? true : false
+        const fileAttachment = isAttachment ? data.get('attendance_id') + extname(attachment?.name || "") : ""
         
         const status = await prisma.$transaction(async (tx) => {
             // untuk mengecek apakah ada attendance dengan tipe cuti bersama atau hari libur, jika ya maka update check in, check out dan type serta keterangan
@@ -137,7 +139,8 @@ export async function POST({request, url, locals}) {
                         )
         
                         if(attendance && attachment){
-                            const filename = path.resolve('src/lib/assets/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
+                            // const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
+                            const filename = path.resolve(import.meta.env.VITE_ATTACH_SIGNATURE) + `/${attendance_id + extname(attachment.name)}`
                             await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                         }
                     }
@@ -147,6 +150,8 @@ export async function POST({request, url, locals}) {
             } else {
                 if(cekRules(locals.user, "access_attendance","U")){
                     console.log('update time attendance baru')
+                    console.log(isAttachment, fileAttachment, attachment)
+
                     const attendance = await tx.$executeRawUnsafe(`
                         UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
                         check_in2=?,check_out2=?,type=?,ijin_info=?,description=?,attachment=?,createdBy=?
@@ -159,13 +164,14 @@ export async function POST({request, url, locals}) {
                         data.get('type'),
                         data?.get('ijin_info'),
                         data?.get('description'),
-                        attachment ? data.get('attendance_id') + extname(attachment.name) : getAttendance.attachment,
+                        isAttachment ? fileAttachment : attachment,
                         data.get('createdBy'),
                         data.get('attendance_id')
                     )
     
-                    if(attendance && attachment){
-                        const filename = path.resolve('src/lib/assets/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`
+                    if(attendance && isAttachment){
+                        // const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`
+                        const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${fileAttachment}`
                         await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                     }
     

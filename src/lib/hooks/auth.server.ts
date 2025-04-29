@@ -38,6 +38,7 @@ export const handle: Handle = async ({event, resolve}) =>{
                 join_date:true,
                 approver: true,
                 substitute: true,
+                signature: true,
                 employee_employee_approverToemployee:{
                     select:{
                         payroll: true,

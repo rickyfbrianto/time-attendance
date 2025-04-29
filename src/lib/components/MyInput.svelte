@@ -7,6 +7,7 @@
     import { id } from 'svelty-picker/i18n'
     let {type, title = '', name = "", className = "", rows=2, disabled = false,
         required = false, value = $bindable(), password = false, placeholder = ``,
+        onkeydown = () => {}, onkeypress = () => {},
         startDate = "", endDate = "", 
         formatDate="yyyy-mm-dd", formatTime="hh:ii:ss",
         formatDateTime="yyyy-mm-dd hh:ii:ss", displayFormatDate="dd MM yyyy"} = $props()
@@ -26,7 +27,7 @@
         {#if type == "textarea"}
             <textarea class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} {disabled} {rows} id={name} {name} {required} {placeholder} bind:value={value}></textarea>
         {:else if type == 'daterange'}
-            <SveltyPicker bind:value={value}  {disabled} autocommit={false} isRange mode={'date'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDateTime} displayFormat={displayFormatDate}/>
+            <SveltyPicker bind:value={value} {disabled} autocommit={false} isRange mode={'date'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDateTime} displayFormat={displayFormatDate}/>
         {:else if type == 'date'}
             <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'date'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDate} displayFormat={formatDate}/>
         {:else if type == 'time'}
@@ -34,8 +35,9 @@
         {:else if type == 'datetime'}
             <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'datetime'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDateTime} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
         {:else}
-            <input class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} id={name} {name} {disabled} {required} 
-            {placeholder} bind:value={value} type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
+            <input class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} id={name} {name} {disabled} {required}  {placeholder}
+            bind:value={value} onkeydown={(e) => onkeydown(e)} onkeypress={e => onkeypress(e)}
+            type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
         {/if}
         {#if password}
             <button class='px-3' type="button" transition:fade onclick={()=> showText = !showText}>

@@ -5,7 +5,9 @@ export async function GET({params}){
     const {id} = params
     const req = await prisma.employee.findUnique({
         where:{payroll:id},
-        omit:{password:true}
+        omit:{
+            password:true
+        }
     })
     return json(req)
 }
@@ -13,7 +15,13 @@ export async function GET({params}){
 export async function DELETE({params}){
     try {
         const {id} = params
-        await prisma.employee.delete({
+        // await prisma.employee.delete({
+        //     where:{payroll:id}
+        // })
+        await prisma.employee.update({
+            data:{
+                status: "Nonaktif"
+            },
             where:{payroll:id}
         })
         return json({ message: "Data successfully deleted" });

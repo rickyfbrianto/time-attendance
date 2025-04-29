@@ -8,6 +8,8 @@ export async function GET({url}){
     const sort = url.searchParams.get('_sort') ?? "skpd_id"
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
+
+    const payroll = url.searchParams.get('payroll') || ""
     
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
@@ -15,16 +17,16 @@ export async function GET({url}){
             LEFT JOIN employee as e ON e.payroll = s.payroll
             LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
-            WHERE skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?
+            WHERE sd.payroll like ? && (skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?)
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
+            `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM SKPD as s
             LEFT JOIN employee as e ON e.payroll = s.payroll
             LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
-            WHERE skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?`, 
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count:number}[]
+            WHERE sd.payroll like ? && (skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?)`, 
+            `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count:number}[]
                     
         return {items, totalItems: Number(count)}
     })

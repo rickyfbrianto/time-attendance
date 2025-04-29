@@ -12,7 +12,10 @@ export async function GET({params}){
 export async function DELETE({params}){
     try {
         const {id} = params
-        await prisma.profile.delete({
+        await prisma.profile.update({
+            data:{
+                status: "Nonaktif"
+            },
             where:{profile_id:id}
         })
         return json({ message: "Profile successfully deleted" });

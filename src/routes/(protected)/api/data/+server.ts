@@ -8,6 +8,7 @@ export async function GET({url}){
         const date = url.searchParams.get('date')
         const month = url.searchParams.get('month')
         const year = url.searchParams.get('year')
+        const payroll = url.searchParams.get('payroll') || ""
 
         if(type == "user"){
             const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`, `%${val}%`)
@@ -47,7 +48,7 @@ export async function GET({url}){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, s.location, GROUP_CONCAT(sd.payroll SEPARATOR  ',') as payroll
                 FROM sppd as s
-                LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
+                LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id 
                 LEFT JOIN skpd ON s.sppd_id = skpd.sppd_id
                 WHERE skpd.sppd_id IS NULL
                 group by s.sppd_id`)

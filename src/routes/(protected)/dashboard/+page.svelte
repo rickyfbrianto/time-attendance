@@ -33,9 +33,9 @@
     <title>Dashboard</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-6 h-full">
     <div class="flex gap-4 rounded-lg">
-        <div class="flex flex-1 flex-col rounded-lg">
+        <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4">
             <div class="flex justify-between items-center w-full">
                 <span class="font-poppins text-[16px]">Report 1</span>
                 <Select color="primary" items={filterDate} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
@@ -43,7 +43,7 @@
 
             <DonutChart {dataChart} />
         </div>
-        <div class="flex flex-1 flex-col rounded-lg">
+        <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4">
             <div class="flex justify-between items-center w-full">
                 <span class="font-poppins text-[16px]">Report 2</span>
                 <Select color="primary" items={filterDate} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
@@ -51,7 +51,7 @@
 
             <DonutChart {dataChart} />
         </div>
-        <div class="flex flex-1 flex-col rounded-lg">
+        <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4">
             <div class="flex justify-between items-center w-full">
                 <span class="font-poppins text-[16px]">Report 3</span>
                 <Select color="primary" items={filterDate} underline bind:value={selected} placeholder="Pilih" class="w-[8rem]" />
@@ -61,5 +61,7 @@
         </div>
     </div>
 
-    <MyCalendar payroll={user?.payroll}/>
+    <div class="flex min-h-[85vh]">
+        <MyCalendar payroll={user?.payroll}/>
+    </div>
 </main>
