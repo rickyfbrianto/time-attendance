@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Select, Label, Alert } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Label, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
@@ -9,13 +9,14 @@
 	import axios from 'axios';
 	import { pecahArray, formatTanggal, getPeriode } from '@lib/utils.js';
     import { getParams } from '@lib/data/api';
-	import { differenceInHours, format, set, setDate, startOfDay, subMonths } from 'date-fns';
+	import { differenceInHours, format, set, getDay, startOfDay, subMonths } from 'date-fns';
     import Svelecte from 'svelecte'
     import bglembur from '@lib/assets/bg-lembur.jpg'
     import stm from '@lib/assets/stm.png'
     import { jsPDF } from "jspdf";
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
+    import autoTable, { applyPlugin } from 'jspdf-autotable'
     
     let {data} = $props()
     let user = $derived(data.user) 
@@ -370,157 +371,106 @@
         const req = await axios.get(`/api/lembur/srl/${id}/print`)
         const res = await req.data
 
+        applyPlugin(jsPDF)
+
         const doc = new jsPDF({
-            orientation:"p",
+            orientation:"l",
             unit:"mm",
             format:"a4"
         })
 
-        res.sppd_detail.forEach((val: any, i: number) => {
-            if(i > 0) doc.addPage("a4", "p")
+        const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
-            const colData = [12, 58, 62]
-            const rowData = 0
-            let rowInc = 0
-            let row1 = 4
-            let row2 = 6
-            let row3 = 8
-            let row4 = 10
+    
+        const colData = [10, 110, 210]
+        const rowData = 0
+        let rowInc = 0
+        let row1 = 4
+        let row2 = 6
+        let row3 = 8
+        let row4 = 10
 
-            rowInc += row4
-            doc.rect(150, rowData + rowInc, 50, rowData + rowInc + 5)
-            doc.setFont('times', 'normal', '')
-            doc.setFontSize(10)
-            rowInc += row1
-            doc.text("Form No  : 11-21", 152, rowData + rowInc)
-            rowInc += row1
-            doc.text("Rev No   : 0", 152, rowData + rowInc)
-            rowInc += row1
-            doc.text("Rev Date : Jan 2020", 152, rowData + rowInc)
-            
-            rowInc += row3
-            doc.rect(10, 28, 190, 236)
-            doc.addImage(stm, 12, rowData + rowInc, 21, 21)
-            doc.line(36, 28, 36, 54)
-            rowInc += row1
-            doc.setFont('times', 'normal', 'bold')
-            doc.setFontSize(12)
-            doc.text("HUMAN RESOURCES", 94, rowData + rowInc)
-            doc.setFontSize(14)
-            rowInc += row2
-            doc.text("SURAT PERINTAH PERJALANAN DINAS", 67, rowData + rowInc)
-            rowInc += 2
-            doc.line(36, rowData + rowInc, 200, rowData + rowInc)
-            rowInc += row3
-            doc.setFont('times', 'italic')
-            doc.setFontSize(12)
-            doc.text("INSTRUCTION FOR BUSSINESS TRAVEL", 77, rowData + rowInc)
-            rowInc += row1
-            doc.line(10, rowData + rowInc, 200, rowData + rowInc)
-            
-            doc.setFont('times', 'normal')
-            doc.setFontSize(12)
-            rowInc += row4
-            doc.text("Nomor / No", colData[0], rowData + rowInc)
-            doc.text(`: ${res.sppd_id.replace(/\_/g, '/')}`, colData[1], rowData + rowInc)
-            rowInc += row4
-            doc.text("To", colData[0], rowData + rowInc)
-            doc.text(":", colData[0] + 25, rowData + rowInc)
-            doc.setFont('times', 'normal', 'bold')
-            doc.text("Human Resources", colData[0] + 28, rowData + rowInc)
-            rowInc += row2
-            doc.setFont('times', 'normal')
-            doc.text("From", colData[0], rowData + rowInc)
-            doc.text(":", colData[0] + 25, rowData + rowInc)
-            
-            rowInc += row4
-            doc.text("Karyawan tersebut di bawah ini diperintahkan untuk menjalankan tugas dinas dengan spesifikasi", colData[0], rowData + rowInc)
-            rowInc += row2
-            doc.text("sebagai berikut : /", colData[0], rowData + rowInc)
+        // const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
 
-            rowInc += row4
-            doc.text("Nama", colData[0], rowData + rowInc)
-            doc.text(`: ${val.employee.name}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Name", colData[0], rowData + rowInc)
-            
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("No. Payroll", colData[0], rowData + rowInc)
-            doc.text(`: ${val.payroll}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Payroll No.", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Jabatan", colData[0], rowData + rowInc)
-            doc.text(`: -`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Payroll No.", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Department", colData[0], rowData + rowInc)
-            doc.text(`: ${val.employee.dept.name}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Department", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Tujuan", colData[0], rowData + rowInc)
-            doc.text(`: ${val.location}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Destination", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Tanggal", colData[0], rowData + rowInc)
-            doc.text(`: ${format(res.start_date, "dd MMMM yyyy")}`, colData[1], rowData + rowInc)
-            doc.text(`s/d     ${format(res.end_date, "dd MMMM yyyy")}`, colData[1] + 60, rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Date", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Deskripsi Tugas", colData[0], rowData + rowInc)
-            doc.text(`: ${val.description}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Description of Assignment", colData[0], rowData + rowInc)
-
-            rowInc += row4 + 4
-            doc.setFont('times', 'normal')
-            doc.text("Terima kasih atas perhatiannya.", colData[0], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Thank you for your consideration on this matter.", colData[0], rowData + rowInc)
-
-            rowInc += row4
-            doc.setFont('times', 'normal')
-            doc.text(`Jakarta, ${format(new Date(), "dd MMMM yyyy")}`, colData[0], rowData + rowInc)
-            
-            rowInc += row4 * 3
-            doc.setFont('times', 'underline')
-            doc.text(`Allan Cheong`, colData[0], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'normal')
-            doc.text(`Mill manager`, colData[0], rowData + rowInc)
-
-            doc.setFontSize(10)
-            rowInc += row4 + 4
-            doc.text(`* File`, colData[0], rowData + rowInc)
-            rowInc += row1
-            doc.text(`* Disetujui 1 tingkat di atas yang bersangkutan (Minimal Kasi/Supervisor)`, colData[0], rowData + rowInc)
-            doc.setFont('calibri', 'normal')
-        })
+        rowInc += row4
+        doc.setFont('times', 'normal', '')
+        doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
+        doc.setFontSize(18)
+        doc.setTextColor("#174ca3")
+        doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
+        doc.setTextColor("#000")
+        doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
+        doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
         
-        doc.save(`${res.sppd_id}.pdf`);
+        doc.setFontSize(16)
+        const rightAlign = 234
+        doc.rect(rightAlign, rowData + rowInc - 5, 48, rowData + rowInc + 6 )
+        doc.setFontSize(10)
+        doc.text("Form No", rightAlign + 2, rowData + rowInc)
+        doc.text(": 11-20", rightAlign + 20, rowData + rowInc)
+        rowInc += 4
+        doc.text("Rev.", rightAlign + 2, rowData + rowInc)
+        doc.text(": 0", rightAlign + 20, rowData + rowInc)
+        rowInc += 4
+        doc.text("Date", rightAlign + 2, rowData + rowInc)
+        doc.text(": Jan 2020", rightAlign + 20, rowData + rowInc)
+        
+        rowInc += row4 * 1.6
+        doc.setFont('times', 'normal', 'bold')
+        doc.setFontSize(14)
+        doc.text("Formulir Pelaporan Jam Kerja Lembur Pada hari Minggu/Hari libur resmi & hari kerja biasa", 50, rowData + rowInc)
+        doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
+        
+        rowInc += row3
+        doc.setFontSize(11)
+        doc.setFont('times', 'normal', 'bold')
+        doc.text("Kepada", colData[0], rowData + rowInc)
+        doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
+        doc.text(`| Hari Minggu`, colData[0] + 130, rowData + rowInc)
+        rowInc += 5
+        doc.text("Dept.", colData[0], rowData + rowInc)
+        doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
+        doc.text(`| Hari Libur Resmi`, colData[0] + 130, rowData + rowInc)
+        rowInc += 5
+        doc.text("Bulan", colData[0], rowData + rowInc)
+        doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
+        doc.text(`| Hari Kerja Biasa`, colData[0] + 130, rowData + rowInc)
+        
+        rowInc += row2
+        autoTable(doc, {
+            startY: rowData + rowInc,
+            theme:"grid",
+            head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Description', 'Status']],
+            margin: {left: colData[0]},
+            body: res.srl_detail.map((v:any, i: number) => {
+                const [nama, payroll, tanggal, waktu] = i == 0 
+                ? [res.employee.name, res.employee.payroll, namaHari[getDay(res.real_start)] + ", " + format(res.real_start, "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
+                : ["","","",""]
+                return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
+            }),
+            styles: {cellPadding: 1, halign: 'center' },
+            headStyles:{ fillColor:"#CDCDCD", textColor:"#000", halign: 'center'},
+            bodyStyles:{fontSize: 9, halign: 'center'},
+            columnStyles: {
+                0:{cellWidth: 10}, 1:{cellWidth: 52}, 2:{cellWidth: 20}, 
+                3:{cellWidth: 36}, 4:{cellWidth: 25}, 5:{cellWidth: 100, halign: 'left' }, 6:{cellWidth: 28}
+            },
+        })
+
+        rowInc = doc.lastAutoTable.finalY + row2        
+        doc.text(`Dibuat Oleh`, colData[0] + 20, rowData + rowInc)
+        doc.text(`Diperiksa Oleh`, colData[1] + 20, rowData + rowInc)
+        doc.text(`Disetujui Oleh`, colData[2] + 20, rowData + rowInc)
+        
+        rowInc += row2 * 3.4
+        doc.text(`Kasi/Kabag`, colData[1] + 20, rowData + rowInc)
+        doc.text(`Kadept/Plant Manager`, colData[2] + 20, rowData + rowInc)
+        
+        const blob = doc.output('blob')
+        const url = URL.createObjectURL(blob);
+
+        window.open(url); // buka tab baru
+        // doc.save(`${id}.pdf`);
     }
 
     // SRL approval 1
@@ -715,7 +665,7 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Dashboard">
+        <TabItem  title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Overtime Page</span>
             </div>
@@ -1054,7 +1004,7 @@
             </Tabs>
         </TabItem>
         
-        <TabItem title="Surat Realisasi Lembur">
+        <TabItem open title="Surat Realisasi Lembur">
             <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
                 <TabItem open title="List">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">

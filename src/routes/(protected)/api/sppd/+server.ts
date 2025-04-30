@@ -32,7 +32,6 @@ export async function GET({url}){
                     GROUP BY s.sppd_id
             ) as tmp`,
             `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
-            console.log(count)
         return {items, totalItems: Number(count)}
     })
 

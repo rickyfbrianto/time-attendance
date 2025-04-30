@@ -270,7 +270,12 @@
             doc.setFont('calibri', 'normal')
         })
         
-        doc.save(`${res.sppd_id}.pdf`);
+        const blob = doc.output('blob')
+        const url = URL.createObjectURL(blob);
+
+        window.open(url); // buka tab baru
+        
+        // doc.save(`${res.sppd_id}.pdf`);
     }
     
     // SKPD
@@ -506,7 +511,12 @@
         doc.setFontSize(8)
         doc.text("Jl. Lumba-lumba, Log. Pond Selili, Samarinda 75114 - Kalimantan Timur. Telp : (62-541) 240801 Fax : (62-541) 240604", 34, rowData + rowInc)
         
-        doc.save(`${res.skpd_id}.pdf`);
+        const blob = doc.output('blob')
+        const url = URL.createObjectURL(blob);
+
+        window.open(url); // buka tab baru
+        
+        // doc.save(`${res.skpd_id}.pdf`);
     }
     
     const getDept = async () =>{

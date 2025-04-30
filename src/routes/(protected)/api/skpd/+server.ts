@@ -26,7 +26,7 @@ export async function GET({url}){
             LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
             WHERE sd.payroll like ? && (skpd_id like ? OR s.sppd_id like ? OR e.name like ? OR real_start like ? OR real_end like ?)`, 
-            `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count:number}[]
+            `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
                     
         return {items, totalItems: Number(count)}
     })

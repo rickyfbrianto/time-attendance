@@ -8,7 +8,10 @@ declare global {
         }
 		interface Locals {
             user: {
-                payroll:string
+                payroll: string,
+                department: string,
+                profile_id: string,
+                name: string,
 			} | null | string,
             userProfile: {
                 access_attendance:string,
