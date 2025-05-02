@@ -44,20 +44,42 @@ export async function GET({url}){
                     AND sd.payroll = ? AND s.status1 = 'Approved' AND s.status2 = 'Approved'`, 
                 val) as any []
             return json(req)
-        }else if(type=='sppd_by_payroll'){
+        }else if(type=='sppd_not_in_skpd'){
             const req = await prisma.$queryRawUnsafe(`
-                SELECT s.sppd_id, s.start_date, s.end_date, s.purpose, s.location, GROUP_CONCAT(sd.payroll SEPARATOR  ',') as payroll
-                FROM sppd as s
-                LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id 
+                SELECT s.sppd_id, s.purpose FROM sppd as s
                 LEFT JOIN skpd ON s.sppd_id = skpd.sppd_id
-                WHERE skpd.sppd_id IS NULL
-                group by s.sppd_id`)
+                WHERE skpd.sppd_id IS NULL`)
+            return json(req)
+        }else if(type=='get_sppd_by_id'){
+            const req = await prisma.sppd.findFirst({
+                select:{
+                    sppd_id: true,
+                    start_date: true,
+                    end_date: true,
+                    location: true,
+                    sppd_detail:{
+                        select:{
+                            payroll: true,
+                            description: true,
+                            employee:{
+                                select:{
+                                    user_id_machine: true
+                                }
+                            }
+                        }
+                    }
+                },
+                where:{
+                    sppd_id: val
+                }
+            })
             return json(req)
         }else if(type=='sum_attendance_by_payroll'){
             const req = await prisma.$transaction(async tx => {
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select e.name as Name,
                         sum(case when type IN ('HKC','HKM') then 1 else 0 end) AS 'Day Work',
+                        sum(case when type = 'Dinas' then 1 else 0 end) AS 'Dinas',
                         sum(case when type = 'Sakit' then 1 else 0 end) AS 'Sick',
                         sum(case when type = 'Cuti Bersama' then 1 else 0 end) AS 'Cuti Bersama',
                         sum(case when type = 'Cuti Tahunan' then 1 else 0 end) AS 'Cuti Tahunan',
@@ -67,7 +89,7 @@ export async function GET({url}){
                     LEFT JOIN employee as e ON e.user_id_machine = a.user_id_machine
                     WHERE e.payroll = ? AND year(check_in) = ? AND month(check_in) <= ?`,
                     val, year, month
-                ) as {"Name":string, 'Day Work':string, 'Sick':string, 'Cuti Bersama': string, 'Cuti Tahunan':string, 'Cuti Resmi':string, 'Ijin Resmi':string}[]
+                ) as {"Name":string, 'Day Work':string, '':string, 'Sick':string, 'Cuti Bersama': string, 'Cuti Tahunan':string, 'Cuti Resmi':string, 'Ijin Resmi':string}[]
                 
                 const newData = Object.fromEntries(
                     Object.entries({...getDataLibur}).map(([key, value]) => ([key, typeof value == "string" ? value : Number(value)]))

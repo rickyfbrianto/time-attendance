@@ -1,5 +1,6 @@
 import { error, json } from "@sveltejs/kit";
-import { prisma, prismaErrorHandler } from '@lib/utils.js'
+import { formatTanggal, prisma, prismaErrorHandler } from '@lib/utils.js'
+import { eachDayOfInterval, format } from "date-fns";
 
 export async function GET({url}){
     const page = Number(url.searchParams.get('_page')) || 1
@@ -43,15 +44,24 @@ export async function POST({ request,  }) {
                 where:{skpd_id : data.skpd_id}
             })
 
-            if(!getSKPD){
-                const query = data.payroll.split(',').filter((v: string) => v.trim()).map(async (v: string) => {
+            if(!getSKPD){                
+                const querySKPD = data.skpd_detail.map(async (v: any) => {
                     return tx.$executeRawUnsafe(`
                         INSERT INTO SKPD (skpd_id,sppd_id,payroll,real_start,real_end,status,createdBy,createdAt) 
                         VALUES(getNomorSKPD(),?,?,?,?,?,?,now())`,
-                    data.sppd_id,v,data.date[0],data.date[1],data.status,data.createdBy)
+                    data.sppd_id,v.payroll,data.date[0],data.date[1],data.status,data.createdBy)
                 })
-                await Promise.all(query)
 
+                const queryAttendance = data.skpd_detail.flatMap((v: any) => {
+                    return eachDayOfInterval({ start: data.date[0], end: data.date[1] }).map(date => {                        
+                        return tx.$executeRawUnsafe(`
+                            INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description) 
+                            VALUES(UUID(), ?, ?, ?, ?, ?)`,
+                        v.user_id_machine, formatTanggal(format(date, "yyyy-MM-dd"), "date"), formatTanggal(format(date, "yyyy-MM-dd"), "date"), "Dinas", v.description)
+                    })
+                })
+                await Promise.all([...querySKPD, ...queryAttendance])
+                
                 return { message: "Data successfully saved" }
             }else{
                 await tx.$executeRawUnsafe(`

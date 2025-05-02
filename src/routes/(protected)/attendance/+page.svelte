@@ -33,11 +33,6 @@
     }
     
     let headerData: {title:string, value:string, icon: any }[] = $state([])
-        
-    let modalHeader = $state({
-        modal:false,
-        val:""
-    })
 
     const listType = [
         {value:"HKM", name:"Hari Kerja Manual"},
@@ -329,10 +324,9 @@
                 </div>
                 
                 <div class="flex flex-col w-full gap-4">
-                    <div class="hidden md:grid  md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-center gap-4">
+                    <div class="hidden md:grid  md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 items-center gap-4">
                         {#each headerData as {title, value, icon: Icon}}
                             <div class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
-                                <!-- onclick={() => handleDetailHeader(title)}> -->
                                 <span class="text-[.9rem] font-semibold">{title}</span>
                                 <div class="flex justify-between items-center gap-2">
                                     <Icon size={16}/>
@@ -365,7 +359,7 @@
         {/if}
 
         <!-- Tombol Add -->
-         {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+        {#if (userProfile?.user_hrd || userProfile?.level > 1)}
             <div class="flex gap-4 items-center w-full">
                 {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C")}
                     <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>

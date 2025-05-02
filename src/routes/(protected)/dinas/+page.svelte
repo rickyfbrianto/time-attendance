@@ -2,11 +2,11 @@
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import { Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer, Rows2Icon} from '@lucide/svelte'
+    import { Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray } from '@lib/utils';
+	import { formatTanggal, pecahArray, pecahKataOther } from '@lib/utils';
     import { differenceInDays, format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
@@ -39,7 +39,8 @@
             get createdBy() { return user?.payroll},
             sppd_detail:[{payroll:"", description:""}]
         },
-        get payroll() { return userProfile.user_hrd ? "" : user?.payroll},
+        get dept() { return userProfile.user_hrd ? "" : user?.department},
+        get payroll() { return userProfile.user_hrd || userProfile.level >= 5 ? "" : user?.payroll},
         success:"",
         error:"",
         modalDelete:false,
@@ -286,11 +287,12 @@
         answer:{
             skpd_id: "id",
             sppd_id:"",
-            payroll:"",
+            skpd_detail: [{payroll:"", description: ""}],
             date: ["", ""],
             status: "",
             get createdBy() { return user?.payroll},
         },
+        sppd_id: "",
         get payroll() {return userProfile.user_hrd ? "" : user?.payroll},
         success:"",
         error:"",
@@ -533,25 +535,28 @@
     })
     
     const getSPPD = async () =>{
-        const req = await fetch(`/api/data?type=sppd_by_payroll`)
+        const req = await fetch(`/api/data?type=sppd_not_in_skpd`)
         const res = await req.json()
-        formSKPDTemp = [...res]
         return res
     }
 
-    const fillSKPD = (id:string) =>{
-        const temp = formSKPDTemp.find(val => val.sppd_id == id)
+    const getSPPDDetail = async (id: string) =>{
+        const req = await fetch(`/api/data?type=get_sppd_by_id&val=${id}`)
+        const res = await req.json()
 
         setTimeout(()=>{
-            formSKPD.answer.date = [formatTanggal(temp.start_date), formatTanggal(temp.end_date)]
-            formSKPD.answer.payroll = temp.payroll
+            formSKPD.answer.sppd_id = res.sppd_id
+            formSKPD.answer.date = [formatTanggal(res.start_date), formatTanggal(res.end_date)]
+            formSKPD.answer.skpd_detail = res.sppd_detail.map((v: any) => {
+                return {payroll: v.payroll, description: v.description, user_id_machine: v.employee.user_id_machine}
+            })
         }, 100)
     }
     
     $effect(()=>{
         tableSPPD.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/sppd?${getParams(state)}&payroll=${formSPPD.payroll}`)
+                const req = await fetch(`/api/sppd?${getParams(state)}&payroll=${formSPPD.payroll || ""}&dept=${formSPPD.dept || ""}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items
@@ -578,7 +583,9 @@
     })
     
     setTimeout(()=>{
-        tableSPPD.invalidate()
+        if(userProfile.user_hrd || userProfile.level >= 5){
+            tableSPPD.invalidate()
+        }
         tableSKPD.invalidate()
     }, 1000)
 </script>
@@ -594,177 +601,182 @@
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Travel Page</span>
             </div>
         </TabItem>
-        <TabItem open title="SPPD">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formSPPD.error}
-                    {#each formSPPD.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
-                        </Alert>
-                    {/each}
-                {:else if formSPPD.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formSPPD.success}</span>
-                    </Alert>
-                {/if}
-                
-                {#if (userProfile?.user_hrd || userProfile?.level > 1)}
-                    <div class="flex gap-2">
-                        {#if formSPPD.add || formSPPD.edit}
-                            {#if pecahArray(userProfile?.access_sppd, "C") || pecahArray(userProfile.access_sppd, "U")}
-                                <MyButton onclick={formSPPDBatal}><Ban size={16} /></MyButton>
-                                <MyButton disabled={formSPPD.loading} onclick={formSPPDSubmit}><Save size={16}/></MyButton>
-                            {/if}
-                        {:else}
-                            {#if pecahArray(userProfile?.access_sppd, "C")}
-                                <MyButton onclick={()=> formSPPD.add = true}><Plus size={16}/></MyButton>
-                            {/if}
-                        {/if}
-                    </div>
-                {/if}
-
-                {#if formSPPD.loading}
-                    <MyLoading message="Get SPPD data"/>
-                {/if}
-                {#if formSPPD.add || formSPPD.edit}
-                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                        {#if userProfile.user_hrd}
-                            {#await getDept() then val}
-                                <div class="flex flex-col gap-2 flex-1">
-                                    <Label>Department</Label>
-                                    <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
-                                        options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
-                                </div>
-                            {/await}
-                        {/if}
-
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>
-                            <MyInput type='text' title={`Location`} name="location" bind:value={formSPPD.answer.location}/>
-                            <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>                            
-                            <MyInput type='daterange' title='Date' name="date" bind:value={formSPPD.answer.date}/>
-                            <MyInput type='text' title='Duration' bind:value={formSPPD.answer.duration} />
-                        </div>
-                        
-                        {#if formSPPD.answer.dept}
-                            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
-                                {#each formSPPD.answer.sppd_detail as list, i}
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex gap-2 items-end">
-                                            {#await getUserByDept(formSPPD.answer.dept) then val}
-                                                <div class="flex flex-col gap-2 flex-1">
-                                                    <Label>{`Employee ${i+1}`}</Label>
-                                                    <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
-                                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}/>
-                                                </div>
-                                            {/await}
-
-                                            {#if i == formSPPD.answer.sppd_detail.length - 1}
-                                                <MyButton onclick={()=>formSPPD.answer.sppd_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
-                                            {/if}
-                                            {#if formSPPD.answer.sppd_detail.length > 1}
-                                                <MyButton onclick={()=> formSPPD.answer.sppd_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
-                                            {/if}
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={list.description}/>
-                                            <span class="italic text-[.8rem]">Minimal 10 character</span>
-                                        </div>
-                                    </div>
-                                {/each}
-                            </div>
-                        {/if}
-                        
-                        <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user?.name}</Badge> </span>
-                    </form>
-                {/if}
-                
-                <div class="flex gap-2">
-                    <select bind:value={tableSPPD.rowsPerPage} onchange={() => tableSPPD.setPage(1)}>
-                        {#each [10, 20, 50, 100] as option}
-                            <option value={option}>{option}</option>
+        {#if userProfile.user_hrd || userProfile.level >= 5}
+            <TabItem title="SPPD">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                    {#if formSPPD.error}
+                        {#each formSPPD.error.split(';') as v}
+                            <Alert dismissable>
+                                <span>{v}</span>
+                            </Alert>
                         {/each}
-                    </select>
-                    <MyInput type='text' bind:value={tableSPPDSearch.value} onkeydown={(e: KeyboardEvent) => {
-                        if(e.key.toLowerCase() === 'enter') tableSPPDSearch.set()
-                    }}/>
-                    <MyButton onclick={()=>tableSPPDSearch.set()}><Search size={16} /></MyButton>
-                    <MyButton onclick={()=>tableSPPD.invalidate()}><RefreshCw size={16}/></MyButton>
-                </div>
-
-                <Datatable table={tableSPPD}>
-                    <Table>
-                        <TableHead>
-                            <ThSort table={tableSPPD} field="sppd_id">SPPD ID</ThSort>
-                            <ThSort table={tableSPPD} field="purpose">Purpose</ThSort>
-                            <ThSort table={tableSPPD} field="location">Location</ThSort>
-                            <ThSort table={tableSPPD} field="start_date">Start Date</ThSort>
-                            <ThSort table={tableSPPD} field="end_date">End Date</ThSort>
-                            <ThSort table={tableSPPD} field="duration">Duration</ThSort>
-                            <ThSort table={tableSPPD} field="">#</ThSort>
-                        </TableHead>
-
-                        {#if tableSPPD.isLoading}
-                            <div class="flex p-4 items-center">
-                                <MyLoading message="Loading data"/>
-                            </div>
-                        {:else}
-                            <TableBody tableBodyClass="divide-y">
-                                {#if tableSPPD.rows.length > 0}
-                                    {#each tableSPPD.rows as row:any}
-                                        <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
-                                            <TableBodyCell>{row.purpose}</TableBodyCell>
-                                            <TableBodyCell>{row.location}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.start_date, "date")}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.end_date, "date")}</TableBodyCell>
-                                            <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if (userProfile?.user_hrd || userProfile?.level > 1)}
-                                                    {#if pecahArray(userProfile.access_sppd, "U")}
-                                                        <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
-                                                    {/if}
-                                                    {#if pecahArray(userProfile.access_sppd, "D")}
-                                                        <MyButton onclick={()=> {
-                                                            formSPPD.modalDelete = true
-                                                            formSPPD.answer.sppd_id = row.sppd_id
-                                                        }}><Trash size={12} /></MyButton>
-                                                    {/if}
-                                                {/if}
-                                                <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
-                                            </TableBodyCell>
-                                        </TableBodyRow>
-                                    {/each}
-                                {:else}
-                                    <TableBodyRow class='h-10'>
-                                        <TableBodyCell colspan={10}>No data available</TableBodyCell>
-                                    </TableBodyRow>
+                    {:else if formSPPD.success}
+                        <Alert border color="green" dismissable>
+                            <span>{formSPPD.success}</span>
+                        </Alert>
+                    {/if}
+                    
+                    {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                        <div class="flex gap-2">
+                            {#if formSPPD.add || formSPPD.edit}
+                                {#if pecahArray(userProfile?.access_sppd, "C") || pecahArray(userProfile.access_sppd, "U")}
+                                    <MyButton onclick={formSPPDBatal}><Ban size={16} /></MyButton>
+                                    <MyButton disabled={formSPPD.loading} onclick={formSPPDSubmit}><Save size={16}/></MyButton>
                                 {/if}
-                            </TableBody>
-                        {/if}
-                    </Table>
-                    {#if tableSPPD.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-textdark self-end text-[.9rem]'>
-                                Showing {tableSPPD.rowCount.start} to {tableSPPD.rowCount.end} of {tableSPPD.rowCount.total} rows
-                                <Badge color="dark">Page {tableSPPD.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableSPPD.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSPPD.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableSPPD.pages as page}
-                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPPD.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableSPPD.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSPPD.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
+                            {:else}
+                                {#if pecahArray(userProfile?.access_sppd, "C")}
+                                    <MyButton onclick={()=> formSPPD.add = true}><Plus size={16}/></MyButton>
+                                {/if}
+                            {/if}
                         </div>
                     {/if}
-                </Datatable>
-            </div>
-        </TabItem>
+
+                    {#if formSPPD.loading}
+                        <MyLoading message="Get SPPD data"/>
+                    {/if}
+                    {#if formSPPD.add || formSPPD.edit}
+                        <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                            {#if userProfile.user_hrd}
+                                {#await getDept() then val}
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Department</Label>
+                                        <Svelecte disabled={formSPPD.edit} class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPPD.answer.dept} 
+                                            options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}/>
+                                    </div>
+                                {/await}
+                            {/if}
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>
+                                <MyInput type='text' title={`Location`} name="location" bind:value={formSPPD.answer.location}/>
+                                <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>                            
+                                <MyInput type='daterange' title='Date' name="date" bind:value={formSPPD.answer.date}/>
+                                <MyInput type='text' title='Duration' bind:value={formSPPD.answer.duration} />
+                            </div>
+                            
+                            {#if formSPPD.answer.dept}
+                                <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
+                                    {#each formSPPD.answer.sppd_detail as list, i}
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex gap-2 items-end">
+                                                {#await getUserByDept(formSPPD.answer.dept) then val}
+                                                    <div class="flex flex-col gap-2 flex-1">
+                                                        <Label>{`Employee ${i+1}`}</Label>
+                                                        <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
+                                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}/>
+                                                    </div>
+                                                {/await}
+
+                                                {#if i == formSPPD.answer.sppd_detail.length - 1}
+                                                    <MyButton onclick={()=>formSPPD.answer.sppd_detail.push({payroll:"", description:""})}><Plus size={14} color='green' /></MyButton>
+                                                {/if}
+                                                {#if formSPPD.answer.sppd_detail.length > 1}
+                                                    <MyButton onclick={()=> formSPPD.answer.sppd_detail.splice(i, 1)}><Minus size={14} color='red' /></MyButton>
+                                                {/if}
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <MyInput type='textarea' title={`Description ${i+1}`} name="description" bind:value={list.description}/>
+                                                <span class="italic text-[.8rem]">Minimal 10 character</span>
+                                            </div>
+                                        </div>
+                                    {/each}
+                                </div>
+                            {/if}
+                            
+                            <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user?.name}</Badge> </span>
+                        </form>
+                    {/if}
+                    
+                    <div class="flex gap-2">
+                        <select bind:value={tableSPPD.rowsPerPage} onchange={() => tableSPPD.setPage(1)}>
+                            {#each [10, 20, 50, 100] as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                        <MyInput type='text' bind:value={tableSPPDSearch.value} onkeydown={(e: KeyboardEvent) => {
+                            if(e.key.toLowerCase() === 'enter') tableSPPDSearch.set()
+                        }}/>
+                        <MyButton onclick={()=>tableSPPDSearch.set()}><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableSPPD.invalidate()}><RefreshCw size={16}/></MyButton>
+                    </div>
+
+                    <Datatable table={tableSPPD}>
+                        <Table>
+                            <TableHead>
+                                <ThSort table={tableSPPD} field="sppd_id">SPPD ID</ThSort>
+                                <ThSort table={tableSPPD} field="purpose">Purpose</ThSort>
+                                <ThSort table={tableSPPD} field="location">Location</ThSort>
+                                <ThSort table={tableSPPD} field="name">Name</ThSort>
+                                <ThSort table={tableSPPD} field="start_date">Start Date</ThSort>
+                                <ThSort table={tableSPPD} field="end_date">End Date</ThSort>
+                                <ThSort table={tableSPPD} field="duration">Duration</ThSort>
+                                <ThSort table={tableSPPD} field="">#</ThSort>
+                            </TableHead>
+
+                            {#if tableSPPD.isLoading}
+                                <div class="flex p-4 items-center">
+                                    <MyLoading message="Loading data"/>
+                                </div>
+                            {:else}
+                                <TableBody tableBodyClass="divide-y">
+                                    {#if tableSPPD.rows.length > 0}
+                                        {#each tableSPPD.rows as row:any}
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                                <TableBodyCell>{row.purpose}</TableBodyCell>
+                                                <TableBodyCell>{row.location}</TableBodyCell>
+                                                <TableBodyCell><div title={row.name}>{pecahKataOther(row.name, 1)}</div></TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.start_date, "date")}</TableBodyCell>
+                                                <TableBodyCell>{formatTanggal(row.end_date, "date")}</TableBodyCell>
+                                                <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                                                        {#if pecahArray(userProfile.access_sppd, "U")}
+                                                            <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
+                                                        {/if}
+                                                        {#if pecahArray(userProfile.access_sppd, "D")}
+                                                            <MyButton onclick={()=> {
+                                                                formSPPD.modalDelete = true
+                                                                formSPPD.answer.sppd_id = row.sppd_id
+                                                            }}><Trash size={12} /></MyButton>
+                                                        {/if}
+                                                    {/if}
+                                                    <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
+                                                </TableBodyCell>
+                                            </TableBodyRow>
+                                        {/each}
+                                    {:else}
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
+                                    {/if}
+                                </TableBody>
+                            {/if}
+                        </Table>
+                        {#if tableSPPD.rows.length > 0}
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-textdark self-end text-[.9rem]'>
+                                    Showing {tableSPPD.rowCount.start} to {tableSPPD.rowCount.end} of {tableSPPD.rowCount.total} rows
+                                    <Badge color="dark">Page {tableSPPD.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableSPPD.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableSPPD.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableSPPD.pages as page}
+                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPPD.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableSPPD.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableSPPD.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
+                            </div>
+                        {/if}
+                    </Datatable>
+                </div>
+            </TabItem>
+        {/if}
         <TabItem title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                {JSON.stringify(formSKPD.answer)}
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
                         <Alert dismissable>
@@ -801,9 +813,9 @@
                             {#await getSPPD() then val}
                                 <div class="flex flex-col gap-2 flex-1">
                                     <Label>SPPD ID</Label>
-                                    <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.sppd_id} 
+                                    <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.sppd_id} 
                                     options={val.map((v:any) => ({value: v.sppd_id, text:v.sppd_id.replace(/\_/g, '/') + " - " + v.purpose, sppd_id: v.sppd_id}))}
-                                    onChange={(e:any) => fillSKPD(e.sppd_id)}
+                                    onChange={(e: any) => getSPPDDetail(e.sppd_id)}
                                     />
                                 </div>
                             {/await}
@@ -813,10 +825,8 @@
                 
                         {#if formSKPD.answer.sppd_id}
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <input type='hidden' name="skpd_id" disabled={formSKPD.edit} bind:value={formSKPD.answer.skpd_id}/>
-
                                 <MyInput type='daterange' disabled title='Date' name="date" bind:value={formSKPD.answer.date}/>
-                                <MyInput type='text' disabled title='Payroll' bind:value={formSKPD.answer.payroll} />
+
                                 <div class="flex flex-col gap-2">
                                     <Label>Status</Label>
                                     <select bind:value={formSKPD.answer.status}>
@@ -825,6 +835,14 @@
                                         {/each}
                                     </select>
                                 </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                {#each formSKPD.answer.skpd_detail as item, i (item.payroll)}
+                                    <div class="flex gap-2">
+                                        <MyInput type='text' disabled title='Payroll' bind:value={item.payroll} />
+                                        <MyInput type='text' disabled title='Description' bind:value={item.description} />
+                                    </div>
+                                {/each}
                             </div>
                         {/if}
                         

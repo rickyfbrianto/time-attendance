@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pecahArray, generatePeriode, getColorCalendar, getLastIjinDate } from "@lib/utils.js";
+import { pecahArray, generatePeriode, getColorCalendar, getLastIjinDate, pecahKataOther } from "@lib/utils.js";
 
 describe("Test Pecah Array", () => {
 	it("harus mengembalikan nilai true", () => {
@@ -38,5 +38,14 @@ describe("Tes Tanggal terakhir ijin Calendar", () => {
 	});
 	it("Mendapatkan nilai terakir date ijin apabila WH == 7", () => {
 		expect(getLastIjinDate("2025-04-25", 3, 7)).toEqual(new Date("2025-04-28"));
+	});
+});
+
+describe("Tes pecah kata menjadi other", () => {
+	it("Split 2 kata ", () => {
+		expect(pecahKataOther("Ricky, Febrianto, Ryan", 2)).toEqual("Ricky, Febrianto and 1 other");
+	});
+	it("Split 3 kata ", () => {
+		expect(pecahKataOther("Ricky, Febrianto, Ryan, Udin, Dedy", 3)).toEqual("Ricky, Febrianto, Ryan and 2 others");
 	});
 });

@@ -173,3 +173,12 @@ export function getLastIjinDate(startDate: string, daysToAdd: number, workhour: 
 
     return date;
 }
+
+export function pecahKataOther(val: string, potong: number = 1){
+    const temp = val.split(',').filter((v: string) => v).map((v: string) => v.trim())
+    const andOthers = temp.length - potong
+    const newSplit = temp.slice(0, potong).join(', ')
+    let newTemp = newSplit
+    newTemp += andOthers > 0 ? " and " + (andOthers) + ` other${andOthers > 1 ? "s": ""}` : ""
+    return newTemp
+}

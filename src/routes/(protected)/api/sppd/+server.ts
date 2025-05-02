@@ -11,27 +11,39 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
 
+    const dept = url.searchParams.get('dept') || ""
     const payroll = url.searchParams.get('payroll') || ""
     
     const status = await prisma.$transaction(async (tx) => {     
+        // const items = await tx.$queryRawUnsafe(`
+        //     SELECT s.sppd_id, purpose, s.location, start_date, end_date, duration, e.name, d.name as dept_name FROM SPPD as s
+        //     LEFT JOIN dept as d ON d.dept_code = s.dept
+        //     LEFT JOIN employee as e ON e.payroll = s.createdBy
+        //     LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
+        //     WHERE (s.dept like ? && sd.payroll like ?) && (s.sppd_id like ? OR purpose like ? OR start_date like ? OR end_date like ? OR e.name like ?)
+        //     GROUP BY s.sppd_id
+        //     ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
+        //     `%${dept}%`, `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
         const items = await tx.$queryRawUnsafe(`
-            SELECT s.sppd_id, purpose, s.location, start_date, end_date, duration, e.name FROM SPPD as s
-            LEFT JOIN employee as e ON e.payroll = s.createdBy
-            LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
-            WHERE sd.payroll like ? && (s.sppd_id like ? OR purpose like ? OR start_date like ? OR end_date like ? OR e.name like ?)
+            SELECT s.sppd_id, purpose, s.location, start_date, end_date, duration, GROUP_CONCAT(e.name SEPARATOR ', ') as name, d.name as dept_name FROM sppd_detail as sd 
+			LEFT JOIN SPPD as s ON s.sppd_id = sd.sppd_id
+            LEFT JOIN dept as d ON d.dept_code = s.dept
+            LEFT JOIN employee as e ON e.payroll = sd.payroll
+            WHERE (s.dept like ? && sd.payroll like ? ) && (s.sppd_id like ? OR purpose like ? OR start_date like ? OR end_date like ? OR e.name like ?)
             GROUP BY s.sppd_id
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
+            `%${dept}%`, `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
             
         const [{count}] = await tx.$queryRawUnsafe(`
             SELECT COUNT(*) as count FROM (
-                SELECT s.sppd_id FROM SPPD as s
-                    LEFT JOIN employee as e ON e.payroll = s.createdBy
-                    LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
-                    WHERE sd.payroll like ? && (s.sppd_id like ? OR purpose like ? OR start_date like ? OR end_date like ? OR e.name like ?)
+                SELECT s.sppd_id FROM sppd_detail as sd
+                    LEFT JOIN SPPD as s ON s.sppd_id = sd.sppd_id
+                    LEFT JOIN dept as d ON d.dept_code = s.dept
+                    LEFT JOIN employee as e ON e.payroll = sd.payroll
+                    WHERE (s.dept like ? && sd.payroll like ? ) && (s.sppd_id like ? OR purpose like ? OR start_date like ? OR end_date like ? OR e.name like ?)
                     GROUP BY s.sppd_id
             ) as tmp`,
-            `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
+            `%${dept}%`, `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
         return {items, totalItems: Number(count)}
     })
 
