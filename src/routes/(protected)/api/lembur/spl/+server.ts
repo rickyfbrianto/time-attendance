@@ -67,8 +67,8 @@ export async function POST({ request,  }) {
                 newID = `${lastID}-SPL${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
                 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO SPL (spl_id,purpose,est_start,est_end,approval1,approval2, createdAt) VALUES (?,?,?,?,?,?, now())`,
-                    newID, data.purpose, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.approval1, data.approval2
+                    INSERT INTO SPL (spl_id,purpose,dept,est_start,est_end,approval1,approval2, createdAt) VALUES (?,?,?,?,?,?,?, now())`,
+                    newID, data.purpose, data.dept, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.approval1, data.approval2
                 )
 
                 await tx.spl_detail.createMany({

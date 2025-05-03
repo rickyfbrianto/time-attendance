@@ -8,11 +8,12 @@
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, generatePeriode, pecahArray, getLastIjinDate } from '@lib/utils.js';
-    import { addDays, differenceInDays, eachDayOfInterval, format, getDay, getYear, isWeekend } from 'date-fns';
+    import { differenceInDays, eachDayOfInterval, format, getDay, getYear, isWeekend } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 	import Svelecte from 'svelecte';
+    import { getParams } from '@lib/data/api.js';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -252,7 +253,7 @@
     $effect(()=>{
         tableIjin.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/ijin?payroll=${user?.payroll}`)
+                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${user?.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -262,35 +263,41 @@
             }
         })
 
-        tableApprovalIjin.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/ijin/approve?payroll=${user?.payroll}&dept=${user?.department}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if (userProfile.level > 1){
+            tableApprovalIjin.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/ijin/approve?${getParams(state)}&payroll=${user?.payroll}&dept=${user?.department}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
 
-        tableListIjin.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/ijin/list`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if (userProfile.user_hrd){
+            tableListIjin.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/ijin/list?${getParams(state)}&`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
     })
     
     setTimeout(()=>{
         tableIjin.invalidate()
-        tableApprovalIjin.invalidate()
-        tableListIjin.invalidate()
+        if (userProfile.level > 1)
+            tableApprovalIjin.invalidate()
+        if (userProfile.user_hrd)
+            tableListIjin.invalidate()
     }, 1000)
 </script>
 

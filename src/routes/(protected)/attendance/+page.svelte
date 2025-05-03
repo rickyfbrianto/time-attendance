@@ -15,7 +15,7 @@
 	import { getParams } from '@lib/data/api.js';
 	import MyCalendar from '@/MyCalendar.svelte';
 
-    const rowsPerPage = 10
+    const rowsPerPage = 30
     let {data} = $props()
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
@@ -54,7 +54,8 @@
             type: "",
             ijin_info: "",
             description: "",
-            attachment: [],
+            // attachment: [],
+            attachment: "",
             get createdBy() { return user?.payroll}
         },
         get dept() { return userProfile.user_hrd ? "" : user?.department},
@@ -87,12 +88,15 @@
             Object.entries(formAttendance.answer).forEach(val=>{
                 formData.append(val[0], val[1])
             })  
-            
+
+            const temp  = formAttendance.payroll
+
             const isValid = valid.safeParse(formAttendance.answer)
             if(isValid.success){
                 const req = await axios.post('/api/attendance', formData)
                 const res = await req.data
                 formAttendanceBatal()
+                formAttendance.payroll = temp
                 tableAttendance.invalidate()
                 tableAttendanceDept.invalidate()
                 formAttendance.success = res.message
@@ -109,10 +113,19 @@
         }
     }
 
+    const formAttendanceAdd = () =>{
+        formAttendance.add = true
+        formAttendance.modal = true
+        formAttendance.success = ""
+        formAttendance.error = ""
+    }
+
     const formAttendanceBatal = () => formAttendance = {...formAttendanceAnswer}
     
     const formAttendanceEdit = async (id:string) =>{
         try {
+            formAttendance.success = ""
+            formAttendance.error = ""
             formAttendance.modal = true
             formAttendance.loading = true
             const req = await axios.get(`/api/attendance/${id}`)
@@ -120,6 +133,7 @@
             
             formAttendance.answer = {...res}
             setTimeout(()=>{
+                formAttendance.answer.attachment = res.attachment == null ? null : res.attachment
                 formAttendance.answer.check_in = formatTanggal(res.check_in)
                 formAttendance.answer.check_out = formatTanggal(res.check_out)
                 formAttendance.answer.check_in2 = formatTanggal(res.check_in2)
@@ -159,7 +173,6 @@
     
     const handleBackToMyAttendance = () =>{
         formAttendance.payroll = user?.payroll
-        // formAttendanceBatal()
         tableAttendance.invalidate()
         tableListAttendance.invalidate()
         tableLogAttendance.invalidate()
@@ -362,7 +375,7 @@
         {#if (userProfile?.user_hrd || userProfile?.level > 1)}
             <div class="flex gap-4 items-center w-full">
                 {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C")}
-                    <MyButton onclick={()=> {formAttendance.add = true; formAttendance.modal = true}}><Plus size={16}/></MyButton>
+                    <MyButton onclick={formAttendanceAdd}><Plus size={16}/></MyButton>
                 {/if}
                 <div class="flex flex-1 gap-2">
                     {#await getUser(formAttendance.dept)}
@@ -390,7 +403,7 @@
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
                             <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
-                                {#each [10, 20, 50, 100] as option}
+                                {#each [30, 60, 90, 120] as option}
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
@@ -484,13 +497,12 @@
                                                         {#if pecahArray(userProfile.access_attendance, "U")}
                                                             <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                         {/if}
-                                                        {#if pecahArray(userProfile.access_attendance, "D") && !["HKC"].includes(row.type)}
+                                                        <!-- {#if pecahArray(userProfile.access_attendance, "D") && !["HKC"].includes(row.type)}
                                                             <MyButton onclick={()=> {
                                                                 formAttendance.modalDelete = true
                                                                 formAttendance.answer.attendance_id = row.attendance_id
                                                             }}><Trash size={12} /></MyButton>
-                                                            <!-- <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton> -->
-                                                        {/if}
+                                                        {/if} -->
                                                     {/if}
                                                     {#if row.attachment}
                                                         <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
@@ -533,7 +545,7 @@
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
                                 <select bind:value={tableAttendanceDept.rowsPerPage} onchange={() => tableAttendanceDept.setPage(1)}>
-                                    {#each [10, 20, 50, 100] as option}
+                                    {#each [30, 60, 90, 120] as option}
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
@@ -629,6 +641,9 @@
                                                                 <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                             {/if}
                                                         {/if}
+                                                        {#if row.attachment}
+                                                            <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
+                                                        {/if}
                                                         <!-- {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
                                                             <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
                                                         {/if} -->
@@ -671,7 +686,7 @@
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
                                 <select bind:value={tableListAttendance.rowsPerPage} onchange={() => tableListAttendance.setPage(1)}>
-                                    {#each [10, 20, 50, 100] as option}
+                                    {#each [30, 60, 90, 120] as option}
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
@@ -749,6 +764,9 @@
                                                                 }}><Trash size={12} /></MyButton>
                                                             {/if}
                                                         {/if}
+                                                        {#if row.attachment}
+                                                            <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
+                                                        {/if}
                                                     </TableBodyCell>
                                                 </TableBodyRow>
                                             {/each}
@@ -787,7 +805,7 @@
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
                             <select bind:value={tableLogAttendance.rowsPerPage} onchange={() => tableLogAttendance.setPage(1)}>
-                                {#each [10, 20, 50, 100] as option}
+                                {#each [30, 60, 90, 120] as option}
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
@@ -826,6 +844,7 @@
                                 <ThSort table={tableAttendance} field="">Difference</ThSort>
                                 <ThSort table={tableAttendance} field="type">type</ThSort>
                                 <ThSort table={tableAttendance} field="">Information</ThSort>
+                                <ThSort table={tableAttendance} field="">#</ThSort>
                             </TableHead>
     
                             {#if tableLogAttendance.isLoading}
@@ -875,7 +894,13 @@
                                                                 : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
+
                                                     </div>
+                                                </TableBodyCell>
+                                                <TableBodyCell>
+                                                    {#if row.attachment}
+                                                        <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
+                                                    {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
@@ -913,7 +938,7 @@
     <Modal bind:open={formAttendance.modalAttachment} autoclose>
         <div class="flex flex-col gap-6 overflow-hidden max-h-[80vh]">
             <h3>Attachment</h3>
-            <img src={import.meta.env.VITE_ATTACH_ATTACHMENT+formAttendance.attachment} class='' alt="">
+            <img src={import.meta.env.VITE_VIEW_ATTANDANCE+formAttendance.attachment} class='' alt="">
         </div>
         <svelte:fragment slot="footer">
             <Button color='red' onclick={() => formAttendanceBatal()}>Tutup</Button>
@@ -974,7 +999,7 @@
                         {:then val}
                             <div class="flex flex-col gap-2">
                                 <Label>User Id Machine</Label>
-                                <Svelecte clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formAttendance.answer.user_id_machine} 
+                                <Svelecte disabled={formAttendance.edit} clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formAttendance.answer.user_id_machine} 
                                     options={val.map((v:any) => ({value: v.user_id_machine, text:v.payroll + " | " + v.user_id_machine + " | " + v.name}))}
                                 />
                             </div>

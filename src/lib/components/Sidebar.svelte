@@ -83,7 +83,7 @@
             <div class="flex flex-col gap-2 items-center justify-center">
                 <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem]"/>
                 <span class='italic'>{user.name}</span>
-                <img src={import.meta.env.VITE_ATTACH_SIGNATURE+user.signature} alt="Signature" class="border border-slate-300 rounded-xl w-[7rem] h-[7rem] p-2"/>
+                <img src={import.meta.env.VITE_VIEW_SIGNATURE+user.signature} alt="Signature" class="border border-slate-300 rounded-xl w-[7rem] h-[7rem] p-2"/>
                 <span class='italic'>Signature</span>
             </div>
             <div class="flex flex-col">

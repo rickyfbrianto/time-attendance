@@ -69,12 +69,8 @@ export async function POST({ request }) {
                 })
                 
                 if(createUser && isSignature){
-                    // const filename = path.resolve('src/lib/assets/media/attach_signature') + `/${fileSignature}`
-                    // const filename = path.resolve(import.meta.env.VITE_ATTACH_SIGNATURE) + `/${fileSignature}`
-                    // await writeFile(filename, Buffer.from(await signature?.arrayBuffer()));
-
-                    const uploadsDir = path.resolve("src/lib/assets/media/attach_signature") 
-                    const filePath = path.join(uploadsDir, fileSignature);
+                    const uploadsDir = path.join(process.env.ATTACH_SIGNATURE, fileSignature)
+                    const filePath = path.resolve(uploadsDir);
                     writeFileSync(filePath, Buffer.from(await signature?.arrayBuffer()));
                 }
                 
@@ -100,8 +96,8 @@ export async function POST({ request }) {
                 })
                 
                 if(updateUser && isSignature){
-                    const uploadsDir = path.resolve("src/lib/assets/media/attach_signature") 
-                    const filePath = path.join(uploadsDir, fileSignature);
+                    const uploadsDir = path.join(process.env.ATTACH_SIGNATURE, fileSignature)
+                    const filePath = path.resolve(uploadsDir);
                     writeFileSync(filePath, Buffer.from(await signature?.arrayBuffer()));
                 }
                 

@@ -8,20 +8,30 @@ export async function GET({params}){
             spl_id: true,
             est_start: true,
             est_end: true,
-            approval1:true,
-            approval2:true,
-            purpose:true,
+            dept_spl_deptTodept:{
+                select:{
+                    name: true,
+                }
+            },
+            employee_spl_approval1Toemployee:{
+                select:{
+                    name: true,
+                    signature: true
+                }
+            },
+            employee_spl_approval2Toemployee:{
+                select:{
+                    name: true,
+                    signature: true
+                }
+            },
             spl_detail: {
                 select: { 
-                    payroll : true,
                     description : true,
                     employee:{
                         select:{
-                            dept:{
-                                select:{
-                                    name:true
-                                }
-                            }
+                            payroll: true,
+                            name: true
                         }
                     }
                 },

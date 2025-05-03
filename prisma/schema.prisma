@@ -100,7 +100,7 @@ model attendance {
   type                                          String    @db.VarChar(50)
   ijin_info                                     String    @db.VarChar(50)
   description                                   String    @db.VarChar(255)
-  attachment                                    String?   @db.Text
+  attachment                                    String    @db.Text
   createdBy                                     String?   @db.VarChar(8)
   createdAt                                     DateTime  @default(now()) @db.DateTime(0)
   employee_attendance_createdByToemployee       employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
@@ -140,6 +140,7 @@ model setting {
 model spl {
   spl_id                           String       @id @db.VarChar(40)
   purpose                          String       @db.VarChar(255)
+  dept                             String?      @db.VarChar(6)
   est_start                        DateTime     @db.DateTime(0)
   est_end                          DateTime     @db.DateTime(0)
   status1                          spl_status1  @default(Waiting)
@@ -149,6 +150,7 @@ model spl {
   createdAt                        DateTime     @default(now()) @db.DateTime(0)
   employee_spl_approval1Toemployee employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
   employee_spl_approval2Toemployee employee?    @relation("spl_approval2Toemployee", fields: [approval2], references: [payroll])
+  dept_spl_deptTodept              dept?        @relation("spl_deptTodept", fields: [dept], references: [dept_code])
   spl_detail                       spl_detail[]
   srl                              srl[]
 
@@ -156,6 +158,7 @@ model spl {
   @@index([est_start], map: "est_start")
   @@index([approval1], map: "approval1")
   @@index([approval2], map: "approval2")
+  @@index([dept], map: "dept")
 }
 
 model spl_detail {
@@ -178,6 +181,7 @@ model dept {
   name                 String      @db.VarChar(100)
   status               dept_status
   employee             employee[]
+  spl_spl_deptTodept   spl[]       @relation("spl_deptTodept")
   sppd_sppd_deptTodept sppd[]      @relation("sppd_deptTodept")
 
   @@fulltext([dept_code, name], map: "dept_code_2")

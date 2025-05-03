@@ -13,6 +13,7 @@
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
     import Svelecte from 'svelecte';
+    import { getParams } from '@lib/data/api.js';
     
     const rowsPerPage = 10
     let {data} = $props()
@@ -234,7 +235,7 @@
     $effect(()=>{
         tableCuti.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/cuti?payroll=${user?.payroll}`)
+                const req = await fetch(`/api/cuti?${getParams(state)}&payroll=${user?.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -244,35 +245,40 @@
             }
         })
 
-        tableApprovalCuti.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/cuti/approve?payroll=${user?.payroll}&dept=${user?.department}`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
-
-        tableListCuti.load(async (state:State) =>{
-            try {
-                const req = await fetch(`/api/cuti/list`)
-                if(!req.ok) throw new Error('Gagal mengambil data')
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
+        if (userProfile.level > 1){
+            tableApprovalCuti.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/cuti/approve?${getParams(state)}&payroll=${user?.payroll}&dept=${user?.department}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
+        if (userProfile.user_hrd){
+            tableListCuti.load(async (state:State) =>{
+                try {
+                    const req = await fetch(`/api/cuti/list?${getParams(state)}`)
+                    if(!req.ok) throw new Error('Gagal mengambil data')
+                    const {items, totalItems} = await req.json()
+                    state.setTotalRows(totalItems)
+                    return items
+                } catch (err:any) {
+                    console.log(err.message)
+                }
+            })
+        }
     })
     
     setTimeout(()=>{
         tableCuti.invalidate()
-        tableApprovalCuti.invalidate()
-        tableListCuti.invalidate()
+        if (userProfile.level > 1)
+            tableApprovalCuti.invalidate()
+        if (userProfile.user_hrd)
+            tableListCuti.invalidate()
     }, 1000)
 </script>
 

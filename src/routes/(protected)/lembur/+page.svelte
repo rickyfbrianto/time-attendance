@@ -1,15 +1,15 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Label, Alert } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Label, Alert, Modal } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode } from '@lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan } from '@lib/utils.js';
     import { getParams } from '@lib/data/api';
-	import { differenceInHours, format, set, getDay, startOfDay, subMonths } from 'date-fns';
+	import { differenceInHours, format, set, getDay, startOfDay, subMonths, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
     import bglembur from '@lib/assets/bg-lembur.jpg'
     import stm from '@lib/assets/stm.png'
@@ -40,6 +40,7 @@
         },
         success:"",
         error:"",
+        modalDelete: false,
         loading:false,
         add:false,
         edit:false,
@@ -52,6 +53,7 @@
             formSPL.loading = true
             const valid = z.object({
                 spl_id: z.string().trim().min(1),
+                dept: z.string().trim().min(1),
                 purpose: z.string().trim().min(5),
                 est_start: z.string().trim().min(1),
                 est_end: z.string().trim().min(1),
@@ -87,6 +89,8 @@
     const formSPLEdit = async (id:string) =>{
         try {
             formSPL.loading = true
+            formSPL.error = ""
+            formSPL.success = ""
             const req = await axios.get(`/api/lembur/spl/${id}/edit`)
             const res = await req.data
             if(res){
@@ -134,15 +138,14 @@
             format:"a4"
         })
 
-        const colData = [10, 58, 62]
+        const signatureSize = 20
+        const colData = [10, 90, 160, 230]
         const rowData = 0
         let rowInc = 0
         let row1 = 4
         let row2 = 6
         let row3 = 8
         let row4 = 10
-
-        const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
 
         rowInc += row4
         doc.setFont('times', 'normal', '')
@@ -155,8 +158,8 @@
         doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
         
         doc.setFontSize(16)
-        const rightAlign = 244
-        doc.rect(rightAlign, rowData + rowInc - 5, 48, rowData + rowInc + 10 )
+        const rightAlign = 235
+        doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
         doc.setFontSize(10)
         doc.text("Form No", rightAlign + 2, rowData + rowInc)
         doc.text(": 11-19", rightAlign + 20, rowData + rowInc)
@@ -167,8 +170,9 @@
         doc.text("Rev Date", rightAlign + 2, rowData + rowInc)
         doc.text(": 22 March 2021", rightAlign + 20, rowData + rowInc)
         
-        rowInc += row4 * 1.6
-        doc.text("OVERTIME AUTHORIZATION FORM", 110, rowData + rowInc)
+        rowInc += row4
+        doc.setFontSize(14)
+        doc.text("OVERTIME AUTHORIZATION FORM", 105, rowData + rowInc)
         
         rowInc += row3
         doc.setFontSize(11)
@@ -176,10 +180,10 @@
         doc.text(`:  ${res.spl_id.replace(/\_/g, '/')}`, colData[0] + 30, rowData + rowInc)
         rowInc += 5
         doc.text("Date Prepare", colData[0], rowData + rowInc)
-        doc.text(`:  ${format(new Date(), "dd MMMM yyyy")}`, colData[0] + 30, rowData + rowInc)
+        doc.text(`:  ${format(new Date(), "d MMMM yyyy")}`, colData[0] + 30, rowData + rowInc)
         rowInc += 5
         doc.text("Department", colData[0], rowData + rowInc)
-        doc.text(`:  ${spl_detail.employee.dept.name}`, colData[0] + 30, rowData + rowInc)
+        doc.text(`:  ${res.dept_spl_deptTodept.name}`, colData[0] + 30, rowData + rowInc)
         
         rowInc += row4
         const boxCheck = [10, 100, 166]
@@ -190,18 +194,57 @@
         doc.rect(boxCheck[2], rowData + rowInc - 4, 4, 4)
         doc.text(`Project Requirements`, boxCheck[2] + 6, rowData + rowInc)
 
+        const totalMinutes = differenceInMinutes(res.est_end, res.est_start)
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+                
         rowInc += 2
-        doc.rect(colData[0] - 2, rowData + rowInc, 280, 120)
-        
-        rowInc += row1
-        
-        rowInc += row3
-        doc.text("Prepared by,", colData[0] + 10, rowData + rowInc)
-        
-        rowInc += row4 * 2
-        doc.text("", colData[0] + 10, rowData + rowInc)
+        autoTable(doc, {
+            startY: rowData + rowInc,
+            theme:"grid",
+            head: [['No','Name', 'Payroll', 'Start', 'Finish', 'Total Hours', 'Description of Work']],
+            margin: {left: colData[0]},
+            body: res.spl_detail.flatMap((v: any, i: number) => {
+                const [no, nama, payroll, start, finish] = [i + 1, v.employee.name, v.employee.payroll, formatTanggal(res.est_start,"time").substring(0,5), formatTanggal(res.est_end,"time").substring(0,5)]
+                const prev = payroll
+                return v.description.split(',').filter((v: string) => v).map((desc: string, index: number) => {
+                    const [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total] = (index > 0 && prev == payroll)
+                    ? ["", "", "", "", "", ""]
+                    : [no, nama, payroll, start, finish, `${hours} Jam ${minutes} menit`]
+                    return [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total, desc.trim()]
+                })
+            }),
+            styles: {cellPadding: 1, halign: 'center' },
+            headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
+            bodyStyles:{fontSize: 9, halign: 'center'},
+            columnStyles: {
+                0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
+                3:{cellWidth: 20, valign: 'middle'}, 4:{cellWidth: 20, valign: 'middle'}, 5:{cellWidth: 28, valign: 'middle'}, 6:{cellWidth: 122, halign: 'left', valign: 'middle'}
+            },
+        })
 
-        doc.save(`${id}.pdf`);
+        rowInc = doc.lastAutoTable.finalY + row2
+        doc.text(`Prepared By,`, colData[0], rowData + rowInc)
+        doc.text(`Approved By,`, colData[1], rowData + rowInc)
+        doc.text(`Reviewer By`, colData[2], rowData + rowInc)
+        doc.text(`Acknowledged By`, colData[3], rowData + rowInc)
+
+        rowInc += row3
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval2Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+        // doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
+        
+        rowInc += signatureSize
+        doc.text(res.employee_spl_approval1Toemployee.name, colData[0], rowData + rowInc)
+        doc.text(res.employee_spl_approval2Toemployee.name, colData[1], rowData + rowInc)
+        // doc.text(res.employee.name, colData[0], rowData + rowInc)
+
+        const blob = doc.output('blob')
+        const url = URL.createObjectURL(blob);
+
+        window.open(url); // buka tab baru
+
+        // doc.save(`${id}.pdf`);
     }
     
     // SPL approval 1
@@ -301,6 +344,8 @@
     const formSRLSubmit = async () =>{
         try {
             formSRL.loading = true
+            formSRL.error = ""
+            formSRL.success = ""
             const valid = z.object({
                 spl_id: z.string().trim().min(1),
                 approval1: z.string().trim().min(1),
@@ -379,10 +424,8 @@
             format:"a4"
         })
 
-        const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-
-    
-        const colData = [10, 110, 210]
+        const signatureSize = 20
+        const colData = [10, 120, 220]
         const rowData = 0
         let rowInc = 0
         let row1 = 4
@@ -403,8 +446,8 @@
         doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
         
         doc.setFontSize(16)
-        const rightAlign = 234
-        doc.rect(rightAlign, rowData + rowInc - 5, 48, rowData + rowInc + 6 )
+        const rightAlign = 235
+        doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
         doc.setFontSize(10)
         doc.text("Form No", rightAlign + 2, rowData + rowInc)
         doc.text(": 11-20", rightAlign + 20, rowData + rowInc)
@@ -449,22 +492,28 @@
                 return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
             }),
             styles: {cellPadding: 1, halign: 'center' },
-            headStyles:{ fillColor:"#CDCDCD", textColor:"#000", halign: 'center'},
+            headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
             bodyStyles:{fontSize: 9, halign: 'center'},
             columnStyles: {
-                0:{cellWidth: 10}, 1:{cellWidth: 52}, 2:{cellWidth: 20}, 
-                3:{cellWidth: 36}, 4:{cellWidth: 25}, 5:{cellWidth: 100, halign: 'left' }, 6:{cellWidth: 28}
+                0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
+                3:{cellWidth: 35, valign: 'middle'}, 4:{cellWidth: 25, valign: 'middle'}, 5:{cellWidth: 105, halign: 'left', valign: 'middle'}, 6:{cellWidth: 25, valign: 'middle'}
             },
         })
 
-        rowInc = doc.lastAutoTable.finalY + row2        
-        doc.text(`Dibuat Oleh`, colData[0] + 20, rowData + rowInc)
-        doc.text(`Diperiksa Oleh`, colData[1] + 20, rowData + rowInc)
-        doc.text(`Disetujui Oleh`, colData[2] + 20, rowData + rowInc)
+        rowInc = doc.lastAutoTable.finalY + row2
+        doc.text(`Dibuat Oleh`, colData[0], rowData + rowInc)
+        doc.text(`Diperiksa Oleh`, colData[1], rowData + rowInc)
+        doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
+
+        rowInc += row3
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
         
-        rowInc += row2 * 3.4
-        doc.text(`Kasi/Kabag`, colData[1] + 20, rowData + rowInc)
-        doc.text(`Kadept/Plant Manager`, colData[2] + 20, rowData + rowInc)
+        rowInc += row2 * 3.1
+        doc.text(res.employee.name, colData[0], rowData + rowInc)
+        doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
+        doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
         
         const blob = doc.output('blob')
         const url = URL.createObjectURL(blob);
@@ -664,8 +713,19 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+
+    <Modal bind:open={formSPL.modalDelete} autoclose>
+        <div class="flex flex-col gap-6">
+            <h3>Delete SPL ?</h3>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='green' disabled={formSPL.loading} onclick={() => formSPLDelete(formSPL.answer.spl_id)}>Yes, delete this data</Button>
+            <Button color='red' onclick={() => formSPL.modalDelete = false}>No</Button>
+        </svelte:fragment>
+    </Modal>
+    
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem  title="Dashboard">
+        <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Overtime Page</span>
             </div>
@@ -781,9 +841,7 @@
                                     <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
                                     <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
                                     <ThSort table={tableSPL} field="approval1">Approval 1</ThSort>
-                                    <ThSort table={tableSPL} field="status1">Status 1</ThSort>
                                     <ThSort table={tableSPL} field="approval2">Approval 2</ThSort>
-                                    <ThSort table={tableSPL} field="status1">Status 2</ThSort>
                                     {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
                                         <ThSort table={tableSPL} field="">#</ThSort>
                                     {/if}
@@ -802,14 +860,33 @@
                                                     <TableBodyCell>{row.purpose}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
-                                                    <TableBodyCell>{row.approval1}</TableBodyCell>
-                                                    <TableBodyCell>{row.status1}</TableBodyCell>
-                                                    <TableBodyCell>{row.approval2}</TableBodyCell>
-                                                    <TableBodyCell>{row.status2}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <div class="flex flex-col items-start gap-2">
+                                                            <Badge color='indigo'>{row.approval1}</Badge>
+                                                            <Badge color={
+                                                                ['Reject','Cancelled'].includes(row.status1) ? "red" :
+                                                                row.status1 == "Approved" ? "green" : "dark"}>{row.status1}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <div class="flex flex-col items-start gap-2">
+                                                            <Badge color='indigo'>{row.approval2}</Badge>
+                                                            <Badge color={
+                                                                ['Reject','Cancelled'].includes(row.status2) ? "red" :
+                                                                row.status2 == "Approved" ? "green" : "dark"}>{row.status2}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableBodyCell>
                                                     <TableBodyCell>
                                                         {#if (pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting' && userProfile.level > 1}
                                                             {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                            {#if pecahArray(userProfile.access_spl, "D")}<MyButton onclick={()=> formSPLDelete(row.spl_id)}><Trash size={12} /></MyButton>{/if}
+                                                            {#if pecahArray(userProfile.access_spl, "D")}
+                                                                <MyButton onclick={()=> {
+                                                                    formSPL.modalDelete = true
+                                                                    formSPL.answer.spl_id = row.spl_id
+                                                                }}><Trash size={12} /></MyButton>
+                                                            {/if}
                                                         {/if}
                                                         {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
                                                             <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
@@ -1004,7 +1081,7 @@
             </Tabs>
         </TabItem>
         
-        <TabItem open title="Surat Realisasi Lembur">
+        <TabItem title="Surat Realisasi Lembur">
             <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
                 <TabItem open title="List">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
@@ -1125,9 +1202,7 @@
                                     <ThSort table={tableSRL} field="real_start">End</ThSort>
                                     <ThSort table={tableSRL} field="real_end">Duration</ThSort>
                                     <ThSort table={tableSRL} field="approval1">Approval 1</ThSort>
-                                    <ThSort table={tableSRL} field="status1">Status 1</ThSort>
                                     <ThSort table={tableSRL} field="approval2">Approval 2</ThSort>
-                                    <ThSort table={tableSRL} field="status2">Status 2</ThSort>
                                     <ThSort table={tableSRL} field="">#</ThSort>
                                 </TableHead>
         
@@ -1149,10 +1224,24 @@
                                                         {differenceInHours(row.real_end,row.real_start)}  Hour
                                                         {format(row.real_end, "mm") != "00" ? format(row.real_end, "mm") + " Minute" :""}
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{row.approval1}</TableBodyCell>
-                                                    <TableBodyCell>{row.status1}</TableBodyCell>
-                                                    <TableBodyCell>{row.approval2}</TableBodyCell>
-                                                    <TableBodyCell>{row.status2}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <div class="flex flex-col items-start gap-2">
+                                                            <Badge color='indigo'>{row.approval1}</Badge>
+                                                            <Badge color={
+                                                                ['Reject','Cancelled'].includes(row.status1) ? "red" :
+                                                                row.status1 == "Approved" ? "green" : "dark"}>{row.status1}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <div class="flex flex-col items-start gap-2">
+                                                            <Badge color='indigo'>{row.approval2}</Badge>
+                                                            <Badge color={
+                                                                ['Reject','Cancelled'].includes(row.status2) ? "red" :
+                                                                row.status2 == "Approved" ? "green" : "dark"}>{row.status2}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableBodyCell>                                                    
                                                     <TableBodyCell>
                                                         {#if (pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting'}
                                                             {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}

@@ -35,9 +35,6 @@
             <div style="scrollbar-width: none;" class="overflow-scroll h-full">
                 {@render children()}
             </div>
-            <div class="sticky bottom-0 left-0 flex items-center w-full h-[var(--ukuran5)] px-5 shadow-lg border-slate-300 border-t-[2px]">
-                Hai footer
-            </div>
         </div>
     </div>
 </div>

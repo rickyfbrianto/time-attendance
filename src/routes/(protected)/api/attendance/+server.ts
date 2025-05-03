@@ -134,13 +134,13 @@ export async function POST({request, url, locals}) {
                             data.get('type'),
                             data.get('ijin_info'),
                             data.get('description'),
-                            attachment ? attendance_id + extname(attachment.name) : null,
+                            isAttachment ? fileAttachment : attachment,
                             data.get('createdBy')
                         )
         
                         if(attendance && attachment){
                             // const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
-                            const filename = path.resolve(import.meta.env.VITE_ATTACH_SIGNATURE) + `/${attendance_id + extname(attachment.name)}`
+                            const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${attendance_id + extname(attachment.name)}`
                             await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                         }
                     }
@@ -150,7 +150,6 @@ export async function POST({request, url, locals}) {
             } else {
                 if(cekRules(locals.user, "access_attendance","U")){
                     console.log('update time attendance baru')
-                    console.log(isAttachment, fileAttachment, attachment)
 
                     const attendance = await tx.$executeRawUnsafe(`
                         UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,

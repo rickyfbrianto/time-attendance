@@ -12,6 +12,10 @@ export const prisma = new PrismaClient({
     }
 })
 
+export const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+export const namaBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
 interface PesanProps{
     message: string;
     id?: string;
@@ -116,7 +120,7 @@ export function prismaErrorHandler(error: any) {
             case 'P2003':
                 return "Foreign key not valid"
             default:
-                return "Database failure"
+                return `Database failure (${error.message})`
             }
         }
     return `There is error cause (${error.message || "Server error"})`

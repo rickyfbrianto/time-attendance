@@ -13,6 +13,7 @@ export async function GET({params}){
                     select:{
                         payroll:true,
                         name:true,
+                        signature:true,
                         dept:{
                             select:{
                                 initial: true
@@ -22,8 +23,18 @@ export async function GET({params}){
                 },
                 real_start:true,
                 real_end:true,
-                approval1:true,
-                approval2:true,
+                employee_srl_approval1Toemployee:{
+                    select:{
+                        name:true,
+                        signature: true
+                    }
+                },
+                employee_srl_approval2Toemployee:{
+                    select:{
+                        name: true,
+                        signature: true,
+                    }
+                },
                 createdAt:true,
                 srl_detail:{
                     select:{
