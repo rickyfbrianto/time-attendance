@@ -12,20 +12,29 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
+    const dept = url.searchParams.get('dept') || ""
+    const payroll = url.searchParams.get('payroll') || ""
+    
     const status = await prisma.$transaction(async (tx) => {     
         const items = await tx.$queryRawUnsafe(`
-            SELECT spl_id, purpose, est_start, est_end, approval1.name as approval1, status1, approval2.name as approval2, status2 FROM SPL
-            LEFT JOIN employee as approval1 ON approval1.payroll = SPL.approval1
-            LEFT JOIN employee as approval2 ON approval2.payroll = SPL.approval2
-            WHERE spl_id like ? OR purpose like ? OR est_start like ? OR est_end like ?
+            SELECT s.spl_id, s.purpose, s.est_start, s.est_end, approval1.name as approval1, s.status1, approval2.name as approval2, s.status2 FROM SPL as s
+			LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
+            LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
+            LEFT JOIN employee as approval2 ON approval2.payroll = s.approval2
+            WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ? OR s.est_end like ?) AND sd.payroll like ?
+            GROUP BY s.spl_id
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-        `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
+        `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, `%${payroll}%`, limit, offset)
 
-        const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM SPL 
-            LEFT JOIN employee as approval1 ON approval1.payroll = SPL.approval1
-            LEFT JOIN employee as approval2 ON approval2.payroll = SPL.approval2
-            WHERE spl_id like ? OR purpose like ? OR est_start like ? OR est_end like ?`,
-        `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
+        const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM (
+            SELECT s.spl_id FROM SPL as s
+                LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
+                LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
+                LEFT JOIN employee as approval2 ON approval2.payroll = s.approval2
+                WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ? OR s.est_end like ?) AND sd.payroll like ?
+                GROUP BY s.spl_id
+            ) as tmp;`,
+        `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, `%${payroll}%`) as {count: number}[]
                     
         return {items, totalItems: Number(count)}
     })

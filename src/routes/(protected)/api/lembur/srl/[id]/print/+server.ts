@@ -1,10 +1,15 @@
 import {prisma} from '@lib/utils'
 import { error, json } from '@sveltejs/kit'
 
-export async function GET({params}){
+export async function GET({params, url}){
     try {
-        const {id} = params       
-        const req = await prisma.srl.findUnique({
+        const {id} = params
+        const payroll = url.searchParams.get('payroll') || ""
+        const start_date = url.searchParams.get('start_date') || ""
+        const end_date = url.searchParams.get('end_date') || ""
+        
+        // const req = await prisma.srl.findUnique({
+        const req = await prisma.srl.findMany({
             select:{
                 srl_id:true,
                 spl_id:true,
@@ -43,11 +48,15 @@ export async function GET({params}){
                     }
                 }
             },
-            where:{
-                srl_id: id,
+            where: {
+                // srl_id: id,
+                real_start: {
+                    gte: new Date(start_date),
+                    lte: new Date(end_date)
+                },
+                payroll
             }
         }) 
-        
         return json(req)
     } catch (err:any) {
         error(500, err.message)

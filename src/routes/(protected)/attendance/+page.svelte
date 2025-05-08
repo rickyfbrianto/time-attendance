@@ -6,8 +6,8 @@
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, generatePeriode } from '@lib/utils';
-    import { differenceInHours, format, getYear } from "date-fns";
+	import { formatTanggal, pecahArray, generatePeriode, namaHari } from '@lib/utils';
+    import { differenceInHours, differenceInDays, format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
@@ -22,6 +22,18 @@
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
 
+    const filterType = [
+        {value:"", title: "Semua"},
+        {value:"HKC", title: "Hari Kerja"},
+        {value:"HKM", title: "Hari Kerja Manual"},
+        {value:"Ijin Resmi", title: "Ijin Resmi"},
+        {value:"Cuti Resmi", title: "Cuti Resmi"},
+        {value:"Cuti Bersama", title: "Cuti Bersama"},
+        {value:"Cuti Tahunan", title: "Cuti Tahunan"},
+        {value:"Dinas", title: "Dinas"},
+        {value:"Sakit", title: "Sakit"},
+    ]
+    
     let dataTahun: {value: number, title: string}[] = []
     let dataBulan: {value: number, title: string}[] = []
     for(let a = 2020; a <= new Date().getFullYear(); a++){
@@ -60,21 +72,26 @@
         },
         get dept() { return userProfile.user_hrd ? "" : user?.department},
         get payroll() { return user?.payroll},
-        name: "",
+        type:"",
         success:"",
         error:"",
         attachment: "",
-        modalAttachment:false,
         showCalendar: false,
         modal:false,
+        modalAttachment:false,
         modalDelete:false,
         loading:false,
         add:false,
         edit:false,
     }
-    
+
     let formAttendance = $state({...formAttendanceAnswer})
-    
+
+    let modeAttendance = $state({
+        payroll: formAttendanceAnswer.payroll,
+        name: formAttendanceAnswer.name,
+    })
+
     const formAttendanceSubmit = async () =>{
         try {            
             formAttendance.loading = true
@@ -89,16 +106,15 @@
                 formData.append(val[0], val[1])
             })  
 
-            const temp  = formAttendance.payroll
-
             const isValid = valid.safeParse(formAttendance.answer)
             if(isValid.success){
                 const req = await axios.post('/api/attendance', formData)
                 const res = await req.data
                 formAttendanceBatal()
-                formAttendance.payroll = temp
                 tableAttendance.invalidate()
                 tableAttendanceDept.invalidate()
+                tableListAttendance.invalidate()
+                tableLogAttendance.invalidate()
                 formAttendance.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
@@ -172,7 +188,7 @@
     }
     
     const handleBackToMyAttendance = () =>{
-        formAttendance.payroll = user?.payroll
+        modeAttendance.payroll = user?.payroll
         tableAttendance.invalidate()
         tableListAttendance.invalidate()
         tableLogAttendance.invalidate()
@@ -229,20 +245,20 @@
         const month = 12
         const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
         const res = await req.json()
-        formAttendance.name = res.Name
+        modeAttendance.name = res.Name
         
         delete res.Name
         headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
     }
     
-    $effect(()=>{
-        if(!formAttendance.payroll) formAttendance.payroll = user.payroll
-    })
+    // $effect(()=>{
+    //     if(!modeAttendance.payroll) modeAttendance.payroll = user.payroll
+    // })
     
     $effect(()=>{
         tableAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${formAttendance.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${periode.start}&end_date=${periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -269,7 +285,7 @@
         if(userProfile.user_hrd){
             tableListAttendance.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${formAttendance.payroll}`)
+                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -282,7 +298,7 @@
 
         tableLogAttendance.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${formAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${modeAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -310,15 +326,15 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#if formAttendance.payroll}
-        {#await getAttendance(formAttendance.payroll)}
-            <MyLoading message={`Loading users data`}/>
+    {#if modeAttendance.payroll}
+        {#await getAttendance(modeAttendance.payroll)}
+            <MyLoading message={`Loading data ${modeAttendance.payroll}`}/>
         {:then val}
-            <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${formAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
+            <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${modeAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
                 <div class="flex flex-col gap-2 min-w-fit">
                     <div class="flex flex-col">
-                        <span class="font-bold text-[1.1rem]">{formAttendance.name}</span>
-                        <span class='font-bold  text-[.95rem]'>{formAttendance.payroll}</span>
+                        <span class="font-bold text-[1.1rem]">{modeAttendance.name}</span>
+                        <span class='font-bold  text-[.95rem]'>{modeAttendance.payroll}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <Calendar size={18}/>
@@ -381,14 +397,14 @@
                     {#await getUser(formAttendance.dept)}
                         <MyLoading message="Loading data"/>
                     {:then val}
-                        <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
+                        <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeAttendance.payroll} 
                             options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
                             onChange={() => {
                                 tableAttendance.invalidate()
                                 tableListAttendance.invalidate()
                                 tableLogAttendance.invalidate()
                         }}/>
-                        {#if formAttendance.payroll !== user?.payroll}
+                        {#if modeAttendance.payroll !== user?.payroll}
                             <Button onclick={handleBackToMyAttendance}>Back to my attendance</Button>
                         {/if}
                     {/await}
@@ -398,7 +414,7 @@
         
         <Tabs contentClass='w-full' tabStyle="underline">
             <!-- Attendance pribadi/orang lain -->
-            <TabItem open title={user?.payroll == formAttendance.payroll ? "My Attendance": `Attendance ${formAttendance.name}`}>
+            <TabItem open title={user?.payroll == modeAttendance.payroll ? "My Attendance": `Attendance ${modeAttendance.name}`}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -407,15 +423,22 @@
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
+                            <div class="flex flex-col">
+                                <select bind:value={formAttendance.type} onchange={()=> tableAttendance.invalidate()}>
+                                    {#each filterType as option}
+                                    <option value={option.value}>{option.title}</option>
+                                    {/each}
+                                </select>
+                            </div>
                             <div class="flex w-full flex-col">
                                 <MyInput type='text' bind:value={tableAttendanceSearch.value} onkeydown={(e: KeyboardEvent)=> {
                                     if(e.key.toLowerCase() === 'enter') tableAttendanceSearch.set()
                                 }}/>
                                 <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                             </div>
-                            <MyButton onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton onclick={()=>{
-                                getAttendance(formAttendance.payroll)
+                            <MyButton className='p-3' onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
+                            <MyButton className='p-3' onclick={()=>{
+                                getAttendance(modeAttendance.payroll)
                                 tableAttendance.invalidate()
                             }}><RefreshCw size={16}/></MyButton>
                         </div>
@@ -424,7 +447,7 @@
                                 {#await getUser(formAttendance.dept)}
                                     <MyLoading message="Loading data"/>
                                 {:then val}
-                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.payroll} 
+                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={modeAttendance.payroll} 
                                         options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
                                         onChange={() => tableAttendance.invalidate()}/>
                                 {/await}
@@ -455,13 +478,16 @@
                                         {#each tableAttendance.rows as row}
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell>
-                                                    <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
+                                                <TableBodyCell>
+                                                    {differenceInDays(row.check_out, row.check_in) != 0 ? formatTanggal(row.check_out, "date"):""}
+                                                    {formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}
+                                                </TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
                                                         <Badge rounded color={"green"}>
@@ -497,12 +523,6 @@
                                                         {#if pecahArray(userProfile.access_attendance, "U")}
                                                             <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                         {/if}
-                                                        <!-- {#if pecahArray(userProfile.access_attendance, "D") && !["HKC"].includes(row.type)}
-                                                            <MyButton onclick={()=> {
-                                                                formAttendance.modalDelete = true
-                                                                formAttendance.answer.attendance_id = row.attendance_id
-                                                            }}><Trash size={12} /></MyButton>
-                                                        {/if} -->
                                                     {/if}
                                                     {#if row.attachment}
                                                         <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
@@ -555,8 +575,8 @@
                                     }}/>
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
-                                <MyButton onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton onclick={()=>tableAttendanceDept.invalidate()}><RefreshCw size={16}/></MyButton>
+                                <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton className='p-3' onclick={()=>tableAttendanceDept.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
                             {#if userProfile.user_hrd}
                                 <div class="flex gap-2 items-start">
@@ -596,10 +616,10 @@
                                             {#each tableAttendanceDept.rows as row}
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell>
-                                                        <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
-                                                        <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>{row.payroll}</TableBodyCell>
                                                     <TableBodyCell>{row.name}</TableBodyCell>
@@ -627,9 +647,9 @@
                                                                     : null
                                                                 ] as val}
                                                                 {#if val}
-                                                                    <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                                    <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                     : val.type == "late" ? "red" 
-                                                                    : val.type == "lembur" ? "purple" 
+                                                                    : val.type == "lembur" ? "green" 
                                                                     : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                                 {/if}
                                                             {/each}
@@ -696,8 +716,8 @@
                                     }}/>
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
-                                <MyButton onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
+                                <MyButton className='p-3' onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton className='p-3' onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
                         </div>
                         
@@ -727,10 +747,10 @@
                                                     <TableBodyCell>{row.payroll}</TableBodyCell>
                                                     <TableBodyCell>{row.name}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
-                                                        <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
@@ -747,10 +767,10 @@
                                                                     : null
                                                                 ] as val}
                                                                 {#if val}
-                                                                    <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                                    <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                     : val.type == "late" ? "red" 
-                                                                    : val.type == "lembur" ? "yellow" 
-                                                                    : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                    : val.type == "lembur" ? "green" 
+                                                                    : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
@@ -815,9 +835,10 @@
                                 }}/>
                                 <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                             </div>
-                            <MyButton onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton onclick={()=>tableLogAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
+                            <MyButton className='p-3' onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
+                            <MyButton className='p-3' onclick={()=>tableLogAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
+                        <!-- Filter periode -->
                         <div class="flex gap-2 items-start flex-wrap">
                             <select bind:value={formLogAttendance.year} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataTahun as {title, value}}
@@ -857,10 +878,10 @@
                                         {#each tableLogAttendance.rows as row}
                                         <TableBodyRow class='h-10'>
                                                 <TableBodyCell>
-                                                    <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
@@ -888,13 +909,12 @@
                                                                 : null
                                                             ] as val}
                                                             {#if val}
-                                                                <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                                <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                 : val.type == "late" ? "red" 
-                                                                : val.type == "lembur" ? "yellow" 
-                                                                : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                : val.type == "lembur" ? "green" 
+                                                                : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
-
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
@@ -941,7 +961,7 @@
             <img src={import.meta.env.VITE_VIEW_ATTANDANCE+formAttendance.attachment} class='' alt="">
         </div>
         <svelte:fragment slot="footer">
-            <Button color='red' onclick={() => formAttendanceBatal()}>Tutup</Button>
+            <Button color='red' onclick={() => formAttendance.modalAttachment = false}>Tutup</Button>
         </svelte:fragment>
     </Modal>
 
@@ -957,7 +977,7 @@
     
     <Modal bind:open={formAttendance.showCalendar} size={"xl"} >
         <div class="flex flex-col mt-7 p-4 gap-4">
-            <MyCalendar payroll={formAttendance.payroll}/>
+            <MyCalendar payroll={modeAttendance.payroll}/>
         </div>
     </Modal>
 
@@ -1034,9 +1054,12 @@
                                     <Radio value="Sick" bind:group={formAttendance.answer.ijin_info}>Sick</Radio>
                                 </div>
                             </div>
-
+                            
                             {#if formAttendance.answer.user_id_machine}
-                                <input class="border self-end" type="file" accept=".jpg" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
+                                <div class="flex flex-col gap-2">
+                                    <Label>Attachment</Label>
+                                    <input class="border" type="file" accept=".jpg" onchange={e => formAttendance.answer.attachment = e.target.files[0]}/>
+                                </div>
                             {/if}
                         {/if}                            
                     </div>

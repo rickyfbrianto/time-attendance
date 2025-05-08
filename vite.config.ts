@@ -1,6 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import path from "node:path";
 
 export default defineConfig({
 	plugins: [sveltekit(), tailwindcss()],
@@ -10,7 +11,8 @@ export default defineConfig({
         allowedHosts: ['ricky'],
         fs: {
             allow: [
-                "C:/Users/RICKY/Desktop/time-attendance/static/media/attach_signature/"
+                // "C:/Users/RICKY/Desktop/time-attendance/static/media/attach_signature/",
+                // path.resolve(__dirname, "/static")
             ]
         }
     },

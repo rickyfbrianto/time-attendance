@@ -1,9 +1,9 @@
 import { error, json } from "@sveltejs/kit";
-import { prismaErrorHandler } from "@lib/utils";
+import { pecahArray, prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
 
-export async function GET({url}){
+export async function GET({url }){
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -46,21 +46,25 @@ export async function GET({url}){
     return json(status)
 }
 
-export async function POST({ request }) {
+export async function POST({ request, locals }) {
 	try {
         const data = await request.json();
-
+        const {userProfile, user} = locals
         const status = await prisma.$transaction(async (tx) => {
             const getProfile = await tx.profile.findFirst({
                 where:{profile_id : data.profile_id}
             })
-
+            
+            console.log(user)
+            
             if(!getProfile){
+                if(!pecahArray(userProfile.access_profile, "C")) throw new Error("Cant insert Profile, because you have no authorization")
                 await prisma.profile.create({
                     data: { ...data, profile_id: uuid4() },
                 })
                 return { message: "Profile successfully saved" }
             }else{
+                if(!pecahArray(userProfile.access_profile, "U")) throw new Error("Cant update Profile, because you have no authorization")
                 await prisma.profile.update({
                     data:{ ...data },
                     where:{ profile_id : data.profile_id}

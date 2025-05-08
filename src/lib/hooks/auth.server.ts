@@ -13,9 +13,10 @@ export const handle: Handle = async ({event, resolve}) =>{
         
         if(rootGroup == "(protected)" && rootRoute != "api"){
             if (!token) {
-                throw new Error(`/signin?redirectTo=${url.pathname}&message=Invalid Session`)
+                throw new Error(`/signin?redirectTo=${url.pathname}`)
             } else {
-                jwt.verify(token, import.meta.env.VITE_JWT_SECRET, (err:any, decoded: any) => {
+                // jwt.verify(token, import.meta.env.VITE_JWT_SECRET, (err:any, decoded: any) => {
+                jwt.verify(token, process.env.JWT_SECRET!, (err:any, decoded: any) => {
                     if(err){
                         throw new Error(`/signin?redirectTo=${url.pathname}&message=Session expired, please login again`)
                     }  else if(decoded){
@@ -33,6 +34,12 @@ export const handle: Handle = async ({event, resolve}) =>{
                 email:true,
                 profile:true,
                 department:true,
+                dept:{
+                    select:{
+                        dept_code: true,
+                        initial: true
+                    }
+                },
                 location:true,
                 workhour:true,
                 join_date:true,

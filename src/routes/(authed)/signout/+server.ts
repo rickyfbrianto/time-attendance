@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit'
 
 export function POST({cookies}){
     cookies.delete('token', {
-        path:"/",
+        path: `/`,
         secure:false
     })
     return json({"message":"Logout success"})

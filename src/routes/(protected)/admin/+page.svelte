@@ -82,6 +82,8 @@
     const formProfileEdit = async (id:string) =>{
         try {
             formProfileState.edit = true
+            formProfileState.success = ""
+            formProfileState.error = ""
             const req = await axios.get(`/api/admin/profile/${id}`)
             const res = await req.data
             formProfileState.answer = {...res}
@@ -107,19 +109,19 @@
                 name: z.string().trim().min(1),
                 description: z.string().trim().min(1),
                 level: z.number(),
-                access_sppd: z.string().trim().min(1),
-                access_skpd: z.string().trim().min(1),
-                access_spl: z.string().trim().min(1),
-                access_srl: z.string().trim().min(1),
-                access_cuti: z.string().trim().min(1),
-                access_ijin: z.string().trim().min(1),
-                access_attendance: z.string().trim().min(1),
-                access_calendar: z.string().trim().min(1),
-                access_user: z.string().trim().min(1),
-                access_profile: z.string().trim().min(1),
-                access_dept: z.string().trim().min(1),
-                access_setting: z.string().trim().min(1),
-                status: z.string().trim().min(1),
+                // access_sppd: z.string().trim().min(1),
+                // access_skpd: z.string().trim().min(1),
+                // access_spl: z.string().trim().min(1),
+                // access_srl: z.string().trim().min(1),
+                // access_cuti: z.string().trim().min(1),
+                // access_ijin: z.string().trim().min(1),
+                // access_attendance: z.string().trim().min(1),
+                // access_calendar: z.string().trim().min(1),
+                // access_user: z.string().trim().min(1),
+                // access_profile: z.string().trim().min(1),
+                // access_dept: z.string().trim().min(1),
+                // access_setting: z.string().trim().min(1),
+                // status: z.string().trim().min(1),
             })
             
             const isValid = valid.safeParse(formProfileState.answer)
@@ -197,6 +199,8 @@
     const formUserEdit = async (id:string) =>{
         try {
             formUserState.loading = true
+            formUserState.success = ""
+            formUserState.error = ""
             const req = await axios.get(`/api/admin/user/${id}`)
             formUserState.answer = {...await req.data}
             formUserState.edit = true
@@ -318,6 +322,8 @@
     const formDeptEdit = async (id:string) =>{
         try {
             formDeptState.loading = true
+            formDeptState.success = ""
+            formDeptState.error = ""
             const req = await axios.get(`/api/admin/dept/${id}`)
             formDeptState.answer = {...await req.data}
             formDeptState.edit = true
@@ -466,6 +472,8 @@
     const formCalendarEdit = async (id:string) =>{
         try {
             formCalendar.loading = true
+            formCalendar.success = ""
+            formCalendar.error = ""
             const req = await fetch(`/api/admin/calendar/${id}`)
             const res = await req.json()
             formCalendar.answer = {...res}
@@ -607,14 +615,16 @@
                         </Alert>
                     {/if}
 
-                    <div class="flex gap-2">                        
-                        {#if formProfileState.add || formProfileState.edit}
-                            <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
-                            <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
-                        {:else}
-                            <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    </div>
+                    {#if pecahArray(userProfile?.access_profile, "C") || pecahArray(userProfile?.access_profile, "U")}
+                        <div class="flex gap-2">                        
+                            {#if formProfileState.add || formProfileState.edit}
+                                <MyButton onclick={formProfileBatal}><Ban size={16} /></MyButton>
+                                <MyButton disabled={formProfileState.loading} onclick={formProfileSubmit}><Save size={16}/></MyButton>
+                            {:else}
+                                <MyButton onclick={()=> formProfileState.add = true}><Plus size={16}/></MyButton>
+                            {/if}
+                        </div>
+                    {/if}
 
                     {#if formProfileState.loading}
                         <MyLoading message="Load data"/>
@@ -712,7 +722,7 @@
                             <TableHead>
                                 <ThSort table={tableProfile} field="name">Name</ThSort>
                                 <ThSort table={tableProfile} field="description">Description</ThSort>
-                                <ThSort table={tableProfile} field="user_hrd">Level</ThSort>
+                                <ThSort table={tableProfile} field="user_hrd">User HRD</ThSort>
                                 <ThSort table={tableProfile} field="level">Level</ThSort>
                                 <ThSort table={tableProfile} field="">#</ThSort>
                             </TableHead>
@@ -731,11 +741,17 @@
                                                 <TableBodyCell>{row.user_hrd ? "Yes": "No"}</TableBodyCell>
                                                 <TableBodyCell>{row.level}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
-                                                    <MyButton onclick={()=> {
-                                                        formProfileState.answer.profile_id = row.profile_id
-                                                        formProfileState.modalDelete = true
-                                                    }}><Trash size={12} /></MyButton>
+                                                    {#if !formProfileState.edit}
+                                                        {#if pecahArray(userProfile.access_profile, "U")}
+                                                            <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
+                                                        {/if}
+                                                        {#if pecahArray(userProfile.access_profile, "D")}
+                                                            <MyButton onclick={()=> {
+                                                                formProfileState.answer.profile_id = row.profile_id
+                                                                formProfileState.modalDelete = true
+                                                            }}><Trash size={12} /></MyButton>
+                                                        {/if}
+                                                    {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
@@ -788,14 +804,16 @@
                         </Alert>
                     {/if}
                     
-                    <div class="flex gap-2">                        
-                        {#if formUserState.add || formUserState.edit}
-                            <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
-                            <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
-                        {:else}
-                            <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    </div>
+                    {#if pecahArray(userProfile?.access_user, "C") || pecahArray(userProfile.access_user, "U")}
+                        <div class="flex gap-2">                        
+                            {#if formUserState.add || formUserState.edit}
+                                <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
+                                <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
+                            {:else}
+                                <MyButton onclick={()=> formUserState.add = true}><Plus size={16}/></MyButton>
+                            {/if}
+                        </div>
+                    {/if}
 
                     {#if formUserState.loading}
                         <MyLoading message="Load data"/>
@@ -827,7 +845,6 @@
                                 </div>
                             {/await}
                             
-                            <!-- <MyInput type='text' title='Department' name="department" bind:value={formUserState.answer.department}/> -->
                             <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
                             <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
                             <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
@@ -902,15 +919,21 @@
                                                 <TableBodyCell>{row.location}</TableBodyCell>
                                                 <TableBodyCell>{row.email}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
-                                                    <MyButton onclick={()=> {
-                                                        formUserState.answer.payroll = row.payroll
-                                                        formUserState.modalDelete = true
-                                                    }}><Trash size={12} /></MyButton>
-                                                    <MyButton onclick={()=> {
-                                                        formUserState.answer.payroll = row.payroll
-                                                        formUserState.modalChangePassword = true
-                                                    }}><KeyRound size={12} /></MyButton>
+                                                    {#if !formUserState.edit}
+                                                        {#if pecahArray(userProfile.access_user, "U")}
+                                                            <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
+                                                        {/if}
+                                                        {#if pecahArray(userProfile.access_user, "D")}
+                                                            <MyButton onclick={()=> {
+                                                                formUserState.answer.payroll = row.payroll
+                                                                formUserState.modalDelete = true
+                                                            }}><Trash size={12} /></MyButton>
+                                                        {/if}
+                                                        <MyButton onclick={()=> {
+                                                            formUserState.answer.payroll = row.payroll
+                                                            formUserState.modalChangePassword = true
+                                                        }}><KeyRound size={12} /></MyButton>
+                                                    {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
@@ -973,14 +996,16 @@
                         </Alert>
                     {/if}
 
-                    <div class="flex gap-2">                        
-                        {#if formDeptState.add || formDeptState.edit}
-                            <MyButton onclick={formDeptBatal}><Ban size={16} /></MyButton>
-                            <MyButton onclick={formDeptSubmit}><Save size={16}/></MyButton>
-                        {:else}
-                            <MyButton onclick={()=> formDeptState.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    </div>
+                    {#if pecahArray(userProfile?.access_dept, "C") || pecahArray(userProfile?.access_dept, "U")}
+                        <div class="flex gap-2">                        
+                            {#if formDeptState.add || formDeptState.edit}
+                                <MyButton onclick={formDeptBatal}><Ban size={16} /></MyButton>
+                                <MyButton onclick={formDeptSubmit}><Save size={16}/></MyButton>
+                            {:else}
+                                <MyButton onclick={()=> formDeptState.add = true}><Plus size={16}/></MyButton>
+                            {/if}
+                        </div>
+                    {/if}
 
                     {#if formDeptState.loading}
                         <MyLoading message="Load data"/>
@@ -1040,38 +1065,44 @@
                                                 <TableBodyCell>{row.initial}</TableBodyCell>
                                                 <TableBodyCell>{row.status}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    <MyButton onclick={()=> formDeptEdit(row.dept_id)}><Pencil size={12} /></MyButton>
+                                                    {#if !formDeptState.edit}
+                                                        {#if pecahArray(userProfile?.access_dept, "U")}
+                                                            <MyButton onclick={()=> formDeptEdit(row.dept_id)}><Pencil size={12} /></MyButton>
+                                                        {/if}
+                                                    {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
                                     {:else}
-                                        <span>No data available</span>
+                                        <TableBodyRow class='h-10'>
+                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                        </TableBodyRow>
                                     {/if}
                                 </TableBody>
                             {/if}
                         </Table>
                         {#if tableDept.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
-                                Showing {tableDept.rowCount.start} to {tableDept.rowCount.end} of {tableDept.rowCount.total} rows
-                                <Badge color="dark" border>Page {tableDept.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableDept.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableDept.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableDept.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableDept.setPage('last')}><ChevronLast size={16} /></MyButton>
+                            <div class="flex justify-between items-center gap-2 mt-3">
+                                <p class='text-muted self-end text-[.9rem]'>
+                                    Showing {tableDept.rowCount.start} to {tableDept.rowCount.end} of {tableDept.rowCount.total} rows
+                                    <Badge color="dark" border>Page {tableDept.currentPage}</Badge>
+                                </p>
+                                <div class="flex gap-2">
+                                    <MyButton onclick={()=> tableDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
+                                    {#each tableDept.pages as page}
+                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableDept.setPage(page)} type="button">{page}</MyButton>
+                                    {/each}
+                                    <MyButton onclick={()=> tableDept.setPage('next')}><ChevronRight size={16} /></MyButton>
+                                    <MyButton onclick={()=> tableDept.setPage('last')}><ChevronLast size={16} /></MyButton>
+                                </div>
                             </div>
-                        </div>
                         {/if}
                     </Datatable>
                 </div>
             </TabItem>
         {/if}
-        {#if pecahArray(userProfile?.access_setting, "R") && userProfile.user_hrd}
+        {#if pecahArray(userProfile?.access_setting, "R")}
             <TabItem title="Setting" open={urlTab == 'setting'}>
                 <div class="flex flex-col gap-4">                
                     {#if formSettingState.error}
@@ -1089,22 +1120,24 @@
                     {#await getSetting()}
                         <MyLoading message="Loading setting data"/>
                     {:then v}
-                        <div class="flex flex-col gap-2 rounded-lg p-4 border-[2px] border-slate-300">
-                            <div class="flex justify-between gap-2">
-                                <MyButton onclick={formSettingSubmit}><Save size={16}/></MyButton>
-                                <MyButton onclick={getSetting}><RefreshCw size={16}/></MyButton>
+                        {#if pecahArray(userProfile?.access_setting, "C") || pecahArray(userProfile?.access_setting, "U")}
+                            <div class="flex flex-col gap-2 rounded-lg p-4 border-[2px] border-slate-300">
+                                <div class="flex justify-between gap-2">
+                                    <MyButton onclick={formSettingSubmit}><Save size={16}/></MyButton>
+                                    <MyButton onclick={getSetting}><RefreshCw size={16}/></MyButton>
+                                </div>
                             </div>
-                        </div>
 
-                        <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
-                            <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
-                            <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
-                        </form>
+                            <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
+                                <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
+                                <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
+                            </form>
+                        {/if}
                     {/await}
                 </div>
             </TabItem>
         {/if}
-        {#if pecahArray(userProfile?.access_calendar, "R") && userProfile.user_hrd}
+        {#if pecahArray(userProfile?.access_calendar, "R")}
             <TabItem title="Calendar">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     <div class="flex flex-col gap-4">                
@@ -1119,15 +1152,17 @@
                                 <span>{formCalendar.success}</span>
                             </Alert>
                         {/if}
-
-                        <div class="flex gap-2">                        
-                            {#if formCalendar.add || formCalendar.edit}
-                                <MyButton onclick={formCalendarBatal}><Ban size={16} /></MyButton>
-                                <MyButton onclick={formCalendarSubmit}><Save size={16}/></MyButton>
-                            {:else}
-                                <MyButton onclick={()=> formCalendar.add = true}><Plus size={16}/></MyButton>
-                            {/if}
-                        </div>
+                        
+                        {#if pecahArray(userProfile?.access_calendar, "C") || pecahArray(userProfile?.access_calendar, "U")}
+                            <div class="flex gap-2">                        
+                                {#if formCalendar.add || formCalendar.edit}
+                                    <MyButton onclick={formCalendarBatal}><Ban size={16} /></MyButton>
+                                    <MyButton onclick={formCalendarSubmit}><Save size={16}/></MyButton>
+                                {:else}
+                                    <MyButton onclick={()=> formCalendar.add = true}><Plus size={16}/></MyButton>
+                                {/if}
+                            </div>
+                        {/if}
 
                         {#if formCalendar.loading}
                             <MyLoading message="Load data"/>
@@ -1186,17 +1221,25 @@
                                                     <TableBodyCell>{row.description}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.date, 'date')}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
-                                                        <MyButton onclick={()=> {
-                                                            formCalendar.answer.calendar_id = row.calendar_id
-                                                            formCalendar.modalDelete = true
-                                                        }}><Trash size={12} /></MyButton>
+                                                        {#if !formCalendar.edit}
+                                                            {#if pecahArray(userProfile?.access_calendar, "U")}
+                                                                <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
+                                                            {/if}
+                                                            {#if pecahArray(userProfile?.access_calendar, "D")}
+                                                                <MyButton onclick={()=> {
+                                                                    formCalendar.answer.calendar_id = row.calendar_id
+                                                                    formCalendar.modalDelete = true
+                                                                }}><Trash size={12} /></MyButton>
+                                                            {/if}
+                                                        {/if}
                                                         <!-- <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton> -->
                                                     </TableBodyCell>
                                                 </TableBodyRow>
                                             {/each}
                                         {:else}
-                                            <span>No data available</span>
+                                            <TableBodyRow class='h-10'>
+                                                <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                            </TableBodyRow>
                                         {/if}
                                     </TableBody>
                                 {/if}

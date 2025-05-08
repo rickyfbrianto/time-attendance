@@ -18,6 +18,7 @@ export async function GET({url}){
         
         const dept = url.searchParams.get('dept') || ""
         const payroll = url.searchParams.get('payroll') || ""
+        const type = url.searchParams.get('type') || ""
         const start_date = url.searchParams.get('start_date') || ""
         const end_date = url.searchParams.get('end_date') || ""
         
@@ -30,19 +31,19 @@ export async function GET({url}){
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
                     WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
-                    AND user.department like ? AND user.payroll like ? AND DATE(check_in) BETWEEN ? AND ?
+                    AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ?
                     ORDER by ${sort} ${order}
                     LIMIT ${limit} OFFSET ${offset}`,
-                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, start_date, end_date) as {count:number}[]
+                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, `%${type}%`, start_date, end_date) as {count:number}[]
             
             const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
                 SELECT att.attendance_id FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
                     WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
-                    AND user.department like ? AND user.payroll like ? AND DATE(check_in) BETWEEN ? AND ?
+                    AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ?
                     ) as tmp`,
-                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, start_date, end_date) as {count:number}[]
+                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, `%${type}%`, start_date, end_date) as {count:number}[]
             const totalItems = Number(count)
             return {items, totalItems}
         })
@@ -60,7 +61,6 @@ export async function POST({request, url, locals}) {
         const data = await request.formData()
         const attachment = data.get('attachment')
         const isAttachment = typeof attachment == "object" ? true : false
-        const fileAttachment = isAttachment ? data.get('attendance_id') + extname(attachment?.name || "") : ""
         
         const status = await prisma.$transaction(async (tx) => {
             // untuk mengecek apakah ada attendance dengan tipe cuti bersama atau hari libur, jika ya maka update check in, check out dan type serta keterangan
@@ -120,6 +120,7 @@ export async function POST({request, url, locals}) {
                         })
                         await Promise.all(query)
                     }else{
+                        const fileAttachment = isAttachment ? attendance_id + extname(attachment?.name || "") : ""
                         
                         const attendance = await tx.$executeRawUnsafe(`INSERT INTO attendance
                             (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,
@@ -134,21 +135,22 @@ export async function POST({request, url, locals}) {
                             data.get('type'),
                             data.get('ijin_info'),
                             data.get('description'),
-                            isAttachment ? fileAttachment : attachment,
+                            fileAttachment,
                             data.get('createdBy')
                         )
         
                         if(attendance && attachment){
                             // const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
-                            const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${attendance_id + extname(attachment.name)}`
+                            // const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${attendance_id + extname(attachment.name)}`
+                            const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${fileAttachment}`
                             await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                         }
                     }
-    
                     return {message:"Data successfully saved"}
                 }
             } else {
                 if(cekRules(locals.user, "access_attendance","U")){
+                    const fileAttachment = isAttachment ? data.get('attendance_id') + extname(attachment?.name || "") : ""
                     console.log('update time attendance baru')
 
                     const attendance = await tx.$executeRawUnsafe(`
@@ -170,7 +172,7 @@ export async function POST({request, url, locals}) {
     
                     if(attendance && isAttachment){
                         // const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${data.get('attendance_id') + extname(attachment.name)}`
-                        const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${fileAttachment}`
+                        const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${fileAttachment}`
                         await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                     }
     

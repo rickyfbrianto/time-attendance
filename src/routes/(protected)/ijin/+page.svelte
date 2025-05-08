@@ -23,15 +23,23 @@
     let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
 
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
-    const typeList =[
+    // (khitan/baptis,haji,nikah
+    const typeList = userProfile.user_hrd ?
+    [
         ['Pernikahan', 3], 
         ['Pernikahan Anak/Saudara Kandung', 3],
         ['Kelahiran Anak', 3],
-        ['Kematian Anggota Keluarga', 3],
-        ['Bencana Alam', 4],
-        ['Keluarga Rawat Inap', 4],
-        ['Cuti Khitanan/Baptis', 4],
-        ['Ibadah Haji', 3]
+        ['Kematian Anggota Keluarga', 7],
+        ['Bencana Alam', 7],
+        ['Keluarga Rawat Inap', 6],
+        ['Cuti Khitanan/Baptis', 7],
+        ['Ibadah Haji', 30]
+    ]
+    : 
+    [
+        ['Pernikahan', 3], 
+        ['Cuti Khitanan/Baptis', 7],
+        ['Ibadah Haji', 30]
     ]
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
@@ -74,7 +82,7 @@
         add:false,
         edit:false,
     }
-    
+
     let formIjin = $state({...formIjinAnswer})
     
     const formIjinSubmit = async () =>{
@@ -432,7 +440,7 @@
                             <MyInput type='text' title='Name' disabled value={user.name}/>
                             <MyInput type='text' title='Approval' disabled value={user.employee_employee_approverToemployee.name}/>
                             <MyInput type='text' title='Substitute' disabled value={user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name}/>
-                            
+
                             <div class="flex flex-col gap-2">
                                 {#if formIjin.add}
                                     <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
@@ -492,17 +500,19 @@
                                             <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>{row.approval_name}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_ijin, "U") && row.status == "Waiting"}
-                                                    <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>
-                                                {/if}
-                                                {#if pecahArray(userProfile.access_ijin, "D") && row.status == "Waiting"}
-                                                    <MyButton onclick={()=> {
-                                                        formIjin.modalDelete = true
-                                                        formIjin.answer.ijin_id = row.ijin_id
-                                                    }}><Trash size={12} /></MyButton>
-                                                {/if}
-                                                {#if row.status == "Waiting" && row.approval == formIjin.answer.user_approval }
+                                                {#if !formIjin.edit}
+                                                    {#if pecahArray(userProfile.access_ijin, "U") && row.status == "Waiting"}
+                                                        <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>
+                                                    {/if}
+                                                    {#if pecahArray(userProfile.access_ijin, "D") && row.status == "Waiting"}
+                                                        <MyButton onclick={()=> {
+                                                            formIjin.modalDelete = true
+                                                            formIjin.answer.ijin_id = row.ijin_id
+                                                        }}><Trash size={12} /></MyButton>
+                                                    {/if}
+                                                    {#if row.status == "Waiting" && row.approval == formIjin.answer.user_approval }
                                                     <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                    {/if}
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>

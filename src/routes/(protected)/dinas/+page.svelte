@@ -730,18 +730,20 @@
                                                 <TableBodyCell>{formatTanggal(row.end_date, "date")}</TableBodyCell>
                                                 <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if (userProfile?.user_hrd || userProfile?.level > 1)}
-                                                        {#if pecahArray(userProfile.access_sppd, "U")}
-                                                            <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
+                                                    {#if !formSPPD.edit}
+                                                        {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                                                            {#if pecahArray(userProfile.access_sppd, "U")}
+                                                                <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
+                                                            {/if}
+                                                            {#if pecahArray(userProfile.access_sppd, "D")}
+                                                                <MyButton onclick={()=> {
+                                                                    formSPPD.modalDelete = true
+                                                                    formSPPD.answer.sppd_id = row.sppd_id
+                                                                }}><Trash size={12} /></MyButton>
+                                                            {/if}
                                                         {/if}
-                                                        {#if pecahArray(userProfile.access_sppd, "D")}
-                                                            <MyButton onclick={()=> {
-                                                                formSPPD.modalDelete = true
-                                                                formSPPD.answer.sppd_id = row.sppd_id
-                                                            }}><Trash size={12} /></MyButton>
-                                                        {/if}
+                                                        <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
                                                     {/if}
-                                                    <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
                                                 </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
@@ -776,7 +778,6 @@
         {/if}
         <TabItem title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {JSON.stringify(formSKPD.answer)}
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
                         <Alert dismissable>
@@ -897,16 +898,18 @@
                                             <TableBodyCell>{formatTanggal(row.real_end, "date")}</TableBodyCell>
                                             <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_skpd, "U")}
-                                                <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>
-                                                {/if}
-                                                {#if pecahArray(userProfile.access_skpd, "D")}
-                                                    <MyButton onclick={()=> {
-                                                        formSKPD.modalDelete = true
-                                                        formSKPD.answer.skpd_id = row.skpd_id
-                                                    }}><Trash size={12} /></MyButton>
+                                                {#if !formSKPD.edit}
+                                                    {#if pecahArray(userProfile.access_skpd, "U")}
+                                                    <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>
+                                                    {/if}
+                                                    {#if pecahArray(userProfile.access_skpd, "D")}
+                                                        <MyButton onclick={()=> {
+                                                            formSKPD.modalDelete = true
+                                                            formSKPD.answer.skpd_id = row.skpd_id
+                                                        }}><Trash size={12} /></MyButton>
+                                                    {/if}                                                
+                                                    <MyButton onclick={()=> handleCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
                                                 {/if}                                                
-                                                <MyButton onclick={()=> handleCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
                                             </TableBodyCell>
                                         </TableBodyRow>
                                     {/each}

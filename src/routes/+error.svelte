@@ -2,8 +2,6 @@
     import '../app.css';
 	import { page } from '$app/state';
     import {Card, Badge, Button, Hr} from 'flowbite-svelte';
-
-    console.log()
 </script>
 
 <svelte:head>

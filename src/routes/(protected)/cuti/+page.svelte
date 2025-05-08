@@ -23,12 +23,18 @@
     let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
-    const typeList =[
-        ['Cuti Tahunan', 3],
-        ['Cuti Hamil & Melahirkan', 4], 
-        ['Cuti Keguguran', 5],
-        ['Cuti Haid', 6],
-    ]
+    const typeList = userProfile.user_hrd ? 
+    [
+        ['Cuti Tahunan', ""],
+        ['Cuti Hamil & Melahirkan', 90], 
+        ['Cuti Keguguran', 7],
+        ['Cuti Haid', 1],
+    ] 
+    :
+    [
+        ['Cuti Tahunan', ""],
+        ['Cuti Hamil & Melahirkan', 90], 
+    ] 
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
         
@@ -382,18 +388,20 @@
                     </Alert>
                 {/if}
 
-                <div class="flex gap-2">
-                    {#if formCuti.add || formCuti.edit}
-                        {#if pecahArray(userProfile?.access_attendance, "C") || pecahArray(userProfile.access_attendance, "U")}
-                            <MyButton onclick={formCutiBatal}><Ban size={16} /></MyButton>
-                            <MyButton disabled={formCuti.loading} onclick={formCutiSubmit}><Save size={16}/></MyButton>
+                {#if pecahArray(userProfile?.access_cuti, "C")}
+                    <div class="flex gap-2">
+                        {#if formCuti.add || formCuti.edit}
+                            {#if pecahArray(userProfile?.access_cuti, "C") || pecahArray(userProfile.access_cuti, "U")}
+                                <MyButton onclick={formCutiBatal}><Ban size={16} /></MyButton>
+                                <MyButton disabled={formCuti.loading} onclick={formCutiSubmit}><Save size={16}/></MyButton>
+                            {/if}
+                        {:else}
+                            {#if pecahArray(userProfile?.access_cuti, "C")}
+                                <MyButton onclick={()=> formCuti.add = true}><Plus size={16}/></MyButton>
+                            {/if}
                         {/if}
-                    {:else}
-                        {#if pecahArray(userProfile?.access_attendance, "C")}
-                            <MyButton onclick={()=> formCuti.add = true}><Plus size={16}/></MyButton>
-                        {/if}
-                    {/if}
-                </div>
+                    </div>
+                {/if}
 
                 {#if formCuti.loading}
                     <MyLoading message="Get cuti data"/>
@@ -419,12 +427,6 @@
                                     <Label>Type</Label>
                                     <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formCuti.answer.type} 
                                         options={typeList.map(([v, duration]) => ({value: v, text: v + " - " + duration}))}/>                                    
-                                    <!-- <Label>Type</Label>
-                                    <Select bind:value={formCuti.answer.type}>
-                                        {#each typeList as [item], i}
-                                            <option value={item}>{item}</option>
-                                        {/each}
-                                    </Select> -->
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">
@@ -474,17 +476,19 @@
                                             <TableBodyCell>{row.status}</TableBodyCell>
                                             <TableBodyCell>{row.approval_name}</TableBodyCell>
                                             <TableBodyCell>
-                                                {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
-                                                    <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
-                                                {/if}
-                                                {#if pecahArray(userProfile.access_cuti, "D") && row.status == "Waiting"}
-                                                    <MyButton onclick={()=> {
-                                                        formCuti.modalDelete = true
-                                                        formCuti.answer.cuti_id = row.cuti_id
-                                                    }}><Trash size={12} /></MyButton>
-                                                {/if}
-                                                {#if row.status == "Waiting" && row.approval == formCuti.answer.user_approval }
-                                                    <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                {#if !formCuti.edit}
+                                                    {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
+                                                        <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
+                                                    {/if}
+                                                    {#if pecahArray(userProfile.access_cuti, "D") && row.status == "Waiting"}
+                                                        <MyButton onclick={()=> {
+                                                            formCuti.modalDelete = true
+                                                            formCuti.answer.cuti_id = row.cuti_id
+                                                        }}><Trash size={12} /></MyButton>
+                                                    {/if}
+                                                    {#if row.status == "Waiting" && row.approval == formCuti.answer.user_approval }
+                                                        <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                    {/if}
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>

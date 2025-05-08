@@ -12,7 +12,7 @@ declare global {
                 department: string,
                 profile_id: string,
                 name: string,
-			} | null | string,
+			} | null | string | any,
             userProfile: {
                 access_attendance:string,
 			} | null | string | any,

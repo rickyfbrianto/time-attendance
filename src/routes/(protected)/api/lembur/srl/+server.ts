@@ -11,6 +11,8 @@ export async function GET({url}){
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
     
+    const payroll = url.searchParams.get('payroll') || ""
+    
     const status = await prisma.$transaction(async (tx) => {        
         const items = await tx.$queryRawUnsafe(`
             SELECT srl_id, spl_id, srl.payroll, real_start, real_end, e.name,
@@ -18,17 +20,16 @@ export async function GET({url}){
             LEFT JOIN employee as e ON e.payroll = srl.payroll
             LEFT JOIN employee as approval1 ON approval1.payroll = srl.approval1
             LEFT JOIN employee as approval2 ON approval2.payroll = srl.approval2
-            WHERE srl_id LIKE ? OR spl_id LIKE ? OR srl.payroll LIKE ? OR e.name LIKE ?
+            WHERE (srl_id LIKE ? OR spl_id LIKE ? OR e.name LIKE ?) AND srl.payroll LIKE ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,limit, offset)
+            `%${search}%`,`%${search}%`,`%${search}%`,`%${payroll}%`,limit, offset)
 
-        const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as COUNT FROM srl
+        const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
             LEFT JOIN employee as approval1 ON approval1.payroll = srl.approval1
             LEFT JOIN employee as approval2 ON approval2.payroll = srl.approval2
-            WHERE srl_id LIKE ? OR spl_id LIKE ? OR srl.payroll LIKE ? OR e.name LIKE ?`,
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`) as {count: number}[]
-                    
+            WHERE (srl_id LIKE ? OR spl_id LIKE ? OR e.name LIKE ?) AND srl.payroll LIKE ?`,
+            `%${search}%`,`%${search}%`,`%${search}%`,`%${payroll}%`) as {count: number}[]
         return {items, totalItems: Number(count)}
     })
 

@@ -16,9 +16,10 @@ export async function POST({ cookies, request}){
 
         if(data){
             if(password === decryptData(data.password, import.meta.env.VITE_KEY)){
-                const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: remember_me ? "1w" : '3h' })
+                // const token = jwt.sign({payroll}, import.meta.env.VITE_JWT_SECRET, { expiresIn: remember_me ? "1w" : '6h' })
+                const token = jwt.sign({payroll}, process.env.JWT_SECRET!, { expiresIn: remember_me ? "1w" : '10h' })
                 cookies.set("token", token, {
-                    path:"/",
+                    path: `/`,
                     secure:false, 
                     // httpOnly:true
                 })

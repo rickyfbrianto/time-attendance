@@ -7,7 +7,7 @@
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan } from '@lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode } from '@lib/utils.js';
     import { getParams } from '@lib/data/api';
 	import { differenceInHours, format, set, getDay, startOfDay, subMonths, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
@@ -21,6 +21,8 @@
     let {data} = $props()
     let user = $derived(data.user) 
     let userProfile = $derived(data.userProfile)
+    let setting = $derived(data.periode)
+    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
 
     const rowsPerPage = 10
     
@@ -32,12 +34,14 @@
             spl_id: "id",
             purpose:"",
             get dept() {return user?.department},
-            spl_detail:[{payroll:"",description:""}],
+            spl_detail:[{payroll:"", description:""}],
             est_start:"",
             est_end:"",            
             approval1:"",
             approval2:"",            
         },
+        get dept() {return user?.department},
+        get payroll() {return userProfile.level > 1 ? "": user?.payroll},
         success:"",
         error:"",
         modalDelete: false,
@@ -53,7 +57,7 @@
             formSPL.loading = true
             const valid = z.object({
                 spl_id: z.string().trim().min(1),
-                dept: z.string().trim().min(1),
+                // dept: z.string().trim().min(1),
                 purpose: z.string().trim().min(5),
                 est_start: z.string().trim().min(1),
                 est_end: z.string().trim().min(1),
@@ -246,7 +250,7 @@
 
         // doc.save(`${id}.pdf`);
     }
-    
+
     // SPL approval 1
     let tableSPLApproval1 = $state(new TableHandler([], {rowsPerPage}))
     
@@ -261,9 +265,9 @@
         add:false,
         edit:false,
     }
-    
+
     let formSPLApproval1 = $state({...formSPLApproval1Answer})
-    
+
     const handleApproveSPL1 = async (spl_id: string, val: string) => {
         try {
             formSPLApproval1.answer.spl_id = spl_id
@@ -330,8 +334,10 @@
             overtime:0,
             srl_detail:[{description:"", status: ""}],
         },
+        get payroll() {return userProfile.level > 1 ? "": user?.payroll},
         success:"",
         error:"",
+        modalDelete: false,
         loading:false,
         add:false,
         edit:false,
@@ -411,11 +417,11 @@
             tableSRL.invalidate()
         }
     }
-
+    
     const handleCetakSRL= async (id:string) =>{
-        const req = await axios.get(`/api/lembur/srl/${id}/print`)
+        const req = await axios.get(`/api/lembur/srl/${id}/print?payroll=${formSRL.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
         const res = await req.data
-
+        
         applyPlugin(jsPDF)
 
         const doc = new jsPDF({
@@ -472,24 +478,30 @@
         doc.text(`| Hari Minggu`, colData[0] + 130, rowData + rowInc)
         rowInc += 5
         doc.text("Dept.", colData[0], rowData + rowInc)
-        doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
+        doc.text(`:  ${user.dept.initial}`, colData[0] + 20, rowData + rowInc)
+        // doc.text(`:  ${user.}`, colData[0] + 20, rowData + rowInc)
         doc.text(`| Hari Libur Resmi`, colData[0] + 130, rowData + rowInc)
         rowInc += 5
         doc.text("Bulan", colData[0], rowData + rowInc)
-        doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
+        doc.text(`:  ${namaBulan[Number(format(periode.start, "M")) - 1] + " " + format(periode.start, "yyyy") + " - " + 
+        namaBulan[Number(format(periode.end, "M")) - 1] + " " + format(periode.end, "yyyy")}`, colData[0] + 20, rowData + rowInc)
         doc.text(`| Hari Kerja Biasa`, colData[0] + 130, rowData + rowInc)
-        
+
         rowInc += row2
         autoTable(doc, {
             startY: rowData + rowInc,
             theme:"grid",
             head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Description', 'Status']],
             margin: {left: colData[0]},
-            body: res.srl_detail.map((v:any, i: number) => {
-                const [nama, payroll, tanggal, waktu] = i == 0 
-                ? [res.employee.name, res.employee.payroll, namaHari[getDay(res.real_start)] + ", " + format(res.real_start, "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
-                : ["","","",""]
-                return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
+            // body: res.srl_detail.map((v:any, i: number) => {
+            //     const [nama, payroll, tanggal, waktu] = i == 0 
+            //     ? [res.employee.name, res.employee.payroll, namaHari[getDay(res.real_start)] + ", " + format(res.real_start, "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
+            //     : ["","","",""]
+            //     return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
+            // }),
+            body: res.map((v:any, i: number) => {
+                const [nama, payroll, tanggal, waktu] = [v.employee.name, v.employee.payroll, namaHari[getDay(v.real_start)] + ", " + format(v.real_start, "dd-MM-yyyy"), formatTanggal(v.real_start,"time").substring(0,5) + " - " + formatTanggal(v.real_end,"time").substring(0,5)]
+                return [i + 1, nama, payroll, tanggal, waktu, v.srl_detail.map(item => item.description).join('\n'), v.srl_detail.map(item => item.status).join('\n')]
             }),
             styles: {cellPadding: 1, halign: 'center' },
             headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
@@ -506,14 +518,14 @@
         doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
 
         rowInc += row3
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
         
         rowInc += row2 * 3.1
-        doc.text(res.employee.name, colData[0], rowData + rowInc)
-        doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
-        doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
+        doc.text(res[0].employee.name, colData[0], rowData + rowInc)
+        doc.text(res[0].employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
+        doc.text(res[0].employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
         
         const blob = doc.output('blob')
         const url = URL.createObjectURL(blob);
@@ -629,7 +641,7 @@
                     const temp = set(new Date(), {year: 2025, month: 3})
                     const {start_periode, end_periode} = getPeriode({...res, date: temp})
 
-                    const req = await fetch(`/api/lembur/spl?${getParams(state)}&start_periode=${start_periode}&end_periode=${end_periode}`)
+                    const req = await fetch(`/api/lembur/spl?${getParams(state)}&dept=${formSPL.dept}&payroll=${formSPL.payroll}&start_periode=${start_periode}&end_periode=${end_periode}`)
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
                     return items
@@ -665,7 +677,7 @@
         
         tableSRL.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/srl?${getParams(state)}`)
+                const req = await fetch(`/api/lembur/srl?${getParams(state)}&payroll=${formSRL.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -713,7 +725,6 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
-
     <Modal bind:open={formSPL.modalDelete} autoclose>
         <div class="flex flex-col gap-6">
             <h3>Delete SPL ?</h3>
@@ -721,6 +732,16 @@
         <svelte:fragment slot="footer">
             <Button color='green' disabled={formSPL.loading} onclick={() => formSPLDelete(formSPL.answer.spl_id)}>Yes, delete this data</Button>
             <Button color='red' onclick={() => formSPL.modalDelete = false}>No</Button>
+        </svelte:fragment>
+    </Modal>
+
+    <Modal bind:open={formSRL.modalDelete} autoclose>
+        <div class="flex flex-col gap-6">
+            <h3>Delete SRL ?</h3>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='green' disabled={formSRL.loading} onclick={() => formSRLDelete(formSRL.answer.srl_id)}>Yes, delete this data</Button>
+            <Button color='red' onclick={() => formSRL.modalDelete = false}>No</Button>
         </svelte:fragment>
     </Modal>
     
@@ -879,17 +900,19 @@
                                                         </div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if (pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting' && userProfile.level > 1}
-                                                            {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                            {#if pecahArray(userProfile.access_spl, "D")}
-                                                                <MyButton onclick={()=> {
-                                                                    formSPL.modalDelete = true
-                                                                    formSPL.answer.spl_id = row.spl_id
-                                                                }}><Trash size={12} /></MyButton>
+                                                        {#if !formSPL.edit}
+                                                            {#if (pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting' && userProfile.level > 1}
+                                                                {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                                {#if pecahArray(userProfile.access_spl, "D")}
+                                                                    <MyButton onclick={()=> {
+                                                                        formSPL.modalDelete = true
+                                                                        formSPL.answer.spl_id = row.spl_id
+                                                                    }}><Trash size={12} /></MyButton>
+                                                                {/if}
                                                             {/if}
-                                                        {/if}
-                                                        {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
-                                                            <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
+                                                            {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
+                                                                <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
+                                                            {/if}
                                                         {/if}
                                                     </TableBodyCell>
                                                 </TableBodyRow>
@@ -1243,12 +1266,19 @@
                                                         </div>
                                                     </TableBodyCell>                                                    
                                                     <TableBodyCell>
-                                                        {#if (pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting'}
-                                                            {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
-                                                            {#if pecahArray(userProfile.access_srl, "D")}<MyButton onclick={()=> formSRLDelete(row.srl_id)}><Trash size={12} /></MyButton>{/if}
-                                                        {/if}
-                                                        {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
-                                                            <MyButton onclick={()=> handleCetakSRL(row.srl_id)}><Printer size={12} /></MyButton>
+                                                        {#if !formSRL.edit}
+                                                            {#if (pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting'}
+                                                                {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                                {#if pecahArray(userProfile.access_srl, "D")}
+                                                                    <MyButton onclick={()=> {
+                                                                        formSRL.modalDelete = true
+                                                                        formSRL.answer.srl_id = row.srl_id
+                                                                    }}><Trash size={12} /></MyButton>
+                                                                {/if}
+                                                            {/if}
+                                                            {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
+                                                                <MyButton onclick={()=> handleCetakSRL(row.srl_id)}><Printer size={12} /></MyButton>
+                                                            {/if}
                                                         {/if}
                                                     </TableBodyCell>
                                                 </TableBodyRow>
@@ -1395,16 +1425,6 @@
                                         <TableBody tableBodyClass="divide-y">
                                             {#if tableSRLApproval2.rows.length > 0}
                                                 {#each tableSRLApproval2.rows as row}
-                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
-                                                        <TableBodyCell>
-                                                            {#if row.status1 == "Waiting"}
-                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
-                                                                <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
-                                                            {/if}
-                                                        </TableBodyCell>
                                                     <TableBodyRow class='h-10'>
                                                         <TableBodyCell>{row.payroll}</TableBodyCell>
                                                         <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>

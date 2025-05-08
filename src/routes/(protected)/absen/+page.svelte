@@ -8,10 +8,11 @@
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
-	import { formatTanggal, generatePeriode } from '@lib/utils.js';
+	import { formatTanggal, generatePeriode, namaHari, namaBulan } from '@lib/utils.js';
 	import { differenceInHours, format } from 'date-fns';
 	import Svelecte from 'svelecte';
     
+    const rowsPerPage = 30
     let {data} = $props()
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
@@ -27,7 +28,7 @@
         }
     }
 
-    let tableAbsen = new TableHandler([], {rowsPerPage: 10})
+    let tableAbsen = new TableHandler([], {rowsPerPage})
     let tableAbsenSearch = tableAbsen.createSearch()
 
     const formAbsenAnswer = {
@@ -45,7 +46,7 @@
     let formAbsen = $state({...formAbsenAnswer})
     
     // Absen Dept
-    let tableAbsenDept = new TableHandler([], {rowsPerPage: 10})
+    let tableAbsenDept = new TableHandler([], {rowsPerPage})
     let tableAbsenDeptSearch = tableAbsenDept.createSearch()
 
     const formAbsenDeptAnswer = {
@@ -148,7 +149,7 @@
                 
                 <div class="flex gap-2 items-start">
                     <select bind:value={tableAbsen.rowsPerPage} onchange={() => tableAbsen.setPage(1)}>
-                        {#each [10, 20, 50, 100] as option}
+                        {#each [30, 60, 90, 120] as option}
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
@@ -185,10 +186,10 @@
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>
-                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
+                                                <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                             </TableBodyCell>
                                             <TableBodyCell>
-                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
+                                                <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                             </TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
@@ -213,10 +214,10 @@
                                                             : null
                                                         ] as val}
                                                         {#if val}
-                                                            <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                            <Badge rounded color={val.type == "kerja" ? "dark" 
                                                             : val.type == "late" ? "red" 
-                                                            : val.type == "lembur" ? "yellow" 
-                                                            : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal py-1'>{val.value}</Badge>
+                                                            : val.type == "lembur" ? "green" 
+                                                            : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                         {/if}
                                                     {/each}
                                                 </div>
@@ -268,7 +269,7 @@
 
                     <div class="flex gap-2 items-start">
                         <select bind:value={tableAbsenDept.rowsPerPage} onchange={() => tableAbsenDept.setPage(1)}>
-                            {#each [10, 20, 50, 100] as option}
+                            {#each [30, 60, 90, 120] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
@@ -285,10 +286,10 @@
                     <Datatable table={tableAbsenDept}>
                         <Table>
                             <TableHead>
-                                <ThSort table={tableAbsenDept} field="payroll">Payroll</ThSort>
-                                <ThSort table={tableAbsenDept} field="name">Name</ThSort>
                                 <ThSort table={tableAbsenDept} field="check_in">Day</ThSort>
                                 <ThSort table={tableAbsenDept} field="check_in">Date</ThSort>
+                                <ThSort table={tableAbsenDept} field="payroll">Payroll</ThSort>
+                                <ThSort table={tableAbsenDept} field="name">Name</ThSort>
                                 <ThSort table={tableAbsenDept} field="check_in">Clock In</ThSort>
                                 <ThSort table={tableAbsenDept} field="check_out">Clock Out</ThSort>
                                 <ThSort table={tableAbsenDept} field="">Difference</ThSort>
@@ -304,14 +305,14 @@
                                 {#if tableAbsenDept.rows.length > 0}
                                     {#each tableAbsenDept.rows as row}
                                         <TableBodyRow class='h-10'>
+                                            <TableBodyCell>
+                                                <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                            </TableBodyCell>
+                                            <TableBodyCell>
+                                                <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                            </TableBodyCell>
                                             <TableBodyCell>{row.payroll}</TableBodyCell>
                                             <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>
-                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "EEEE")}</div>
-                                            </TableBodyCell>
-                                            <TableBodyCell>
-                                                <div class={format(row.check_in, "EEEE") == "Sunday" ? "text-red-500":""}>{format(row.check_in, "dd MMMM yyyy")}</div>
-                                            </TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                             <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                             <TableBodyCell>
@@ -335,10 +336,10 @@
                                                             : null
                                                         ] as val}
                                                         {#if val}
-                                                            <Badge rounded color={val.type == "kerja" ? "indigo" 
+                                                            <Badge rounded color={val.type == "kerja" ? "dark" 
                                                             : val.type == "late" ? "red" 
-                                                            : val.type == "lembur" ? "yellow" 
-                                                            : val.type == "ijin_info" ? "dark" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                            : val.type == "lembur" ? "green" 
+                                                            : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
                                                         {/if}
                                                     {/each}
                                                 </div>

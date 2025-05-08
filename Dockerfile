@@ -3,27 +3,27 @@ FROM node:${NODE_VERSION} AS builder
 
 WORKDIR /app
 
-COPY package.json /app
-
-RUN cd /app && npm install && \
-    echo "" 
-
 COPY . .
+
+RUN npm install
 
 RUN npm run build
 
 # --- Stage 2: Run ---
+FROM node:${NODE_VERSION}
 
-# FROM node:${NODE_VERSION}
+WORKDIR /app
 
-# WORKDIR /app
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package-lock.json ./
+RUN npm install --omit=dev
 
-# COPY --from=builder /app/build .
+COPY --from=builder /app/build ./build
 
-# COPY package*.json .
+# (Opsional) Salin konfigurasi lain jika dibutuhkan
+# COPY --from=builder /app/.env .env
 
-# RUN npm install --omit=dev
+ENV NODE_ENV=production
+EXPOSE 3000
 
-# EXPOSE 9000
-
-# CMD ['node', 'index.js']
+CMD ["node", "build"]

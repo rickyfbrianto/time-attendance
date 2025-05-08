@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="https://unpkg.com/svelecte-element/dist/svelecte.css">
-
 <script lang="ts">
 	import '../../app.css';
 	import '../../style.css';
@@ -8,6 +6,8 @@
     import {appstore } from '@lib/store/appstore'
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
+    import bg from '@lib/assets/stm.png'
+    import { Footer, FooterCopyright, FooterLinkGroup, FooterBrand, FooterLink } from "flowbite-svelte";
 
     let {children, data} :LayoutProps = $props()
 
@@ -25,6 +25,8 @@
     })
 </script>
 
+<link rel="stylesheet"  href="https://unpkg.com/svelecte-element/dist/svelecte.css">
+
 <svelte:window bind:innerWidth={$appstore.appWidth}/>
 
 <div class="relative flex h-screen bg-bgdark">
@@ -36,6 +38,19 @@
                 {@render children()}
             </div>
         </div>
+        <Footer footerType="logo" class='bg-slate-50 dark:bg-neutral-900 mt-4 p-4 md:p-6 rounded-t-lg'>
+            <div class="sm:flex sm:items-center sm:justify-between">
+                <div class="flex items-center">
+                    <FooterBrand href="https://flowbite.com" src={bg} alt="Time Attendance" />
+                    <FooterCopyright class='text-[1.4rem]' href="/" year={new Date().getFullYear()} />
+                </div>
+                <FooterLinkGroup class="flex flex-wrap items-center text-sm text-gray-500 sm:mb-0 dark:text-gray-200">
+                    <FooterLink href="/">Dashboard</FooterLink>
+                </FooterLinkGroup>
+            </div>
+            <!-- <hr class="my-6 border-gray-200 sm:mx-auto lg:my-8 dark:border-gray-700" /> -->
+            <!-- <FooterCopyright href="/" by="Flowbite™" /> -->
+        </Footer>
     </div>
 </div>
 
