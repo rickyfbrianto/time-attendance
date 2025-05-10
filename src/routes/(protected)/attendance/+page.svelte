@@ -1,12 +1,12 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip } from '@lucide/svelte'
+    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip, CircleAlert } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari } from '@lib/utils';
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, isLate } from '@lib/utils';
     import { differenceInHours, differenceInDays, format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
@@ -14,7 +14,7 @@
 	import { fromZodError } from 'zod-validation-error';
 	import { getParams } from '@lib/data/api.js';
 	import MyCalendar from '@/MyCalendar.svelte';
-
+    
     const rowsPerPage = 30
     let {data} = $props()
     let user = $derived(data.user)
@@ -89,7 +89,7 @@
 
     let modeAttendance = $state({
         payroll: formAttendanceAnswer.payroll,
-        name: formAttendanceAnswer.name,
+        name: "",
     })
 
     const formAttendanceSubmit = async () =>{
@@ -226,6 +226,68 @@
     }
     
     let formLogAttendance = $state({...formLogAttendanceAnswer})
+
+    // Form SPL
+    const formSPLAnswer = {
+        answer:{
+            spl_id: "id",
+            purpose:"",
+            get dept() {return user?.department},
+            spl_detail:[{payroll:"", description:""}],
+            est_start:"",
+            est_end:"",            
+            approval1:"",
+            approval2:"",            
+        },
+        get dept() {return user?.department},
+        get payroll() {return userProfile.level > 1 ? "": user?.payroll},
+        success:"",
+        error:"",
+        modalSPL: false,
+        loading:false,
+    }
+    
+    let formSPL = $state({...formSPLAnswer})
+
+    const createSPL = (payroll, nama, check_in, check_out )=> {
+        formSPL = {...formSPLAnswer}
+        formSPL.modalSPL = true
+        formSPL.answer.purpose = `Lembur ${nama} tanggal ${format(formatTanggal(check_in, "date"), "d MMMM yyyy")}`
+        formSPL.answer.spl_detail[0].payroll = payroll
+        formSPL.answer.est_start = formatTanggal(check_in)
+        formSPL.answer.est_end = formatTanggal(check_out)
+    }
+    
+    const formSPLSubmit = async () =>{
+        try {
+            formSPL.loading = true
+            formSPL.error = ""
+            formSPL.success = ""
+            const valid = z.object({
+                purpose: z.string().trim().min(1),
+                approval1: z.string().trim().min(1),
+                approval2: z.string().trim().min(1),
+                spl_detail: z.array(z.object({
+                    description: z.string().trim().min(1)
+                }))
+            })
+            const isValid = valid.safeParse(formSPL.answer)
+            if(isValid.success){
+                const req = await axios.post('/api/lembur/spl', formSPL.answer)
+                const res = await req.data
+                formSPL.success = res.message
+            }else{
+                const err = fromZodError(isValid.error)
+                formSPL.success = ""
+                formSPL.error = err.message
+            }
+        } catch (error: any) {
+            formSPL.error = error.response.data.message
+            formSPL.success = ""
+        } finally {
+            formSPL.loading = false
+        }
+    }
     
     // Fetch
     const getUser = async (val: string = "") =>{
@@ -250,6 +312,14 @@
         delete res.Name
         headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
     }
+
+    const getUserByDept = $derived.by(() => {
+        return async () =>{
+            const req = await fetch(`/api/data?type=user_by_dept&val=${formSPL.dept}`)
+            const res = await req.json()
+            return res
+        }
+    })
     
     // $effect(()=>{
     //     if(!modeAttendance.payroll) modeAttendance.payroll = user.payroll
@@ -322,7 +392,7 @@
 </script>
 
 <svelte:head>
-    <title>Attendance</title>
+    <title>Attendance  {(modeAttendance.payroll !== user?.payroll ? "(view) | " : "") + modeAttendance.name}</title>
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
@@ -494,6 +564,7 @@
                                                             {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
                                                             {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
                                                             {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
+                                                            <CircleAlert />
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
@@ -501,7 +572,7 @@
                                                 <TableBodyCell>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                            formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                            isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                             differenceInHours(row.check_out, row.lembur_start) > 0 
                                                                 ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                                 : null,
@@ -513,7 +584,11 @@
                                                                 <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "green" 
-                                                                : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                    if(val.type == 'lembur'){
+                                                                        createSPL(row.payroll, row.name, row.check_in, row.check_out)
+                                                                    }
+                                                                }} class='break-words whitespace-normal'>{val.value}</Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>
@@ -638,7 +713,7 @@
                                                     <TableBodyCell>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                                isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                                 differenceInHours(row.check_out, row.lembur_start) > 0 
                                                                     ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                                     : null,
@@ -758,7 +833,7 @@
                                                     <TableBodyCell>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                                isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                                 differenceInHours(row.check_out, row.lembur_start) > 0 
                                                                     ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                                     : null,
@@ -900,7 +975,7 @@
                                                 <TableBodyCell>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                            formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                            isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                             differenceInHours(row.check_out, row.lembur_start) > 0 
                                                                 ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                                 : null,
@@ -954,6 +1029,67 @@
             </TabItem>
         </Tabs>
     </div>
+
+    <Modal bind:open={formSPL.modalSPL} size='xl'>
+        <div class="flex flex-col gap-6">
+            <h3>Create SPL Direct</h3>
+            
+            {#if formSPL.error}
+                {#each formSPL.error.split(';') as v}
+                    <Alert dismissable>
+                        <span>{v}</span>
+                    </Alert>
+                {/each}
+            {:else if formSPL.success}
+                <Alert color="green" dismissable>
+                    <span>{formSPL.success}</span>
+                </Alert>
+            {/if}
+            
+            <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">                    
+                    <MyInput type='datetime' disabled title='Time Start' name="est_start" bind:value={formSPL.answer.est_start}/>
+                    <MyInput type='datetime' disabled title='Time End' name="est_end" bind:value={formSPL.answer.est_end}/>
+                    {#await getUserByDept() then val}
+                        <div class="flex flex-col gap-2 flex-1">
+                            <Label>Approval 1</Label>
+                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval1} 
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                            />
+                        </div>
+                        <div class="flex flex-col gap-2 flex-1">
+                            <Label>Approval 2</Label>
+                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval2} 
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                            />
+                        </div>
+                    {/await}
+                </div>
+
+                <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
+                    {#each formSPL.answer.spl_detail as list, i}
+                        <div class="flex flex-col gap-2">
+                            <MyInput type='text' disabled title='Payroll' name="payroll" bind:value={list.payroll}/>                                
+
+                            <div class="flex flex-1 flex-col">
+                                <MyInput type='textarea' title="Job List" name="description" bind:value={list.description}/>
+                                <span class='text-[.8rem] italic'>For several jobs use comas as separator (,)</span>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </form>
+            
+        </div>
+        <svelte:fragment slot="footer">
+            {#if pecahArray(userProfile?.access_spl, "C")}
+                <Button color='green' type='submit' onclick={formSPLSubmit}>Simpan</Button>
+            {/if}
+            <Button color='red' onclick={() => formSPL.modalSPL = false}>Tutup</Button>
+        </svelte:fragment>
+    </Modal>
 
     <Modal bind:open={formAttendance.modalAttachment} autoclose>
         <div class="flex flex-col gap-6 overflow-hidden max-h-[80vh]">

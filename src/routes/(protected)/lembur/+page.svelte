@@ -746,12 +746,12 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Dashboard">
+        <!-- <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Overtime Page</span>
             </div>
-        </TabItem>
-        <TabItem title="Surat Perintah Lembur">
+        </TabItem> -->
+        <TabItem open title="Surat Perintah Lembur">
             <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
                 <TabItem open title="List">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
@@ -1245,7 +1245,7 @@
                                                     <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
                                                     <TableBodyCell>
                                                         {differenceInHours(row.real_end,row.real_start)}  Hour
-                                                        {format(row.real_end, "mm") != "00" ? format(row.real_end, "mm") + " Minute" :""}
+                                                        {format(row.real_end, "mm") != "00" ? format(row.real_end, "m") + " Minute" :""}
                                                     </TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class="flex flex-col items-start gap-2">

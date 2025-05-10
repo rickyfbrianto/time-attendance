@@ -258,7 +258,7 @@
             
             rowInc += row4 * 3
             doc.setFont('times', 'underline')
-            doc.text(`Allan Cheong`, colData[0], rowData + rowInc)
+            doc.text(`Agus Saputro`, colData[0], rowData + rowInc)
             rowInc += row1
             doc.setFont('times', 'normal')
             doc.text(`Mill manager`, colData[0], rowData + rowInc)
@@ -474,7 +474,7 @@
         doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
         doc.text("Pejabat yang dituju,", colData[0] + 130, rowData + rowInc)
         rowInc += row3 * 2.4
-        doc.text("Hari Sandi", colData[0], rowData + rowInc)
+        doc.text("Agus Saputro", colData[0], rowData + rowInc)
         doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
         rowInc += row3
         doc.text("Datang tanggal", colData[0] + 90, rowData + rowInc)

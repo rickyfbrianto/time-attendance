@@ -22,14 +22,14 @@ export async function GET({url}){
             LEFT JOIN employee as approval2 ON approval2.payroll = srl.approval2
             WHERE (srl_id LIKE ? OR spl_id LIKE ? OR e.name LIKE ?) AND srl.payroll LIKE ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${payroll}%`,limit, offset)
+            `%${search.replace(/\//g, '_')}%`, `%${search.replace(/\//g, '_')}%`, `%${search}%`,`%${payroll}%`,limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
             LEFT JOIN employee as approval1 ON approval1.payroll = srl.approval1
             LEFT JOIN employee as approval2 ON approval2.payroll = srl.approval2
             WHERE (srl_id LIKE ? OR spl_id LIKE ? OR e.name LIKE ?) AND srl.payroll LIKE ?`,
-            `%${search}%`,`%${search}%`,`%${search}%`,`%${payroll}%`) as {count: number}[]
+            `%${search.replace(/\//g, '_')}%`, `%${search.replace(/\//g, '_')}%`, `%${search}%`,`%${payroll}%`) as {count: number}[]
         return {items, totalItems: Number(count)}
     })
 

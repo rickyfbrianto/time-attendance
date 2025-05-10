@@ -48,25 +48,27 @@ export async function POST({ request }) {
             })
 
             if(!getUser){
-                const createUser = await prisma.employee.create({
-                    data:{
-                        payroll: data.get('payroll'),
-                        profile_id: data.get('profile_id'),
-                        user_id_machine: data.get('user_id_machine'),
-                        name: data.get('name'),
-                        password: encryptData(data.get('password'), import.meta.env.VITE_KEY),
-                        position: data.get('position'),
-                        department: data.get('department'),
-                        location: data.get('location'),
-                        phone: data.get('phone'),
-                        workhour: Number(data.get('workhour')),
-                        email: data.get('email'),
-                        approver: data.get('approver'),
-                        substitute: data.get('substitute'),
-                        signature: isSignature ? fileSignature : "",
-                        status: data.get('status'),
-                    }
-                })
+                const createUser = await tx.$executeRawUnsafe(`INSERT INTO employee
+                    (payroll,profile_id,user_id_machine,name,password,position,department,
+                    location,phone,workhour,start_work,email,approver, substitute, signature, status)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    data.get('payroll'), 
+                    data.get('profile_id'),
+                    data.get('user_id_machine'),
+                    data.get('name'),
+                    encryptData(data.get('password'), import.meta.env.VITE_KEY),
+                    data.get('position'),
+                    data.get('department'),
+                    data.get('location'),
+                    data.get('phone'),
+                    Number(data.get('workhour')),
+                    data.get('start_work'),
+                    data.get('email'),
+                    data.get('approver'),
+                    data.get('substitute'),
+                    isSignature ? fileSignature : "",
+                    data.get('status')
+                )
                 
                 if(createUser && isSignature){
                     const uploadsDir = path.join(process.env.ATTACH_SIGNATURE, fileSignature)
@@ -76,24 +78,25 @@ export async function POST({ request }) {
                 
                 return { message: "User successfully saved" }
             }else{
-                const updateUser = await prisma.employee.update({
-                    data:{ 
-                        profile_id: data.get('profile_id'),
-                        user_id_machine: data.get('user_id_machine'),
-                        name: data.get('name'),
-                        position: data.get('position'),
-                        department: data.get('department'),
-                        location: data.get('location'),
-                        phone: data.get('phone'),
-                        workhour: Number(data.get('workhour')),
-                        email: data.get('email'),
-                        approver: data.get('approver'),
-                        substitute: data.get('substitute'),
-                        signature: isSignature ? fileSignature : signature,
-                        status: data.get('status'),
-                    },
-                    where:{ payroll : data.get('payroll') }
-                })
+                const updateUser = await tx.$executeRawUnsafe(`
+                    UPDATE employee SET profile_id=?,user_id_machine=?,name=?,position=?,department=?,location=?,
+                    phone=?,workhour=?,start_work=?,email=?,approver=?,substitute=?,signature=?,status=? where payroll=?`,
+                    data.get('profile_id'),
+                    data.get('user_id_machine'),
+                    data.get('name'),
+                    data.get('position'),
+                    data.get('department'),
+                    data.get('location'),
+                    data.get('phone'),
+                    Number(data.get('workhour')),
+                    data.get('start_work'),
+                    data.get('email'),
+                    data.get('approver'),
+                    data.get('substitute'),
+                    isSignature ? fileSignature : signature,
+                    data.get('status'),
+                    data.get('payroll')
+                )
                 
                 if(updateUser && isSignature){
                     const uploadsDir = path.join(process.env.ATTACH_SIGNATURE, fileSignature)

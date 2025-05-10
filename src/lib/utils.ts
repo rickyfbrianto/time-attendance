@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
-import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths } from "date-fns";
+import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set } from "date-fns";
 import { Prisma, PrismaClient } from '@prisma/client';
 // import { Prisma, PrismaClient} from '@lib/prisma/client'
 
@@ -186,3 +186,30 @@ export function pecahKataOther(val: string, potong: number = 1){
     newTemp += andOthers > 0 ? " and " + (andOthers) + ` other${andOthers > 1 ? "s": ""}` : ""
     return newTemp
 }
+
+export const isLate = (w1: string, w2: string) =>{
+    const temp1 = w1.split(' ').map((v: string) => v)[1]
+    const temp2 = w2.split(' ').map((v: string) => v)[1]
+    
+    const [hours1, , ,] = temp1.split(":").map((v: string) => v)
+    const [hours2, minutes2, seconds2] = temp2.split(":").map((v: string) => v)
+    
+    const new1 = set(new Date(), {
+        hours: Number(hours1),
+        minutes: 0,
+        seconds: 0
+    })
+
+    const new2 = set(new Date(), {
+        hours: Number(hours2), 
+        minutes: Number(minutes2), 
+        seconds: Number(seconds2)
+    })
+    return isBefore(new1, new2)
+}
+
+export function getRandomHexColor() {
+    const randomColor = Math.floor(Math.random() * 0xffffff);
+    return `#${randomColor.toString(16).padStart(6, '0')}`;
+  }
+  

@@ -119,6 +119,8 @@
     const formIjinEdit = async (id:string) =>{
         try {
             formIjin.loading = true
+            formIjin.success = ""
+            formIjin.error = ""
             const req = await axios.get(`/api/ijin/${id}/edit`)
             const res = await req.data
             

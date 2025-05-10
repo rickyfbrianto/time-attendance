@@ -20,6 +20,7 @@ model employee {
   location                                        String          @db.VarChar(100)
   phone                                           String          @db.VarChar(13)
   workhour                                        Int             @default(8) @db.SmallInt
+  start_work                                      DateTime        @default(dbgenerated("('08:00:00')")) @db.Time(0)
   approver                                        String?         @db.VarChar(8)
   substitute                                      String?         @db.VarChar(8)
   join_date                                       DateTime        @default(now()) @db.Date
@@ -27,7 +28,6 @@ model employee {
   status                                          employee_status @default(Aktif)
   attendance_attendance_createdByToemployee       attendance[]    @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[]    @relation("attendance_user_id_machineToemployee")
-  check_io                                        check_io[]
   cuti_cuti_approvalToemployee                    cuti[]          @relation("cuti_approvalToemployee")
   cuti                                            cuti[]
   profile                                         profile?        @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
@@ -79,15 +79,13 @@ model profile {
 }
 
 model check_io {
-  check_io_id     String    @id @db.VarChar(40)
-  user_id_machine String?   @db.VarChar(6)
-  check_in        DateTime  @db.DateTime(0)
-  check_out       DateTime  @db.DateTime(0)
-  type            String    @db.VarChar(50)
-  createdAt       DateTime  @default(now()) @db.DateTime(0)
-  employee        employee? @relation(fields: [user_id_machine], references: [user_id_machine], map: "Check_io_user_id_machine_fkey")
+  check_io_id     String   @id @db.VarChar(40)
+  user_id_machine String   @db.VarChar(6)
+  datetime        DateTime @db.DateTime(0)
+  type            String   @db.VarChar(50)
+  transfer_status Boolean? @default(false)
 
-  @@index([user_id_machine], map: "Check_io_user_id_mesin_fkey")
+  @@index([user_id_machine], map: "user_id_mesin")
 }
 
 model attendance {

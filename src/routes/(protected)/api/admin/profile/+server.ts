@@ -55,8 +55,6 @@ export async function POST({ request, locals }) {
                 where:{profile_id : data.profile_id}
             })
             
-            console.log(user)
-            
             if(!getProfile){
                 if(!pecahArray(userProfile.access_profile, "C")) throw new Error("Cant insert Profile, because you have no authorization")
                 await prisma.profile.create({

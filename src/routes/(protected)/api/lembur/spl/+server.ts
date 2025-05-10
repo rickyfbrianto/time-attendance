@@ -24,7 +24,7 @@ export async function GET({url}){
             WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ? OR s.est_end like ?) AND sd.payroll like ?
             GROUP BY s.spl_id
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-        `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, `%${payroll}%`, limit, offset)
+        `%${search.replace(/\//g, '_')}%`,`%${search}%`,`%${search}%`,`%${search}%`, `%${payroll}%`, limit, offset)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM (
             SELECT s.spl_id FROM SPL as s
@@ -34,7 +34,7 @@ export async function GET({url}){
                 WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ? OR s.est_end like ?) AND sd.payroll like ?
                 GROUP BY s.spl_id
             ) as tmp;`,
-        `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, `%${payroll}%`) as {count: number}[]
+        `%${search.replace(/\//g, '_')}%`,`%${search}%`,`%${search}%`,`%${search}%`, `%${payroll}%`) as {count: number}[]
                     
         return {items, totalItems: Number(count)}
     })
@@ -64,6 +64,15 @@ export async function POST({ request,  }) {
                 const separator = "_"
                 const dept = await tx.dept.findUnique({where:{dept_code: data.dept}})
 
+                const payrollList = dataSPLDetail.map(v => `'${v.payroll}'`).join(', ')                
+                const [{count}] = await tx.$queryRawUnsafe(`
+                    SELECT COUNT(*) as count FROM spl s
+                        LEFT JOIN spl_detail sd ON s.spl_id = sd.spl_id
+                        WHERE DATE(est_start) = DATE(?) AND sd.payroll IN (${payrollList})`,
+                    data.est_start
+                ) as {count: number}[]
+                if(count >= 1) throw new Error("Cant insert SPL, because data is already exist")
+                
                 const [{id}] = await tx.$queryRawUnsafe(`
                     SELECT 
                     IFNULL(MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(spl_id, '${separator}', 1), '-', 1) AS unsigned)), 0) as id 

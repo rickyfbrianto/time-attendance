@@ -38,7 +38,7 @@
                 {@render children()}
             </div>
         </div>
-        <Footer footerType="logo" class='bg-slate-50 dark:bg-neutral-900 mt-4 p-4 md:p-6 rounded-t-lg'>
+        <!-- <Footer footerType="logo" class='bg-slate-50 dark:bg-neutral-900 mt-4 p-4 md:p-6 rounded-t-lg'>
             <div class="sm:flex sm:items-center sm:justify-between">
                 <div class="flex items-center">
                     <FooterBrand href="https://flowbite.com" src={bg} alt="Time Attendance" />
@@ -48,9 +48,7 @@
                     <FooterLink href="/">Dashboard</FooterLink>
                 </FooterLinkGroup>
             </div>
-            <!-- <hr class="my-6 border-gray-200 sm:mx-auto lg:my-8 dark:border-gray-700" /> -->
-            <!-- <FooterCopyright href="/" by="Flowbite™" /> -->
-        </Footer>
+        </Footer> -->
     </div>
 </div>
 

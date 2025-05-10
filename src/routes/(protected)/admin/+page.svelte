@@ -179,6 +179,7 @@
             location:"",
             phone:"",
             workhour: 8,
+            start_work: "",
             email:"",
             approver: "",
             substitute: "",
@@ -203,6 +204,9 @@
             formUserState.error = ""
             const req = await axios.get(`/api/admin/user/${id}`)
             formUserState.answer = {...await req.data}
+            setTimeout(()=>{
+                formUserState.answer.start_work = formatTanggal(req.data.start_work, "time")
+            }, 100)
             formUserState.edit = true
             formUserState.add = false
             formUserState.loading = false
@@ -847,6 +851,7 @@
                             
                             <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
                             <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
+                            <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
                             <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
                             <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
 

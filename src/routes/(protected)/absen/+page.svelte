@@ -8,7 +8,7 @@
 	import { getParams } from '@lib/data/api.js';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
-	import { formatTanggal, generatePeriode, namaHari, namaBulan } from '@lib/utils.js';
+	import { formatTanggal, generatePeriode, namaHari, isLate } from '@lib/utils.js';
 	import { differenceInHours, format } from 'date-fns';
 	import Svelecte from 'svelecte';
     
@@ -205,7 +205,7 @@
                                             <TableBodyCell>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                     {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                        isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                         differenceInHours(row.check_out, row.lembur_start) > 0 
                                                             ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                             : null,
@@ -327,7 +327,7 @@
                                             <TableBodyCell>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                     {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        formatTanggal(row.check_in, "time").slice(3,5) != "00" ? {type:"late", value:"Late"} : null,
+                                                        isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                         differenceInHours(row.check_out, row.lembur_start) > 0 
                                                             ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                             : null,

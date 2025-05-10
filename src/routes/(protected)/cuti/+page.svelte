@@ -110,6 +110,8 @@
     
     const formCutiEdit = async (id:string) =>{
         try {
+            formCuti.success = ""
+            formCuti.error = ""
             formCuti.loading = true
             const req = await axios.get(`/api/cuti/${id}/edit`)
             const res = await req.data
