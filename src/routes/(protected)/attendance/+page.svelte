@@ -6,13 +6,12 @@
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, isLate } from '@lib/utils';
-    import { differenceInHours, differenceInDays, format, getYear } from "date-fns";
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate } from '@lib/utils';
+    import { differenceInMinutes, differenceInHours, differenceInDays, format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
-	import { getParams } from '@lib/data/api.js';
 	import MyCalendar from '@/MyCalendar.svelte';
     
     const rowsPerPage = 30
@@ -48,6 +47,7 @@
 
     const listType = [
         {value:"HKM", name:"Hari Kerja Manual"},
+        {value:"Mangkir", name:"Mangkir"},
         {value:"Sakit", name:"Sakit Berkepanjangan/Sakit Ringan"},
     ]
         
@@ -249,7 +249,7 @@
     
     let formSPL = $state({...formSPLAnswer})
 
-    const createSPL = (payroll, nama, check_in, check_out )=> {
+    const createSPL = (payroll: string, nama: string, check_in, check_out )=> {
         formSPL = {...formSPLAnswer}
         formSPL.modalSPL = true
         formSPL.answer.purpose = `Lembur ${nama} tanggal ${format(formatTanggal(check_in, "date"), "d MMMM yyyy")}`
@@ -326,7 +326,7 @@
     // })
     
     $effect(()=>{
-        tableAttendance.load(async (state:State) =>{
+        tableAttendance.load(async (state:State<never>): Promise<any> => {
             try {
                 const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${periode.start}&end_date=${periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -338,8 +338,8 @@
             }
         })
 
-        if (userProfile.level > 1 || (userProfile.level == 1 && userProfile.user_hrd)){
-            tableAttendanceDept.load(async (state:State) =>{
+        if (userProfile.level > 1 || userProfile.user_hrd) {
+            tableAttendanceDept.load(async (state:State<never>): Promise<any> => {
                 try {
                     const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
@@ -353,7 +353,7 @@
         }
 
         if(userProfile.user_hrd){
-            tableListAttendance.load(async (state:State) =>{
+            tableListAttendance.load(async (state:State<never>): Promise<any> => {
                 try {
                     const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
@@ -366,7 +366,7 @@
             })
         }
 
-        tableLogAttendance.load(async (state:State) =>{
+        tableLogAttendance.load(async (state:State<never>): Promise<any> => {
             try {
                 const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${modeAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -381,7 +381,7 @@
     
     setTimeout(()=>{
         tableAttendance.invalidate()
-        if (userProfile.level > 1 || (userProfile.level == 1 && userProfile.user_hrd))
+        if (userProfile.level > 1 || userProfile.user_hrd)
             tableAttendanceDept.invalidate()
         if(userProfile.user_hrd)
             tableListAttendance.invalidate()
@@ -559,21 +559,20 @@
                                                     {formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
+                                                    {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
                                                         <Badge rounded color={"green"}>
-                                                            {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
-                                                            {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
+                                                            {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
+                                                            {differenceInHours(row.check_out, row.lembur_start) > 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
                                                             {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
-                                                            <CircleAlert />
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                        {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                        {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            differenceInHours(row.check_out, row.lembur_start) > 0 
+                                                            differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
                                                                 ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                                 : null,
                                                             row.ijin_info
@@ -585,17 +584,22 @@
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "green" 
                                                                 : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                    if(val.type == 'lembur'){
+                                                                    if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
                                                                         createSPL(row.payroll, row.name, row.check_in, row.check_out)
                                                                     }
-                                                                }} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                }} class='break-words whitespace-normal'>{val.value}
+                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                </Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if row.payroll != user.payroll}
-                                                        {#if pecahArray(userProfile.access_attendance, "U")}
+                                                    {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
+                                                        {#if (!userProfile.user_hrd && userProfile.level > row.level) 
+                                                            || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
+                                                            || (userProfile.user_hrd && !row.user_hrd)
+                                                        }
                                                             <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                         {/if}
                                                     {/if}
@@ -634,7 +638,7 @@
                 </div>
             </TabItem>
             <!-- Attendance department -->
-            {#if userProfile.level > 1}
+            {#if userProfile.level > 1 || userProfile.user_hrd}
                 <TabItem title="Attendance Department">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                         <div class="flex flex-col gap-4">
@@ -651,7 +655,10 @@
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
                                 <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton className='p-3' onclick={()=>tableAttendanceDept.invalidate()}><RefreshCw size={16}/></MyButton>
+                                <MyButton className='p-3' onclick={()=> {
+                                    getAttendance(modeAttendance.payroll)
+                                    tableAttendanceDept.invalidate()
+                                }}><RefreshCw size={16}/></MyButton>
                             </div>
                             {#if userProfile.user_hrd}
                                 <div class="flex gap-2 items-start">
@@ -701,10 +708,10 @@
                                                     <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
+                                                        {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
                                                             <Badge rounded color={"green"}>
-                                                                {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
-                                                                {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
+                                                                {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
+                                                                {differenceInHours(row.check_out, row.lembur_start) > 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
                                                                 {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
                                                             </Badge>
                                                         {/if}
@@ -712,9 +719,9 @@
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                            {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                            {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                                differenceInHours(row.check_out, row.lembur_start) > 0 
+                                                                differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
                                                                     ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
                                                                     : null,
                                                                 row.ijin_info
@@ -725,23 +732,29 @@
                                                                     <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                     : val.type == "late" ? "red" 
                                                                     : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                            createSPL(row.payroll, row.name, row.check_in, row.check_out)
+                                                                        }
+                                                                    }} class='break-words whitespace-normal'>{val.value}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                    </Badge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>                                                        
-                                                        {#if row.payroll != user?.payroll}
-                                                            {#if pecahArray(userProfile.access_attendance, "U")}
+                                                    <TableBodyCell>                    
+                                                        {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
+                                                            {#if (!userProfile.user_hrd && userProfile.level > row.level) 
+                                                                || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
+                                                                || (userProfile.user_hrd && !row.user_hrd)
+                                                            }
                                                                 <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                             {/if}
                                                         {/if}
                                                         {#if row.attachment}
                                                             <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
                                                         {/if}
-                                                        <!-- {#if pecahArray(userProfile.access_attendance, "D") && ["HKM"].includes(row.type)}
-                                                            <MyButton onclick={()=> formAttendanceDelete(row.attendance_id)}><Trash size={12} /></MyButton>
-                                                        {/if} -->
                                                     </TableBodyCell>
                                                 </TableBodyRow>
                                             {/each}
@@ -792,7 +805,10 @@
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
                                 <MyButton className='p-3' onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton className='p-3' onclick={()=>tableListAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
+                                <MyButton className='p-3' onclick={()=> {
+                                    getAttendance(modeAttendance.payroll)
+                                    tableListAttendance.invalidate()
+                                }}><RefreshCw size={16}/></MyButton>
                             </div>
                         </div>
                         
@@ -851,13 +867,11 @@
                                                         </div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if row.payroll != user?.payroll}
-                                                            {#if pecahArray(userProfile.access_attendance, "D")}
-                                                                <MyButton onclick={()=> {
-                                                                    formAttendance.modalDelete = true
-                                                                    formAttendance.answer.attendance_id = row.attendance_id
-                                                                }}><Trash size={12} /></MyButton>
-                                                            {/if}
+                                                        {#if row.payroll != user?.payroll && pecahArray(userProfile.access_attendance, "D")}
+                                                            <MyButton onclick={()=> {
+                                                                formAttendance.modalDelete = true
+                                                                formAttendance.answer.attendance_id = row.attendance_id
+                                                            }}><Trash size={12} /></MyButton>
                                                         {/if}
                                                         {#if row.attachment}
                                                             <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
@@ -1164,7 +1178,7 @@
                         {#if formAttendance.answer.user_id_machine}
                             <div class="flex flex-col gap-2">
                                 <Label>Type</Label>
-                                <Select size="md" disabled={formAttendance.edit && (formAttendance.answer?.type ? true : false)} items={listType} bind:value={formAttendance.answer.type} />
+                                <Select size="md" items={listType} bind:value={formAttendance.answer.type} />
                             </div>
 
                             <div class="flex flex-col md:flex-row gap-2">

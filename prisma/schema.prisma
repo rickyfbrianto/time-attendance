@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
+  provider        = "prisma-client-js"
+  output          = "../node_modules/@prisma-app/client"
+  previewFeatures = ["typedSql"]
 }
 
 datasource db {
@@ -17,8 +18,9 @@ model employee {
   password                                        String          @db.VarChar(250)
   position                                        String          @db.VarChar(100)
   department                                      String?         @db.VarChar(6)
-  location                                        String          @db.VarChar(100)
+  location                                        String          @db.VarChar(50)
   phone                                           String          @db.VarChar(13)
+  overtime                                        Boolean
   workhour                                        Int             @default(8) @db.SmallInt
   start_work                                      DateTime        @default(dbgenerated("('08:00:00')")) @db.Time(0)
   approver                                        String?         @db.VarChar(8)
@@ -222,6 +224,7 @@ model srl_detail {
 
 model cuti {
   cuti_id                          String      @id @db.VarChar(40)
+  cuti_group_id                    String      @default("uuid()") @db.VarChar(40)
   payroll                          String?     @db.VarChar(8)
   type                             String      @db.VarChar(50)
   description                      String      @db.VarChar(255)

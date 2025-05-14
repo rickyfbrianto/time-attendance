@@ -6,11 +6,10 @@
     import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, pecahKataOther } from '@lib/utils';
+	import { formatTanggal, pecahArray, pecahKataOther, getParams } from '@lib/utils';
     import { differenceInDays, format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
-	import { getParams } from '@lib/data/api.js';
     import bgtravel from '@lib/assets/bg-travel.jpg'
     import { jsPDF } from "jspdf";
     import stm from '@lib/assets/stm.png'
@@ -305,8 +304,6 @@
     }
     
     let formSKPD = $state({...formSKPDAnswer})
-
-    let formSKPDTemp: any[] = $state([])
     
     const formSKPDSubmit = async () =>{
         try {
@@ -596,13 +593,13 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Dashboard">
+        <!-- <TabItem open title="Dashboard">
             <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bgtravel}); background-size: cover; background-position:bottom`}>
                 <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Travel Page</span>
             </div>
-        </TabItem>
+        </TabItem> -->
         {#if userProfile.user_hrd || userProfile.level >= 5}
-            <TabItem title="SPPD">
+            <TabItem open title="SPPD">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formSPPD.error}
                         {#each formSPPD.error.split(';') as v}
@@ -776,7 +773,7 @@
                 </div>
             </TabItem>
         {/if}
-        <TabItem title="SKPD">
+        <TabItem open title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
@@ -868,8 +865,8 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
-                            <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort>
-                            <ThSort table={tableSKPD} field="payroll">Payroll</ThSort>
+                            <!-- <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort> -->
+                            <!-- <ThSort table={tableSKPD} field="payroll">Payroll</ThSort> -->
                             <ThSort table={tableSKPD} field="name">Name</ThSort>
                             <ThSort table={tableSKPD} field="location">Location</ThSort>
                             <ThSort table={tableSKPD} field="description">Description</ThSort>
@@ -889,8 +886,8 @@
                                     {#each tableSKPD.rows as row:any}
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
-                                            <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
-                                            <TableBodyCell>{row.payroll}</TableBodyCell>
+                                            <!-- <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                            <TableBodyCell>{row.payroll}</TableBodyCell> -->
                                             <TableBodyCell>{row.name}</TableBodyCell>
                                             <TableBodyCell>{row.location}</TableBodyCell>
                                             <TableBodyCell>{row.description}</TableBodyCell>

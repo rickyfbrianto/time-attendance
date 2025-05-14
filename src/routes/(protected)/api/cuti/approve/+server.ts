@@ -18,6 +18,7 @@ export async function GET({url}){
             WHERE c.approval = ? AND c.status = 'Waiting'
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
             payroll, limit, offset)
+            // GROUP BY c.cuti_group_id
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM cuti as c
             LEFT JOIN employee as e ON c.payroll = e.payroll

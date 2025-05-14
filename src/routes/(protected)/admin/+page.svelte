@@ -1,14 +1,13 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Toast, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
     import MyInput from '@lib/components/MyInput.svelte'
     import MyButton from '@lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check, KeyRound } from '@lucide/svelte'
-    import {formatTanggal,  pecahArray} from '@lib/utils'
+    import {formatTanggal, getParams, pecahArray} from '@lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
-	import { getParams } from '@lib/data/api';
     import bgadmin from '@lib/assets/bg-admin.jpg'
     import { page } from '$app/stores';
 	import { getYear } from 'date-fns';
@@ -16,6 +15,7 @@
     import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
 	import { invalidateAll } from '$app/navigation';
+	import { ProfileSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TUserSchema } from '@lib/type.js';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -25,14 +25,14 @@
     const urlMessage = $page.url.searchParams.get('message')
 
     const rowsPerPage = 10
-    const listLevel = [0,1,2,3,4,5,6,7,8,9].map(v => ({value : v, name : v}))
+    const listLevel = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(v => ({value : v, name : v}))
     
     const ListAccess = [
-    {value:"C", name:"Create"},
-    {value:"R", name:"Read"},
-    {value:"U", name:"Update"},
-    {value:"D", name:"Delete"},
-]
+        {value:"C", name:"Create"},
+        {value:"R", name:"Read"},
+        {value:"U", name:"Update"},
+        {value:"D", name:"Delete"},
+    ]
     
     let openRow: string[] = $state([]) 
     const toggleRow = (i: string) => {
@@ -44,7 +44,7 @@
     }
 
     // Table Profile
-    let tableProfile = $state(new TableHandler([], {rowsPerPage}))
+    let tableProfile = $state(new TableHandler<TProfileSchema>([], {rowsPerPage}))
     let tableProfileSearch = tableProfile.createSearch()
     
     const formProfilAnswer = {
@@ -104,27 +104,8 @@
                     formProfileState.answer[val[0]] = val[1].join("")
                 }
             })
-
-            const valid = z.object({
-                name: z.string().trim().min(1),
-                description: z.string().trim().min(1),
-                level: z.number(),
-                // access_sppd: z.string().trim().min(1),
-                // access_skpd: z.string().trim().min(1),
-                // access_spl: z.string().trim().min(1),
-                // access_srl: z.string().trim().min(1),
-                // access_cuti: z.string().trim().min(1),
-                // access_ijin: z.string().trim().min(1),
-                // access_attendance: z.string().trim().min(1),
-                // access_calendar: z.string().trim().min(1),
-                // access_user: z.string().trim().min(1),
-                // access_profile: z.string().trim().min(1),
-                // access_dept: z.string().trim().min(1),
-                // access_setting: z.string().trim().min(1),
-                // status: z.string().trim().min(1),
-            })
             
-            const isValid = valid.safeParse(formProfileState.answer)
+            const isValid = ProfileSchema.safeParse(formProfileState.answer)
             if(isValid.success){
                 formProfileState.loading = true
                 const req = await axios.post('/api/admin/profile', formProfileState.answer)
@@ -164,7 +145,7 @@
     }
     
     // user
-    let tableUser = $state(new TableHandler([], {rowsPerPage}))
+    let tableUser = $state(new TableHandler<TUserSchema>([], {rowsPerPage}))
     let tableUserSearch = tableUser.createSearch()
     
     const formUserAnswer = {
@@ -179,10 +160,12 @@
             location:"",
             phone:"",
             workhour: 8,
+            overtime: false,
             start_work: "",
             email:"",
             approver: "",
             substitute: "",
+            join_date: "",
             signature: [],
             status:"",
         },
@@ -206,6 +189,7 @@
             formUserState.answer = {...await req.data}
             setTimeout(()=>{
                 formUserState.answer.start_work = formatTanggal(req.data.start_work, "time")
+                formUserState.answer.join_date = formatTanggal(req.data.join_date, "date")
             }, 100)
             formUserState.edit = true
             formUserState.add = false
@@ -218,21 +202,9 @@
     const formUserSubmit = async () =>{
         try {        
             formUserState.loading = true
-            const valid = z.object({                
-                payroll: z.string().trim().length(6),
-                user_id_machine: z.string().trim().length(3),
-                profile_id: z.string().trim().min(1),
-                email: z.string().email(),
-                name: z.string().trim().min(1),
-                position: z.string().trim().min(1),
-                department: z.string().trim().min(1),
-                location: z.string().trim().min(1),
-                phone: z.string().trim().min(1),
-                workhour: z.number(),
-                approver: z.string().trim().min(1),
-                substitute: z.string().trim().min(1),
-                // signature: z.string().trim().min(1),
-                status: z.string().trim().min(1),
+            const valid = UserSchema.omit({
+                password: true,
+                signature: true
             })
             if(formUserState.add){
                 valid.extend({ password: z.string().trim().min(1) })
@@ -303,7 +275,7 @@
     }
 
     // Dept
-    let tableDept = $state(new TableHandler([], {rowsPerPage}))
+    let tableDept = $state(new TableHandler<TDeptSchema>([], {rowsPerPage}))
     let tableDeptSearch = tableDept.createSearch()
     
     const formDeptAnswer = {
@@ -423,7 +395,7 @@
     }
 
     // Calendar
-    let tableCalendar = $state(new TableHandler([], {rowsPerPage}))
+    let tableCalendar = $state(new TableHandler<TCalendarSchema>([], {rowsPerPage}))
     let tableCalendarSearch = tableCalendar.createSearch()
 
     const formCalendarAnswer = {
@@ -823,65 +795,77 @@
                         <MyLoading message="Load data"/>
                     {/if}
                     {#if formUserState.add || formUserState.edit}
-                        <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
-                            <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
+                        <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                            <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
+                            <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-300">
+                                <!-- <hr> -->
+                                <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
 
-                            {#await getProfile() then val}
+                                {#await getProfile() then val}
+                                    <div class="flex flex-col gap-2">
+                                        <Label>Profile ID</Label>
+                                        <Svelecte class='border-none' optionClass='p-2' name='profile_id' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.profile_id} 
+                                            options={val.map((v:any) => ({value: v.profile_id, text:v.name }))}/>
+                                    </div>
+                                {/await}
+                                <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
+
+                                {#if formUserState.add}
+                                    <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
+                                {/if}
+
+                                <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
+                                <MyInput type='text' title='Position' name="position" bind:value={formUserState.answer.position}/>
+
+                                {#await getDept() then val}
+                                    <div class="flex flex-col gap-2">
+                                        <Label>Department</Label>
+                                        <Svelecte class='border-none' optionClass='p-2' name='department' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.department} 
+                                        options={val.map((v:any) => ({value: v.dept_code, text:v.name }))}/>
+                                    </div>
+                                {/await}
+                                
+                                <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
+                                <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
+                                <MyInput type='date' title='Join Date' name="join_date" bind:value={formUserState.answer.join_date}/>
+                            </div>
+
+                            <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
+                            <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-200">
+                                <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
+                                <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
+                                <Checkbox bind:checked={formUserState.answer.overtime as unknown as boolean}>Overtime</Checkbox>
+                                <MyInput type='text' title='Card Number' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
+    
+                                {#await getUser()}
+                                    <MyLoading message="Loading data"/>
+                                {:then val}
+                                    <div class="flex flex-1 flex-col gap-2">
+                                        <Label>Approver</Label>
+                                        <Svelecte class='border-none' optionClass='p-2' name='approver' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.approver} 
+                                        options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                    </div>
+                                    <div class="flex flex-1 flex-col gap-2">
+                                        <Label>Substitute</Label>
+                                        <Svelecte class='border-none' optionClass='p-2' name='substitute' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.substitute} 
+                                        options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                    </div>
+                                {/await}
+    
                                 <div class="flex flex-col gap-2">
-                                    <Label>Profile ID</Label>
-                                    <Svelecte class='border-none' optionClass='p-2' name='profile_id' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.profile_id} 
-                                        options={val.map((v:any) => ({value: v.profile_id, text:v.name }))}/>
+                                    <Label>Signature</Label>
+                                    <input class="border" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
                                 </div>
-                            {/await}
-                            
-                            <MyInput type='text' title='Card Number' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
-                            <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
-                            {#if formUserState.add}
-                            <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
-                            {/if}
-                            <MyInput type='text' title='Position' name="position" bind:value={formUserState.answer.position}/>
-
-                            {#await getDept() then val}
+                                
                                 <div class="flex flex-col gap-2">
-                                    <Label>Department</Label>
-                                    <Svelecte class='border-none' optionClass='p-2' name='department' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.department} 
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.name }))}/>
+                                    <Label for='level'>Status</Label>
+                                    <Select name='level' items={[
+                                        {value:"Aktif", name:"Aktif"},
+                                        {value:"Nonaktif", name:"Nonaktif"},
+                                    ]} bind:value={formUserState.answer.status} />
                                 </div>
-                            {/await}
-                            
-                            <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
-                            <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
-                            <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
-                            <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
-                            <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
-
-                            {#await getUser()}
-                                <MyLoading message="Loading data"/>
-                            {:then val}
-                                <div class="flex flex-1 flex-col gap-2">
-                                    <Label>Approver</Label>
-                                    <Svelecte class='border-none' optionClass='p-2' name='approver' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.approver} 
-                                    options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                </div>
-                                <div class="flex flex-1 flex-col gap-2">
-                                    <Label>Substitute</Label>
-                                    <Svelecte class='border-none' optionClass='p-2' name='substitute' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.substitute} 
-                                    options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                </div>
-                            {/await}
-
-                            <div class="flex flex-col gap-2">
-                                <Label>Signature</Label>
-                                <input class="border" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
                             </div>
                             
-                            <div class="flex flex-col gap-2">
-                                <Label for='level'>Status</Label>
-                                <Select name='level' items={[
-                                    {value:"Aktif", name:"Aktif"},
-                                    {value:"Nonaktif", name:"Nonaktif"},
-                                ]} bind:value={formUserState.answer.status} />
-                            </div>
                         </form>
                     {/if}
 
@@ -1174,8 +1158,7 @@
                         {/if}
                         {#if formCalendar.add || formCalendar.edit}
                             <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
-                                <input type='hidden' name="Calendar ID" disabled={formCalendar.edit} bind:value={formCalendar.answer.calendar_id}/>
-                                <MyInput type='date' title='Date' name="date" bind:value={formCalendar.answer.date} format="yyyy-mm-dd"/>
+                                <MyInput type='date' title='Date' name="date" bind:value={formCalendar.answer.date}/>
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <select bind:value={formCalendar.answer.type}>
@@ -1210,7 +1193,7 @@
                                     <ThSort table={tableCalendar} field="type">Type</ThSort>
                                     <ThSort table={tableCalendar} field="description">Description</ThSort>
                                     <ThSort table={tableCalendar} field="date">Date</ThSort>
-                                    <ThSort table={tableCalendar} field="">#</ThSort>
+                                    <ThSort table={tableCalendar} field="calendar_id">#</ThSort>
                                 </TableHead>
 
                                 {#if tableCalendar.isLoading}

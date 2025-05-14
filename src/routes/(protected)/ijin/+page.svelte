@@ -7,13 +7,12 @@
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, generatePeriode, pecahArray, getLastIjinDate } from '@lib/utils.js';
+	import { formatTanggal, generatePeriode, pecahArray, getParams, getLastIjinDate } from '@lib/utils.js';
     import { differenceInDays, eachDayOfInterval, format, getDay, getYear, isWeekend } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 	import Svelecte from 'svelecte';
-    import { getParams } from '@lib/data/api.js';
 
     const rowsPerPage = 10
     let {data} = $props()

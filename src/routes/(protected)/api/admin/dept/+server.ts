@@ -10,19 +10,20 @@ export async function GET({url}){
         const sort = url.searchParams.get('_sort') ?? "dept_id"
         const order = url.searchParams.get('_order') ?? "asc"
         const search = url.searchParams.get('_search') ?? ""
-
-        let where = "WHERE 1=1 " + (search ? ` AND (dept_code like '%${search}%' OR name like '%${search}%' OR status like '%${search}%')` :"")
         
         const status = await prisma.$transaction(async (tx) => {
-            const items = await tx.$queryRawUnsafe(`
+            const items: Dept = await tx.$queryRawUnsafe(`
                 SELECT * FROM dept 
-                ${where}
+                WHERE (dept_code like ? OR name like ? OR status like ?)
                 ORDER by ${sort} ${order}
-                LIMIT ${limit} OFFSET ${offset}`)
+                LIMIT ${limit} OFFSET ${offset}`,
+            `%${search}%`, `%${search}%`, `%${search}%`)
 
-            const totalItems = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM dept ${where}`)
+            const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM dept 
+                WHERE (dept_code like ? OR name like ? OR status like ?)`,
+            `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
 
-            return {items, totalItems: Number( totalItems[0].count)}
+            return {items, totalItems: Number(count)}
         })
         
         return json(status)

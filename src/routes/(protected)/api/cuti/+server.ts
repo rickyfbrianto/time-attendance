@@ -65,9 +65,12 @@ export async function POST({ request }) {
                     && !dayFree.includes(getDay(v))
                 }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
 
+                const cuti_group_id = uuid4()
+                
                 await tx.cuti.createMany({
                     data: [...temp.map((date) => ({
                         cuti_id: uuid4(),
+                        cuti_group_id,
                         payroll: data.payroll,
                         type: data.type,
                         description: data.description,

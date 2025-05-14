@@ -7,13 +7,12 @@
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, pecahArray, generatePeriode } from '@lib/utils.js';
+	import { formatTanggal, pecahArray, generatePeriode, getParams } from '@lib/utils.js';
 	import { format, getYear, differenceInDays } from 'date-fns';
-    import { CalendarWeekSolid } from 'flowbite-svelte-icons';
+    import { CalendarWeekSolid, FileCloneOutline } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
     import Svelecte from 'svelecte';
-    import { getParams } from '@lib/data/api.js';
     
     const rowsPerPage = 10
     let {data} = $props()
@@ -24,17 +23,17 @@
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList = userProfile.user_hrd ? 
-    [
-        ['Cuti Tahunan', ""],
-        ['Cuti Hamil & Melahirkan', 90], 
-        ['Cuti Keguguran', 7],
-        ['Cuti Haid', 1],
-    ] 
-    :
-    [
-        ['Cuti Tahunan', ""],
-        ['Cuti Hamil & Melahirkan', 90], 
-    ] 
+        [
+            ['Cuti Tahunan', ""],
+            ['Cuti Hamil & Melahirkan', 90], 
+            ['Cuti Keguguran', 7],
+            ['Cuti Haid', 1],
+        ] 
+        :
+            [
+                ['Cuti Tahunan', ""],
+                ['Cuti Hamil & Melahirkan', 90], 
+            ] 
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
         
@@ -57,15 +56,18 @@
     const formCutiAnswer = {
         answer: {
             cuti_id: "id",
-            get payroll() { return user?.payroll},
+            payroll: userProfile.user_hrd || userProfile.level > 1 ? "" : user?.payroll,
+            name: "",
             type: "",
             description: "",
             date:"",
             status: "Waiting",
-            get approval() { return user?.approver || null},
-            get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
-            get user_delegate() { return user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null},
+            approval: "",
+            user_approval: "",
+            user_delegate: "",
         },
+        get dept() { return userProfile.user_hrd ? "" : user?.department},
+        get payroll() { return user?.payroll},
         success:"",
         error:"",
         modalDelete: false,
@@ -239,6 +241,22 @@
         const res = await req.json()
         return res
     }
+
+    const getUser = async (val: string = "") =>{
+        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
+        return await req.json()
+    }
+
+    const fillCuti = async (val: string) => {
+        const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
+        const res = await req.json()
+        console.log(res)
+        formCuti.answer.name = res.name
+        formCuti.answer.approval = res.employee_employee_approverToemployee.payroll
+        formCuti.answer.user_approval = res.employee_employee_approverToemployee.name
+        formCuti.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
+        return await res
+    }
     
     $effect(()=>{
         tableCuti.load(async (state:State) =>{
@@ -377,6 +395,7 @@
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="My Cuti">
+            {JSON.stringify(formCuti.answer)}
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formCuti.error}
                     {#each formCuti.error.split(';') as v}
@@ -414,10 +433,21 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="ijin_id" disabled={formCuti.edit} bind:value={formCuti.answer.cuti_id}/>
 
-                            <MyInput type='text' title='Payroll' disabled value={user.payroll}/>
-                            <MyInput type='text' title='Name' disabled value={user.name}/>
-                            <MyInput type='text' title='Approval' disabled value={user.employee_employee_approverToemployee.name}/>
-                            <MyInput type='text' title='Substitute' disabled value={user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name}/>
+                            {#await getUser(formCuti.dept)}
+                                <MyLoading message="Loading data"/>
+                            {:then val}
+                                <div class="flex flex-col gap-2">
+                                    <Label>Payroll</Label>
+                                    <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formCuti.answer.payroll} 
+                                    options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                    onChange={(e) => fillCuti(e.value)}/>
+                                </div>
+                            {/await}
+                            
+                            <!-- <MyInput type='text' title='Payroll' disabled value={user.payroll}/> -->
+                            <MyInput type='text' title='Name' disabled value={formCuti.answer.name}/>
+                            <MyInput type='text' title='Approval' disabled value={formCuti.answer.user_approval}/>
+                            <MyInput type='text' title='Substitute' disabled value={formCuti.answer.user_delegate}/>
                             
                             <div class="flex flex-col gap-2">
                                 {#if formCuti.add}

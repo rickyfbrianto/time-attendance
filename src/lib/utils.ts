@@ -2,8 +2,9 @@ import { DateTime } from "luxon";
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
 import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set } from "date-fns";
-import { Prisma, PrismaClient } from '@prisma/client';
-// import { Prisma, PrismaClient} from '@lib/prisma/client'
+import { Prisma } from '@prisma-app/client';
+import { PrismaClient } from '@prisma-app/client'
+import type { State } from "@vincjo/datatables/server";
 
 export const prisma = new PrismaClient({
     transactionOptions:{
@@ -211,5 +212,30 @@ export const isLate = (w1: string, w2: string) =>{
 export function getRandomHexColor() {
     const randomColor = Math.floor(Math.random() * 0xffffff);
     return `#${randomColor.toString(16).padStart(6, '0')}`;
-  }
-  
+}
+
+export const getParams = (state: State) => {
+	const { rowsPerPage, sort, filters, search, offset, currentPage } = state;
+
+    let params =""
+
+    if(currentPage){
+        params = `_page=${currentPage}`;
+    }
+	if (rowsPerPage) {
+		params += `&_limit=${rowsPerPage}`;
+	}
+	if (offset) {
+		params += `&_offset=${offset}`;
+	}
+	if (sort) {
+		params += `&_sort=${String(sort.field)}&_order=${sort.direction}`;
+	}
+	if (filters) {
+		params += filters.map(({ filterBy, value }) => `&${filterBy}=${value}`).join();
+	}
+	if (search) {
+		params += `&_search=${search}`;
+	}
+	return params;
+};

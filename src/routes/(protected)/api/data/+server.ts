@@ -13,7 +13,29 @@ export async function GET({url}){
         const end_date = url.searchParams.get('end_date') || ""
 
         if(type == "user"){
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`, `%${val}%`)
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`, 
+                `%${val}%`)
+            return json(req)
+        } else if(type == "user_for_ijin") {
+            const req = await prisma.employee.findFirst({
+                select: {
+                    payroll: true, name: true,
+                    employee_employee_approverToemployee:{
+                        select: {payroll: true, name: true,
+                            employee_employee_substituteToemployee: {
+                                select: {payroll: true, name: true}
+                            }
+                        }
+                    },
+                },
+                where: { payroll: val }
+            })
+            return json(req)
+        }else if(type == "user_for_lembur"){
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, employee.name, user_id_machine, department 
+                FROM employee 
+                LEFT JOIN profile on profile.profile_id = employee.profile_id
+                WHERE department LIKE ? && employee.overtime = true ORDER BY employee.name`, `%${val}%`)
             return json(req)
         }else if(type == "user_by_dept"){
             const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee WHERE department LIKE ? ORDER BY name`, `%${val}%`)

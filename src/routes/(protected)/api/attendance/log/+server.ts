@@ -20,7 +20,7 @@ export async function GET({url}){
             const temp = new Date(Number(year), Number(month), getSetting?.start_periode)
             const date1 = format(subMonths(temp, 1), "yyyy-MM-dd")
             const date2 = format(new Date(Number(year), Number(month), getSetting?.end_periode), "yyyy-MM-dd")
-            
+
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
                 att.description, att.type, att.ijin_info, att.attachment, user.start_work, 
                 GetStartOvertime( att.check_in, att.check_out, user.workhour, user.start_work) AS lembur_start,

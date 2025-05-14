@@ -13,21 +13,20 @@ export async function GET({url}){
     const sort = url.searchParams.get('_sort') ?? "payroll"
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
-        
-    let where = "WHERE 1=1 " + 
-    (search ? ` AND e.payroll like '%${search}%' OR e.name like '%${search}%' OR e.position like '%${search}%'
-        OR d.name like '%${search}%' OR e.location like '%${search}%' OR e.email like '%${search}%'` :"")
-
+    
     const status = await prisma.$transaction(async (tx) =>{
         const items = await tx.$queryRawUnsafe(`
             SELECT e.payroll, e.name, e.position, d.name as dept, e.location, e.email FROM employee e
             LEFT JOIN dept d ON e.department = d.dept_code
-            ${where}
+            WHERE e.payroll like ? OR e.name like ? OR e.position like ? OR d.name like ? OR e.location like ? OR e.email like ? 
             ORDER by ${sort} ${order}
-            LIMIT ${limit} OFFSET ${offset}`)
+            LIMIT ${limit} OFFSET ${offset}`,
+        `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`)
 
         const [{count}] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM employee e
-            LEFT JOIN dept d ON e.department = d.dept_code ${where}`) as {count:number}[]
+            LEFT JOIN dept d ON e.department = d.dept_code 
+            WHERE e.payroll like ? OR e.name like ? OR e.position like ? OR d.name like ? OR e.location like ? OR e.email like ?`,
+        `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
 
         return {items, totalItems: Number(count)}
     })
@@ -50,8 +49,8 @@ export async function POST({ request }) {
             if(!getUser){
                 const createUser = await tx.$executeRawUnsafe(`INSERT INTO employee
                     (payroll,profile_id,user_id_machine,name,password,position,department,
-                    location,phone,workhour,start_work,email,approver, substitute, signature, status)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    location,phone,overtime,workhour,start_work,email,approver, substitute, join_date, signature, status)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     data.get('payroll'), 
                     data.get('profile_id'),
                     data.get('user_id_machine'),
@@ -61,11 +60,13 @@ export async function POST({ request }) {
                     data.get('department'),
                     data.get('location'),
                     data.get('phone'),
+                    data.get('overtime') == 'true' ? 1 : 0,
                     Number(data.get('workhour')),
                     data.get('start_work'),
                     data.get('email'),
                     data.get('approver'),
                     data.get('substitute'),
+                    data.get('join_date'),
                     isSignature ? fileSignature : "",
                     data.get('status')
                 )
@@ -80,7 +81,7 @@ export async function POST({ request }) {
             }else{
                 const updateUser = await tx.$executeRawUnsafe(`
                     UPDATE employee SET profile_id=?,user_id_machine=?,name=?,position=?,department=?,location=?,
-                    phone=?,workhour=?,start_work=?,email=?,approver=?,substitute=?,signature=?,status=? where payroll=?`,
+                    phone=?,overtime=?,workhour=?,start_work=?,email=?,approver=?,substitute=?,join_date=?,signature=?,status=? where payroll=?`,
                     data.get('profile_id'),
                     data.get('user_id_machine'),
                     data.get('name'),
@@ -88,11 +89,13 @@ export async function POST({ request }) {
                     data.get('department'),
                     data.get('location'),
                     data.get('phone'),
+                    data.get('overtime') == 'true' ? 1 : 0,
                     Number(data.get('workhour')),
                     data.get('start_work'),
                     data.get('email'),
                     data.get('approver'),
                     data.get('substitute'),
+                    data.get('join_date'),
                     isSignature ? fileSignature : signature,
                     data.get('status'),
                     data.get('payroll')

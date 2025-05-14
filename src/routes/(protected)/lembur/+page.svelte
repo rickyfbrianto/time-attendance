@@ -7,8 +7,7 @@
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode } from '@lib/utils.js';
-    import { getParams } from '@lib/data/api';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams } from '@lib/utils.js';
 	import { differenceInHours, format, set, getDay, startOfDay, subMonths, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
     import bglembur from '@lib/assets/bg-lembur.jpg'
@@ -623,6 +622,14 @@
             return res
         }
     })
+
+    const getUserForLembur = $derived.by(() => {
+        return async () =>{
+            const req = await fetch(`/api/data?type=user_for_lembur&val=${user.department}`)
+            const res = await req.json()
+            return res
+        }
+    })
     
     const getSPLAll = (id:string) =>{
         const {description, overtime, est_start, est_end} = formSRLDetailAnswer.find((v:any) => v.spl_id == id) as any
@@ -799,8 +806,6 @@
                                                 options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
                                             />
                                         </div>
-                                    {/await}
-                                    {#await getUserByDept() then val}
                                         <div class="flex flex-col gap-2 flex-1">
                                             <Label>Approval 2</Label>
                                             <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval2} 
@@ -814,7 +819,7 @@
                                     {#each formSPL.answer.spl_detail as list, i}
                                         <div class="flex flex-col gap-2">
                                             <div class="flex gap-2 items-end">
-                                                {#await getUserByDept() then val}
+                                                {#await getUserForLembur() then val}
                                                     <div class="flex flex-col gap-2 flex-1">
                                                         <Label>{`Employee ${i+1}`}</Label>
                                                         <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={list.payroll} 
@@ -1166,8 +1171,6 @@
                                                     options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
                                                 />
                                             </div>
-                                        {/await}
-                                        {#await getUserByDept() then val}
                                             <div class="flex flex-col gap-2 flex-1">
                                                 <Label>Approval 2</Label>
                                                 <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.approval2} 
