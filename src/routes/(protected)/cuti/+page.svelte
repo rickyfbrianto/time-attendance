@@ -30,13 +30,21 @@
             ['Cuti Haid', 1],
         ] 
         :
-            [
-                ['Cuti Tahunan', ""],
-                ['Cuti Hamil & Melahirkan', 90], 
-            ] 
+        [
+            ['Cuti Tahunan', ""],
+            ['Cuti Hamil & Melahirkan', 90], 
+        ] 
 
-    let headerData: {title:string, value:string, icon: any }[] = $state([])
+    let openRow: string[] = $state([]) 
+    const toggleRow = (i: string) => {
+        if(openRow.includes(i)){
+            openRow = openRow.filter((item) => item !== i)
+        } else {
+            openRow.push(i)
+        }
+    }
         
+    let headerData: {title:string, value:string, icon: any }[] = $state([])
     let modalHeader = $state({
         modal:false,
         val:""
@@ -123,6 +131,8 @@
                 setTimeout(()=>{
                     formCuti.answer.date = formatTanggal(res.date, "date")
                 }, 100)
+
+                fillCuti(res.payroll)
                 
                 formCuti.edit = true
                 formCuti.add = false
@@ -395,7 +405,6 @@
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="My Cuti">
-            {JSON.stringify(formCuti.answer)}
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formCuti.error}
                     {#each formCuti.error.split(';') as v}
@@ -418,7 +427,10 @@
                             {/if}
                         {:else}
                             {#if pecahArray(userProfile?.access_cuti, "C")}
-                                <MyButton onclick={()=> formCuti.add = true}><Plus size={16}/></MyButton>
+                                <MyButton onclick={()=> {
+                                    fillCuti(formCuti.answer.payroll)
+                                    formCuti.add = true
+                                }}><Plus size={16}/></MyButton>
                             {/if}
                         {/if}
                     </div>
@@ -433,18 +445,21 @@
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="ijin_id" disabled={formCuti.edit} bind:value={formCuti.answer.cuti_id}/>
 
-                            {#await getUser(formCuti.dept)}
-                                <MyLoading message="Loading data"/>
-                            {:then val}
-                                <div class="flex flex-col gap-2">
-                                    <Label>Payroll</Label>
-                                    <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formCuti.answer.payroll} 
-                                    options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
-                                    onChange={(e) => fillCuti(e.value)}/>
-                                </div>
-                            {/await}
+                            {#if formCuti.add}
+                                {#await getUser(formCuti.dept)}
+                                    <MyLoading message="Loading data"/>
+                                {:then val}
+                                    <div class="flex flex-col justify-start gap-2">
+                                        <Label>Payroll</Label>
+                                        <Svelecte class='border-none' disabled={userProfile.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formCuti.answer.payroll} 
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                        onChange={(e) => fillCuti(e.value)}/>
+                                    </div>
+                                {/await}
+                            {:else if formCuti.edit}
+                                <MyInput type='text' title='Payroll' disabled value={formCuti.answer.payroll}/>
+                            {/if}
                             
-                            <!-- <MyInput type='text' title='Payroll' disabled value={user.payroll}/> -->
                             <MyInput type='text' title='Name' disabled value={formCuti.answer.name}/>
                             <MyInput type='text' title='Approval' disabled value={formCuti.answer.user_approval}/>
                             <MyInput type='text' title='Substitute' disabled value={formCuti.answer.user_delegate}/>
@@ -453,7 +468,7 @@
                                 {#if formCuti.add}
                                     <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
                                 {:else if formCuti.edit}
-                                    <MyInput type='date' title='Date' name="date" bind:value={formCuti.answer.date}/>
+                                    <MyInput type='date' title='Date' disabled={formCuti.answer.type != "Cuti Tahunan"} name="date" bind:value={formCuti.answer.date}/>
                                 {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>

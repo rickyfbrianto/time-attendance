@@ -1,6 +1,6 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-        import { Select, Label } from 'flowbite-svelte';
+    import { Select, Label, Badge } from 'flowbite-svelte';
     import { formatTanggal, generatePeriode, namaHari, isLate, getRandomHexColor } from '@lib/utils.js';
     import DonutChart from '@lib/components/DonutChart.svelte'
 	import MyCalendar from '@/MyCalendar.svelte';
@@ -25,12 +25,13 @@
     const modeView = {
         get dept() { return userProfile.user_hrd ? "" : user?.department},
         get payroll() { return user?.payroll},
+        get name() {return user?.name}
     }
 
     let modeDashboard = $state({
         dept: modeView.dept,
         payroll: modeView.payroll,
-        name: "",
+        name: modeView.name,
     })
     
     // Fetch
@@ -43,9 +44,7 @@
         const req = await fetch(`/api/data?type=get_report_dashboard1&payroll=${modeDashboard.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
         const res = await req.json()
 
-        const data = Object.entries(res).map(([key, value], index) => {
-            return {series:value, colors: getRandomHexColor(), labels: key }
-        })
+        const data = Object.entries(res).map(([key, value], index) => ({series:value, colors: getRandomHexColor(), labels: key }))
         return data
     }
 </script>
@@ -56,20 +55,26 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-6 h-full">
     <div class="flex gap-4 rounded-lg">
-        <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4">
+        <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4 gap-2">
             {#if userProfile.user_hrd || userProfile.level > 1}
                 {#await getUser(modeDashboard.dept)}
                     <MyLoading message="Loading data"/>
                 {:then val}
                     <div class="flex flex-col">
-                        <Label>User</Label>
                         <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeDashboard.payroll} 
-                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
-                        onChange={() => {}}/>
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name, nama: v.name}))}
+                            onChange={(e: any) => {
+                                modeDashboard.name = e.nama
+                            }}/>
                     </div>
-        
                 {/await}
             {/if}
+            <div>
+                <Badge class='py-2'>{modeDashboard.name}</Badge>
+                <Badge color='dark' class='py-2'>{periode.start}</Badge>
+                <Badge color='dark' class='py-2'>{periode.end}</Badge>
+            </div>
+            <span></span>
             {#await getReport() }
                 <MyLoading message="Loading chart"/>
             {:then dataReport}

@@ -398,9 +398,6 @@
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Ijin">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                {#if formIjin.loading}
-                    <MyLoading message="Get ijin data"/>
-                {/if}
                 {#if formIjin.modalDelete}
                     <MyLoading message="Deleting data"/>
                 {/if}
@@ -446,7 +443,7 @@
                                 {#if formIjin.add}
                                     <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
                                 {:else if formIjin.edit}
-                                    <MyInput type='date' title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                    <MyInput type='date' disabled={formIjin.edit} title='Date' name="date" bind:value={formIjin.answer.date}/>
                                 {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>

@@ -41,6 +41,7 @@ export async function GET({url}){
                 SELECT att.attendance_id FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
+                    LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                     WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
                     AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ?
                     ) as tmp`,

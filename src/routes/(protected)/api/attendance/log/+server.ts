@@ -22,12 +22,13 @@ export async function GET({url}){
             const date2 = format(new Date(Number(year), Number(month), getSetting?.end_periode), "yyyy-MM-dd")
 
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
-                att.description, att.type, att.ijin_info, att.attachment, user.start_work, 
+                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd,
                 GetStartOvertime( att.check_in, att.check_out, user.workhour, user.start_work) AS lembur_start,
                 RoundCheckOut( att.check_in, att.check_out) as lembur_end
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
+                    LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                     WHERE user.payroll like ? AND (att.check_in like ?) AND DATE(check_in) BETWEEN ? AND ?
                     ORDER by ${sort} ${order}
                     LIMIT ${limit} OFFSET ${offset}`,
@@ -37,6 +38,7 @@ export async function GET({url}){
                 SELECT att.attendance_id FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
+                    LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                     WHERE user.payroll like ? AND (att.check_in like ?) AND DATE(check_in) BETWEEN ? AND ?
                     ) as tmp`,
                 `%${payroll}%`, `%${search}%`, date1, date2) as {count:number}[]

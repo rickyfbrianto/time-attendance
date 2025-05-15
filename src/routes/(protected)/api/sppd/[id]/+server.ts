@@ -21,6 +21,7 @@ export async function GET({params}){
                     employee:{
                         select:{
                             name:true,
+                            position: true,
                             dept:{
                                 select:{
                                     name:true

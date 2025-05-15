@@ -34,15 +34,6 @@
         {value:"D", name:"Delete"},
     ]
     
-    let openRow: string[] = $state([]) 
-    const toggleRow = (i: string) => {
-        if(openRow.includes(i)){
-            openRow = openRow.filter((item) => item !== i)
-        } else {
-            openRow.push(i)
-        }
-    }
-
     // Table Profile
     let tableProfile = $state(new TableHandler<TProfileSchema>([], {rowsPerPage}))
     let tableProfileSearch = tableProfile.createSearch()
@@ -204,7 +195,6 @@
             formUserState.loading = true
             const valid = UserSchema.omit({
                 password: true,
-                signature: true
             })
             if(formUserState.add){
                 valid.extend({ password: z.string().trim().min(1) })
@@ -749,7 +739,7 @@
                                     <MyButton onclick={()=> tableProfile.setPage(1)}><ChevronFirst size={16} /></MyButton>
                                     <MyButton onclick={()=> tableProfile.setPage('previous')}><ChevronLeft size={16} /></MyButton>
                                     {#each tableProfile.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableProfile.setPage(page)} type="button">{page}</MyButton>
+                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableProfile.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableProfile.setPage(page)} type="button">{page}</MyButton>
                                     {/each}
                                     <MyButton onclick={()=> tableProfile.setPage('next')}><ChevronRight size={16} /></MyButton>
                                     <MyButton onclick={()=> tableProfile.setPage('last')}><ChevronLast size={16} /></MyButton>
@@ -944,7 +934,7 @@
                                     <MyButton onclick={()=> tableUser.setPage(1)}><ChevronFirst size={16} /></MyButton>
                                     <MyButton onclick={()=> tableUser.setPage('previous')}><ChevronLeft size={16} /></MyButton>
                                     {#each tableUser.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableUser.setPage(page)} type="button">{page}</MyButton>
+                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableUser.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableUser.setPage(page)} type="button">{page}</MyButton>
                                     {/each}
                                     <MyButton onclick={()=> tableUser.setPage('next')}><ChevronRight size={16} /></MyButton>
                                     <MyButton onclick={()=> tableUser.setPage('last')}><ChevronLast size={16} /></MyButton>

@@ -17,9 +17,10 @@ export async function GET({url}){
         const status = await prisma.$transaction(async (tx) =>{
             const items = await tx.$queryRawUnsafe(`SELECT 
                 att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
-                att.description, att.type, att.ijin_info, att.attachment, user.start_work 
+                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd 
                 FROM attendance as att
                 LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
+                LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                 WHERE (user.department like ? AND user.payroll like ?) AND 
                 (att.user_id_machine, DATE(att.check_in)) IN (
                     SELECT user_id_machine, DATE(check_in) FROM attendance 
@@ -29,8 +30,11 @@ export async function GET({url}){
             `%${dept}%`, `%${payroll}%`)
             
             const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
-                SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out FROM attendance as att
+                SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out,
+                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd 
+                FROM attendance as att
                 LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
+                LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                 WHERE (user.department like ? AND user.payroll like ?) AND 
                 (att.user_id_machine, DATE(att.check_in)) IN (
                     SELECT user_id_machine, DATE(check_in) FROM attendance

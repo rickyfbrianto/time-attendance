@@ -10,7 +10,6 @@
     import { differenceInDays, format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
-    import bgtravel from '@lib/assets/bg-travel.jpg'
     import { jsPDF } from "jspdf";
     import stm from '@lib/assets/stm.png'
     import "@lib/assets/font/Comic-normal.js"
@@ -18,7 +17,6 @@
 	import { fromZodError } from 'zod-validation-error';
 
     let {data} = $props()
-    
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     
@@ -206,7 +204,7 @@
             rowInc += row3
             doc.setFont('times', 'normal')
             doc.text("Jabatan", colData[0], rowData + rowInc)
-            doc.text(`: -`, colData[1], rowData + rowInc)
+            doc.text(`: ${val.employee.position}`, colData[1], rowData + rowInc)
             rowInc += row1
             doc.setFont('times', 'italic')
             doc.text("Payroll No.", colData[0], rowData + rowInc)
@@ -432,6 +430,7 @@
         rowInc += row2
         doc.text("- Jabatan", colData[0], rowData + rowInc)
         doc.text(":", colData[1], rowData + rowInc)
+        doc.text(res.position, colData[2], rowData + rowInc)
         doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
         rowInc += row2
         doc.text("- Divisi/Bagian", colData[0], rowData + rowInc)
@@ -460,7 +459,7 @@
         rowInc += row2
         doc.text("- Lamanya", colData[0], rowData + rowInc)
         doc.text(":", colData[1], rowData + rowInc)
-        doc.text(`${differenceInDays(formatTanggal(res.real_end), formatTanggal(res.real_start))}`, colData[2], rowData + rowInc)
+        doc.text(`${differenceInDays(formatTanggal(res.real_end), formatTanggal(res.real_start)) + 1}`, colData[2], rowData + rowInc)
         doc.text(`hari kerja.`, colData[2] + 40, rowData + rowInc)
         doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 45, rowData + rowInc + 2)
         rowInc += row2 + 2
@@ -575,7 +574,7 @@
     })
 
     $effect(()=>{
-        const diff = differenceInDays(formSPPD.answer.date[1], formSPPD.answer.date[0])
+        const diff = differenceInDays(formSPPD.answer.date[1], formSPPD.answer.date[0]) + 1
         formSPPD.answer.duration = isNaN(diff) ? 0 : diff
     })
     
@@ -593,11 +592,6 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <!-- <TabItem open title="Dashboard">
-            <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bgtravel}); background-size: cover; background-position:bottom`}>
-                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Travel Page</span>
-            </div>
-        </TabItem> -->
         {#if userProfile.user_hrd || userProfile.level >= 5}
             <TabItem open title="SPPD">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
@@ -865,8 +859,6 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
-                            <!-- <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort> -->
-                            <!-- <ThSort table={tableSKPD} field="payroll">Payroll</ThSort> -->
                             <ThSort table={tableSKPD} field="name">Name</ThSort>
                             <ThSort table={tableSKPD} field="location">Location</ThSort>
                             <ThSort table={tableSKPD} field="description">Description</ThSort>
@@ -897,7 +889,7 @@
                                             <TableBodyCell>
                                                 {#if !formSKPD.edit}
                                                     {#if pecahArray(userProfile.access_skpd, "U")}
-                                                    <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>
+                                                        <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_skpd, "D")}
                                                         <MyButton onclick={()=> {

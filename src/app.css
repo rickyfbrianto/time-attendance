@@ -18,6 +18,7 @@
   --color-primary-800: #cc4522;
   --color-primary-900: #a5371b;
 
+  --color-bgactive: #E7ECEF;
   --color-bgdark: #FFF;
   --color-bgdark2: #F2F7F2;
   --color-textdark: var(--color-slate-800);
@@ -31,6 +32,9 @@
   .dark {
     /* --color-bgdark: var(--color-slate-800); */
     /* --color-bgdark: #353531; */
+
+    /* --color-bgactive: #474A48; */
+    --color-bgactive: #656565;
     --color-bgdark: #1F2421;
     --color-bgdark2: #353531;
     --color-textdark: #FFF;

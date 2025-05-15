@@ -170,22 +170,9 @@ export async function GET({url}){
             return json(req)
         }else if(type=='get_report_dashboard1'){
             const req = await prisma.$transaction(async tx => {
-                // const [cuti] = await tx.$queryRawUnsafe(`
-                //     SELECT
-                //     (SELECT getHakCuti(join_date, now()) as cuti FROM employee WHERE payroll = ?) as 'Total Cuti',
-                //     (SELECT CAST(COUNT(*) as CHAR) as count from cuti WHERE payroll = ? AND year(date) = ? and STATUS ='Approved') as Cuti`, 
-                //     payroll, val, year) as {'Total Cuti': number, Cuti: number, 'Sisa Cuti': number}[]
-
-                // const [ijin] = await tx.$queryRawUnsafe(`
-                //     select 
-                //         sum(case when status = 'Approved' then 1 else 0 end) AS 'Ijin'
-                //         FROM ijin WHERE payroll = ? AND year(date) = ? AND month(date) <= ?`,
-                //         val, year, month
-                // ) as {'Ijin':string}[]
-
                 const [attendance] = await tx.$queryRawUnsafe(`
                     SELECT 
-                        SUM(CASE WHEN type IN ('HKC', 'HKM') then 1 else 0 end) AS 'Hari Kerja',
+                        SUM(CASE WHEN type IN ('HKC', 'HKM') then 1 else 0 end) AS 'Kehadiran',
                         SUM(CASE WHEN type = 'Sakit' then 1 else 0 end) AS 'Sakit',
                         SUM(CASE WHEN type = 'Ijin Resmi' then 1 else 0 end) AS 'Ijin',
                         SUM(CASE WHEN type = 'Dinas' then 1 else 0 end) AS 'Dinas',
@@ -193,7 +180,7 @@ export async function GET({url}){
                     FROM attendance att 
                     LEFT JOIN employee as user ON user.user_id_machine = att.user_id_machine 
                     WHERE user.payroll = ? AND DATE(check_in) BETWEEN ? AND ?`,
-                payroll, start_date, end_date) as {Sakit: number, Cuti: number, Ijin:number}[]
+                payroll, start_date, end_date) as {}[]
                 
                 const newData = Object.fromEntries(
                     Object.entries({...attendance})

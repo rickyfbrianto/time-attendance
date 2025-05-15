@@ -6,7 +6,7 @@
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate } from '@lib/utils';
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate, formatDifference, hitungDifference } from '@lib/utils';
     import { differenceInMinutes, differenceInHours, differenceInDays, format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
@@ -562,8 +562,7 @@
                                                     {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
                                                         <Badge rounded color={"green"}>
                                                             {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
-                                                            {differenceInHours(row.check_out, row.lembur_start) > 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
-                                                            {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
+                                                            {formatDifference(hitungDifference(row.check_out, row.lembur_start))}
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
@@ -573,7 +572,7 @@
                                                         {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                             differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
-                                                                ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                 : null,
                                                             row.ijin_info
                                                                 ? {type:"ijin_info", value: row.ijin_info}
@@ -585,9 +584,9 @@
                                                                 : val.type == "lembur" ? "green" 
                                                                 : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
                                                                     if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
-                                                                        createSPL(row.payroll, row.name, row.check_in, row.check_out)
+                                                                        createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
                                                                     }
-                                                                }} class='break-words whitespace-normal'>{val.value}
+                                                                }} class='flex gap-2 break-words whitespace-normal'>{val.value}
                                                                     {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
                                                                 </Badge>
                                                             {/if}
@@ -711,8 +710,7 @@
                                                         {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
                                                             <Badge rounded color={"green"}>
                                                                 {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
-                                                                {differenceInHours(row.check_out, row.lembur_start) > 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
-                                                                {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
+                                                                {formatDifference(hitungDifference(row.check_out, row.lembur_start))}
                                                             </Badge>
                                                         {/if}
                                                     </TableBodyCell>
@@ -722,7 +720,7 @@
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
                                                                 differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
-                                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                     : null,
                                                                 row.ijin_info
                                                                     ? {type:"ijin_info", value: row.ijin_info}
@@ -734,9 +732,9 @@
                                                                     : val.type == "lembur" ? "green" 
                                                                     : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
                                                                         if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
-                                                                            createSPL(row.payroll, row.name, row.check_in, row.check_out)
+                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
                                                                         }
-                                                                    }} class='break-words whitespace-normal'>{val.value}
+                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
                                                                         {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
                                                                     </Badge>
                                                                 {/if}
@@ -848,10 +846,10 @@
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                            {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                            {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                                differenceInHours(row.check_out, row.lembur_start) > 0 
-                                                                    ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                                differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
+                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                     : null,
                                                                 row.ijin_info
                                                                     ? {type:"ijin_info", value: row.ijin_info}
@@ -861,7 +859,13 @@
                                                                     <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                     : val.type == "late" ? "red" 
                                                                     : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                        }
+                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                    </Badge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
@@ -977,21 +981,20 @@
                                                 <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
+                                                    {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
                                                         <Badge rounded color={"green"}>
-                                                            {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
-                                                            {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
-                                                            {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
+                                                            {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
+                                                            {formatDifference(hitungDifference(row.check_out, row.lembur_start))}
                                                         </Badge>
                                                     {/if}
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                        {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                        {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            differenceInHours(row.check_out, row.lembur_start) > 0 
-                                                                ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
+                                                            differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                 : null,
                                                             row.ijin_info
                                                                 ? {type:"ijin_info", value: row.ijin_info}
@@ -1001,7 +1004,13 @@
                                                                 <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                 : val.type == "late" ? "red" 
                                                                 : val.type == "lembur" ? "green" 
-                                                                : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                    if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                        createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                    }
+                                                                }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                </Badge>
                                                             {/if}
                                                         {/each}
                                                     </div>

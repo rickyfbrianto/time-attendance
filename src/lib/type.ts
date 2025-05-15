@@ -18,7 +18,7 @@ export const ProfileSchema = z.object({
     access_profile: z.string().max(4, "Max 4 Character"),
     access_dept: z.string().max(4, "Max 4 Character"),
     access_setting: z.string().max(4, "Max 4 Character"),
-    status: z.string()
+    status: z.string().min(1)
 })
 
 export type TProfileSchema = z.infer<typeof ProfileSchema>

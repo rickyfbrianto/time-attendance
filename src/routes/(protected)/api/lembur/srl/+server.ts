@@ -15,7 +15,7 @@ export async function GET({url}){
     
     const status = await prisma.$transaction(async (tx) => {        
         const items = await tx.$queryRawUnsafe(`
-            SELECT srl_id, spl_id, srl.payroll, real_start, real_end, e.name,
+            SELECT srl_id, srl.payroll, real_start, real_end, e.name,
             approval1.name as approval1, status1, approval2.name as approval2, status2 FROM srl
             LEFT JOIN employee as e ON e.payroll = srl.payroll
             LEFT JOIN employee as approval1 ON approval1.payroll = srl.approval1

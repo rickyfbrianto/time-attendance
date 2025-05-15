@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
-import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set } from "date-fns";
+import { addDays, addMonths, format, isBefore, isAfter, setDate, startOfDay, subMonths, set, differenceInMinutes } from "date-fns";
 import { Prisma } from '@prisma-app/client';
 import { PrismaClient } from '@prisma-app/client'
 import type { State } from "@vincjo/datatables/server";
@@ -239,3 +239,17 @@ export const getParams = (state: State) => {
 	}
 	return params;
 };
+
+export const hitungDifference = (val1: string | Date, val2: string | Date) =>{
+    const start = new Date(val1)
+    const end = new Date(val2)
+    const totalMinutes = differenceInMinutes(start, end)
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return {hours, minutes}
+}
+
+export const formatDifference = ({hours, minutes}: {hours: number, minutes: number}) => {
+    return `${hours > 0 ? hours + " Hour" : ""} ${minutes > 0 ? minutes + " Minute" : ""}`
+}

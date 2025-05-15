@@ -7,10 +7,9 @@
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams } from '@lib/utils.js';
-	import { differenceInHours, format, set, getDay, startOfDay, subMonths, differenceInMinutes } from 'date-fns';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams, formatDifference, hitungDifference } from '@lib/utils.js';
+	import { differenceInHours, format, set, getDay, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
-    import bglembur from '@lib/assets/bg-lembur.jpg'
     import stm from '@lib/assets/stm.png'
     import { jsPDF } from "jspdf";
 	import { z } from 'zod';
@@ -235,12 +234,11 @@
         rowInc += row3
         doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
         doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval2Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
-        // doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
         
         rowInc += signatureSize
         doc.text(res.employee_spl_approval1Toemployee.name, colData[0], rowData + rowInc)
         doc.text(res.employee_spl_approval2Toemployee.name, colData[1], rowData + rowInc)
-        // doc.text(res.employee.name, colData[0], rowData + rowInc)
+        doc.text("HR", colData[3], rowData + rowInc)
 
         const blob = doc.output('blob')
         const url = URL.createObjectURL(blob);
@@ -753,11 +751,6 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <!-- <TabItem open title="Dashboard">
-            <div class="relative flex items-center justify-center min-h-[70vh] rounded-lg" style={`background-image: url(${bglembur}); background-size: cover; background-position:top`}>
-                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Overtime Page</span>
-            </div>
-        </TabItem> -->
         <TabItem open title="Surat Perintah Lembur">
             <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
                 <TabItem open title="List">
@@ -1222,11 +1215,10 @@
                             <Table>
                                 <TableHead class="bg-slate-500" >
                                     <ThSort table={tableSRL} field="srl_id">SRL ID</ThSort>
-                                    <ThSort table={tableSRL} field="spl_id">SPL ID</ThSort>
-                                    <ThSort table={tableSRL} field="name">Name</ThSort>
-                                    <ThSort table={tableSRL} field="real_start">Start</ThSort>
-                                    <ThSort table={tableSRL} field="real_start">End</ThSort>
-                                    <ThSort table={tableSRL} field="real_end">Duration</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Date</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Clock In</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Clock Out</ThSort>
+                                    <ThSort table={tableSRL} field="real_end">Total Hours</ThSort>
                                     <ThSort table={tableSRL} field="approval1">Approval 1</ThSort>
                                     <ThSort table={tableSRL} field="approval2">Approval 2</ThSort>
                                     <ThSort table={tableSRL} field="">#</ThSort>
@@ -1242,13 +1234,18 @@
                                             {#each tableSRL.rows as row}
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell>{row.srl_id.replace(/\_/g, '/')}</TableBodyCell>
-                                                    <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.real_start)}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.real_end)}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        {differenceInHours(row.real_end,row.real_start)}  Hour
-                                                        {format(row.real_end, "mm") != "00" ? format(row.real_end, "m") + " Minute" :""}
+                                                        <div class={format(formatTanggal(row.real_start), "EEE") == "Sun" ? "text-red-500":""}>
+                                                            {namaHari[Number(format(formatTanggal(row.real_start), "c")) - 1]},  
+                                                            {format(formatTanggal(row.real_start), "d MMMM yyyy")}
+                                                        </div>
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.real_start, "time")}</TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.real_end, "time")}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <Badge rounded color={"green"}>
+                                                            {formatDifference(hitungDifference(row.real_end, row.real_start))}
+                                                        </Badge>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class="flex flex-col items-start gap-2">
