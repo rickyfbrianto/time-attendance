@@ -30,17 +30,12 @@
 
 @layer theme {
   .dark {
-    /* --color-bgdark: var(--color-slate-800); */
-    /* --color-bgdark: #353531; */
-
-    /* --color-bgactive: #474A48; */
     --color-bgactive: #656565;
     --color-bgdark: #1F2421;
     --color-bgdark2: #353531;
     --color-textdark: #FFF;
     --color-textdark2: #F0E7D8;
     --color-bgside: #191919;
-    /* --color-bgside2: #272727; */
     --color-bgside2: #353531;
     --color-textside: var(--color-slate-300);
   }

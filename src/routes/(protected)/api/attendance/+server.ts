@@ -23,9 +23,10 @@ export async function GET({url}){
         const end_date = url.searchParams.get('end_date') || ""
         
         const status = await prisma.$transaction(async (tx) =>{
-            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out, 
+            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, 
+                att.check_in AS check_in, att.check_out AS check_out, att.check_in2, att.check_out2, 
                 att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd,
-                GetStartOvertime( att.check_in, att.check_out, user.workhour, user.start_work) AS lembur_start,
+                GetStartOvertime(att.attendance_id, user.workhour, user.start_work) AS lembur_start,
                 RoundCheckOut( att.check_in, att.check_out) as lembur_end
                 FROM
                     attendance AS att

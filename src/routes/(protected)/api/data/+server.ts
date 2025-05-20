@@ -59,7 +59,7 @@ export async function GET({url}){
             const req = await prisma.$queryRawUnsafe(`
                 SELECT s.spl_id, s.purpose, sd.description,
                     DATE(s.est_start) AS srl_date,
-                    GetStartOvertime( a.check_in, a.check_out, e.workhour, e.start_work) AS est_start,
+                    GetStartOvertime(a.attendance_id, e.workhour, e.start_work) AS est_start,
                     RoundCheckOut(a.check_in, a.check_out) AS est_end
                 FROM
                     spl s, spl_detail sd, employee e, attendance a

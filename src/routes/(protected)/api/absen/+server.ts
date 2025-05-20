@@ -21,7 +21,7 @@ export async function GET({url}){
         const status = await prisma.$transaction(async (tx) =>{
             const items = await tx.$queryRawUnsafe(`SELECT user.payroll, user.name, 
                 att.check_in, att.check_out, att.description, user.start_work,
-                GetStartOvertime( att.check_in, att.check_out, user.workhour, user.start_work) AS lembur_start,
+                GetStartOvertime(att.attendance_id, user.workhour, user.start_work) AS lembur_start,
                 RoundCheckOut( att.check_in, att.check_out) as lembur_end
                 FROM
                     attendance AS att

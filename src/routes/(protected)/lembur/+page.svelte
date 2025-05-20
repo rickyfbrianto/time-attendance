@@ -874,9 +874,9 @@
                                     <TableBody tableBodyClass="divide-y">
                                         {#if tableSPL.rows.length > 0}
                                             {#each tableSPL.rows as row}
-                                                <TableBodyRow class='h-10'>
+                                                <TableBodyRow class='h-10 break-all'>
                                                     <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
-                                                    <TableBodyCell>{row.purpose}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
                                                     <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
                                                     <TableBodyCell>

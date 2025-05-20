@@ -11,7 +11,7 @@ datasource db {
 
 model employee {
   payroll                                         String          @id @db.VarChar(8)
-  user_id_machine                                 String          @unique(map: "user_id_mesin") @db.VarChar(6)
+  user_id_machine                                 String          @unique(map: "user_id_mesin") @db.VarChar(10)
   profile_id                                      String?         @db.VarChar(50)
   email                                           String          @unique(map: "Employee_Email_key") @db.VarChar(100)
   name                                            String          @db.VarChar(250)
@@ -132,9 +132,10 @@ model calendar {
 }
 
 model setting {
-  setting_id    String @id @db.VarChar(40)
-  start_periode Int    @default(17) @db.TinyInt
-  end_periode   Int    @default(16) @db.TinyInt
+  setting_id     String @id @db.VarChar(40)
+  start_periode  Int    @default(17) @db.TinyInt
+  end_periode    Int    @default(16) @db.TinyInt
+  overtime_allow Int    @default(30)
 }
 
 model spl {

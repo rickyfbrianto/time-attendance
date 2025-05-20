@@ -3,14 +3,14 @@
     import TimeGrid from '@event-calendar/time-grid';
     import listPlugin from '@event-calendar/list';
     import dayGridPlugin from '@event-calendar/day-grid';
-    import interactionPlugin from '@event-calendar/interaction'
+    // import interactionPlugin from '@event-calendar/interaction'
 	import { getYear } from 'date-fns';
 	import MyLoading from '@/MyLoading.svelte';
     import {getColorCalendar} from "@lib/utils";
     
     let {payroll} = $props()
     
-    let plugins = [TimeGrid, dayGridPlugin, listPlugin, interactionPlugin];
+    let plugins = [TimeGrid, dayGridPlugin, listPlugin];
     let opsiCalendar = $state({
         timeZone: 'UTC',
         view: 'dayGridMonth',

@@ -12,7 +12,8 @@ tr{
 }
 
 td{
-    color: var(--text-textdark);
+    color: var(--color-textdark);
+    word-break: break-all;
 }
 
 :global(.sv-control){
@@ -41,6 +42,20 @@ td{
 
 .sv-item--wrap:hover{
     background-color: var(--color-bgdark2) !important;
+}
+
+.svelecte .sv-input {
+  padding: 8px;
+  font-size: 16px;
+  border: 2px solid #3498db;
+  border-radius: 6px;
+  background-color: #f0f8ff;
+  color: #333;
+}
+
+.sv-input {
+    border: none !important;
+    outline: none !important;
 }
 
 .in-dropdown.is-selected {

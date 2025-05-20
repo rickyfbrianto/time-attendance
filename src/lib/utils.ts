@@ -253,3 +253,7 @@ export const hitungDifference = (val1: string | Date, val2: string | Date) =>{
 export const formatDifference = ({hours, minutes}: {hours: number, minutes: number}) => {
     return `${hours > 0 ? hours + " Hour" : ""} ${minutes > 0 ? minutes + " Minute" : ""}`
 }
+
+export const formatDifference2 = (hours: number, minutes: number) => {
+    return `${hours > 0 ? hours + " Hour" : ""} ${minutes > 0 ? minutes + " Minute" : ""}`
+}

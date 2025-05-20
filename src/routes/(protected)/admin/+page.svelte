@@ -15,7 +15,7 @@
     import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
 	import { invalidateAll } from '$app/navigation';
-	import { ProfileSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TUserSchema } from '@lib/type.js';
+	import { ProfileSchema, SettingSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TSettingSchema, type TUserSchema } from '@lib/type.js';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -157,7 +157,7 @@
             approver: "",
             substitute: "",
             join_date: "",
-            signature: [],
+            signature: "",
             status:"",
         },
         success:"",
@@ -338,6 +338,7 @@
             setting_id:"id",
             start_periode: 1,
             end_periode: 1,
+            overtime_allow: 30
         },
         success:"",
         error:"",
@@ -348,24 +349,19 @@
 
     const getSetting = async () =>{
         const req = await fetch('/api/admin/setting')
-        const res = await req.json()
+        const res: TSettingSchema = await req.json()
         if(res){
             formSettingState.answer.start_periode = res.start_periode
             formSettingState.answer.end_periode = res.end_periode
-            return res
+            formSettingState.answer.overtime_allow = res.overtime_allow
         }
     }
 
     const formSettingSubmit = async () =>{
         try {
             formSettingState.loading = true
-
-            const valid = z.object({               
-                start_periode: z.number().min(1).max(31),
-                end_periode: z.number().min(1).max(31),
-            })
             
-            const isValid = valid.safeParse(formSettingState.answer)
+            const isValid = SettingSchema.safeParse(formSettingState.answer)
             if(isValid.success){
                 const req = await axios.post('/api/admin/setting', formSettingState.answer)
                 const res = await req.data
@@ -562,8 +558,8 @@
 
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
-            <div class="relative flex items-center justify-center min-h-[70vh]" style={`background-image: url(${bgadmin}); background-size: cover; background-position:bottom`}>
-                <span class='text-white bg-slate-600/[.7] p-3 rounded-lg'>Hallo admin</span>
+            <div class="relative flex items-center justify-center min-h-[80vh]" style={`background-image: url(${bgadmin}); background-size: cover; background-position:bottom`}>
+                <span class='text-white bg-slate-600 p-3 rounded-lg'>Hallo admin</span>
             </div>
         </TabItem>
         {#if pecahArray(userProfile?.access_profile, "R")}
@@ -702,8 +698,8 @@
                                     {#if tableProfile.rows.length > 0}
                                         {#each tableProfile.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell class='bg-bgdark text-textdark'>{row.name}</TableBodyCell>
-                                                <TableBodyCell>{row.description}</TableBodyCell>
+                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.user_hrd ? "Yes": "No"}</TableBodyCell>
                                                 <TableBodyCell>{row.level}</TableBodyCell>
                                                 <TableBodyCell>
@@ -811,22 +807,19 @@
                                     <div class="flex flex-col gap-2">
                                         <Label>Department</Label>
                                         <Svelecte class='border-none' optionClass='p-2' name='department' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.department} 
-                                        options={val.map((v:any) => ({value: v.dept_code, text:v.name }))}/>
+                                        options={val.map((v:any) => ({value: v.dept_code, text: v.initial + " - " + v.name }))}/>
                                     </div>
                                 {/await}
                                 
                                 <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
                                 <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
                                 <MyInput type='date' title='Join Date' name="join_date" bind:value={formUserState.answer.join_date}/>
-                            </div>
 
-                            <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
-                            <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-200">
-                                <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
-                                <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
-                                <Checkbox bind:checked={formUserState.answer.overtime as unknown as boolean}>Overtime</Checkbox>
-                                <MyInput type='text' title='Card Number' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
-    
+                                <div class="flex flex-col gap-2">
+                                    <Label>Signature</Label>
+                                    <input class="rounded-lg border border-slate-300" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
+                                </div>
+
                                 {#await getUser()}
                                     <MyLoading message="Loading data"/>
                                 {:then val}
@@ -841,18 +834,24 @@
                                         options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
                                     </div>
                                 {/await}
-    
-                                <div class="flex flex-col gap-2">
-                                    <Label>Signature</Label>
-                                    <input class="border" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
-                                </div>
-                                
+                            </div>
+
+                            <span class="border-b-[1px] border-slate-300 pb-2">Attendance</span>
+                            <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-200">
+                                <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
+                                <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
+                                <Checkbox bind:checked={formUserState.answer.overtime as unknown as boolean}>Overtime</Checkbox>
+                                <MyInput type='text' title='User ID Machine' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
+
                                 <div class="flex flex-col gap-2">
                                     <Label for='level'>Status</Label>
-                                    <Select name='level' items={[
-                                        {value:"Aktif", name:"Aktif"},
-                                        {value:"Nonaktif", name:"Nonaktif"},
-                                    ]} bind:value={formUserState.answer.status} />
+                                    <div class="flex flex-col">
+                                        <Select name='level' items={[
+                                            {value:"Aktif", name:"Aktif"},
+                                            {value:"Nonaktif", name:"Nonaktif"},
+                                        ]} bind:value={formUserState.answer.status} />
+                                        <span class='italic text-[.8rem]'>* While status is 'nonaktif' user cannot login</span>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1070,7 +1069,7 @@
                                     <MyButton onclick={()=> tableDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
                                     <MyButton onclick={()=> tableDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
                                     {#each tableDept.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableDept.setPage(page)} type="button">{page}</MyButton>
+                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableDept.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableDept.setPage(page)} type="button">{page}</MyButton>
                                     {/each}
                                     <MyButton onclick={()=> tableDept.setPage('next')}><ChevronRight size={16} /></MyButton>
                                     <MyButton onclick={()=> tableDept.setPage('last')}><ChevronLast size={16} /></MyButton>
@@ -1098,7 +1097,7 @@
 
                     {#await getSetting()}
                         <MyLoading message="Loading setting data"/>
-                    {:then v}
+                    {:then}
                         {#if pecahArray(userProfile?.access_setting, "C") || pecahArray(userProfile?.access_setting, "U")}
                             <div class="flex flex-col gap-2 rounded-lg p-4 border-[2px] border-slate-300">
                                 <div class="flex justify-between gap-2">
@@ -1110,6 +1109,7 @@
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
                                 <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
                                 <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
+                                <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
                             </form>
                         {/if}
                     {/await}
@@ -1232,7 +1232,7 @@
                                     <MyButton onclick={()=> tableCalendar.setPage(1)}><ChevronFirst size={16} /></MyButton>
                                     <MyButton onclick={()=> tableCalendar.setPage('previous')}><ChevronLeft size={16} /></MyButton>
                                     {#each tableCalendar.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableCalendar.setPage(page)} type="button">{page}</MyButton>
+                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableCalendar.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableCalendar.setPage(page)} type="button">{page}</MyButton>
                                     {/each}
                                     <MyButton onclick={()=> tableCalendar.setPage('next')}><ChevronRight size={16} /></MyButton>
                                     <MyButton onclick={()=> tableCalendar.setPage('last')}><ChevronLast size={16} /></MyButton>

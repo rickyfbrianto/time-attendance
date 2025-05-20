@@ -1,18 +1,22 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button, Hr } from 'flowbite-svelte';
     import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip, CircleAlert } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
 	import MyLoading from '@lib/components/MyLoading.svelte';
 	import MyInput from '@lib/components/MyInput.svelte';
+	import TableAttendanceClockIn from '@lib/components/TableAttendanceClockIn.svelte';
+	import TableAttendanceClockOut from '@lib/components/TableAttendanceClockOut.svelte';
+	import TableAttendanceDifference from '@lib/components/TableAttendanceDifference.svelte';
 	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate, formatDifference, hitungDifference } from '@lib/utils';
-    import { differenceInMinutes, differenceInHours, differenceInDays, format, getYear } from "date-fns";
+    import { differenceInMinutes, differenceInCalendarDays, differenceInDays, format, getYear, getDate } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import MyCalendar from '@/MyCalendar.svelte';
+    import { invalidateAll } from '$app/navigation';
     
     const rowsPerPage = 30
     let {data} = $props()
@@ -20,7 +24,7 @@
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
-
+    
     const filterType = [
         {value:"", title: "Semua"},
         {value:"HKC", title: "Hari Kerja"},
@@ -80,6 +84,7 @@
         modal:false,
         modalAttachment:false,
         modalDelete:false,
+        disabled: false,
         loading:false,
         add:false,
         edit:false,
@@ -156,6 +161,7 @@
                 formAttendance.answer.check_out2 = formatTanggal(res.check_out2)
                 formAttendance.answer.createdBy = user?.payroll
             }, 100)
+            formAttendance.disabled = res.type ? true : false
             formAttendance.edit = true
             formAttendance.add = false
             formAttendance.loading = false
@@ -320,11 +326,7 @@
             return res
         }
     })
-    
-    // $effect(()=>{
-    //     if(!modeAttendance.payroll) modeAttendance.payroll = user.payroll
-    // })
-    
+
     $effect(()=>{
         tableAttendance.load(async (state:State<never>): Promise<any> => {
             try {
@@ -392,7 +394,7 @@
 </script>
 
 <svelte:head>
-    <title>Attendance  {(modeAttendance.payroll !== user?.payroll ? "(view) | " : "") + modeAttendance.name}</title>
+    <title>Attendance {(modeAttendance.payroll !== user?.payroll ? "View | " : "") + modeAttendance.name}</title>
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
@@ -507,7 +509,8 @@
                                 <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                             </div>
                             <MyButton className='p-3' onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton className='p-3' onclick={()=>{
+                            <MyButton className='p-3' onclick={async ()=>{
+                                await invalidateAll()
                                 getAttendance(modeAttendance.payroll)
                                 tableAttendance.invalidate()
                             }}><RefreshCw size={16}/></MyButton>
@@ -539,7 +542,7 @@
                             </TableHead>
     
                             {#if tableAttendance.isLoading}
-                                <div class="flex p-4 items-center">
+                                <div class="flex p-4 items-center break-all">
                                     <MyLoading message="Loading data"/>
                                 </div>
                             {:else}
@@ -553,25 +556,21 @@
                                                 <TableBodyCell>
                                                     <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                 </TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {differenceInDays(row.check_out, row.check_in) != 0 ? formatTanggal(row.check_out, "date"):""}
-                                                    {formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}
+                                                    <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                 </TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
-                                                        <Badge rounded color={"green"}>
-                                                            {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
-                                                            {formatDifference(hitungDifference(row.check_out, row.lembur_start))}
-                                                        </Badge>
-                                                    {/if}
+                                                    <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                                </TableBodyCell>
+                                                <TableBodyCell>
+                                                    <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
+                                                            differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
                                                                 ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                 : null,
                                                             row.ijin_info
@@ -704,22 +703,21 @@
                                                     </TableBodyCell>
                                                     <TableBodyCell>{row.payroll}</TableBodyCell>
                                                     <TableBodyCell>{row.name}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
-                                                            <Badge rounded color={"green"}>
-                                                                {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
-                                                                {formatDifference(hitungDifference(row.check_out, row.lembur_start))}
-                                                            </Badge>
-                                                        {/if}
+                                                        <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                     </TableBodyCell>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                                differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
+                                                                differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
                                                                     ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                     : null,
                                                                 row.ijin_info
@@ -741,7 +739,7 @@
                                                             {/each}
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>                    
+                                                    <TableBodyCell>
                                                         {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
                                                             {#if (!userProfile.user_hrd && userProfile.level > row.level) 
                                                                 || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
@@ -813,10 +811,10 @@
                         <Datatable table={tableListAttendance}>
                             <Table>
                                 <TableHead>
-                                    <ThSort table={tableListAttendance} field="payroll">Payroll</ThSort>
-                                    <ThSort table={tableListAttendance} field="name">Name</ThSort>
                                     <ThSort table={tableListAttendance} field="check_in">Day</ThSort>
                                     <ThSort table={tableListAttendance} field="check_in">Date</ThSort>
+                                    <ThSort table={tableListAttendance} field="payroll">Payroll</ThSort>
+                                    <ThSort table={tableListAttendance} field="name">Name</ThSort>
                                     <ThSort table={tableListAttendance} field="check_in">Clock In</ThSort>
                                     <ThSort table={tableListAttendance} field="check_out">Clock Out</ThSort>
                                     <ThSort table={tableListAttendance} field="type">type</ThSort>
@@ -833,22 +831,26 @@
                                         {#if tableListAttendance.rows.length > 0}
                                             {#each tableListAttendance.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
+                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                    <TableBodyCell>{row.name}</TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
+                                                    </TableBodyCell>
+                                                    <TableBodyCell>
+                                                        <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                                    </TableBodyCell>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                                differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
+                                                                differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
                                                                     ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                     : null,
                                                                 row.ijin_info
@@ -978,22 +980,21 @@
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
                                                 <TableBodyCell>
-                                                    {#if differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.check_in != row.check_out}
-                                                        <Badge rounded color={"green"}>
-                                                            {differenceInMinutes(row.check_out, row.lembur_start) >= 15 ? "+" : ""}
-                                                            {formatDifference(hitungDifference(row.check_out, row.lembur_start))}
-                                                        </Badge>
-                                                    {/if}
+                                                    <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
+                                                </TableBodyCell>
+                                                <TableBodyCell>
+                                                    <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                                </TableBodyCell>
+                                                <TableBodyCell>
+                                                    <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                 </TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            differenceInMinutes(row.check_out, row.lembur_start) >= 15 && row.overtime
+                                                            differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
                                                                 ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
                                                                 : null,
                                                             row.ijin_info
@@ -1174,7 +1175,7 @@
                         <input type='hidden' name="attendance_id" disabled={formAttendance.edit} bind:value={formAttendance.answer.attendance_id}/>
 
                         {#await getUser(formAttendance.dept)}
-                            <MyLoading message="Loading data"/>
+                            <MyLoading message="Loading user data"/>
                         {:then val}
                             <div class="flex flex-col gap-2">
                                 <Label>User Id Machine</Label>
@@ -1187,16 +1188,16 @@
                         {#if formAttendance.answer.user_id_machine}
                             <div class="flex flex-col gap-2">
                                 <Label>Type</Label>
-                                <Select size="md" items={listType} bind:value={formAttendance.answer.type} />
+                                <Select size="md" disabled={formAttendance.disabled} items={listType} bind:value={formAttendance.answer.type} />
                             </div>
 
                             <div class="flex flex-col md:flex-row gap-2">
                                 {#if formAttendance.answer.type == 'Sakit'}
-                                    <MyInput type='date' title='Date From' name="check_in" endDate={formAttendance.answer.check_out} bind:value={formAttendance.answer.check_in}/>
-                                    <MyInput type='date' title='Date End' name="check_out" startDate={formAttendance.answer.check_in} bind:value={formAttendance.answer.check_out}/>
+                                    <MyInput type='date' title='Date From' name="check_in" endDate={formAttendance.answer.check_out} bind:value={formAttendance.answer.check_in} disabled={formAttendance.disabled}/>
+                                    <MyInput type='date' title='Date End' name="check_out" startDate={formAttendance.answer.check_in} bind:value={formAttendance.answer.check_out} disabled={formAttendance.disabled}/>
                                 {:else}
-                                    <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in}/>
-                                    <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out}/>
+                                    <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in} disabled={formAttendance.disabled}/>
+                                    <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out} disabled={formAttendance.disabled}/>
                                 {/if}
                             </div>
 

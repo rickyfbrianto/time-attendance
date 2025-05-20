@@ -44,7 +44,8 @@
         const req = await fetch(`/api/data?type=get_report_dashboard1&payroll=${modeDashboard.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
         const res = await req.json()
 
-        const data = Object.entries(res).map(([key, value], index) => ({series:value, colors: getRandomHexColor(), labels: key }))
+        const warnaList = ["#F1DABF", "#CBDFBD","#7EBDC2","#FFADC6","#F4D35E"]
+        const data = Object.entries(res).map(([key, value], index) => ({series:value, colors: warnaList[index], labels: key }))
         return data
     }
 </script>
@@ -58,7 +59,7 @@
         <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4 gap-2">
             {#if userProfile.user_hrd || userProfile.level > 1}
                 {#await getUser(modeDashboard.dept)}
-                    <MyLoading message="Loading data"/>
+                    <MyLoading message="Loading user data"/>
                 {:then val}
                     <div class="flex flex-col">
                         <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeDashboard.payroll} 
@@ -78,7 +79,7 @@
             {#await getReport() }
                 <MyLoading message="Loading chart"/>
             {:then dataReport}
-                <DonutChart data={dataReport} label='Report TES' />
+                <DonutChart data={dataReport} />
             {/await}
         </div>
         <div class="flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-4">

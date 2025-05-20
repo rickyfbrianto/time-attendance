@@ -25,7 +25,7 @@ export type TProfileSchema = z.infer<typeof ProfileSchema>
 
 export const UserSchema = z.object({
     payroll: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
-    user_id_machine: z.string().length(3, "Need 3 Character"),
+    user_id_machine: z.string().min(3, "Min 3 Character").max(10, "Max 10 Character"),
     profile_id: z.string().trim().min(1),
     email: z.string().email().max(100, "Max 100 Character"),
     name: z.string().min(3, "Min 3 Character").max(250, "Max 250 Character"),
@@ -40,7 +40,8 @@ export const UserSchema = z.object({
     approver: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
     substitute: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
     join_date: z.string().date(),
-    signature: z.string().max(250, "Max 250 Character"),
+    // signature: z.string().max(250, "Max 250 Character"),
+    signature: z.union([z.string().max(250, "Max 250 Character"), z.object({})]),
     status: z.string().min(1)
 })
 
@@ -55,6 +56,15 @@ export const DeptSchema = z.object({
 })
 
 export type TDeptSchema = z.infer<typeof DeptSchema>
+
+export const SettingSchema = z.object({
+    setting_id : z.string(),
+    start_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
+    end_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
+    overtime_allow: z.number().gte(1, "Min 1").lte(60, "Max 60"),
+})
+
+export type TSettingSchema = z.infer<typeof SettingSchema>
 
 export const CalendarSchema = z.object({
     calendar_id : z.string(),

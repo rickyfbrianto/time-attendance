@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, Chart, Dropdown, DropdownItem } from 'flowbite-svelte';
+    import { Chart } from 'flowbite-svelte';
     const { data, label} = $props()
     
     const options = {
@@ -12,7 +12,7 @@
             type: "pie"
         },
         stroke: {
-            colors: ['white'],
+            colors: ['transparent'],
             lineCap: ''
         },
         plotOptions: {
@@ -24,11 +24,9 @@
                             show: false,
                             fontFamily: 'Poppins, sans-serif',
                             offsetY: 20,
-                            textColor:"#FFF",
                         },
                         total: {
                             showAlways: true,
-                            textColor:"#FFF",
                             show: true,
                             fontFamily: 'Poppins, sans-serif',
                             formatter: function (w:any) {
@@ -40,7 +38,7 @@
                             show: true,
                             fontFamily: 'Poppins, sans-serif',
                             offsetY: -20,
-                            formatter: (value: string | number) => value 
+                            formatter: function (value: string | number) { return value}
                         }
                     },
                     size: '80%'
@@ -52,29 +50,30 @@
         //         top: -2
         //     }
         // },
-        // dataLabels: {
-        //     enabled: false
-        // },
-        // legend: {
-        //     position: 'bottom',
-        //     fontFamily: 'Poppins, sans-serif'
-        // },
-        // yaxis: {
-        //     labels: {
-        //         formatter: (value: string | number) => value
-        //     }
-        // },
-        // xaxis: {
-        //     labels: {
-        //         formatter: (value: string | number) => value
-        //     },
-        //     axisTicks: {
-        //         show: false
-        //     },
-        //     axisBorder: {
-        //         show: false
-        //     }
-        // }
+        dataLabels: {
+            enabled: true,
+        },
+        legend: {
+            position: 'left',
+            fontFamily: 'Poppins, sans-serif',
+            formatter: (value: string) => value
+        },
+        yaxis: {
+            labels: {
+                formatter: (value: string ) => value + " day",
+            }
+        },
+        xaxis: {
+            labels: {
+                formatter: (value: string | number) => value
+            },
+            axisTicks: {
+                show: false
+            },
+            axisBorder: {
+                show: false
+            }
+        }
     };
 </script>
 
