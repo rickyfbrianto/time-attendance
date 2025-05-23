@@ -1,6 +1,6 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button, Hr } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button, Hr } from 'flowbite-svelte';
     import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip, CircleAlert } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '@lib/components/MyButton.svelte';
@@ -9,8 +9,8 @@
 	import TableAttendanceClockIn from '@lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '@lib/components/TableAttendanceClockOut.svelte';
 	import TableAttendanceDifference from '@lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate, formatDifference, hitungDifference } from '@lib/utils';
-    import { differenceInMinutes, differenceInCalendarDays, differenceInDays, format, getYear, getDate } from "date-fns";
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate, hitungDifference, formatDifference } from '@lib/utils';
+    import { format, getYear } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
@@ -400,8 +400,8 @@
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#if modeAttendance.payroll}
         {#await getAttendance(modeAttendance.payroll)}
-            <MyLoading message={`Loading data ${modeAttendance.payroll}`}/>
-        {:then val}
+            <MyLoading message={`Loading data user`}/>
+        {:then}
             <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${modeAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
                 <div class="flex flex-col gap-2 min-w-fit">
                     <div class="flex flex-col">
@@ -425,9 +425,9 @@
                 </div>
                 
                 <div class="flex flex-col w-full gap-4">
-                    <div class="hidden md:grid  md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 items-center gap-4">
+                    <div class="hidden lg:flex flex-wrap items-end w-full items-center gap-4">
                         {#each headerData as {title, value, icon: Icon}}
-                            <div class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
+                            <div class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
                                 <span class="text-[.9rem] font-semibold">{title}</span>
                                 <div class="flex justify-between items-center gap-2">
                                     <Icon size={16}/>
@@ -528,8 +528,9 @@
                         {/if} -->
                     </div>
                     
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
                     <Datatable table={tableAttendance}>
-                        <Table>
+                        <Table divClass="w-auto">
                             <TableHead>
                                 <ThSort table={tableAttendance} field="check_in">Day</ThSort>
                                 <ThSort table={tableAttendance} field="check_in">Date</ThSort>
@@ -542,50 +543,54 @@
                             </TableHead>
     
                             {#if tableAttendance.isLoading}
-                                <div class="flex p-4 items-center break-all">
+                                <div class="flex p-4 items-center">
                                     <MyLoading message="Loading data"/>
                                 </div>
                             {:else}
-                                <TableBody tableBodyClass="divide-y">
+                                <TableBody>
                                     {#if tableAttendance.rows.length > 0}
                                         {#each tableAttendance.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                 </TableBodyCell>
-                                                <TableBodyCell>{row.type}</TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
-                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
-                                                                : null,
-                                                            row.ijin_info
+                                                            (()=> {
+                                                                const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                                const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                                return isOvertime
+                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                    : null
+                                                            })(),
+                                                            row.ijin_info 
                                                                 ? {type:"ijin_info", value: row.ijin_info}
                                                                 : null
                                                             ] as val}
                                                             {#if val}
                                                                 <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                : val.type == "late" ? "red" 
-                                                                : val.type == "lembur" ? "green" 
-                                                                : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                    if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
-                                                                        createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                    }
-                                                                }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                    : val.type == "late" ? "red" 
+                                                                    : val.type == "lembur" ? "green" 
+                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                        }
+                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
                                                                     {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
                                                                 </Badge>
                                                             {/if}
@@ -653,7 +658,8 @@
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
                                 <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton className='p-3' onclick={()=> {
+                                <MyButton className='p-3' onclick={async ()=> {
+                                    await invalidateAll()
                                     getAttendance(modeAttendance.payroll)
                                     tableAttendanceDept.invalidate()
                                 }}><RefreshCw size={16}/></MyButton>
@@ -671,6 +677,7 @@
                             {/if}
                         </div>
                         
+                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
                         <Datatable table={tableAttendanceDept}>
                             <Table>
                                 <TableHead>
@@ -695,44 +702,48 @@
                                         {#if tableAttendanceDept.rows.length > 0}
                                             {#each tableAttendanceDept.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{row.type}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                                differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
-                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
-                                                                    : null,
-                                                                row.ijin_info
+                                                                (()=> {
+                                                                    const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                                    const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                                    return isOvertime
+                                                                        ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                        : null
+                                                                })(),
+                                                                row.ijin_info 
                                                                     ? {type:"ijin_info", value: row.ijin_info}
                                                                     : null
                                                                 ] as val}
                                                                 {#if val}
                                                                     <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                    : val.type == "late" ? "red" 
-                                                                    : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
-                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                        }
-                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                        : val.type == "late" ? "red" 
+                                                                        : val.type == "lembur" ? "green" 
+                                                                        : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                                createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                            }
+                                                                        }} class='flex gap-2 break-words whitespace-normal'>{val.value}
                                                                         {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
                                                                     </Badge>
                                                                 {/if}
@@ -801,13 +812,15 @@
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
                                 <MyButton className='p-3' onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton className='p-3' onclick={()=> {
+                                <MyButton className='p-3' onclick={async ()=> {
+                                    await invalidateAll()
                                     getAttendance(modeAttendance.payroll)
                                     tableListAttendance.invalidate()
                                 }}><RefreshCw size={16}/></MyButton>
                             </div>
                         </div>
                         
+                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
                         <Datatable table={tableListAttendance}>
                             <Table>
                                 <TableHead>
@@ -831,42 +844,41 @@
                                         {#if tableListAttendance.rows.length > 0}
                                             {#each tableListAttendance.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell>{row.name}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{row.type}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                                 isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                                differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
-                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
-                                                                    : null,
-                                                                row.ijin_info
+                                                                (()=> {
+                                                                    const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                                    const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                                    return isOvertime
+                                                                        ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                        : null
+                                                                })(),
+                                                                row.ijin_info 
                                                                     ? {type:"ijin_info", value: row.ijin_info}
                                                                     : null
                                                                 ] as val}
                                                                 {#if val}
                                                                     <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                    : val.type == "late" ? "red" 
-                                                                    : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
-                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                        }
-                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                        : val.type == "late" ? "red" 
+                                                                        : val.type == "lembur" ? "green" 
+                                                                        : val.type == "ijin_info" ? "yellow" : "none"} class='flex gap-2 break-words whitespace-normal'>{val.value}
                                                                     </Badge>
                                                                 {/if}
                                                             {/each}
@@ -931,7 +943,10 @@
                                 <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                             </div>
                             <MyButton className='p-3' onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton className='p-3' onclick={()=>tableLogAttendance.invalidate()}><RefreshCw size={16}/></MyButton>
+                            <MyButton className='p-3' onclick={async ()=>{
+                                await invalidateAll()
+                                tableLogAttendance.invalidate()
+                            }}><RefreshCw size={16}/></MyButton>
                         </div>
                         <!-- Filter periode -->
                         <div class="flex gap-2 items-start flex-wrap">
@@ -948,6 +963,7 @@
                         </div>
                     </div>
                     
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
                     <Datatable table={tableLogAttendance}>
                         <Table>
                             <TableHead>
@@ -972,45 +988,44 @@
                                     {#if tableLogAttendance.rows.length > 0}
                                         {#each tableLogAttendance.rows as row}
                                         <TableBodyRow class='h-10'>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                 </TableBodyCell>
-                                                <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                <TableBodyCell>{row.name}</TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                 </TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                 </TableBodyCell>
-                                                <TableBodyCell>{row.type}</TableBodyCell>
-                                                <TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
                                                     <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                         {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                             isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            differenceInMinutes(row.check_out, row.lembur_start) >= setting?.overtime_allow && row.overtime
-                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.check_out, row.lembur_start))}`}
-                                                                : null,
-                                                            row.ijin_info
+                                                            (()=> {
+                                                                const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                                const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                                return isOvertime
+                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                    : null
+                                                            })(),
+                                                            row.ijin_info 
                                                                 ? {type:"ijin_info", value: row.ijin_info}
                                                                 : null
                                                             ] as val}
                                                             {#if val}
                                                                 <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                : val.type == "late" ? "red" 
-                                                                : val.type == "lembur" ? "green" 
-                                                                : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                    if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
-                                                                        createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                    }
-                                                                }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                    : val.type == "late" ? "red" 
+                                                                    : val.type == "lembur" ? "green" 
+                                                                    : val.type == "ijin_info" ? "yellow" : "none"} class='flex gap-2 break-words whitespace-normal'>{val.value}
                                                                 </Badge>
                                                             {/if}
                                                         {/each}

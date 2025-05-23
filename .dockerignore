@@ -3,4 +3,5 @@
 Dockerfile
 *.log
 .git
+/static/media
 # .env

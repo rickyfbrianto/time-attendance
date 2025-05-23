@@ -325,7 +325,7 @@
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
     {#await getCutiUser()}
         <MyLoading message={`Loading users data`}/>
-    {:then val}
+    {:then}
         <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark`}>
             <div class="flex flex-col gap-2 min-w-fit">
                 <div class="flex items-center gap-2">
@@ -345,9 +345,9 @@
             </div>
 
             <div class="flex flex-col w-full gap-4">
-                <div class="hidden md:grid items-end w-full md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-7 items-center gap-4">
+                <div class="hidden lg:flex flex-wrap items-end w-full items-center gap-4">
                     {#each headerData as {title, value, icon: Icon}}
-                        <button class={`flex flex-col items-start border-[2px] border-slate-200 px-4 py-2 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
+                        <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
                             onclick={() => handleDetailHeader(title)}>
                             <span class="text-[.9rem] font-semibold">{title}</span>
                             <div class="flex justify-between items-center gap-2">
@@ -516,12 +516,12 @@
                                 {#if tableCuti.rows.length > 0}
                                     {#each tableCuti.rows as row}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
-                                            <TableBodyCell>{row.type ?? "-"}</TableBodyCell>
-                                            <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
-                                            <TableBodyCell>{row.status}</TableBodyCell>
-                                            <TableBodyCell>{row.approval_name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.type ?? "-"}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.approval_name}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formCuti.edit}
                                                     {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
@@ -610,10 +610,10 @@
                                     {#if tableApprovalCuti.rows.length > 0}
                                         {#each tableApprovalCuti.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                <TableBodyCell>{row.name}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
-                                                <TableBodyCell>{row.description ?? "-"}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if row.status == "Waiting"}
                                                         <Button onclick={()=> handleApproveCuti(row.cuti_id, row.approval, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>

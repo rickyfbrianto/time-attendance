@@ -1,29 +1,35 @@
-ARG NODE_VERSION="23-alpine"
-FROM node:${NODE_VERSION} AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
 
 COPY . .
 
-RUN npm install
+RUN npx prisma generate
 
+# Build aplikasi
 RUN npm run build
 
-# --- Stage 2: Run ---
-FROM node:${NODE_VERSION}
+# === Production Stage ===
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/package-lock.json ./
+# Salin hanya yang diperlukan
+COPY package*.json ./
 RUN npm install --omit=dev
 
 COPY --from=builder /app/build ./build
-
-# (Opsional) Salin konfigurasi lain jika dibutuhkan
-# COPY --from=builder /app/.env .env
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/prisma ./prisma
 
 ENV NODE_ENV=production
+
 EXPOSE 3000
 
+# Jalankan aplikasi Node dari adapter-node
 CMD ["node", "build"]

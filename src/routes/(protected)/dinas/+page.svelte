@@ -31,7 +31,8 @@
             purpose:"",
             get dept() { return userProfile.user_hrd ? "" : user?.department},
             location:"",
-            date: [],
+            // date: [],
+            date: ["", ""],
             duration: 0,
             get createdBy() { return user?.payroll},
             sppd_detail:[{payroll:"", description:""}]
@@ -90,8 +91,10 @@
             const req = await axios.get(`/api/sppd/${id}`)
             const res = await req.data
             if(res){
-                formSPPD.answer = {...res}
-                formSPPD.answer.date = [res.start_date, res.end_date]
+                setTimeout(()=>{
+                    formSPPD.answer = {...res}
+                    formSPPD.answer.date = [formatTanggal(res.start_date, "date"), formatTanggal(res.end_date, "date")]
+                }, 100)
             }
             
             formSPPD.edit = true
@@ -626,6 +629,7 @@
                         <MyLoading message="Get SPPD data"/>
                     {/if}
                     {#if formSPPD.add || formSPPD.edit}
+                        {JSON.stringify(formSPPD.answer)}
                         <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                             {#if userProfile.user_hrd}
                                 {#await getDept() then val}
@@ -713,13 +717,13 @@
                                     {#if tableSPPD.rows.length > 0}
                                         {#each tableSPPD.rows as row:any}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
-                                                <TableBodyCell>{row.purpose}</TableBodyCell>
-                                                <TableBodyCell>{row.location}</TableBodyCell>
-                                                <TableBodyCell><div title={row.name}>{pecahKataOther(row.name, 1)}</div></TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.start_date, "date")}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.end_date, "date")}</TableBodyCell>
-                                                <TableBodyCell>{row.duration + " Days"}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'><div title={row.name}>{pecahKataOther(row.name, 1)}</div></TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date")}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.end_date, "date")}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formSPPD.edit}
                                                         {#if (userProfile?.user_hrd || userProfile?.level > 1)}
@@ -877,15 +881,13 @@
                                 {#if tableSKPD.rows.length > 0}
                                     {#each tableSKPD.rows as row:any}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
-                                            <!-- <TableBodyCell>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
-                                            <TableBodyCell>{row.payroll}</TableBodyCell> -->
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{row.location}</TableBodyCell>
-                                            <TableBodyCell>{row.description}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_start, "date")}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.real_end, "date")}</TableBodyCell>
-                                            <TableBodyCell>{row.status}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "date")}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "date")}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formSKPD.edit}
                                                     {#if pecahArray(userProfile.access_skpd, "U")}

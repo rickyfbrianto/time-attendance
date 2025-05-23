@@ -7,9 +7,9 @@
 
 <div class="flex flex-col items-center justify-start gap-2">
     {#if formatTanggal(check_in, "time").slice(0,2) != "00"}
-        <Badge color="dark">{formatTanggal(check_in, "time")}</Badge>
+        <Badge color="dark" title={formatTanggal(check_in)}>{formatTanggal(check_in, "time")}</Badge>
     {/if}
     {#if formatTanggal(check_in2, "time")}
-        <Badge color="yellow">{formatTanggal(check_in2, "time")}</Badge>
+        <Badge color="yellow" title={formatTanggal(check_in2)}>{formatTanggal(check_in2, "time")}</Badge>
     {/if}
 </div>

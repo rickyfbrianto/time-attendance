@@ -7,7 +7,7 @@
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams, formatDifference, hitungDifference } from '@lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams, selisihWaktu, formatDifference } from '@lib/utils.js';
 	import { differenceInHours, format, set, getDay, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
     import stm from '@lib/assets/stm.png'
@@ -415,10 +415,127 @@
         }
     }
     
-    const handleCetakSRL= async (id:string) =>{
-        const req = await axios.get(`/api/lembur/srl/${id}/print?payroll=${formSRL.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
-        const res = await req.data
+    // 1 periode
+    // const handleCetakSRL= async (id:string) =>{
+    //     const req = await axios.get(`/api/lembur/srl/${id}/print?payroll=${formSRL.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
+    //     const res = await req.data
         
+    //     applyPlugin(jsPDF)
+
+    //     const doc = new jsPDF({
+    //         orientation:"l",
+    //         unit:"mm",
+    //         format:"a4"
+    //     })
+
+    //     const signatureSize = 20
+    //     const colData = [10, 120, 220]
+    //     const rowData = 0
+    //     let rowInc = 0
+    //     let row1 = 4
+    //     let row2 = 6
+    //     let row3 = 8
+    //     let row4 = 10
+
+    //     // const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
+
+    //     rowInc += row4
+    //     doc.setFont('times', 'normal', '')
+    //     doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
+    //     doc.setFontSize(18)
+    //     doc.setTextColor("#174ca3")
+    //     doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
+    //     doc.setTextColor("#000")
+    //     doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
+    //     doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
+        
+    //     doc.setFontSize(16)
+    //     const rightAlign = 235
+    //     doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
+    //     doc.setFontSize(10)
+    //     doc.text("Form No", rightAlign + 2, rowData + rowInc)
+    //     doc.text(": 11-20", rightAlign + 20, rowData + rowInc)
+    //     rowInc += 4
+    //     doc.text("Rev.", rightAlign + 2, rowData + rowInc)
+    //     doc.text(": 0", rightAlign + 20, rowData + rowInc)
+    //     rowInc += 4
+    //     doc.text("Date", rightAlign + 2, rowData + rowInc)
+    //     doc.text(": Jan 2020", rightAlign + 20, rowData + rowInc)
+        
+    //     rowInc += row4 * 1.6
+    //     doc.setFont('times', 'normal', 'bold')
+    //     doc.setFontSize(14)
+    //     doc.text("Formulir Pelaporan Jam Kerja Lembur Pada hari Minggu/Hari libur resmi & hari kerja biasa", 50, rowData + rowInc)
+    //     doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
+        
+    //     rowInc += row3
+    //     doc.setFontSize(11)
+    //     doc.setFont('times', 'normal', 'bold')
+    //     doc.text("Kepada", colData[0], rowData + rowInc)
+    //     doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
+    //     doc.text(`| Hari Minggu`, colData[0] + 130, rowData + rowInc)
+    //     rowInc += 5
+    //     doc.text("Dept.", colData[0], rowData + rowInc)
+    //     doc.text(`:  ${user.dept.initial}`, colData[0] + 20, rowData + rowInc)
+    //     // doc.text(`:  ${user.}`, colData[0] + 20, rowData + rowInc)
+    //     doc.text(`| Hari Libur Resmi`, colData[0] + 130, rowData + rowInc)
+    //     rowInc += 5
+    //     doc.text("Bulan", colData[0], rowData + rowInc)
+    //     doc.text(`:  ${namaBulan[Number(format(periode.start, "M")) - 1] + " " + format(periode.start, "yyyy") + " - " + 
+    //     namaBulan[Number(format(periode.end, "M")) - 1] + " " + format(periode.end, "yyyy")}`, colData[0] + 20, rowData + rowInc)
+    //     doc.text(`| Hari Kerja Biasa`, colData[0] + 130, rowData + rowInc)
+
+    //     rowInc += row2
+    //     autoTable(doc, {
+    //         startY: rowData + rowInc,
+    //         theme:"grid",
+    //         head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Description', 'Status']],
+    //         margin: {left: colData[0]},
+    //         // body: res.srl_detail.map((v:any, i: number) => {
+    //         //     const [nama, payroll, tanggal, waktu] = i == 0 
+    //         //     ? [res.employee.name, res.employee.payroll, namaHari[getDay(res.real_start)] + ", " + format(res.real_start, "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
+    //         //     : ["","","",""]
+    //         //     return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
+    //         // }),
+    //         body: res.map((v:any, i: number) => {
+    //             const [nama, payroll, tanggal, waktu] = [v.employee.name, v.employee.payroll, namaHari[getDay(v.real_start)] + ", " + format(v.real_start, "dd-MM-yyyy"), formatTanggal(v.real_start,"time").substring(0,5) + " - " + formatTanggal(v.real_end,"time").substring(0,5)]
+    //             return [i + 1, nama, payroll, tanggal, waktu, v.srl_detail.map(item => item.description).join('\n'), v.srl_detail.map(item => item.status).join('\n')]
+    //         }),
+    //         styles: {cellPadding: 1, halign: 'center' },
+    //         headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
+    //         bodyStyles:{fontSize: 9, halign: 'center'},
+    //         columnStyles: {
+    //             0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
+    //             3:{cellWidth: 35, valign: 'middle'}, 4:{cellWidth: 25, valign: 'middle'}, 5:{cellWidth: 105, halign: 'left', valign: 'middle'}, 6:{cellWidth: 25, valign: 'middle'}
+    //         },
+    //     })
+
+    //     rowInc = doc.lastAutoTable.finalY + row2
+    //     doc.text(`Dibuat Oleh`, colData[0], rowData + rowInc)
+    //     doc.text(`Diperiksa Oleh`, colData[1], rowData + rowInc)
+    //     doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
+
+    //     rowInc += row3
+    //     doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+    //     doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+    //     doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
+        
+    //     rowInc += row2 * 3.1
+    //     doc.text(res[0].employee.name, colData[0], rowData + rowInc)
+    //     doc.text(res[0].employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
+    //     doc.text(res[0].employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
+        
+    //     const blob = doc.output('blob')
+    //     const url = URL.createObjectURL(blob);
+
+    //     window.open(url); // buka tab baru
+    //     // doc.save(`${id}.pdf`);
+    // }
+
+    const handleCetakSRL= async (id:string) =>{
+        const req = await axios.get(`/api/lembur/srl/${id}/print`)
+        const res = await req.data
+
         applyPlugin(jsPDF)
 
         const doc = new jsPDF({
@@ -475,30 +592,24 @@
         doc.text(`| Hari Minggu`, colData[0] + 130, rowData + rowInc)
         rowInc += 5
         doc.text("Dept.", colData[0], rowData + rowInc)
-        doc.text(`:  ${user.dept.initial}`, colData[0] + 20, rowData + rowInc)
-        // doc.text(`:  ${user.}`, colData[0] + 20, rowData + rowInc)
+        doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
         doc.text(`| Hari Libur Resmi`, colData[0] + 130, rowData + rowInc)
         rowInc += 5
         doc.text("Bulan", colData[0], rowData + rowInc)
-        doc.text(`:  ${namaBulan[Number(format(periode.start, "M")) - 1] + " " + format(periode.start, "yyyy") + " - " + 
-        namaBulan[Number(format(periode.end, "M")) - 1] + " " + format(periode.end, "yyyy")}`, colData[0] + 20, rowData + rowInc)
+        doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
         doc.text(`| Hari Kerja Biasa`, colData[0] + 130, rowData + rowInc)
-
+        
         rowInc += row2
         autoTable(doc, {
             startY: rowData + rowInc,
             theme:"grid",
             head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Description', 'Status']],
             margin: {left: colData[0]},
-            // body: res.srl_detail.map((v:any, i: number) => {
-            //     const [nama, payroll, tanggal, waktu] = i == 0 
-            //     ? [res.employee.name, res.employee.payroll, namaHari[getDay(res.real_start)] + ", " + format(res.real_start, "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
-            //     : ["","","",""]
-            //     return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
-            // }),
-            body: res.map((v:any, i: number) => {
-                const [nama, payroll, tanggal, waktu] = [v.employee.name, v.employee.payroll, namaHari[getDay(v.real_start)] + ", " + format(v.real_start, "dd-MM-yyyy"), formatTanggal(v.real_start,"time").substring(0,5) + " - " + formatTanggal(v.real_end,"time").substring(0,5)]
-                return [i + 1, nama, payroll, tanggal, waktu, v.srl_detail.map(item => item.description).join('\n'), v.srl_detail.map(item => item.status).join('\n')]
+            body: res.srl_detail.map((v:any, i: number) => {
+                const [nama, payroll, tanggal, waktu] = i == 0 
+                ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
+                : ["","","",""]
+                return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
             }),
             styles: {cellPadding: 1, halign: 'center' },
             headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
@@ -515,14 +626,14 @@
         doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
 
         rowInc += row3
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
         
         rowInc += row2 * 3.1
-        doc.text(res[0].employee.name, colData[0], rowData + rowInc)
-        doc.text(res[0].employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
-        doc.text(res[0].employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
+        doc.text(res.employee.name, colData[0], rowData + rowInc)
+        doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
+        doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
         
         const blob = doc.output('blob')
         const url = URL.createObjectURL(blob);
@@ -874,12 +985,12 @@
                                     <TableBody tableBodyClass="divide-y">
                                         {#if tableSPL.rows.length > 0}
                                             {#each tableSPL.rows as row}
-                                                <TableBodyRow class='h-10 break-all'>
-                                                    <TableBodyCell>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.est_start)}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.est_end)}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start)}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end)}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
                                                             <Badge color='indigo'>{row.approval1}</Badge>
                                                             <Badge color={
@@ -888,7 +999,7 @@
                                                             </Badge>
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
                                                             <Badge color='indigo'>{row.approval2}</Badge>
                                                             <Badge color={
@@ -981,11 +1092,11 @@
                                             {#if tableSPLApproval1.rows.length > 0}
                                                 {#each tableSPLApproval1.rows as row}
                                                     <TableBodyRow class='h-10'>
-                                                        <TableBodyCell>{row.purpose}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
-                                                        <TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.approval1}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status1 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
@@ -1058,11 +1169,11 @@
                                             {#if tableSPLApproval2.rows.length > 0}
                                                 {#each tableSPLApproval2.rows as row}
                                                     <TableBodyRow class='h-10'>
-                                                        <TableBodyCell>{row.purpose}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{row.approval2}</TableBodyCell>
-                                                        <TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.approval2}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status2 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
@@ -1233,21 +1344,21 @@
                                         {#if tableSRL.rows.length > 0}
                                             {#each tableSRL.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell>{row.srl_id.replace(/\_/g, '/')}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.srl_id.replace(/\_/g, '/')}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.real_start), "EEE") == "Sun" ? "text-red-500":""}>
                                                             {namaHari[Number(format(formatTanggal(row.real_start), "c")) - 1]},  
                                                             {format(formatTanggal(row.real_start), "d MMMM yyyy")}
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.real_start, "time")}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.real_end, "time")}</TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "time")}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "time")}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <Badge rounded color={"green"}>
-                                                            {formatDifference(hitungDifference(row.real_end, row.real_start))}
+                                                            + {formatDifference(selisihWaktu(row.real_end, row.real_start).hour, selisihWaktu(row.real_end, row.real_start).minute)}
                                                         </Badge>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
                                                             <Badge color='indigo'>{row.approval1}</Badge>
                                                             <Badge color={
@@ -1256,7 +1367,7 @@
                                                             </Badge>
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
                                                             <Badge color='indigo'>{row.approval2}</Badge>
                                                             <Badge color={
@@ -1349,11 +1460,11 @@
                                             {#if tableSRLApproval1.rows.length > 0}
                                                 {#each tableSRLApproval1.rows as row}
                                                     <TableBodyRow class='h-10'>
-                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{row.approval1}</TableBodyCell>
-                                                        <TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.approval1}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status1 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
@@ -1426,11 +1537,11 @@
                                             {#if tableSRLApproval2.rows.length > 0}
                                                 {#each tableSRLApproval2.rows as row}
                                                     <TableBodyRow class='h-10'>
-                                                        <TableBodyCell>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell>{row.approval2}</TableBodyCell>
-                                                        <TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.approval2}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status2 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>

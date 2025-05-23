@@ -240,20 +240,39 @@ export const getParams = (state: State) => {
 	return params;
 };
 
-export const hitungDifference = (val1: string | Date, val2: string | Date) =>{
+export const selisihWaktu = (val1: string | Date, val2: string | Date) =>{
     const start = new Date(val1)
     const end = new Date(val2)
     const totalMinutes = differenceInMinutes(start, end)
 
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return {hours, minutes}
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    return {hour, minute}
 }
 
-export const formatDifference = ({hours, minutes}: {hours: number, minutes: number}) => {
-    return `${hours > 0 ? hours + " Hour" : ""} ${minutes > 0 ? minutes + " Minute" : ""}`
+export const hitungDifference = (check_in, check_out, check_in2, check_out2) => {
+    const hoursA = selisihWaktu(check_out, check_in).hour;
+    const minutesA = selisihWaktu(check_out, check_in).minute;
+
+    const hoursB = selisihWaktu(check_out2, check_in2).hour;
+    const minutesB = selisihWaktu(check_out2, check_in2).minute;
+
+    let totalMinutes = 0;
+    if(new Date(check_in) < new Date(check_out)){
+        totalMinutes = (hoursA * 60 + minutesA) + (hoursB * 60 + minutesB);
+    } else {
+        totalMinutes = (hoursB * 60 + minutesB);
+    }
+
+    const resultHours = Math.floor(totalMinutes / 60);
+    const resultMinutes = totalMinutes % 60;
+
+    return {
+        hour: resultHours,
+        minute: resultMinutes
+    }
 }
 
-export const formatDifference2 = (hours: number, minutes: number) => {
-    return `${hours > 0 ? hours + " Hour" : ""} ${minutes > 0 ? minutes + " Minute" : ""}`
+export const formatDifference = (hour: number, minute: number) => {
+    return `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
 }

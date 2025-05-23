@@ -1,15 +1,19 @@
 <script lang="ts">
-    import { fade, slide } from 'svelte/transition'
+    import { fade } from 'svelte/transition'
     import { Tabs, TabItem } from 'flowbite-svelte';
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Checkbox, Button, Badge } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Button, Badge } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import { Calendar, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
+	import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '@lib/components/MyButton.svelte'
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
-	import { formatTanggal, generatePeriode, namaHari, isLate, getParams } from '@lib/utils.js';
-	import { differenceInHours, format } from 'date-fns';
+    import TableAttendanceClockIn from '@lib/components/TableAttendanceClockIn.svelte';
+	import TableAttendanceClockOut from '@lib/components/TableAttendanceClockOut.svelte';
+	import TableAttendanceDifference from '@lib/components/TableAttendanceDifference.svelte';
+	import { formatTanggal, generatePeriode, namaHari, isLate, getParams, hitungDifference, formatDifference } from '@lib/utils.js';
+	import { format } from 'date-fns';
 	import Svelecte from 'svelecte';
+    import { invalidateAll } from '$app/navigation';
     
     const rowsPerPage = 30
     let {data} = $props()
@@ -159,9 +163,13 @@
                         <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                     </div>
                     <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
-                    <MyButton onclick={()=>tableAbsen.invalidate()}><RefreshCw size={16}/></MyButton>
+                    <MyButton onclick={async ()=> {
+                        await invalidateAll()
+                        tableAbsen.invalidate()
+                    }}><RefreshCw size={16}/></MyButton>
                 </div>
                 
+                <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
                 <Datatable table={tableAbsen}>
                     <Table>
                         <TableHead>
@@ -183,40 +191,43 @@
                                 {#if tableAbsen.rows.length > 0}
                                     {#each tableAbsen.rows as row}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                             </TableBodyCell>
-                                            <TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                             </TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
-                                                    <Badge rounded color={"green"}>
-                                                        {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
-                                                        {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
-                                                        {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
-                                                    </Badge>
-                                                {/if}
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                             </TableBodyCell>
-                                            <TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                            </TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
+                                            </TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                    {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                    {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                         isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                        differenceInHours(row.check_out, row.lembur_start) > 0 
-                                                            ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
-                                                            : null,
-                                                        row.ijin_info
+                                                        (()=> {
+                                                            const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                            const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                            return isOvertime
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                : null
+                                                        })(),
+                                                        row.ijin_info 
                                                             ? {type:"ijin_info", value: row.ijin_info}
                                                             : null
                                                         ] as val}
                                                         {#if val}
                                                             <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                            : val.type == "late" ? "red" 
-                                                            : val.type == "lembur" ? "green" 
-                                                            : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                : val.type == "late" ? "red" 
+                                                                : val.type == "lembur" ? "green" 
+                                                                : val.type == "ijin_info" ? "yellow" : "none"} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                            </Badge>
                                                         {/if}
                                                     {/each}
                                                 </div>
@@ -279,9 +290,13 @@
                             <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                         </div>
                         <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
-                        <MyButton onclick={()=>tableAbsenDept.invalidate()}><RefreshCw size={16}/></MyButton>
+                        <MyButton onclick={async ()=> {
+                            await invalidateAll()
+                            tableAbsenDept.invalidate()
+                        }}><RefreshCw size={16}/></MyButton>
                     </div>
                     
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
                     <Datatable table={tableAbsenDept}>
                         <Table>
                             <TableHead>
@@ -304,41 +319,44 @@
                                 {#if tableAbsenDept.rows.length > 0}
                                     {#each tableAbsenDept.rows as row}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
                                             </TableBodyCell>
-                                            <TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                             </TableBodyCell>
-                                            <TableBodyCell>{row.payroll}</TableBodyCell>
-                                            <TableBodyCell>{row.name}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_in, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_in, "time")}</TableBodyCell>
-                                            <TableBodyCell>{formatTanggal(row.check_out, "time").slice(0,2) == "00" ? "-" : formatTanggal(row.check_out, "time")}</TableBodyCell>
-                                            <TableBodyCell>
-                                                {#if differenceInHours(row.check_out, row.lembur_start) > 0 && row.check_in != row.check_out}
-                                                    <Badge rounded color={"green"}>
-                                                        {differenceInHours(row.check_out, row.lembur_start) > 0 ? "+" : (differenceInHours(row.check_out, row.lembur_start) < 0 ? "-":"") }
-                                                        {differenceInHours(row.check_out, row.lembur_start) !== 0 ? differenceInHours(row.check_out, row.lembur_start) + " Hour": ""}
-                                                        {Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}
-                                                    </Badge>
-                                                {/if}
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                             </TableBodyCell>
-                                            <TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                            </TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
+                                            </TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                    {#each [...row.description.split(",").filter(v => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                    {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
                                                         isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                        differenceInHours(row.check_out, row.lembur_start) > 0 
-                                                            ? {type:"lembur", value:`Overtime ${differenceInHours(row.check_out, row.lembur_start)} Hour ${Number(format(row.check_out, "m")) > 0 ? format(row.check_out, "m") + " Minute" :""}`}
-                                                            : null,
-                                                        row.ijin_info
+                                                        (()=> {
+                                                            const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                            const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                            return isOvertime
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                : null
+                                                        })(),
+                                                        row.ijin_info 
                                                             ? {type:"ijin_info", value: row.ijin_info}
                                                             : null
                                                         ] as val}
                                                         {#if val}
                                                             <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                            : val.type == "late" ? "red" 
-                                                            : val.type == "lembur" ? "green" 
-                                                            : val.type == "ijin_info" ? "yellow" : "none"} class='break-words whitespace-normal'>{val.value}</Badge>
+                                                                : val.type == "late" ? "red" 
+                                                                : val.type == "lembur" ? "green" 
+                                                                : val.type == "ijin_info" ? "yellow" : "none"} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                            </Badge>
                                                         {/if}
                                                     {/each}
                                                 </div>

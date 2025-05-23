@@ -36,7 +36,7 @@ export async function GET({url}){
                     AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ?
                     ORDER by ${sort} ${order}
                     LIMIT ${limit} OFFSET ${offset}`,
-                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, `%${type}%`, start_date, end_date) as {count:number}[]
+                `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, `%${type}%`, start_date, end_date)
             
             const [{count}] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
                 SELECT att.attendance_id FROM

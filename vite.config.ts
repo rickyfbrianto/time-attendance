@@ -4,6 +4,9 @@ import { defineConfig } from 'vite';
 import path from "node:path";
 
 export default defineConfig({
+    optimizeDeps: {
+        exclude: ['@prisma-app/client/runtime']
+    },
 	plugins: [sveltekit(), tailwindcss()],
     server:{
         port: 1100,
