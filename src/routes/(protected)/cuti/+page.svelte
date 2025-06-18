@@ -22,18 +22,20 @@
     let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
-    const typeList = userProfile.user_hrd ? 
-        [
-            ['Cuti Tahunan', ""],
-            ['Cuti Hamil & Melahirkan', 90], 
-            ['Cuti Keguguran', 7],
-            ['Cuti Haid', 1],
-        ] 
-        :
-        [
-            ['Cuti Tahunan', ""],
-            ['Cuti Hamil & Melahirkan', 90], 
-        ] 
+    const typeList = $derived.by(()=> {
+        return userProfile.user_hrd ? 
+            [
+                ['Cuti Tahunan', ""],
+                ['Cuti Hamil & Melahirkan', 90], 
+                ['Cuti Keguguran', 7],
+                ['Cuti Haid', 1],
+            ] 
+            :
+            [
+                ['Cuti Tahunan', ""],
+                ['Cuti Hamil & Melahirkan', 90], 
+            ] 
+    })
 
     let openRow: string[] = $state([]) 
     const toggleRow = (i: string) => {
@@ -64,7 +66,8 @@
     const formCutiAnswer = {
         answer: {
             cuti_id: "id",
-            payroll: userProfile.user_hrd || userProfile.level > 1 ? "" : user?.payroll,
+            // payroll: (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll,
+            payroll: () => (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll,
             name: "",
             type: "",
             description: "",
@@ -260,11 +263,12 @@
     const fillCuti = async (val: string) => {
         const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
         const res = await req.json()
-        console.log(res)
-        formCuti.answer.name = res.name
-        formCuti.answer.approval = res.employee_employee_approverToemployee.payroll
-        formCuti.answer.user_approval = res.employee_employee_approverToemployee.name
-        formCuti.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
+        if(res){
+            formCuti.answer.name = res.name
+            formCuti.answer.approval = res.employee_employee_approverToemployee.payroll
+            formCuti.answer.user_approval = res.employee_employee_approverToemployee.name
+            formCuti.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
+        }
         return await res
     }
     

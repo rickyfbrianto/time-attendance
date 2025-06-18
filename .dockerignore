@@ -1,7 +1,8 @@
-/node_modules
+.git
+build
+node_modules
 .docker-ignore
+.gitignore
 Dockerfile
 *.log
-.git
 /static/media
-# .env

@@ -135,7 +135,7 @@ model setting {
   setting_id     String @id @db.VarChar(40)
   start_periode  Int    @default(17) @db.TinyInt
   end_periode    Int    @default(16) @db.TinyInt
-  overtime_allow Int    @default(30)
+  overtime_allow Int    @default(30) @db.TinyInt
 }
 
 model spl {

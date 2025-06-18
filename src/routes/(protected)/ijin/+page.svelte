@@ -23,23 +23,26 @@
 
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
     // (khitan/baptis,haji,nikah
-    const typeList = userProfile.user_hrd ?
-    [
-        ['Pernikahan', 3], 
-        ['Pernikahan Anak/Saudara Kandung', 3],
-        ['Kelahiran Anak', 3],
-        ['Kematian Anggota Keluarga', 7],
-        ['Bencana Alam', 7],
-        ['Keluarga Rawat Inap', 6],
-        ['Cuti Khitanan/Baptis', 7],
-        ['Ibadah Haji', 30]
-    ]
-    : 
-    [
-        ['Pernikahan', 3], 
-        ['Cuti Khitanan/Baptis', 7],
-        ['Ibadah Haji', 30]
-    ]
+
+    const typeList = $derived.by(()=> {
+        return userProfile.user_hrd ?
+            [
+                ['Pernikahan', 3], 
+                ['Pernikahan Anak/Saudara Kandung', 3],
+                ['Kelahiran Anak', 3],
+                ['Kematian Anggota Keluarga', 7],
+                ['Bencana Alam', 7],
+                ['Keluarga Rawat Inap', 6],
+                ['Cuti Khitanan/Baptis', 7],
+                ['Ibadah Haji', 30]
+            ]
+            : 
+            [
+                ['Pernikahan', 3], 
+                ['Cuti Khitanan/Baptis', 7],
+                ['Ibadah Haji', 30]
+            ]
+    })
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
     
@@ -66,8 +69,10 @@
             type:"",
             askDuration:0,
             description: "",
-            get payroll() { return user?.payroll},
-            get dept() { return user?.department},
+            // get payroll() { return user?.payroll},
+            // get dept() { return user?.department},
+            payroll: () => user.payroll,
+            dept: () => user.department,
             status: "Waiting",
             get approval() { return user?.approver || null},
             get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
