@@ -1,16 +1,16 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button, Hr } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip, CircleAlert } from '@lucide/svelte'
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
+    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip, CircleAlert, IdCard, CalendarClock } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import MyButton from '@lib/components/MyButton.svelte';
-	import MyLoading from '@lib/components/MyLoading.svelte';
-	import MyInput from '@lib/components/MyInput.svelte';
-	import TableAttendanceClockIn from '@lib/components/TableAttendanceClockIn.svelte';
-	import TableAttendanceClockOut from '@lib/components/TableAttendanceClockOut.svelte';
-	import TableAttendanceDifference from '@lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, namaBulan, getParams, isLate, hitungDifference, formatDifference } from '@lib/utils';
-    import { format, getYear } from "date-fns";
+	import MyButton from '$/lib/components/MyButton.svelte';
+	import MyLoading from '$/lib/components/MyLoading.svelte';
+	import MyInput from '$/lib/components/MyInput.svelte';
+	import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
+	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
+	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference } from '$/lib/utils';
+    import { format, getYear, set } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
@@ -23,7 +23,6 @@
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
-    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
     
     const filterType = [
         {value:"", title: "Semua"},
@@ -72,10 +71,10 @@
             description: "",
             // attachment: [],
             attachment: "",
-            get createdBy() { return user?.payroll}
+            createdBy: (()=> user?.payroll)(),
         },
-        get dept() { return userProfile.user_hrd ? "" : user?.department},
-        get payroll() { return user?.payroll},
+        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        payroll: (()=> user?.payroll)(),
         type:"",
         success:"",
         error:"",
@@ -95,6 +94,11 @@
     let modeAttendance = $state({
         payroll: formAttendanceAnswer.payroll,
         name: "",
+        periode: {
+            start: "",
+            end: "",
+        },
+        tabNo: 1
     })
 
     const formAttendanceSubmit = async () =>{
@@ -204,49 +208,49 @@
     // Attendance dept
     let tableAttendanceDept = $state(new TableHandler([], {rowsPerPage}))
     let tableAttendanceDeptSearch = tableAttendanceDept.createSearch()
-
-    const formAttendanceDeptAnswer = {
-        get dept() { return userProfile.user_hrd ? "" : user?.department},
-        success:"",
-        error:"",
-    }
     
-    let formAttendanceDept = $state({...formAttendanceDeptAnswer})
+    let formAttendanceDept = $state({
+        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        type:"",
+    })
     
     // Attendance List for HRD
     let tableListAttendance = $state(new TableHandler([], {rowsPerPage}))
     let tableListAttendanceSearch = tableListAttendance.createSearch()
 
+    let formListAttendance = $state({
+        type:"",
+    })
+
     // Attendance Log for HRD
     let tableLogAttendance = $state(new TableHandler([], {rowsPerPage}))
     let tableLogAttendanceSearch = tableLogAttendance.createSearch()
-
-    const formLogAttendanceAnswer = {
+    
+    let formLogAttendance = $state({
         attendance_id:"",
         year: new Date().getFullYear(),
         month: new Date().getMonth(),
+        type:"",
         error:"",
         success:"",
         modalDelete: false,
         loading:false,
-    }
-    
-    let formLogAttendance = $state({...formLogAttendanceAnswer})
+    })
 
     // Form SPL
     const formSPLAnswer = {
         answer:{
             spl_id: "id",
             purpose:"",
-            get dept() {return user?.department},
+            dept: (()=> user?.department)(),
             spl_detail:[{payroll:"", description:""}],
             est_start:"",
             est_end:"",            
             approval1:"",
             approval2:"",            
         },
-        get dept() {return user?.department},
-        get payroll() {return userProfile.level > 1 ? "": user?.payroll},
+        dept: (()=> user?.department)(),
+        payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
         success:"",
         error:"",
         modalSPL: false,
@@ -255,7 +259,7 @@
     
     let formSPL = $state({...formSPLAnswer})
 
-    const createSPL = (payroll: string, nama: string, check_in, check_out )=> {
+    const createSPL = (payroll: string, nama: string, check_in: string, check_out: string)=> {
         formSPL = {...formSPLAnswer}
         formSPL.modalSPL = true
         formSPL.answer.purpose = `Lembur ${nama} tanggal ${format(formatTanggal(check_in, "date"), "d MMMM yyyy")}`
@@ -311,7 +315,8 @@
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
+        // const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}`)
         const res = await req.json()
         modeAttendance.name = res.Name
         
@@ -328,9 +333,9 @@
     })
 
     $effect(()=>{
-        tableAttendance.load(async (state:State<never>): Promise<any> => {
+        tableAttendance.load(async(state: State) => {
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${periode.start}&end_date=${periode.end}`)
+                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -341,9 +346,9 @@
         })
 
         if (userProfile.level > 1 || userProfile.user_hrd) {
-            tableAttendanceDept.load(async (state:State<never>): Promise<any> => {
+            tableAttendanceDept.load(async (state: any) => {
                 try {
-                    const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
+                    const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -355,9 +360,9 @@
         }
 
         if(userProfile.user_hrd){
-            tableListAttendance.load(async (state:State<never>): Promise<any> => {
+            tableListAttendance.load(async (state: any) => {
                 try {
-                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}`)
+                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formListAttendance.type}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -368,9 +373,9 @@
             })
         }
 
-        tableLogAttendance.load(async (state:State<never>): Promise<any> => {
+        tableLogAttendance.load(async (state: any) => {
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${modeAttendance.payroll}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formLogAttendance.type}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -380,6 +385,14 @@
             }
         })
     })
+
+    $effect(()=> {
+        const temp = modeAttendance.tabNo == 4 ? set(new Date(), {year: formLogAttendance.year, month: formLogAttendance.month, date: setting?.end_periode}) : new Date()
+        modeAttendance.periode = {
+            start: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start,
+            end: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end,
+        }
+    })
     
     setTimeout(()=>{
         tableAttendance.invalidate()
@@ -388,7 +401,7 @@
         if(userProfile.user_hrd)
             tableListAttendance.invalidate()
         
-        formLogAttendance.month = Number(format(periode.start, "M"))
+        formLogAttendance.month = Number(format(modeAttendance.periode.start, "M"))
         tableLogAttendance.invalidate()
     }, 1000)
 </script>
@@ -398,28 +411,28 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#if modeAttendance.payroll}
+    {#if modeAttendance.payroll && modeAttendance.tabNo != 2}
         {#await getAttendance(modeAttendance.payroll)}
             <MyLoading message={`Loading data user`}/>
         {:then}
-            <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark ${modeAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
+            <div class={`flex rounded-lg p-4 gap-4 border-[2px] border-slate-200 text-textdark ${modeAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2"}`}>
                 <div class="flex flex-col gap-2 min-w-fit">
                     <div class="flex flex-col">
-                        <span class="font-bold text-[1.1rem]">{modeAttendance.name}</span>
-                        <span class='font-bold  text-[.95rem]'>{modeAttendance.payroll}</span>
+                        <span class="font-bold text-[1rem]">{modeAttendance.name}</span>
+                        <Badge class='flex gap-2 self-start text-white bg-slate-500 py-1'><IdCard size={14}/> {modeAttendance.payroll}</Badge>
                     </div>
                     <div class="flex items-center gap-2">
-                        <Calendar size={18}/>
-                        <div class="flex gap-2">
-                            <span class="font-bold">Today,</span>
-                            <span>{format(new Date(), "dd-MM-yyyy")}</span>
+                        <Calendar size={15}/>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[.9rem] font-bold">Today,</span>
+                            <span class='text-[.9rem]'>{format(new Date(), "dd-MM-yyyy")}</span>
                         </div>
                     </div>
                     <div class="flex gap-2 items-center">
-                        <span>Periode</span>
+                        <CalendarClock />
                         <div class="flex flex-col gap-2">
-                            <Badge color='indigo'>{periode.start}</Badge>
-                            <Badge color='indigo'>{periode.end}</Badge>
+                            <Badge color='indigo'>{modeAttendance.periode.start}</Badge>
+                            <Badge color='indigo'>{modeAttendance.periode.end}</Badge>
                         </div>
                     </div>
                 </div>
@@ -428,10 +441,10 @@
                     <div class="hidden lg:flex flex-wrap items-end w-full items-center gap-4">
                         {#each headerData as {title, value, icon: Icon}}
                             <div class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
-                                <span class="text-[.9rem] font-semibold">{title}</span>
+                                <span class="text-[.85rem] font-semibold">{title}</span>
                                 <div class="flex justify-between items-center gap-2">
-                                    <Icon size={16}/>
-                                    <span class='text-[1.1rem] font-bold'>{value}</span>
+                                    <Icon size={15}/>
+                                    <span class='text-[1rem] font-bold'>{value}</span>
                                 </div>
                             </div>
                         {/each}
@@ -444,7 +457,7 @@
         {/await}
     {/if}
     
-    <div class="flex flex-col gap-3 p-4 border-slate-300 border rounded-lg">
+    <div class="flex flex-col gap-3 px-4 border-slate-300 border rounded-lg">
         {#if !formAttendance.modal}
             {#if formAttendance.error}
                 {#each formAttendance.error.split(';') as v}
@@ -460,8 +473,8 @@
         {/if}
 
         <!-- Tombol Add -->
-        {#if (userProfile?.user_hrd || userProfile?.level > 1)}
-            <div class="flex gap-4 items-center w-full">
+        {#if ((userProfile?.user_hrd || userProfile?.level > 1) && modeAttendance.tabNo != 2)}
+            <div class="flex mt-4 gap-4 items-center w-full">
                 {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C")}
                     <MyButton onclick={formAttendanceAdd}><Plus size={16}/></MyButton>
                 {/if}
@@ -486,7 +499,7 @@
         
         <Tabs contentClass='w-full' tabStyle="underline">
             <!-- Attendance pribadi/orang lain -->
-            <TabItem open title={user?.payroll == modeAttendance.payroll ? "My Attendance": `Attendance ${modeAttendance.name}`}>
+            <TabItem open title={user?.payroll == modeAttendance.payroll ? "My Attendance": `Attendance ${modeAttendance.name}`} onclick={()=> modeAttendance.tabNo = 1} >
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -498,7 +511,7 @@
                             <div class="flex flex-col">
                                 <select bind:value={formAttendance.type} onchange={()=> tableAttendance.invalidate()}>
                                     {#each filterType as option}
-                                    <option value={option.value}>{option.title}</option>
+                                        <option value={option.value}>{option.title}</option>
                                     {/each}
                                 </select>
                             </div>
@@ -528,7 +541,7 @@
                         {/if} -->
                     </div>
                     
-                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
                     <Datatable table={tableAttendance}>
                         <Table divClass="w-auto">
                             <TableHead>
@@ -575,23 +588,21 @@
                                                                 const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                 const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                                 return isOvertime
-                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                    ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                     : null
                                                             })(),
-                                                            row.ijin_info 
-                                                                ? {type:"ijin_info", value: row.ijin_info}
-                                                                : null
+                                                            row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
                                                             ] as val}
                                                             {#if val}
                                                                 <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                     : val.type == "late" ? "red" 
                                                                     : val.type == "lembur" ? "green" 
                                                                     : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
                                                                             createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
                                                                         }
                                                                     }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
                                                                 </Badge>
                                                             {/if}
                                                         {/each}
@@ -642,7 +653,7 @@
             </TabItem>
             <!-- Attendance department -->
             {#if userProfile.level > 1 || userProfile.user_hrd}
-                <TabItem title="Attendance Department">
+                <TabItem title="Attendance Department" onclick={()=> modeAttendance.tabNo = 2} >
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
@@ -651,6 +662,13 @@
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
+                                <div class="flex flex-col">
+                                    <select bind:value={formAttendanceDept.type} onchange={()=> tableAttendanceDept.invalidate()}>
+                                        {#each filterType as option}
+                                            <option value={option.value}>{option.title}</option>
+                                        {/each}
+                                    </select>
+                                </div>
                                 <div class="flex w-full flex-col">
                                     <MyInput type='text' bind:value={tableAttendanceDeptSearch.value} onkeydown={e => {
                                         if(e.key.toLowerCase() === 'enter') tableAttendanceDeptSearch.set()
@@ -660,7 +678,6 @@
                                 <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
                                 <MyButton className='p-3' onclick={async ()=> {
                                     await invalidateAll()
-                                    getAttendance(modeAttendance.payroll)
                                     tableAttendanceDept.invalidate()
                                 }}><RefreshCw size={16}/></MyButton>
                             </div>
@@ -677,7 +694,7 @@
                             {/if}
                         </div>
                         
-                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
+                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
                         <Datatable table={tableAttendanceDept}>
                             <Table>
                                 <TableHead>
@@ -728,23 +745,21 @@
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                                     return isOvertime
-                                                                        ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                        ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                         : null
                                                                 })(),
-                                                                row.ijin_info 
-                                                                    ? {type:"ijin_info", value: row.ijin_info}
-                                                                    : null
+                                                                row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
                                                                 ] as val}
                                                                 {#if val}
                                                                     <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                         : val.type == "late" ? "red" 
                                                                         : val.type == "lembur" ? "green" 
                                                                         : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")){
+                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
                                                                                 createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
                                                                             }
                                                                         }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C")}<CircleAlert size={14}/>{/if}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
                                                                     </Badge>
                                                                 {/if}
                                                             {/each}
@@ -796,7 +811,7 @@
             {/if}
             <!-- Attendance Double -->
             {#if userProfile.user_hrd}
-                <TabItem title="Attendance Double (Conflict)">
+                <TabItem title="Attendance Double (Conflict)" onclick={()=> modeAttendance.tabNo = 3}>
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
@@ -805,6 +820,13 @@
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
+                                <div class="flex flex-col">
+                                    <select bind:value={formListAttendance.type} onchange={()=> tableListAttendance.invalidate()}>
+                                        {#each filterType as option}
+                                            <option value={option.value}>{option.title}</option>
+                                        {/each}
+                                    </select>
+                                </div>
                                 <div class="flex w-full flex-col">
                                     <MyInput type='text' bind:value={tableListAttendanceSearch.value} onkeydown={e => {
                                         if(e.key.toLowerCase() === 'enter') tableListAttendanceSearch.set()
@@ -820,7 +842,7 @@
                             </div>
                         </div>
                         
-                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
+                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
                         <Datatable table={tableListAttendance}>
                             <Table>
                                 <TableHead>
@@ -867,18 +889,21 @@
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                                     return isOvertime
-                                                                        ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                        ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                         : null
                                                                 })(),
-                                                                row.ijin_info 
-                                                                    ? {type:"ijin_info", value: row.ijin_info}
-                                                                    : null
+                                                                row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
                                                                 ] as val}
                                                                 {#if val}
                                                                     <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                         : val.type == "late" ? "red" 
                                                                         : val.type == "lembur" ? "green" 
-                                                                        : val.type == "ijin_info" ? "yellow" : "none"} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                        : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
+                                                                                createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                            }
+                                                                        }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
                                                                     </Badge>
                                                                 {/if}
                                                             {/each}
@@ -927,7 +952,7 @@
                 </TabItem>
             {/if}
             <!-- Attendance Log -->
-            <TabItem title="Attendance Log">
+            <TabItem title="Attendance Log" onclick={()=> modeAttendance.tabNo = 4}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                     <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
@@ -936,6 +961,13 @@
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
+                            <div class="flex flex-col">
+                                <select bind:value={formLogAttendance.type} onchange={()=> tableLogAttendance.invalidate()}>
+                                    {#each filterType as option}
+                                        <option value={option.value}>{option.title}</option>
+                                    {/each}
+                                </select>
+                            </div>
                             <div class="flex w-full flex-col">
                                 <MyInput type='text' bind:value={tableLogAttendanceSearch.value} onkeydown={e => {
                                     if(e.key.toLowerCase() === 'enter') tableLogAttendanceSearch.set()
@@ -952,18 +984,18 @@
                         <div class="flex gap-2 items-start flex-wrap">
                             <select bind:value={formLogAttendance.year} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataTahun as {title, value}}
-                                    <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "Now" : null}</option>
+                                    <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "(Now)" : null}</option>
                                 {/each}
                             </select>
                             <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
                                 {#each dataBulan as {title, value}}
-                                    <option value={value}>{title} {value.toString() == format(periode.start, "M") ? "Now" : null}</option>
+                                    <option value={value}>{title} {value.toString() == format(modeAttendance.periode.start, "M") ? "(Now)" : null}</option>
                                 {/each}
                             </select>
                         </div>
                     </div>
                     
-                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
                     <Datatable table={tableLogAttendance}>
                         <Table>
                             <TableHead>
@@ -1014,18 +1046,21 @@
                                                                 const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                 const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                                 return isOvertime
-                                                                    ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                    ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                     : null
                                                             })(),
-                                                            row.ijin_info 
-                                                                ? {type:"ijin_info", value: row.ijin_info}
-                                                                : null
+                                                            row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
                                                             ] as val}
                                                             {#if val}
                                                                 <Badge rounded color={val.type == "kerja" ? "dark" 
                                                                     : val.type == "late" ? "red" 
                                                                     : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
+                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                        }
+                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
                                                                 </Badge>
                                                             {/if}
                                                         {/each}
@@ -1133,7 +1168,7 @@
     <Modal bind:open={formAttendance.modalAttachment} autoclose>
         <div class="flex flex-col gap-6 overflow-hidden max-h-[80vh]">
             <h3>Attachment</h3>
-            <img src={import.meta.env.VITE_VIEW_ATTANDANCE+formAttendance.attachment} class='' alt="">
+            <img src={import.meta.env.VITE_VIEW_ATTANDANCE+formAttendance.attachment} class='' alt="Preview attachment" title='Preview attachment'>
         </div>
         <svelte:fragment slot="footer">
             <Button color='red' onclick={() => formAttendance.modalAttachment = false}>Tutup</Button>
@@ -1182,7 +1217,7 @@
             </div>
             
             {#if formAttendance.loading}
-                <MyLoading message="Get attendance data"/>
+                <MyLoading message="Load attendance data"/>
             {/if}
             {#if formAttendance.add || formAttendance.edit}
                 <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">

@@ -3,16 +3,16 @@
     import { Tabs, TabItem, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import { Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
-    import MyButton from '@lib/components/MyButton.svelte';
-	import MyLoading from '@lib/components/MyLoading.svelte';
-	import MyInput from '@lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, pecahKataOther, getParams } from '@lib/utils';
-    import { differenceInDays, format } from "date-fns";
+    import MyButton from '$/lib/components/MyButton.svelte';
+	import MyLoading from '$/lib/components/MyLoading.svelte';
+	import MyInput from '$/lib/components/MyInput.svelte';
+	import { formatTanggal, pecahArray, pecahKataOther, getParams } from '$/lib/utils';
+    import { differenceInDays, format, startOfDay } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
     import { jsPDF } from "jspdf";
-    import stm from '@lib/assets/stm.png'
-    import "@lib/assets/font/Comic-normal.js"
+    import stm from '$/lib/assets/stm.png'
+    import "$/lib/assets/font/Comic-normal.js"
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 
@@ -29,16 +29,16 @@
         answer:{
             sppd_id: "id",
             purpose:"",
-            get dept() { return userProfile.user_hrd ? "" : user?.department},
             location:"",
             // date: [],
             date: ["", ""],
             duration: 0,
-            get createdBy() { return user?.payroll},
+            dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+            createdBy: (()=> user?.payroll)(),
             sppd_detail:[{payroll:"", description:""}]
         },
-        get dept() { return userProfile.user_hrd ? "" : user?.department},
-        get payroll() { return userProfile.user_hrd || userProfile.level >= 5 ? "" : user?.payroll},
+        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        payroll: (()=> userProfile.user_hrd || userProfile.level >= 5 ? "" : user?.payroll)(),
         success:"",
         error:"",
         modalDelete:false,
@@ -261,7 +261,7 @@
             doc.text(`Agus Saputro`, colData[0], rowData + rowInc)
             rowInc += row1
             doc.setFont('times', 'normal')
-            doc.text(`Mill manager`, colData[0], rowData + rowInc)
+            doc.text(`Kepala Departemen HR/GA`, colData[0], rowData + rowInc)
 
             doc.setFontSize(10)
             rowInc += row4 + 4
@@ -290,10 +290,10 @@
             skpd_detail: [{payroll:"", description: ""}],
             date: ["", ""],
             status: "",
-            get createdBy() { return user?.payroll},
+            createdBy: (()=> user?.payroll)(),
         },
         sppd_id: "",
-        get payroll() {return userProfile.user_hrd ? "" : user?.payroll},
+        payroll: (()=> userProfile.user_hrd ? "" : user?.payroll)(),
         success:"",
         error:"",
         cetakPDFID:"",
@@ -407,7 +407,7 @@
         doc.setFontSize(12)
         doc.text("Nomor", colData[0], rowData + rowInc)
         doc.text(`:    ${res.skpd_id.replace(/\_/g,'/')}`, 35, rowData + rowInc)
-        doc.text(`Jakarta, ${format(res.real_start, "d MMMM yyyy")}`, 142, rowData + rowInc)
+        doc.text(`Jakarta, ${format(res.createdAt, "d MMMM yyyy")}`, 142, rowData + rowInc)
         
         rowInc += row3
         doc.text("Dengan Hormat,", colData[0], rowData + rowInc)
@@ -424,7 +424,7 @@
         rowInc += row2
         doc.text("- Payroll", colData[0], rowData + rowInc)
         doc.text(":", colData[1], rowData + rowInc)
-        doc.text(`STM - ${res.payroll}`, colData[2], rowData + rowInc)
+        doc.text(res.payroll, colData[2], rowData + rowInc)
         doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
         rowInc += row2
         doc.text("- Pangkat/Gol", colData[0], rowData + rowInc)
@@ -472,10 +472,12 @@
         rowInc += row2
         doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
         doc.text("Pejabat yang dituju,", colData[0] + 130, rowData + rowInc)
-        rowInc += row3 * 2.4
+        rowInc += row3 * 2.2
         doc.text("Agus Saputro", colData[0], rowData + rowInc)
         doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
-        rowInc += row3
+        rowInc += row1
+        doc.text("Kepala Departemen HR/GA", colData[0], rowData + rowInc)
+        rowInc += row1
         doc.text("Datang tanggal", colData[0] + 90, rowData + rowInc)
         doc.text(":", colData[0] + 120, rowData + rowInc)
         doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
@@ -626,10 +628,9 @@
                     {/if}
 
                     {#if formSPPD.loading}
-                        <MyLoading message="Get SPPD data"/>
+                        <MyLoading message="Load SPPD data"/>
                     {/if}
                     {#if formSPPD.add || formSPPD.edit}
-                        {JSON.stringify(formSPPD.answer)}
                         <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                             {#if userProfile.user_hrd}
                                 {#await getDept() then val}
@@ -801,7 +802,7 @@
                 {/if}
         
                 {#if formSKPD.loading}
-                    <MyLoading message="Get SKPD data"/>
+                    <MyLoading message="Load SKPD data"/>
                 {/if}
                 {#if formSKPD.add || formSKPD.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>

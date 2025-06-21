@@ -3,11 +3,11 @@
     import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert, Button } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X, Edit } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import MyButton from '@lib/components/MyButton.svelte';
-	import MyLoading from '@lib/components/MyLoading.svelte';
-	import MyInput from '@lib/components/MyInput.svelte';
+    import MyButton from '$/lib/components/MyButton.svelte';
+	import MyLoading from '$/lib/components/MyLoading.svelte';
+	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, pecahArray, generatePeriode, getParams } from '@lib/utils.js';
+	import { formatTanggal, pecahArray, generatePeriode, getParams } from '$/lib/utils.js';
 	import { format, getYear, differenceInDays } from 'date-fns';
     import { CalendarWeekSolid, FileCloneOutline } from 'flowbite-svelte-icons';
     import {z} from 'zod'
@@ -19,7 +19,7 @@
     let user = $derived(data.user) 
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
-    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
+    let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList = $derived.by(()=> {
@@ -63,11 +63,9 @@
     let tableCuti = $state(new TableHandler([], {rowsPerPage}))
     let tableCutiSearch = tableCuti.createSearch()
     
-    const formCutiAnswer = {
+    let formCutiAnswer = {
         answer: {
             cuti_id: "id",
-            // payroll: (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll,
-            payroll: () => (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll,
             name: "",
             type: "",
             description: "",
@@ -76,9 +74,10 @@
             approval: "",
             user_approval: "",
             user_delegate: "",
+            payroll: (()=> (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll)(),
+            dept: (()=> user?.department)(),
         },
-        get dept() { return userProfile.user_hrd ? "" : user?.department},
-        get payroll() { return user?.payroll},
+        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
         success:"",
         error:"",
         modalDelete: false,
@@ -441,13 +440,13 @@
                 {/if}
 
                 {#if formCuti.loading}
-                    <MyLoading message="Get cuti data"/>
+                    <MyLoading message="Load cuti data"/>
                 {/if}
 
                 {#if formCuti.add || formCuti.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <input type='hidden' name="ijin_id" disabled={formCuti.edit} bind:value={formCuti.answer.cuti_id}/>
+                            <input type='hidden' name="cuti_id" disabled={formCuti.edit} bind:value={formCuti.answer.cuti_id}/>
 
                             {#if formCuti.add}
                                 {#await getUser(formCuti.dept)}
@@ -588,7 +587,7 @@
                     {/if}
 
                     {#if formApprovalCuti.loading}
-                        <MyLoading message="Get cuti data"/>
+                        <MyLoading message="Load cuti data"/>
                     {/if}
 
                     <div class="flex gap-2">
@@ -671,7 +670,7 @@
                     {/if}
 
                     {#if formListCuti.loading}
-                        <MyLoading message="Get cuti data"/>
+                        <MyLoading message="Load cuti data"/>
                     {/if}
 
                     <div class="flex gap-2">

@@ -1,21 +1,21 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
-    import MyInput from '@lib/components/MyInput.svelte'
-    import MyButton from '@lib/components/MyButton.svelte'
+    import MyInput from '$/lib/components/MyInput.svelte'
+    import MyButton from '$/lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check, KeyRound } from '@lucide/svelte'
-    import {formatTanggal, getParams, pecahArray} from '@lib/utils'
+    import {formatTanggal, getParams, pecahArray} from '$/lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
-    import bgadmin from '@lib/assets/bg-admin.jpg'
+    import bgadmin from '$lib/assets/bg-admin.jpg'
     import { page } from '$app/stores';
 	import { getYear } from 'date-fns';
 	import { z } from 'zod';
     import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
 	import { invalidateAll } from '$app/navigation';
-	import { ProfileSchema, SettingSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TSettingSchema, type TUserSchema } from '@lib/type.js';
+	import { ProfileSchema, SettingSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TSettingSchema, type TUserSchema } from '$/lib/type.js';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -24,7 +24,7 @@
     const urlTab = $page.url.searchParams.get('tab')
     const urlMessage = $page.url.searchParams.get('message')
 
-    const rowsPerPage = 10
+    const rowsPerPage = 20
     const listLevel = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(v => ({value : v, name : v}))
     
     const ListAccess = [
@@ -338,7 +338,8 @@
             setting_id:"id",
             start_periode: 1,
             end_periode: 1,
-            overtime_allow: 30
+            overtime_allow: 30,
+            overtime_round_up: false
         },
         success:"",
         error:"",
@@ -354,6 +355,7 @@
             formSettingState.answer.start_periode = res.start_periode
             formSettingState.answer.end_periode = res.end_periode
             formSettingState.answer.overtime_allow = res.overtime_allow
+            formSettingState.answer.overtime_round_up = res.overtime_round_up
         }
     }
 
@@ -384,13 +386,13 @@
     let tableCalendar = $state(new TableHandler<TCalendarSchema>([], {rowsPerPage}))
     let tableCalendarSearch = tableCalendar.createSearch()
 
-    const formCalendarAnswer = {
+    let formCalendarAnswer = {
         answer:{
             calendar_id:"id",
             description:"",
             type:"",
             date:"",
-            get createdBy() {return user?.payroll}
+            createdBy: (()=> user?.payroll)(),
         },
         year: getYear(new Date()),
         success:"",
@@ -811,7 +813,15 @@
                                     </div>
                                 {/await}
                                 
-                                <MyInput type='text' title='Location' name="location" bind:value={formUserState.answer.location}/>
+                                <div class="flex flex-col gap-2">
+                                    <Label for='location'>Location</Label>
+                                    <Select name='location' items={[
+                                        {value:"Jakarta", name:"Jakarta"},
+                                        {value:"Samarinda", name:"Samarinda"},
+                                        {value:"Other", name:"Other"},
+                                    ]} bind:value={formUserState.answer.location} />
+                                </div>
+
                                 <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
                                 <MyInput type='date' title='Join Date' name="join_date" bind:value={formUserState.answer.join_date}/>
 
@@ -1107,9 +1117,20 @@
                             </div>
 
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
-                                <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
-                                <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
-                                <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
+                                <div class="flex flex-col">
+                                    <span class='text-textdark italic'>Allow you to calculate period on calendar</span>
+                                    <div class="flex gap-2">
+                                        <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
+                                        <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class='text-textdark italic'>Minimum minute that allow program to set overtime</span>
+                                    <div class="flex items-end gap-4">
+                                        <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
+                                        <Checkbox bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Overtime Round Up</Checkbox>
+                                    </div>
+                                </div>
                             </form>
                         {/if}
                     {/await}

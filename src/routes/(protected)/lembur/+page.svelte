@@ -7,10 +7,10 @@
 	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams, selisihWaktu, formatDifference } from '@lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams, selisihWaktu, formatDifference } from '$/lib/utils.js';
 	import { differenceInHours, format, set, getDay, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
-    import stm from '@lib/assets/stm.png'
+    import stm from '$/lib/assets/stm.png'
     import { jsPDF } from "jspdf";
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
@@ -20,26 +20,26 @@
     let user = $derived(data.user) 
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
-    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
+    let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
 
     const rowsPerPage = 10
     
     let tableSPL = $state(new TableHandler([], {rowsPerPage}))
     let tableSPLSearch = tableSPL.createSearch()
     
-    const formSPLAnswer = {
+    let formSPLAnswer = {
         answer:{
             spl_id: "id",
             purpose:"",
-            get dept() {return user?.department},
-            spl_detail:[{payroll:"", description:""}],
             est_start:"",
             est_end:"",            
             approval1:"",
             approval2:"",            
+            dept: (()=> user?.department)(),
+            spl_detail:[{payroll:"", description:""}],
         },
-        get dept() {return user?.department},
-        get payroll() {return userProfile.level > 1 ? "": user?.payroll},
+        dept: (()=> user?.department)(),
+        payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
         success:"",
         error:"",
         modalDelete: false,
@@ -130,7 +130,7 @@
         }
     }
 
-    const handleCetakSPL= async (id:string) =>{
+    const handleCetakSPL = async (id:string) =>{
         const req = await axios.get(`/api/lembur/spl/${id}/print`)
         const res = await req.data
 
@@ -141,7 +141,7 @@
         })
 
         const signatureSize = 20
-        const colData = [10, 90, 160, 230]
+        const colData = [8, 90, 160, 230]
         const rowData = 0
         let rowInc = 0
         let row1 = 4
@@ -159,8 +159,7 @@
         doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
         doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
         
-        doc.setFontSize(16)
-        const rightAlign = 235
+        const rightAlign = 238
         doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
         doc.setFontSize(10)
         doc.text("Form No", rightAlign + 2, rowData + rowInc)
@@ -174,9 +173,9 @@
         
         rowInc += row4
         doc.setFontSize(14)
-        doc.text("OVERTIME AUTHORIZATION FORM", 105, rowData + rowInc)
+        doc.text("OVERTIME AUTHORIZATION FORM", 108, rowData + rowInc)
         
-        rowInc += row3
+        rowInc += row3 * 1.2
         doc.setFontSize(11)
         doc.text("Document No", colData[0], rowData + rowInc)
         doc.text(`:  ${res.spl_id.replace(/\_/g, '/')}`, colData[0] + 30, rowData + rowInc)
@@ -188,7 +187,7 @@
         doc.text(`:  ${res.dept_spl_deptTodept.name}`, colData[0] + 30, rowData + rowInc)
         
         rowInc += row4
-        const boxCheck = [10, 100, 166]
+        const boxCheck = [colData[0], 105, 180]
         doc.rect(boxCheck[0], rowData + rowInc - 4, 4, 4)
         doc.text(`Customer Requirement`, boxCheck[0] + 6, rowData + rowInc)
         doc.rect(boxCheck[1], rowData + rowInc - 4, 4, 4)
@@ -217,11 +216,11 @@
                 })
             }),
             styles: {cellPadding: 1, halign: 'center' },
-            headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
+            headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2, fontSize: 9},
             bodyStyles:{fontSize: 9, halign: 'center'},
             columnStyles: {
                 0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
-                3:{cellWidth: 20, valign: 'middle'}, 4:{cellWidth: 20, valign: 'middle'}, 5:{cellWidth: 28, valign: 'middle'}, 6:{cellWidth: 122, halign: 'left', valign: 'middle'}
+                3:{cellWidth: 17, valign: 'middle'}, 4:{cellWidth: 17, valign: 'middle'}, 5:{cellWidth: 28, valign: 'middle'}, 6:{cellWidth: 133, halign: 'left', valign: 'middle'}
             },
         })
 
@@ -321,7 +320,6 @@
     
     const formSRLAnswer = {
         answer:{
-            get payroll() {return user?.payroll},
             srl_id: "id",
             spl_id: "",
             real_start: "",
@@ -329,9 +327,10 @@
             approval1:"",
             approval2:"",
             overtime:0,
+            payroll: (()=> user?.payroll)(),
             srl_detail:[{description:"", status: ""}],
         },
-        get payroll() {return userProfile.level > 1 ? "": user?.payroll},
+        payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
         success:"",
         error:"",
         modalDelete: false,
@@ -545,13 +544,17 @@
         })
 
         const signatureSize = 20
-        const colData = [10, 120, 220]
+        const colData = [8, 115, 220]
         const rowData = 0
         let rowInc = 0
         let row1 = 4
         let row2 = 6
         let row3 = 8
         let row4 = 10
+
+        const totalMinutes = differenceInMinutes(res.real_end, res.real_start)
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
 
         // const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
 
@@ -566,7 +569,7 @@
         doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
         
         doc.setFontSize(16)
-        const rightAlign = 235
+        const rightAlign = 238
         doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
         doc.setFontSize(10)
         doc.text("Form No", rightAlign + 2, rowData + rowInc)
@@ -589,34 +592,40 @@
         doc.setFont('times', 'normal', 'bold')
         doc.text("Kepada", colData[0], rowData + rowInc)
         doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
-        doc.text(`| Hari Minggu`, colData[0] + 130, rowData + rowInc)
+        doc.text(`| Hari Minggu`, colData[0] + 135, rowData + rowInc)
         rowInc += 5
         doc.text("Dept.", colData[0], rowData + rowInc)
         doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
-        doc.text(`| Hari Libur Resmi`, colData[0] + 130, rowData + rowInc)
+        doc.text(`| Hari Libur Resmi`, colData[0] + 135, rowData + rowInc)
         rowInc += 5
         doc.text("Bulan", colData[0], rowData + rowInc)
         doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
-        doc.text(`| Hari Kerja Biasa`, colData[0] + 130, rowData + rowInc)
+        doc.text(`| Hari Kerja Biasa`, colData[0] + 135, rowData + rowInc)
         
         rowInc += row2
         autoTable(doc, {
             startY: rowData + rowInc,
             theme:"grid",
-            head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Description', 'Status']],
+            head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Jumlah Jam Kerja', 'Pekerjaan yang di kerjakan', 'Keterangan']],
             margin: {left: colData[0]},
             body: res.srl_detail.map((v:any, i: number) => {
                 const [nama, payroll, tanggal, waktu] = i == 0 
                 ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
                 : ["","","",""]
-                return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
+                return [i + 1, nama, payroll, tanggal, waktu, `${hours} Jam ${minutes} menit`, v.description, v.status]
             }),
             styles: {cellPadding: 1, halign: 'center' },
             headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
             bodyStyles:{fontSize: 9, halign: 'center'},
             columnStyles: {
-                0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
-                3:{cellWidth: 35, valign: 'middle'}, 4:{cellWidth: 25, valign: 'middle'}, 5:{cellWidth: 105, halign: 'left', valign: 'middle'}, 6:{cellWidth: 25, valign: 'middle'}
+                0:{cellWidth: 10, valign: 'middle'}, //No
+                1:{cellWidth: 55, valign: 'middle'}, //Nama
+                2:{cellWidth: 17, valign: 'middle'}, //Payroll
+                3:{cellWidth: 30, valign: 'middle'}, //Tanggal
+                4:{cellWidth: 22, valign: 'middle'}, //Waktu
+                5:{cellWidth: 26, valign: 'middle'}, //Jumlah Jam Kerja
+                6:{cellWidth: 95, valign: 'middle', halign: 'left'},  //Description
+                7:{cellWidth: 25, valign: 'middle'} //Status
             },
         })
 
@@ -840,7 +849,7 @@
     <title>Lembur</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Modal bind:open={formSPL.modalDelete} autoclose>
         <div class="flex flex-col gap-6">
             <h3>Delete SPL ?</h3>
@@ -894,6 +903,7 @@
                         {#if formSPL.loading}
                             <MyLoading message="Loading data"/>
                         {/if}
+
                         {#if formSPL.add || formSPL.edit}
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                                 <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
@@ -1243,7 +1253,7 @@
                         </div>
         
                         {#if formSRL.loading}
-                            <MyLoading message="Get SPL data"/>
+                            <MyLoading message="Load SPL data"/>
                         {/if}
                         {#if formSRL.add || formSRL.edit}
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
@@ -1355,7 +1365,7 @@
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "time")}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <Badge rounded color={"green"}>
-                                                            + {formatDifference(selisihWaktu(row.real_end, row.real_start).hour, selisihWaktu(row.real_end, row.real_start).minute)}
+                                                            + {formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...selisihWaktu(row.real_end, row.real_start)})}
                                                         </Badge>
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>

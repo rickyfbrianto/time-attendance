@@ -1,5 +1,5 @@
 <script>
-	import { formatTanggal } from "@lib/utils";
+	import { formatTanggal } from "$/lib/utils";
     import { Badge } from 'flowbite-svelte';
     
     let {check_in, check_in2} = $props()

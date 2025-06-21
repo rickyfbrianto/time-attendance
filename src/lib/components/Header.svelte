@@ -1,8 +1,8 @@
 <script lang='ts'>
-    import MyButton from '@lib/components/MyButton.svelte'
-    import {AlignJustify, Check, CloudCog, Eclipse, LogOut, Moon, Sun } from '@lucide/svelte'
-	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Toggle } from 'flowbite-svelte';
-    import { appstore } from "@lib/store/appstore";
+    import MyButton from '$/lib/components/MyButton.svelte'
+    import {AlignJustify, Check, LogOut } from '@lucide/svelte'
+	import { Alert, Modal, Breadcrumb, BreadcrumbItem } from 'flowbite-svelte';
+    import { appstore } from "$/lib/store/appstore";
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	
@@ -23,18 +23,7 @@
         const req = await fetch('/signout', {method:"POST"})
         const res = await req.json()
         logoutState.message = res.message
-        setTimeout(()=>{
-            goto('/signin')
-        }, 1000)
-    }
-
-    const handleDarkMode = (val)=>{
-        const temp = JSON.parse(localStorage.getItem('appstore') || "")
-        if(val)
-            document.documentElement.classList.add('dark')
-        else
-            document.documentElement.classList.remove('dark');
-        localStorage.setItem('appstore', JSON.stringify({...temp, darkMode: val}))
+        setTimeout(()=> goto('/signin'), 1000)
     }
 
     const handleShowSidebar = () =>{
@@ -57,16 +46,7 @@
         </Breadcrumb>
     </div>
     
-    <div class="flex gap-4 items-center">
-        <Toggle bind:checked={$appstore.darkMode} onchange={e => handleDarkMode(e.target.checked)} class='ring-0 border-none outline-none'>
-            {#if $appstore.darkMode}
-                <Sun size={16} />
-            {:else}
-                <Moon size={16} />
-            {/if}
-        </Toggle>
-        <MyButton className='bg-bgdark2 text-textdark' onclick={()=> logoutState.modal = true}><LogOut size={16}/></MyButton>
-    </div>
+    <MyButton className='bg-bgdark2 text-textdark' onclick={()=> logoutState.modal = true}><LogOut size={16}/></MyButton>
 
     <Modal class='bg-bgdark' title="Logout" bind:open={logoutState.modal}>
         <p class="text-base leading-relaxed">Are you sure want logout?</p>

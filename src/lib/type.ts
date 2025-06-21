@@ -58,16 +58,17 @@ export const DeptSchema = z.object({
 export type TDeptSchema = z.infer<typeof DeptSchema>
 
 export const SettingSchema = z.object({
-    setting_id : z.string(),
+    setting_id: z.string(),
     start_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
     end_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
     overtime_allow: z.number().gte(1, "Min 1").lte(60, "Max 60"),
+    overtime_round_up: z.boolean()
 })
 
 export type TSettingSchema = z.infer<typeof SettingSchema>
 
 export const CalendarSchema = z.object({
-    calendar_id : z.string(),
+    calendar_id: z.string(),
     description: z.string().min(4, "Min 4 Character").max(255, "Max 255 Character"),
     type: z.string().trim().min(1),
     date: z.string().date()

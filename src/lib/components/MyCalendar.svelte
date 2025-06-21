@@ -6,7 +6,7 @@
     // import interactionPlugin from '@event-calendar/interaction'
 	import { getYear } from 'date-fns';
 	import MyLoading from '@/MyLoading.svelte';
-    import {getColorCalendar} from "@lib/utils";
+    import {getColorCalendar} from "$/lib/utils";
     
     let {payroll} = $props()
     

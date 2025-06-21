@@ -1,5 +1,5 @@
 <script>
-	import { formatTanggal } from "@lib/utils";
+	import { formatTanggal } from "$/lib/utils";
     import { Badge } from 'flowbite-svelte';
     import { differenceInCalendarDays } from "date-fns";
     

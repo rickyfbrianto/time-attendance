@@ -4,13 +4,13 @@
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Button, Badge } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
-    import MyButton from '@lib/components/MyButton.svelte'
+    import MyButton from '$/lib/components/MyButton.svelte'
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
-    import TableAttendanceClockIn from '@lib/components/TableAttendanceClockIn.svelte';
-	import TableAttendanceClockOut from '@lib/components/TableAttendanceClockOut.svelte';
-	import TableAttendanceDifference from '@lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, generatePeriode, namaHari, isLate, getParams, hitungDifference, formatDifference } from '@lib/utils.js';
+    import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
+	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
+	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
+	import { formatTanggal, generatePeriode, namaHari, isLate, getParams, hitungDifference, formatDifference } from '$/lib/utils.js';
 	import { format } from 'date-fns';
 	import Svelecte from 'svelecte';
     import { invalidateAll } from '$app/navigation';
@@ -20,7 +20,7 @@
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
-    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
+    let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
     
     let openRow: number[] = $state([]) 
     const toggleRow = (i: number) => {
@@ -35,8 +35,8 @@
     let tableAbsenSearch = tableAbsen.createSearch()
 
     const formAbsenAnswer = {
-        get dept() { return user?.department},
-        get payroll() { return user?.payroll},
+        payroll: (()=> user?.payroll)(),
+        dept: (()=> user?.department)(),
         name: "",
         success:"",
         error:"",
@@ -53,7 +53,7 @@
     let tableAbsenDeptSearch = tableAbsenDept.createSearch()
 
     const formAbsenDeptAnswer = {
-        get dept() { return user?.department},
+        dept: (()=> user?.department)(),
         success:"",
         error:"",
         loading:false,
@@ -169,7 +169,7 @@
                     }}><RefreshCw size={16}/></MyButton>
                 </div>
                 
-                <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
+                <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
                 <Datatable table={tableAbsen}>
                     <Table>
                         <TableHead>
@@ -215,7 +215,7 @@
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                             const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                             return isOvertime
-                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)})}`}
                                                                 : null
                                                         })(),
                                                         row.ijin_info 
@@ -296,7 +296,7 @@
                         }}><RefreshCw size={16}/></MyButton>
                     </div>
                     
-                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute</span>
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
                     <Datatable table={tableAbsenDept}>
                         <Table>
                             <TableHead>
@@ -344,7 +344,7 @@
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                             const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                             return isOvertime
-                                                                ? {type:"lembur", value:`Overtime ${formatDifference(hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).hour, hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2).minute)}`}
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)})}`}
                                                                 : null
                                                         })(),
                                                         row.ijin_info 

@@ -1,5 +1,5 @@
 <script>
-	import { hitungDifference, formatDifference, formatTanggal, formatTanggalISO } from "@lib/utils";
+	import { hitungDifference, formatDifference } from "$/lib/utils";
     import { Badge } from 'flowbite-svelte';
 
     let {check_in, check_out, check_in2, check_out2, overtime} = $props()
@@ -10,6 +10,6 @@
 
 {#if isOvertime}
     <Badge rounded color={"green"}>
-        + {formatDifference(hour, minute)}
+        + {formatDifference({hour, minute})}
     </Badge>
 {/if}

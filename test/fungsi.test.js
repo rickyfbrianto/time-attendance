@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pecahArray, generatePeriode, getColorCalendar, getLastIjinDate, pecahKataOther } from "@lib/utils.js";
+import { pecahArray, generatePeriode, getColorCalendar, getLastIjinDate, pecahKataOther } from "$/lib/utils.js";
 
 describe("Test Pecah Array", () => {
 	it("harus mengembalikan nilai true", () => {

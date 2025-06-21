@@ -47,7 +47,7 @@
     <title>Signin</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg container border-[2px] border-slate-200">
+<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg container border-[2px] border-slate-200 overflow-hidden">
     <div class="flex p-6 bg-bgdark2 rounded-t-lg">
         <span class='text-[1.4rem]'>Login</span>
     </div>

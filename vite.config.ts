@@ -2,24 +2,23 @@ import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import path from "node:path";
+import { enhancedImages } from '@sveltejs/enhanced-img';
 
 export default defineConfig({
     optimizeDeps: {
         exclude: ['@prisma-app/client/runtime']
     },
-	plugins: [sveltekit(), tailwindcss()],
-    server:{
+    plugins: [
+        enhancedImages(),
+        tailwindcss(),
+        sveltekit(),
+    ],
+    server: {
         port: 1100,
         host: "0.0.0.0",
         allowedHosts: ['ricky'],
-        fs: {
-            allow: [
-                // "C:/Users/RICKY/Desktop/time-attendance/static/media/attach_signature/",
-                // path.resolve(__dirname, "/static")
-            ]
-        }
     },
-    preview:{
+    preview: {
         port: 1000,
         allowedHosts: ['ricky.dev', 'ricky'],
     },

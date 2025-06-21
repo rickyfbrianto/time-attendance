@@ -30,6 +30,7 @@ model employee {
   status                                          employee_status @default(Aktif)
   attendance_attendance_createdByToemployee       attendance[]    @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[]    @relation("attendance_user_id_machineToemployee")
+  calendar                                        calendar[]
   cuti_cuti_approvalToemployee                    cuti[]          @relation("cuti_approvalToemployee")
   cuti                                            cuti[]
   profile                                         profile?        @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
@@ -129,13 +130,19 @@ model calendar {
   description String?        @db.VarChar(255)
   type        calendar_type?
   date        DateTime?      @unique(map: "date") @db.Date
+  createdBy   String?        @db.VarChar(8)
+  createdAt   DateTime       @default(now()) @db.DateTime(0)
+  employee    employee?      @relation(fields: [createdBy], references: [payroll])
+
+  @@index([createdBy], map: "createdBy")
 }
 
 model setting {
-  setting_id     String @id @db.VarChar(40)
-  start_periode  Int    @default(17) @db.TinyInt
-  end_periode    Int    @default(16) @db.TinyInt
-  overtime_allow Int    @default(30) @db.TinyInt
+  setting_id        String  @id @db.VarChar(40)
+  start_periode     Int     @default(17) @db.TinyInt
+  end_periode       Int     @default(16) @db.TinyInt
+  overtime_allow    Int     @default(30) @db.TinyInt
+  overtime_round_up Boolean
 }
 
 model spl {

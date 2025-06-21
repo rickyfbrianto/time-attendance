@@ -1,14 +1,14 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, MultiSelect, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Alert, Modal, Timeline, TimelineItem, Badge, Button, Checkbox } from 'flowbite-svelte';
+    import { Tabs, MultiSelect, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Alert, Modal, Timeline, TimelineItem, Badge, Button, Checkbox } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import MyButton from '@lib/components/MyButton.svelte';
-	import MyLoading from '@lib/components/MyLoading.svelte';
-	import MyInput from '@lib/components/MyInput.svelte';
+    import MyButton from '$/lib/components/MyButton.svelte';
+	import MyLoading from '$/lib/components/MyLoading.svelte';
+	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, generatePeriode, pecahArray, getParams, getLastIjinDate } from '@lib/utils.js';
-    import { differenceInDays, eachDayOfInterval, format, getDay, getYear, isWeekend } from 'date-fns';
+	import { formatTanggal, generatePeriode, pecahArray, getParams, getLastIjinDate } from '$/lib/utils.js';
+    import { differenceInDays, eachDayOfInterval, format, getDay, getYear } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
@@ -19,7 +19,7 @@
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
-    let periode = $derived(generatePeriode(Number(setting?.start_periode), Number(setting?.end_periode)))
+    let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
 
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
     // (khitan/baptis,haji,nikah
@@ -62,22 +62,25 @@
     let tableIjin = $state(new TableHandler([], {rowsPerPage}))
     let tableIjinSearch = tableIjin.createSearch()
 
-    const formIjinAnswer = {
+    let formIjinAnswer = {
         answer:{
             ijin_id: "id",
-            date: "",
+            name: "",
             type:"",
-            askDuration:0,
             description: "",
-            // get payroll() { return user?.payroll},
-            // get dept() { return user?.department},
-            payroll: () => user.payroll,
-            dept: () => user.department,
+            date: "",
             status: "Waiting",
-            get approval() { return user?.approver || null},
-            get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
-            get user_delegate() { return user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null},
+            askDuration:0,
+            approval: "",
+            user_approval: "",
+            user_delegate: "",
+            payroll: (() => user?.payroll)(),
+            dept: (()=> user?.department)(),
+            // get approval() { return user?.approver || null},
+            // get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
+            // get user_delegate() { return user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null},
         },
+        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
         autoWeekend: false,
         success:"",
         error:"",
@@ -248,6 +251,23 @@
         const req = await fetch(`/api/data?type=get_calendar&val=${v}&year=${year}&month=${month}`)
         const res = await req.json()
         return res
+    }
+    
+    const getUser = async (val: string = "") =>{
+        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
+        return await req.json()
+    }
+
+    const fillIjin = async (val: string) => {
+        const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
+        const res = await req.json()
+        if(res){
+            formIjin.answer.name = res.name
+            formIjin.answer.approval = res.employee_employee_approverToemployee.payroll
+            formIjin.answer.user_approval = res.employee_employee_approverToemployee.name
+            formIjin.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
+        }
+        // return await res
     }
     
     $effect(()=>{
@@ -426,20 +446,39 @@
                         {/if}
                     {:else}
                         {#if pecahArray(userProfile?.access_ijin, "C")}
-                            <MyButton onclick={()=> formIjin.add = true}><Plus size={16}/></MyButton>
+                            <MyButton onclick={()=> {
+                                fillIjin(formIjin.answer.payroll)
+                                formIjin.add = true
+                            }}><Plus size={16}/></MyButton>
                         {/if}
                     {/if}
                 </div>
 
                 {#if formIjin.loading}
-                    <MyLoading message="Get ijin data"/>
+                    <MyLoading message="Load ijin data"/>
                 {/if}
+                
                 {#if formIjin.add || formIjin.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="ijin_id" disabled={formIjin.edit} bind:value={formIjin.answer.ijin_id}/>
 
-                            <MyInput type='text' title='Payroll' disabled value={user.payroll}/>
+                            {#if formIjin.add}
+                                {#await getUser(formIjin.dept)}
+                                    <MyLoading message="Loading data"/>
+                                {:then val}
+                                    <div class="flex flex-col justify-start gap-2">
+                                        <Label>Payroll</Label>
+                                        <Svelecte class='border-none' disabled={userProfile.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formIjin.answer.payroll} 
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                        onChange={(e) => fillIjin(e.value)}/>
+                                    </div>
+                                {/await}
+                            {:else if formIjin.edit}
+                                <MyInput type='text' title='Payroll' disabled value={formIjin.answer.payroll}/>
+                            {/if}
+                            
+                            <!-- <MyInput type='text' title='Payroll' disabled value={user.payroll}/> -->
                             <MyInput type='text' title='Name' disabled value={user.name}/>
                             <MyInput type='text' title='Approval' disabled value={user.employee_employee_approverToemployee.name}/>
                             <MyInput type='text' title='Substitute' disabled value={user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name}/>
@@ -564,7 +603,7 @@
                     {/if}
 
                     {#if formApprovalIjin.loading}
-                        <MyLoading message="Get cuti data"/>
+                        <MyLoading message="Load cuti data"/>
                     {/if}
 
                     <div class="flex gap-2">
@@ -647,7 +686,7 @@
                     {/if}
 
                     {#if formListIjin.loading}
-                        <MyLoading message="Get cuti data"/>
+                        <MyLoading message="Load cuti data"/>
                     {/if}
 
                     <div class="flex gap-2">
