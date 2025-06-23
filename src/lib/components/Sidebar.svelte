@@ -15,8 +15,6 @@
 	import { z } from 'zod';
 	import MyButton from './MyButton.svelte';
 	import MyInput from './MyInput.svelte';
-    import MyLoading from '@/MyLoading.svelte';
-	import Svelecte from 'svelecte';
 	import { format } from 'date-fns';
 	
     let {data} = $props()
@@ -47,6 +45,7 @@
             payroll: (()=> user.payroll)(),
             name: (()=> user.name)(),
             position: (()=> user.position)(),
+            password: "",
             location: (()=> user.location)(),
             phone: (()=> user.phone)(),
             email:  (()=> user.email)(),
@@ -104,6 +103,40 @@
         }
     }
 
+    const formUserChangePassword = async () =>{
+        try {
+            formUserState.loading = true
+            const valid = UserSchema.pick({
+                password: true,
+            })
+            
+            const isValid = valid.safeParse(formUserState.answer)
+            if(isValid.success){
+                const req = await axios.post(`/api/admin/user/${formUserState.answer.payroll}/password`, {
+                    payroll: formUserState.answer.payroll,
+                    password: formUserState.answer.password,
+                })
+                
+                const res = await req.data
+                formUserState.success = res.message
+                setTimeout(async ()=> {
+                    invalidateAll().then(()=> {
+                        formUserBatal()
+                    })
+                }, 1000)
+            }else{
+                const err = fromZodError(isValid.error)
+                formUserState.success = ""
+                formUserState.error = err.message
+            }
+        } catch (error: any) {
+            formUserState.error = error.response.data.message
+            formUserState.success = ""
+        } finally {
+            formUserState.loading = false
+        }
+    }
+
     const getUser = async (val: string = "") =>{
         const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
         return await req.json()
@@ -131,6 +164,7 @@
                         <Icon size=14/>
                         <span class={`text-[.75rem] font-bold `}>{title}</span>
                     </a>
+                    <Tooltip class='z-10'>{title}</Tooltip>
                 {/if}
             {/each}
             {#if pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R")}
@@ -141,6 +175,7 @@
                     <ShieldUser size=14/>
                     <span class={`text-[.75rem] font-bold `}>Admin</span>
                 </a>
+                <Tooltip class='z-10'>Admin</Tooltip>
             {/if}
         </div>
 
@@ -153,11 +188,15 @@
             </div>
             <span class="text-[14px] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
             <Badge class='bg-slate-200 text-slate-800 self-center py-1' title={user.email}>{user.email}</Badge>
+            <Tooltip class='z-10'>{user.email}</Tooltip>
             <Hr hrClass="my-3 text-slate-300 h-[1.2px]"/>
             <div class='flex flex-col gap-1 px-1'>
                 <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1" title={user.payroll}><IdCard size={14}/>{user.payroll}</span>
+                <Tooltip class='z-10'>{user.payroll}</Tooltip>
                 <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1" title={user.position}><Award size={14}/>{user.position}</span>
+                <Tooltip class='z-10'>{user.position}</Tooltip>
                 <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1" title={userProfile.name}><Share2 size={14}/>Profile ({userProfile?.name} - Level {userProfile?.level})</span>
+                <Tooltip class='z-10'>{userProfile.name}</Tooltip>
                 <!-- <span class="text-[12px] text-textdark">{user.position}</span>
                 <span class="text-[12px] text-textdark">Profile ({userProfile?.name} - Level {userProfile?.level}) </span> -->
                 <!-- <span class="text-[12px] text-textdark">{user.email}</span> -->
@@ -201,10 +240,6 @@
                     <span>{formUserState.success}</span>
                 </Alert>
             {/if}
-            <div class="flex gap-2">                        
-                <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
-                <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
-            </div>
             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                 <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
                 <div class="grid grid-cols-3 gap-4 p-4 border-[1px] border-slate-300">
@@ -217,7 +252,11 @@
                     <MyInput type='text' title='Join Date' disabled name="join_date" bind:value={formUserState.answer.join_date}/>
                 </div>
 
-                <span class="border-b-[1px] border-slate-300 pb-2">Edit</span>
+                <div class="flex gap-2">
+                    <span class="flex-1 border-b-[1px] border-slate-300 pb-2">Edit</span>
+                    <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
+                    <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
+                </div>
                 <div class="grid grid-cols-3 gap-4 p-4 border-[1px] border-slate-300">
                     <!-- <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/> -->
                     <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
@@ -234,6 +273,15 @@
                         <Label>Signature</Label>
                         <input class="rounded-lg border border-slate-300" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
                     </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <span class="flex-1 border-b-[1px] border-slate-300 pb-2">Change Password</span>
+                    <MyButton onclick={formUserBatal}><Ban size={16} /></MyButton>
+                    <MyButton onclick={formUserChangePassword}><Save size={16}/></MyButton>
+                </div>
+                <div class="grid grid-cols-3 gap-4 p-4 border-[1px] border-slate-300">
+                    <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/>
                 </div>
             </form>
         </Modal>

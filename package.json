@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "type": "module",
     "scripts": {
-        "db": "pnpm prisma db pull && pnpm prisma generate && pnpm dev",
+        "db": "pnpm prisma db pull && pnpm prisma generate",
         "dev": "vite dev -- --open",
         "build": "vite build",
         "test": "vitest",

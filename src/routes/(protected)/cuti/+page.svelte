@@ -1,7 +1,7 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert, Button } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X, Edit } from '@lucide/svelte'
+	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
@@ -13,7 +13,8 @@
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
     import Svelecte from 'svelecte';
-    
+    import MyPagination from '@/MyPagination.svelte';
+
     const rowsPerPage = 10
     let {data} = $props()
     let user = $derived(data.user) 
@@ -551,23 +552,7 @@
                             </TableBody>
                         {/if}
                     </Table>
-                    {#if tableCuti.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-textdark self-end text-[.9rem]'>
-                                Showing {tableCuti.rowCount.start} to {tableCuti.rowCount.end} of {tableCuti.rowCount.total} rows
-                                <Badge color="dark">Page {tableCuti.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableCuti.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableCuti.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableCuti.pages as page}
-                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableCuti.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableCuti.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableCuti.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
-                    {/if}
+                    <MyPagination table={tableCuti} />
                 </Datatable>
             </div>
         </TabItem>
@@ -633,23 +618,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableApprovalCuti.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableApprovalCuti.rowCount.start} to {tableApprovalCuti.rowCount.end} of {tableApprovalCuti.rowCount.total} rows
-                                    <Badge color="dark">Page {tableApprovalCuti.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableApprovalCuti.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableApprovalCuti.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableApprovalCuti.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalCuti.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableApprovalCuti.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableApprovalCuti.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableApprovalCuti} />
                     </Datatable>
                 </div>
             </TabItem>
@@ -726,27 +695,10 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableListCuti.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableListCuti.rowCount.start} to {tableListCuti.rowCount.end} of {tableListCuti.rowCount.total} rows
-                                    <Badge color="dark">Page {tableListCuti.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableListCuti.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableListCuti.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableListCuti.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableListCuti.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableListCuti.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableListCuti.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableListCuti} />
                     </Datatable>
                 </div>
             </TabItem>
         {/if}
     </Tabs>
 </main>
-

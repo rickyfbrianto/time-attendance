@@ -2,7 +2,7 @@
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import { Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
+    import { Ban, Search, RefreshCw, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
@@ -15,6 +15,8 @@
     import "$/lib/assets/font/Comic-normal.js"
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
+    import MyPagination from '@/MyPagination.svelte';
+	import { goto } from '$app/navigation';
 
     let {data} = $props()
     let user = $derived(data.user)
@@ -118,165 +120,167 @@
     }
 
     const handleCetakSPPD= async (id:string) =>{
-        const req = await axios.get(`/api/sppd/${id}`)
-        const res = await req.data
+        try {
+            const req = await axios.get(`/api/sppd/${id}`)
+            const res = await req.data
 
-        const doc = new jsPDF({
-            orientation:"p",
-            unit:"mm",
-            format:"a4"
-        })
+            const doc = new jsPDF({
+                orientation:"p",
+                unit:"mm",
+                format:"a4"
+            })
 
-        res.sppd_detail.forEach((val: any, i: number) => {
-            if(i > 0) doc.addPage("a4", "p")
+            res.sppd_detail.forEach((val: any, i: number) => {
+                if(i > 0) doc.addPage("a4", "p")
 
-            const colData = [12, 58, 62]
-            const rowData = 0
-            let rowInc = 0
-            let row1 = 4
-            let row2 = 6
-            let row3 = 8
-            let row4 = 10
+                const colData = [12, 58, 62]
+                const rowData = 0
+                let rowInc = 0
+                let row1 = 4
+                let row2 = 6
+                let row3 = 8
+                let row4 = 10
 
-            rowInc += row4
-            doc.rect(150, rowData + rowInc, 50, rowData + rowInc + 5)
-            doc.setFont('times', 'normal', '')
-            doc.setFontSize(10)
-            rowInc += row1
-            doc.text("Form No  : 11-21", 152, rowData + rowInc)
-            rowInc += row1
-            doc.text("Rev No   : 0", 152, rowData + rowInc)
-            rowInc += row1
-            doc.text("Rev Date : Jan 2020", 152, rowData + rowInc)
+                rowInc += row4
+                doc.rect(150, rowData + rowInc, 50, rowData + rowInc + 5)
+                doc.setFont('times', 'normal', '')
+                doc.setFontSize(10)
+                rowInc += row1
+                doc.text("Form No  : 11-21", 152, rowData + rowInc)
+                rowInc += row1
+                doc.text("Rev No   : 0", 152, rowData + rowInc)
+                rowInc += row1
+                doc.text("Rev Date : Jan 2020", 152, rowData + rowInc)
+                
+                rowInc += row3
+                doc.rect(10, 28, 190, 236)
+                doc.addImage(stm, 12, rowData + rowInc, 21, 21)
+                doc.line(36, 28, 36, 54)
+                rowInc += row1
+                doc.setFont('times', 'normal', 'bold')
+                doc.setFontSize(12)
+                doc.text("HUMAN RESOURCES", 94, rowData + rowInc)
+                doc.setFontSize(14)
+                rowInc += row2
+                doc.text("SURAT PERINTAH PERJALANAN DINAS", 67, rowData + rowInc)
+                rowInc += 2
+                doc.line(36, rowData + rowInc, 200, rowData + rowInc)
+                rowInc += row3
+                doc.setFont('times', 'italic')
+                doc.setFontSize(12)
+                doc.text("INSTRUCTION FOR BUSSINESS TRAVEL", 77, rowData + rowInc)
+                rowInc += row1
+                doc.line(10, rowData + rowInc, 200, rowData + rowInc)
+                
+                doc.setFont('times', 'normal')
+                doc.setFontSize(12)
+                rowInc += row4
+                doc.text("Nomor / No", colData[0], rowData + rowInc)
+                doc.text(`: ${res.sppd_id.replace(/\_/g, '/')}`, colData[1], rowData + rowInc)
+                rowInc += row4
+                doc.text("To", colData[0], rowData + rowInc)
+                doc.text(":", colData[0] + 25, rowData + rowInc)
+                doc.setFont('times', 'normal', 'bold')
+                doc.text("Human Resources", colData[0] + 28, rowData + rowInc)
+                rowInc += row2
+                doc.setFont('times', 'normal')
+                doc.text("From", colData[0], rowData + rowInc)
+                doc.text(":", colData[0] + 25, rowData + rowInc)
+                
+                rowInc += row4
+                doc.text("Karyawan tersebut di bawah ini diperintahkan untuk menjalankan tugas dinas dengan spesifikasi", colData[0], rowData + rowInc)
+                rowInc += row2
+                doc.text("sebagai berikut : /", colData[0], rowData + rowInc)
+
+                rowInc += row4
+                doc.text("Nama", colData[0], rowData + rowInc)
+                doc.text(`: ${val.employee.name}`, colData[1], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Name", colData[0], rowData + rowInc)
+                
+                rowInc += row3
+                doc.setFont('times', 'normal')
+                doc.text("No. Payroll", colData[0], rowData + rowInc)
+                doc.text(`: ${val.payroll}`, colData[1], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Payroll No.", colData[0], rowData + rowInc)
+
+                rowInc += row3
+                doc.setFont('times', 'normal')
+                doc.text("Jabatan", colData[0], rowData + rowInc)
+                doc.text(`: ${val.employee.position}`, colData[1], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Payroll No.", colData[0], rowData + rowInc)
+
+                rowInc += row3
+                doc.setFont('times', 'normal')
+                doc.text("Department", colData[0], rowData + rowInc)
+                doc.text(`: ${val.employee.dept.name}`, colData[1], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Department", colData[0], rowData + rowInc)
+
+                rowInc += row3
+                doc.setFont('times', 'normal')
+                doc.text("Tujuan", colData[0], rowData + rowInc)
+                doc.text(`: ${res.location}`, colData[1], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Destination", colData[0], rowData + rowInc)
+
+                rowInc += row3
+                doc.setFont('times', 'normal')
+                doc.text("Tanggal", colData[0], rowData + rowInc)
+                doc.text(`: ${format(res.start_date, "dd MMMM yyyy")}`, colData[1], rowData + rowInc)
+                doc.text(`s/d     ${format(res.end_date, "dd MMMM yyyy")}`, colData[1] + 60, rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Date", colData[0], rowData + rowInc)
+
+                rowInc += row3
+                doc.setFont('times', 'normal')
+                doc.text("Deskripsi Tugas", colData[0], rowData + rowInc)
+                doc.text(`: ${val.description}`, colData[1], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Description of Assignment", colData[0], rowData + rowInc)
+
+                rowInc += row4 + 4
+                doc.setFont('times', 'normal')
+                doc.text("Terima kasih atas perhatiannya.", colData[0], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'italic')
+                doc.text("Thank you for your consideration on this matter.", colData[0], rowData + rowInc)
+
+                rowInc += row4
+                doc.setFont('times', 'normal')
+                doc.text(`Jakarta, ${format(new Date(), "dd MMMM yyyy")}`, colData[0], rowData + rowInc)
+                
+                rowInc += row4 * 3
+                doc.setFont('times', 'underline')
+                doc.text(`Agus Saputro`, colData[0], rowData + rowInc)
+                rowInc += row1
+                doc.setFont('times', 'normal')
+                doc.text(`Kepala Departemen HR/GA`, colData[0], rowData + rowInc)
+
+                doc.setFontSize(10)
+                rowInc += row4 + 4
+                doc.text(`* File`, colData[0], rowData + rowInc)
+                rowInc += row1
+                doc.text(`* Disetujui 1 tingkat di atas yang bersangkutan (Minimal Kasi/Supervisor)`, colData[0], rowData + rowInc)
+                doc.setFont('calibri', 'normal')
+            })
             
-            rowInc += row3
-            doc.rect(10, 28, 190, 236)
-            doc.addImage(stm, 12, rowData + rowInc, 21, 21)
-            doc.line(36, 28, 36, 54)
-            rowInc += row1
-            doc.setFont('times', 'normal', 'bold')
-            doc.setFontSize(12)
-            doc.text("HUMAN RESOURCES", 94, rowData + rowInc)
-            doc.setFontSize(14)
-            rowInc += row2
-            doc.text("SURAT PERINTAH PERJALANAN DINAS", 67, rowData + rowInc)
-            rowInc += 2
-            doc.line(36, rowData + rowInc, 200, rowData + rowInc)
-            rowInc += row3
-            doc.setFont('times', 'italic')
-            doc.setFontSize(12)
-            doc.text("INSTRUCTION FOR BUSSINESS TRAVEL", 77, rowData + rowInc)
-            rowInc += row1
-            doc.line(10, rowData + rowInc, 200, rowData + rowInc)
-            
-            doc.setFont('times', 'normal')
-            doc.setFontSize(12)
-            rowInc += row4
-            doc.text("Nomor / No", colData[0], rowData + rowInc)
-            doc.text(`: ${res.sppd_id.replace(/\_/g, '/')}`, colData[1], rowData + rowInc)
-            rowInc += row4
-            doc.text("To", colData[0], rowData + rowInc)
-            doc.text(":", colData[0] + 25, rowData + rowInc)
-            doc.setFont('times', 'normal', 'bold')
-            doc.text("Human Resources", colData[0] + 28, rowData + rowInc)
-            rowInc += row2
-            doc.setFont('times', 'normal')
-            doc.text("From", colData[0], rowData + rowInc)
-            doc.text(":", colData[0] + 25, rowData + rowInc)
-            
-            rowInc += row4
-            doc.text("Karyawan tersebut di bawah ini diperintahkan untuk menjalankan tugas dinas dengan spesifikasi", colData[0], rowData + rowInc)
-            rowInc += row2
-            doc.text("sebagai berikut : /", colData[0], rowData + rowInc)
+            const blob = doc.output('blob')
+            const url = URL.createObjectURL(blob);
 
-            rowInc += row4
-            doc.text("Nama", colData[0], rowData + rowInc)
-            doc.text(`: ${val.employee.name}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Name", colData[0], rowData + rowInc)
-            
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("No. Payroll", colData[0], rowData + rowInc)
-            doc.text(`: ${val.payroll}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Payroll No.", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Jabatan", colData[0], rowData + rowInc)
-            doc.text(`: ${val.employee.position}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Payroll No.", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Department", colData[0], rowData + rowInc)
-            doc.text(`: ${val.employee.dept.name}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Department", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Tujuan", colData[0], rowData + rowInc)
-            doc.text(`: ${res.location}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Destination", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Tanggal", colData[0], rowData + rowInc)
-            doc.text(`: ${format(res.start_date, "dd MMMM yyyy")}`, colData[1], rowData + rowInc)
-            doc.text(`s/d     ${format(res.end_date, "dd MMMM yyyy")}`, colData[1] + 60, rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Date", colData[0], rowData + rowInc)
-
-            rowInc += row3
-            doc.setFont('times', 'normal')
-            doc.text("Deskripsi Tugas", colData[0], rowData + rowInc)
-            doc.text(`: ${val.description}`, colData[1], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Description of Assignment", colData[0], rowData + rowInc)
-
-            rowInc += row4 + 4
-            doc.setFont('times', 'normal')
-            doc.text("Terima kasih atas perhatiannya.", colData[0], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'italic')
-            doc.text("Thank you for your consideration on this matter.", colData[0], rowData + rowInc)
-
-            rowInc += row4
-            doc.setFont('times', 'normal')
-            doc.text(`Jakarta, ${format(new Date(), "dd MMMM yyyy")}`, colData[0], rowData + rowInc)
-            
-            rowInc += row4 * 3
-            doc.setFont('times', 'underline')
-            doc.text(`Agus Saputro`, colData[0], rowData + rowInc)
-            rowInc += row1
-            doc.setFont('times', 'normal')
-            doc.text(`Kepala Departemen HR/GA`, colData[0], rowData + rowInc)
-
-            doc.setFontSize(10)
-            rowInc += row4 + 4
-            doc.text(`* File`, colData[0], rowData + rowInc)
-            rowInc += row1
-            doc.text(`* Disetujui 1 tingkat di atas yang bersangkutan (Minimal Kasi/Supervisor)`, colData[0], rowData + rowInc)
-            doc.setFont('calibri', 'normal')
-        })
-        
-        const blob = doc.output('blob')
-        const url = URL.createObjectURL(blob);
-
-        window.open(url); // buka tab baru
-        
-        // doc.save(`${res.sppd_id}.pdf`);
+            window.open(url); // buka tab baru
+        } catch (err) {
+            goto(`/api/handleError?msg=${err.message}`)
+        }
     }
     
     // SKPD
@@ -369,157 +373,160 @@
     }
 
     const handleCetakSKPD= async (id:string) =>{
-        const req = await axios.get(`/api/skpd/${id}`)
-        const res = await req.data
+        try {        
+            const req = await axios.get(`/api/skpd/${id}`)
+            const res = await req.data
 
-        const doc = new jsPDF({
-            orientation:"p",
-            unit:"mm",
-            format:"a4"
-        })
+            const doc = new jsPDF({
+                orientation:"p",
+                unit:"mm",
+                format:"a4"
+            })
 
-        const rowData = 10
-        const colData = [16, 45, 50]
-        let rowInc = 0
-        let row1 = 6
-        let row2 = 8
-        let row3 = 10
+            const rowData = 10
+            const colData = [16, 45, 50]
+            let rowInc = 0
+            let row1 = 6
+            let row2 = 8
+            let row3 = 10
 
-        doc.setTextColor("#174ca3")
-        doc.addImage(stm, 18, 8, 15, 15)
-        doc.setFontSize(22)
-        rowInc += row1
-        doc.text("PT. SAGATRADE MURNI", 60, rowData + rowInc)
-        doc.setFontSize(13)
-        rowInc += row1
-        doc.text("MANUFACTURES OF PRIMARY CEMENTING EQUIPMENT", 43, rowData + rowInc)
-        doc.rect(10, 28, 190, 236)
-        doc.setFont("Comic", "normal")
-        doc.setFontSize(16)
-        doc.setTextColor("#000000")
-        rowInc += 18
-        doc.text("SURAT KETERANGAN PERJALANAN DINAS", 52, rowData + rowInc)
-        rowInc += row2
-        doc.line(10, rowData + rowInc, 200, rowData + rowInc)
-        
-        rowInc += row3
-        doc.setFont("times", "normal")
-        doc.setFontSize(12)
-        doc.text("Nomor", colData[0], rowData + rowInc)
-        doc.text(`:    ${res.skpd_id.replace(/\_/g,'/')}`, 35, rowData + rowInc)
-        doc.text(`Jakarta, ${format(res.createdAt, "d MMMM yyyy")}`, 142, rowData + rowInc)
-        
-        rowInc += row3
-        doc.text("Dengan Hormat,", colData[0], rowData + rowInc)
-        rowInc += row1
-        doc.text("Dalam rangka tugas perusahaan, maka dengan ini kami berikan Surat Keterangan Perjalanan Dinas", colData[0], rowData + rowInc)
-        rowInc += row1
-        doc.text("kepada karyawan :", colData[0], rowData + rowInc)
+            doc.setTextColor("#174ca3")
+            doc.addImage(stm, 18, 8, 15, 15)
+            doc.setFontSize(22)
+            rowInc += row1
+            doc.text("PT. SAGATRADE MURNI", 60, rowData + rowInc)
+            doc.setFontSize(13)
+            rowInc += row1
+            doc.text("MANUFACTURES OF PRIMARY CEMENTING EQUIPMENT", 43, rowData + rowInc)
+            doc.rect(10, 28, 190, 236)
+            doc.setFont("Comic", "normal")
+            doc.setFontSize(16)
+            doc.setTextColor("#000000")
+            rowInc += 18
+            doc.text("SURAT KETERANGAN PERJALANAN DINAS", 52, rowData + rowInc)
+            rowInc += row2
+            doc.line(10, rowData + rowInc, 200, rowData + rowInc)
+            
+            rowInc += row3
+            doc.setFont("times", "normal")
+            doc.setFontSize(12)
+            doc.text("Nomor", colData[0], rowData + rowInc)
+            doc.text(`:    ${res.skpd_id.replace(/\_/g,'/')}`, 35, rowData + rowInc)
+            doc.text(`Jakarta, ${format(res.createdAt, "d MMMM yyyy")}`, 142, rowData + rowInc)
+            
+            rowInc += row3
+            doc.text("Dengan Hormat,", colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.text("Dalam rangka tugas perusahaan, maka dengan ini kami berikan Surat Keterangan Perjalanan Dinas", colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.text("kepada karyawan :", colData[0], rowData + rowInc)
 
-        rowInc += row2
-        doc.text("- Nama", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(res.name, colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Payroll", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(res.payroll, colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Pangkat/Gol", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Jabatan", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(res.position, colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Divisi/Bagian", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(res.dept, colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Tujuan", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(res.location, colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Keperluan", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(res.description.slice(0, 75).trim(), colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text(res.description.slice(75, 150).trim(), colData[2], rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Tanggal", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(format(res.real_start, "d MMMM yyyy"), colData[2], rowData + rowInc)
-        doc.text(`s/d    ${format(res.real_end, "d MMMM yyyy")}`, colData[2] + 60, rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
-        rowInc += row2
-        doc.text("- Lamanya", colData[0], rowData + rowInc)
-        doc.text(":", colData[1], rowData + rowInc)
-        doc.text(`${differenceInDays(formatTanggal(res.real_end), formatTanggal(res.real_start)) + 1}`, colData[2], rowData + rowInc)
-        doc.text(`hari kerja.`, colData[2] + 40, rowData + rowInc)
-        doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 45, rowData + rowInc + 2)
-        rowInc += row2 + 2
-        doc.text("Demikian Surat Keterangan Perjalanan Dinas ini kami keluarkan agar dapat dipergunakan sebagaimana", colData[0], rowData + rowInc)
-        rowInc += row1
-        doc.text("mestinya.", colData[0], rowData + rowInc)
-        rowInc += row2
-        doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
-        doc.text("Pejabat yang dituju,", colData[0] + 130, rowData + rowInc)
-        rowInc += row3 * 2.2
-        doc.text("Agus Saputro", colData[0], rowData + rowInc)
-        doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
-        rowInc += row1
-        doc.text("Kepala Departemen HR/GA", colData[0], rowData + rowInc)
-        rowInc += row1
-        doc.text("Datang tanggal", colData[0] + 90, rowData + rowInc)
-        doc.text(":", colData[0] + 120, rowData + rowInc)
-        doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
-        rowInc += row3
-        doc.text("Kembali tanggal", colData[0] + 90, rowData + rowInc)
-        doc.text(":", colData[0] + 120, rowData + rowInc)
-        doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
-        rowInc += row1
-        doc.setFillColor(186, 187, 194)
-        doc.rect(colData[0], rowData + rowInc, 176, 21, "FD")
-        rowInc += row1
-        doc.text("PERHATIAN :", colData[0] + 4, rowData + rowInc)
-        rowInc += row1
-        doc.text("-", colData[0]  + 5, rowData + rowInc)
-        doc.text("Harap lapor kepada pejabat yang dikunjungi dan meminta tanda tangan setelah selesai", colData[0] + 8, rowData + rowInc)
-        rowInc += row1
-        doc.text("menjalankan tugas", colData[0] + 8, rowData + rowInc)
-        rowInc += row2
-        doc.text("* Pertinggal", colData[0], rowData + rowInc)
+            rowInc += row2
+            doc.text("- Nama", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(res.name, colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Payroll", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(res.payroll, colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Pangkat/Gol", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Jabatan", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(res.position, colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Divisi/Bagian", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(res.dept, colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Tujuan", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(res.location, colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Keperluan", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(res.description.slice(0, 75).trim(), colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text(res.description.slice(75, 150).trim(), colData[2], rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Tanggal", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(format(res.real_start, "d MMMM yyyy"), colData[2], rowData + rowInc)
+            doc.text(`s/d    ${format(res.real_end, "d MMMM yyyy")}`, colData[2] + 60, rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
+            rowInc += row2
+            doc.text("- Lamanya", colData[0], rowData + rowInc)
+            doc.text(":", colData[1], rowData + rowInc)
+            doc.text(`${differenceInDays(formatTanggal(res.real_end), formatTanggal(res.real_start)) + 1}`, colData[2], rowData + rowInc)
+            doc.text(`hari kerja.`, colData[2] + 40, rowData + rowInc)
+            doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 45, rowData + rowInc + 2)
+            rowInc += row2 + 2
+            doc.text("Demikian Surat Keterangan Perjalanan Dinas ini kami keluarkan agar dapat dipergunakan sebagaimana", colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.text("mestinya.", colData[0], rowData + rowInc)
+            rowInc += row2
+            doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
+            doc.text("Pejabat yang dituju,", colData[0] + 130, rowData + rowInc)
+            rowInc += row3 * 2.2
+            doc.text("Agus Saputro", colData[0], rowData + rowInc)
+            doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
+            rowInc += row1
+            doc.text("Kepala Departemen HR/GA", colData[0], rowData + rowInc)
+            rowInc += row1
+            doc.text("Datang tanggal", colData[0] + 90, rowData + rowInc)
+            doc.text(":", colData[0] + 120, rowData + rowInc)
+            doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
+            rowInc += row3
+            doc.text("Kembali tanggal", colData[0] + 90, rowData + rowInc)
+            doc.text(":", colData[0] + 120, rowData + rowInc)
+            doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
+            rowInc += row1
+            doc.setFillColor(186, 187, 194)
+            doc.rect(colData[0], rowData + rowInc, 176, 21, "FD")
+            rowInc += row1
+            doc.text("PERHATIAN :", colData[0] + 4, rowData + rowInc)
+            rowInc += row1
+            doc.text("-", colData[0]  + 5, rowData + rowInc)
+            doc.text("Harap lapor kepada pejabat yang dikunjungi dan meminta tanda tangan setelah selesai", colData[0] + 8, rowData + rowInc)
+            rowInc += row1
+            doc.text("menjalankan tugas", colData[0] + 8, rowData + rowInc)
+            rowInc += row2
+            doc.text("* Pertinggal", colData[0], rowData + rowInc)
 
-        rowInc += row3
-        doc.setFontSize(8)
-        doc.text("Gandaria 8 Office Tower, Lt. 8, Jl. Sultan Iskandar Muda No-10, RT-10/RW-06 Kel. Kebayoran Lama - Jakarta 12770 Tel: (62-21) 7985951 Fax: (62-21) 7986134", 12, rowData + rowInc)
-        rowInc += 4
-        doc.setFontSize(9)
-        doc.text("Marketing Office :", 90, rowData + rowInc)
-        rowInc += 4
-        doc.setFontSize(8)
-        doc.text("Jl. Gandaria Tengah III No-25 Kramat Pela, Kebayoran Baru - Jakarta 12130 Telp : (62-21) 72797009, Fax : : (62-21) 7211435", 30, rowData + rowInc)
-        rowInc += 4
-        doc.setFontSize(9)
-        doc.text("Factory :", 95, rowData + rowInc)
-        rowInc += 4
-        doc.setFontSize(8)
-        doc.text("Jl. Lumba-lumba, Log. Pond Selili, Samarinda 75114 - Kalimantan Timur. Telp : (62-541) 240801 Fax : (62-541) 240604", 34, rowData + rowInc)
-        
-        const blob = doc.output('blob')
-        const url = URL.createObjectURL(blob);
+            rowInc += row3
+            doc.setFontSize(8)
+            doc.text("Gandaria 8 Office Tower, Lt. 8, Jl. Sultan Iskandar Muda No-10, RT-10/RW-06 Kel. Kebayoran Lama - Jakarta 12770 Tel: (62-21) 7985951 Fax: (62-21) 7986134", 12, rowData + rowInc)
+            rowInc += 4
+            doc.setFontSize(9)
+            doc.text("Marketing Office :", 90, rowData + rowInc)
+            rowInc += 4
+            doc.setFontSize(8)
+            doc.text("Jl. Gandaria Tengah III No-25 Kramat Pela, Kebayoran Baru - Jakarta 12130 Telp : (62-21) 72797009, Fax : : (62-21) 7211435", 30, rowData + rowInc)
+            rowInc += 4
+            doc.setFontSize(9)
+            doc.text("Factory :", 95, rowData + rowInc)
+            rowInc += 4
+            doc.setFontSize(8)
+            doc.text("Jl. Lumba-lumba, Log. Pond Selili, Samarinda 75114 - Kalimantan Timur. Telp : (62-541) 240801 Fax : (62-541) 240604", 34, rowData + rowInc)
+            
+            const blob = doc.output('blob')
+            const url = URL.createObjectURL(blob);
 
-        window.open(url); // buka tab baru
-        
-        // doc.save(`${res.skpd_id}.pdf`);
+            window.open(url); // buka tab baru
+            // doc.save(`${res.skpd_id}.pdf`);
+        } catch (err) {
+            goto(`/api/handleError?msg=${err.message}`)
+        }
     }
     
     const getDept = async () =>{
@@ -647,7 +654,7 @@
                                 <MyInput type='text' title={`Location`} name="location" bind:value={formSPPD.answer.location}/>
                                 <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>                            
                                 <MyInput type='daterange' title='Date' name="date" bind:value={formSPPD.answer.date}/>
-                                <MyInput type='text' title='Duration' bind:value={formSPPD.answer.duration} />
+                                <MyInput type='text' title='Duration' disabled bind:value={formSPPD.answer.duration} />
                             </div>
                             
                             {#if formSPPD.answer.dept}
@@ -751,23 +758,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableSPPD.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableSPPD.rowCount.start} to {tableSPPD.rowCount.end} of {tableSPPD.rowCount.total} rows
-                                    <Badge color="dark">Page {tableSPPD.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableSPPD.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableSPPD.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableSPPD.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPPD.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableSPPD.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableSPPD.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableSPPD}/>
                     </Datatable>
                 </div>
             </TabItem>
@@ -913,23 +904,7 @@
                             </TableBody>
                         {/if}
                     </Table>
-                    {#if tableSKPD.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-textdark self-end text-[.9rem]'>
-                                Showing {tableSKPD.rowCount.start} to {tableSKPD.rowCount.end} of {tableSKPD.rowCount.total} rows
-                                <Badge color="dark">Page {tableSKPD.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableSKPD.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSKPD.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableSKPD.pages as page}
-                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSKPD.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableSKPD.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableSKPD.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
-                    {/if}
+                    <MyPagination table={tableSKPD}/>
                 </Datatable>
             </div>
 

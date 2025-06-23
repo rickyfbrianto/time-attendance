@@ -60,8 +60,8 @@ export async function GET({ url }) {
             const req = await prisma.$queryRawUnsafe(`
                 SELECT s.spl_id, s.purpose, sd.description,
                     DATE(s.est_start) AS srl_date,
-                    GetStartOvertime(a.attendance_id, e.workhour, e.start_work) AS est_start,
-                    RoundCheckOut(a.check_in, a.check_out) AS est_end
+                    getStartOvertime(a.attendance_id, e.workhour, e.start_work) AS est_start,
+                    roundCheckOut(a.check_in, a.check_out) AS est_end
                 FROM
                     spl s, spl_detail sd, employee e, attendance a
                 WHERE sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in )= DATE (s.est_start) 

@@ -15,7 +15,7 @@
     }
 </script>
 
-<Footer footerType="logo" class='bg-zinc-50 dark:bg-neutral-900 mt-4 px-4 py-2 md:px-6 md:py-4 border-t-[1px] border-slate-200'>
+<Footer footerType="logo" class='bg-zinc-50 dark:bg-neutral-900 mt-2 px-4 py-2 md:px-6 md:py-4 border-t-[1px] border-slate-300'>
     <div class="sm:flex sm:items-center sm:justify-between">
         <div class="flex items-center">
             <FooterBrand href="https://flowbite.com" src={bg} alt="Time Attendance" />

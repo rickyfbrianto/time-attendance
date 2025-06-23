@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, Paperclip, CircleAlert, IdCard, CalendarClock } from '@lucide/svelte'
+    import {Calendar, Ban, Search, RefreshCw, SquarePlus, Pencil, Trash, Plus, Save, Paperclip, CircleAlert, IdCard, CalendarClock, SquareCheck } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
@@ -17,6 +17,7 @@
 	import { fromZodError } from 'zod-validation-error';
 	import MyCalendar from '@/MyCalendar.svelte';
     import { invalidateAll } from '$app/navigation';
+	import MyPagination from '@/MyPagination.svelte';
     
     const rowsPerPage = 30
     let {data} = $props()
@@ -26,7 +27,7 @@
     
     const filterType = [
         {value:"", title: "Semua"},
-        {value:"HKC", title: "Hari Kerja"},
+        {value:"HKC", title: "Hari Kerja Card"},
         {value:"HKM", title: "Hari Kerja Manual"},
         {value:"Ijin Resmi", title: "Ijin Resmi"},
         {value:"Cuti Resmi", title: "Cuti Resmi"},
@@ -410,7 +411,7 @@
     <title>Attendance {(modeAttendance.payroll !== user?.payroll ? "View | " : "") + modeAttendance.name}</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
     {#if modeAttendance.payroll && modeAttendance.tabNo != 2}
         {#await getAttendance(modeAttendance.payroll)}
             <MyLoading message={`Loading data user`}/>
@@ -457,7 +458,7 @@
         {/await}
     {/if}
     
-    <div class="flex flex-col gap-3 px-4 border-slate-300 border rounded-lg">
+    <div class="flex flex-col gap-3 px-4 py-4 border-slate-300 border rounded-lg">
         {#if !formAttendance.modal}
             {#if formAttendance.error}
                 {#each formAttendance.error.split(';') as v}
@@ -474,7 +475,7 @@
 
         <!-- Tombol Add -->
         {#if ((userProfile?.user_hrd || userProfile?.level > 1) && modeAttendance.tabNo != 2)}
-            <div class="flex mt-4 gap-4 items-center w-full">
+            <div class="flex gap-2 items-center w-full">
                 {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C")}
                     <MyButton onclick={formAttendanceAdd}><Plus size={16}/></MyButton>
                 {/if}
@@ -497,227 +498,73 @@
             </div>
         {/if}
         
-        <Tabs contentClass='w-full' tabStyle="underline">
-            <!-- Attendance pribadi/orang lain -->
-            <TabItem open title={user?.payroll == modeAttendance.payroll ? "My Attendance": `Attendance ${modeAttendance.name}`} onclick={()=> modeAttendance.tabNo = 1} >
-                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex gap-2 items-start">
-                            <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
-                                {#each [30, 60, 90, 120] as option}
-                                    <option value={option}>{option}</option>
-                                {/each}
-                            </select>
-                            <div class="flex flex-col">
-                                <select bind:value={formAttendance.type} onchange={()=> tableAttendance.invalidate()}>
-                                    {#each filterType as option}
-                                        <option value={option.value}>{option.title}</option>
-                                    {/each}
-                                </select>
-                            </div>
-                            <div class="flex w-full flex-col">
-                                <MyInput type='text' bind:value={tableAttendanceSearch.value} onkeydown={(e: KeyboardEvent)=> {
-                                    if(e.key.toLowerCase() === 'enter') tableAttendanceSearch.set()
-                                }}/>
-                                <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
-                            </div>
-                            <MyButton className='p-3' onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton className='p-3' onclick={async ()=>{
-                                await invalidateAll()
-                                getAttendance(modeAttendance.payroll)
-                                tableAttendance.invalidate()
-                            }}><RefreshCw size={16}/></MyButton>
-                        </div>
-                        <!-- {#if userProfile.user_hrd || userProfile.level > 1}
-                            <div class="flex gap-2 items-start">
-                                {#await getUser(formAttendance.dept)}
-                                    <MyLoading message="Loading data"/>
-                                {:then val}
-                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={modeAttendance.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
-                                        onChange={() => tableAttendance.invalidate()}/>
-                                {/await}
-                            </div>
-                        {/if} -->
-                    </div>
-                    
-                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
-                    <Datatable table={tableAttendance}>
-                        <Table divClass="w-auto">
-                            <TableHead>
-                                <ThSort table={tableAttendance} field="check_in">Day</ThSort>
-                                <ThSort table={tableAttendance} field="check_in">Date</ThSort>
-                                <ThSort table={tableAttendance} field="check_in">Clock In</ThSort>
-                                <ThSort table={tableAttendance} field="check_out">Clock Out</ThSort>
-                                <ThSort table={tableAttendance} field="">Difference</ThSort>
-                                <ThSort table={tableAttendance} field="type">type</ThSort>
-                                <ThSort table={tableAttendance} field="">Information</ThSort>
-                                <ThSort table={tableAttendance} field="">#</ThSort>
-                            </TableHead>
-    
-                            {#if tableAttendance.isLoading}
-                                <div class="flex p-4 items-center">
-                                    <MyLoading message="Loading data"/>
-                                </div>
-                            {:else}
-                                <TableBody>
-                                    {#if tableAttendance.rows.length > 0}
-                                        {#each tableAttendance.rows as row}
-                                            <TableBodyRow class='h-10'>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                        {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                            isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            (()=> {
-                                                                const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                                const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
-                                                                return isOvertime
-                                                                    ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
-                                                                    : null
-                                                            })(),
-                                                            row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
-                                                            ] as val}
-                                                            {#if val}
-                                                                <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                    : val.type == "late" ? "red" 
-                                                                    : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
-                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                        }
-                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
-                                                                </Badge>
-                                                            {/if}
-                                                        {/each}
-                                                    </div>
-                                                </TableBodyCell>
-                                                <TableBodyCell>
-                                                    {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
-                                                        {#if (!userProfile.user_hrd && userProfile.level > row.level) 
-                                                            || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
-                                                            || (userProfile.user_hrd && !row.user_hrd)
-                                                        }
-                                                            <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
-                                                        {/if}
-                                                    {/if}
-                                                    {#if row.attachment}
-                                                        <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
-                                                    {/if}
-                                                </TableBodyCell>
-                                            </TableBodyRow>
-                                        {/each}
-                                    {:else}
-                                        <TableBodyRow class='h-10'>
-                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
-                                        </TableBodyRow>
-                                    {/if}
-                                </TableBody>
-                            {/if}
-                        </Table>
-                        {#if tableAttendance.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableAttendance.rowCount.start} to {tableAttendance.rowCount.end} of {tableAttendance.rowCount.total} rows
-                                    <Badge color="dark">Page {tableAttendance.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableAttendance.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableAttendance.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableAttendance.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableAttendance.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableAttendance.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableAttendance.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
-                    </Datatable>
-                </div>
-            </TabItem>
-            <!-- Attendance department -->
-            {#if userProfile.level > 1 || userProfile.user_hrd}
-                <TabItem title="Attendance Department" onclick={()=> modeAttendance.tabNo = 2} >
-                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
+        {#if modeAttendance.payroll}
+            <Tabs contentClass='w-full' tabStyle="underline">
+                <!-- Attendance pribadi/orang lain -->
+                <TabItem open={modeAttendance.tabNo == 1} title={user?.payroll == modeAttendance.payroll ? "My Attendance": `Attendance ${modeAttendance.name}`} onclick={()=> modeAttendance.tabNo = 1} >
+                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
-                                <select bind:value={tableAttendanceDept.rowsPerPage} onchange={() => tableAttendanceDept.setPage(1)}>
+                                <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
                                     {#each [30, 60, 90, 120] as option}
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
                                 <div class="flex flex-col">
-                                    <select bind:value={formAttendanceDept.type} onchange={()=> tableAttendanceDept.invalidate()}>
+                                    <select bind:value={formAttendance.type} onchange={()=> tableAttendance.invalidate()}>
                                         {#each filterType as option}
                                             <option value={option.value}>{option.title}</option>
                                         {/each}
                                     </select>
                                 </div>
                                 <div class="flex w-full flex-col">
-                                    <MyInput type='text' bind:value={tableAttendanceDeptSearch.value} onkeydown={e => {
-                                        if(e.key.toLowerCase() === 'enter') tableAttendanceDeptSearch.set()
+                                    <MyInput type='text' bind:value={tableAttendanceSearch.value} onkeydown={(e: KeyboardEvent)=> {
+                                        if(e.key.toLowerCase() === 'enter') tableAttendanceSearch.set()
                                     }}/>
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
-                                <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton className='p-3' onclick={async ()=> {
+                                <MyButton className='p-3' onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton className='p-3' onclick={async ()=>{
                                     await invalidateAll()
-                                    tableAttendanceDept.invalidate()
+                                    getAttendance(modeAttendance.payroll)
+                                    tableAttendance.invalidate()
                                 }}><RefreshCw size={16}/></MyButton>
                             </div>
-                            {#if userProfile.user_hrd}
+                            <!-- {#if userProfile.user_hrd || userProfile.level > 1}
                                 <div class="flex gap-2 items-start">
-                                    {#await getDept()}
+                                    {#await getUser(formAttendance.dept)}
                                         <MyLoading message="Loading data"/>
                                     {:then val}
-                                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendanceDept.dept} 
-                                            options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
-                                            onChange={() => tableAttendanceDept.invalidate()}/>
+                                        <Svelecte clearable searchable selectOnTab multiple={false} bind:value={modeAttendance.payroll} 
+                                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                            onChange={() => tableAttendance.invalidate()}/>
                                     {/await}
                                 </div>
-                            {/if}
+                            {/if} -->
                         </div>
                         
                         <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
-                        <Datatable table={tableAttendanceDept}>
-                            <Table>
+                        <Datatable table={tableAttendance}>
+                            <Table divClass="w-auto">
                                 <TableHead>
-                                    <ThSort table={tableAttendanceDept} field="check_in">Day</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="check_in">Date</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="payroll">Payroll</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="name">Name</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="check_in">Clock In</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="check_out">Clock Out</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="">Difference</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="type">type</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="">Information</ThSort>
-                                    <ThSort table={tableAttendanceDept} field="">#</ThSort>
+                                    <ThSort table={tableAttendance} field="check_in">Day</ThSort>
+                                    <ThSort table={tableAttendance} field="check_in">Date</ThSort>
+                                    <ThSort table={tableAttendance} field="check_in">Clock In</ThSort>
+                                    <ThSort table={tableAttendance} field="check_out">Clock Out</ThSort>
+                                    <ThSort table={tableAttendance} field="">Difference</ThSort>
+                                    <ThSort table={tableAttendance} field="type">type</ThSort>
+                                    <ThSort table={tableAttendance} field="">Information</ThSort>
+                                    <ThSort table={tableAttendance} field="">#</ThSort>
                                 </TableHead>
         
-                                {#if tableAttendanceDept.isLoading}
+                                {#if tableAttendance.isLoading}
                                     <div class="flex p-4 items-center">
                                         <MyLoading message="Loading data"/>
                                     </div>
                                 {:else}
-                                    <TableBody tableBodyClass="divide-y">
-                                        {#if tableAttendanceDept.rows.length > 0}
-                                            {#each tableAttendanceDept.rows as row}
+                                    <TableBody>
+                                        {#if tableAttendance.rows.length > 0}
+                                            {#each tableAttendance.rows as row}
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
@@ -725,8 +572,6 @@
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
@@ -740,7 +585,7 @@
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
+                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -755,11 +600,13 @@
                                                                         : val.type == "late" ? "red" 
                                                                         : val.type == "lembur" ? "green" 
                                                                         : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
+                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
                                                                                 createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
                                                                             }
                                                                         }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
+                                                                            <SquarePlus size={14}/>
+                                                                        {/if}
                                                                     </Badge>
                                                                 {/if}
                                                             {/each}
@@ -788,83 +635,351 @@
                                     </TableBody>
                                 {/if}
                             </Table>
-                            {#if tableAttendanceDept.rows.length > 0}
-                                <div class="flex justify-between items-center gap-2 mt-3">
-                                    <p class='text-textdark self-end text-[.9rem]'>
-                                        Showing {tableAttendanceDept.rowCount.start} to {tableAttendanceDept.rowCount.end} of {tableAttendanceDept.rowCount.total} rows
-                                        <Badge color="dark">Page {tableAttendanceDept.currentPage}</Badge>
-                                    </p>
-                                    <div class="flex gap-2">
-                                        <MyButton onclick={()=> tableAttendanceDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableAttendanceDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                        {#each tableAttendanceDept.pages as page}
-                                            <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableAttendanceDept.setPage(page)} type="button">{page}</MyButton>
-                                        {/each}
-                                        <MyButton onclick={()=> tableAttendanceDept.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableAttendanceDept.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                    </div>
-                                </div>
-                            {/if}
+
+                            <MyPagination table={tableAttendance} />
                         </Datatable>
                     </div>
                 </TabItem>
-            {/if}
-            <!-- Attendance Double -->
-            {#if userProfile.user_hrd}
-                <TabItem title="Attendance Double (Conflict)" onclick={()=> modeAttendance.tabNo = 3}>
+                <!-- Attendance department -->
+                {#if userProfile.level > 1 || userProfile.user_hrd}
+                    <TabItem open={modeAttendance.tabNo == 2} title="Attendance Department" onclick={()=> modeAttendance.tabNo = 2} >
+                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
+                            <div class="flex flex-col gap-4">
+                                <div class="flex gap-2 items-start">
+                                    <select bind:value={tableAttendanceDept.rowsPerPage} onchange={() => tableAttendanceDept.setPage(1)}>
+                                        {#each [30, 60, 90, 120] as option}
+                                            <option value={option}>{option}</option>
+                                        {/each}
+                                    </select>
+                                    <div class="flex flex-col">
+                                        <select bind:value={formAttendanceDept.type} onchange={()=> tableAttendanceDept.invalidate()}>
+                                            {#each filterType as option}
+                                                <option value={option.value}>{option.title}</option>
+                                            {/each}
+                                        </select>
+                                    </div>
+                                    <div class="flex w-full flex-col">
+                                        <MyInput type='text' bind:value={tableAttendanceDeptSearch.value} onkeydown={e => {
+                                            if(e.key.toLowerCase() === 'enter') tableAttendanceDeptSearch.set()
+                                        }}/>
+                                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                    </div>
+                                    <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
+                                    <MyButton className='p-3' onclick={async ()=> {
+                                        await invalidateAll()
+                                        tableAttendanceDept.invalidate()
+                                    }}><RefreshCw size={16}/></MyButton>
+                                </div>
+                                {#if userProfile.user_hrd}
+                                    <div class="flex gap-2 items-start">
+                                        {#await getDept()}
+                                            <MyLoading message="Loading data"/>
+                                        {:then val}
+                                            <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendanceDept.dept} 
+                                                options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
+                                                onChange={() => tableAttendanceDept.invalidate()}/>
+                                        {/await}
+                                    </div>
+                                {/if}
+                            </div>
+                            
+                            <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                            <Datatable table={tableAttendanceDept}>
+                                <Table>
+                                    <TableHead>
+                                        <ThSort table={tableAttendanceDept} field="check_in">Day</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_in">Date</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="payroll">Payroll</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="name">Name</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_in">Clock In</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_out">Clock Out</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="">Difference</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="type">type</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="">Information</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="">#</ThSort>
+                                    </TableHead>
+            
+                                    {#if tableAttendanceDept.isLoading}
+                                        <div class="flex p-4 items-center">
+                                            <MyLoading message="Loading data"/>
+                                        </div>
+                                    {:else}
+                                        <TableBody tableBodyClass="divide-y">
+                                            {#if tableAttendanceDept.rows.length > 0}
+                                                {#each tableAttendanceDept.rows as row}
+                                                    <TableBodyRow class='h-10'>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <div class="flex gap-1 flex-wrap max-w-[10rem]">
+                                                                {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                                    (()=> {
+                                                                        const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                                        const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                                        return isOvertime
+                                                                            ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
+                                                                            : null
+                                                                    })(),
+                                                                    row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
+                                                                    ] as val}
+                                                                    {#if val}
+                                                                        <Badge rounded color={val.type == "kerja" ? "dark" 
+                                                                            : val.type == "late" ? "red" 
+                                                                            : val.type == "lembur" ? "green" 
+                                                                            : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                                if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
+                                                                                    createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                                }
+                                                                            }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                            {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
+                                                                                <SquarePlus size={14}/>
+                                                                            {/if}
+                                                                        </Badge>
+                                                                    {/if}
+                                                                {/each}
+                                                            </div>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
+                                                                {#if (!userProfile.user_hrd && userProfile.level > row.level) 
+                                                                    || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
+                                                                    || (userProfile.user_hrd && !row.user_hrd)
+                                                                }
+                                                                    <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
+                                                                {/if}
+                                                            {/if}
+                                                            {#if row.attachment}
+                                                                <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    </TableBodyRow>
+                                                {/each}
+                                            {:else}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                                </TableBodyRow>
+                                            {/if}
+                                        </TableBody>
+                                    {/if}
+                                </Table>
+                                <MyPagination table={tableAttendanceDept} />
+                            </Datatable>
+                        </div>
+                    </TabItem>
+                {/if}
+                <!-- Attendance Double -->
+                {#if userProfile.user_hrd}
+                    <TabItem open={modeAttendance.tabNo == 3} title="Attendance Double (Conflict)" onclick={()=> modeAttendance.tabNo = 3}>
+                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
+                            <div class="flex flex-col gap-4">
+                                <div class="flex gap-2 items-start">
+                                    <select bind:value={tableListAttendance.rowsPerPage} onchange={() => tableListAttendance.setPage(1)}>
+                                        {#each [30, 60, 90, 120] as option}
+                                            <option value={option}>{option}</option>
+                                        {/each}
+                                    </select>
+                                    <div class="flex flex-col">
+                                        <select bind:value={formListAttendance.type} onchange={()=> tableListAttendance.invalidate()}>
+                                            {#each filterType as option}
+                                                <option value={option.value}>{option.title}</option>
+                                            {/each}
+                                        </select>
+                                    </div>
+                                    <div class="flex w-full flex-col">
+                                        <MyInput type='text' bind:value={tableListAttendanceSearch.value} onkeydown={e => {
+                                            if(e.key.toLowerCase() === 'enter') tableListAttendanceSearch.set()
+                                        }}/>
+                                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                    </div>
+                                    <MyButton className='p-3' onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
+                                    <MyButton className='p-3' onclick={async ()=> {
+                                        await invalidateAll()
+                                        getAttendance(modeAttendance.payroll)
+                                        tableListAttendance.invalidate()
+                                    }}><RefreshCw size={16}/></MyButton>
+                                </div>
+                            </div>
+                            
+                            <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                            <Datatable table={tableListAttendance}>
+                                <Table>
+                                    <TableHead>
+                                        <ThSort table={tableListAttendance} field="check_in">Day</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_in">Date</ThSort>
+                                        <ThSort table={tableListAttendance} field="payroll">Payroll</ThSort>
+                                        <ThSort table={tableListAttendance} field="name">Name</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_in">Clock In</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_out">Clock Out</ThSort>
+                                        <ThSort table={tableListAttendance} field="type">type</ThSort>
+                                        <ThSort table={tableListAttendance} field="">Information</ThSort>
+                                        <ThSort table={tableListAttendance} field="">#</ThSort>
+                                    </TableHead>
+            
+                                    {#if tableListAttendance.isLoading}
+                                        <div class="flex p-4 items-center">
+                                            <MyLoading message="Loading data"/>
+                                        </div>
+                                    {:else}
+                                        <TableBody tableBodyClass="divide-y">
+                                            {#if tableListAttendance.rows.length > 0}
+                                                {#each tableListAttendance.rows as row}
+                                                    <TableBodyRow class='h-10'>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                            <div class="flex gap-1 flex-wrap max-w-[10rem]">
+                                                                {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                                    (()=> {
+                                                                        const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
+                                                                        const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                                        return isOvertime
+                                                                            ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
+                                                                            : null
+                                                                    })(),
+                                                                    row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
+                                                                    ] as val}
+                                                                    {#if val}
+                                                                        <Badge rounded color={val.type == "kerja" ? "dark" 
+                                                                            : val.type == "late" ? "red" 
+                                                                            : val.type == "lembur" ? "green" 
+                                                                            : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
+                                                                                if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
+                                                                                    createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                                }
+                                                                            }} class='flex gap-2 break-words whitespace-normal'>{val.value}
+                                                                            {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
+                                                                                <SquarePlus size={14}/>
+                                                                            {/if}
+                                                                        </Badge>
+                                                                    {/if}
+                                                                {/each}
+                                                            </div>
+                                                        </TableBodyCell>
+                                                        <TableBodyCell>
+                                                            {#if row.payroll != user?.payroll && pecahArray(userProfile.access_attendance, "D")}
+                                                                <MyButton onclick={()=> {
+                                                                    formAttendance.modalDelete = true
+                                                                    formAttendance.answer.attendance_id = row.attendance_id
+                                                                }}><Trash size={12} /></MyButton>
+                                                            {/if}
+                                                            {#if row.attachment}
+                                                                <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
+                                                            {/if}
+                                                        </TableBodyCell>
+                                                    </TableBodyRow>
+                                                {/each}
+                                            {:else}
+                                                <TableBodyRow class='h-10'>
+                                                    <TableBodyCell colspan={10}>No data available</TableBodyCell>
+                                                </TableBodyRow>
+                                            {/if}
+                                        </TableBody>
+                                    {/if}
+                                </Table>
+                                <MyPagination table={tableListAttendance}/>
+                            </Datatable>
+                        </div>
+                    </TabItem>
+                {/if}
+                <!-- Attendance Log -->
+                <TabItem open={modeAttendance.tabNo == 4} title="Attendance Log" onclick={()=> modeAttendance.tabNo = 4}>
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
-                                <select bind:value={tableListAttendance.rowsPerPage} onchange={() => tableListAttendance.setPage(1)}>
+                                <select bind:value={tableLogAttendance.rowsPerPage} onchange={() => tableLogAttendance.setPage(1)}>
                                     {#each [30, 60, 90, 120] as option}
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
                                 <div class="flex flex-col">
-                                    <select bind:value={formListAttendance.type} onchange={()=> tableListAttendance.invalidate()}>
+                                    <select bind:value={formLogAttendance.type} onchange={()=> tableLogAttendance.invalidate()}>
                                         {#each filterType as option}
                                             <option value={option.value}>{option.title}</option>
                                         {/each}
                                     </select>
                                 </div>
                                 <div class="flex w-full flex-col">
-                                    <MyInput type='text' bind:value={tableListAttendanceSearch.value} onkeydown={e => {
-                                        if(e.key.toLowerCase() === 'enter') tableListAttendanceSearch.set()
+                                    <MyInput type='text' bind:value={tableLogAttendanceSearch.value} onkeydown={e => {
+                                        if(e.key.toLowerCase() === 'enter') tableLogAttendanceSearch.set()
                                     }}/>
                                     <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                                 </div>
-                                <MyButton className='p-3' onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
-                                <MyButton className='p-3' onclick={async ()=> {
+                                <MyButton className='p-3' onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton className='p-3' onclick={async ()=>{
                                     await invalidateAll()
-                                    getAttendance(modeAttendance.payroll)
-                                    tableListAttendance.invalidate()
+                                    tableLogAttendance.invalidate()
                                 }}><RefreshCw size={16}/></MyButton>
+                            </div>
+                            <!-- Filter periode -->
+                            <div class="flex gap-2 items-start flex-wrap">
+                                <select bind:value={formLogAttendance.year} onchange={()=> tableLogAttendance.invalidate()}>
+                                    {#each dataTahun as {title, value}}
+                                        <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "(Now)" : null}</option>
+                                    {/each}
+                                </select>
+                                <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
+                                    {#each dataBulan as {title, value}}
+                                        <option value={value}>{title} {value.toString() == format(modeAttendance.periode.start, "M") ? "(Now)" : null}</option>
+                                    {/each}
+                                </select>
                             </div>
                         </div>
                         
                         <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
-                        <Datatable table={tableListAttendance}>
+                        <Datatable table={tableLogAttendance}>
                             <Table>
                                 <TableHead>
-                                    <ThSort table={tableListAttendance} field="check_in">Day</ThSort>
-                                    <ThSort table={tableListAttendance} field="check_in">Date</ThSort>
-                                    <ThSort table={tableListAttendance} field="payroll">Payroll</ThSort>
-                                    <ThSort table={tableListAttendance} field="name">Name</ThSort>
-                                    <ThSort table={tableListAttendance} field="check_in">Clock In</ThSort>
-                                    <ThSort table={tableListAttendance} field="check_out">Clock Out</ThSort>
-                                    <ThSort table={tableListAttendance} field="type">type</ThSort>
-                                    <ThSort table={tableListAttendance} field="">Information</ThSort>
-                                    <ThSort table={tableListAttendance} field="">#</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_in">Day</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_in">Date</ThSort>
+                                    <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
+                                    <ThSort table={tableLogAttendance} field="name">Name</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_in">Clock In</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_out">Clock Out</ThSort>
+                                    <ThSort table={tableLogAttendance} field="">Difference</ThSort>
+                                    <ThSort table={tableLogAttendance} field="type">type</ThSort>
+                                    <ThSort table={tableLogAttendance} field="">Information</ThSort>
+                                    <ThSort table={tableLogAttendance} field="">#</ThSort>
                                 </TableHead>
         
-                                {#if tableListAttendance.isLoading}
+                                {#if tableLogAttendance.isLoading}
                                     <div class="flex p-4 items-center">
                                         <MyLoading message="Loading data"/>
                                     </div>
                                 {:else}
                                     <TableBody tableBodyClass="divide-y">
-                                        {#if tableListAttendance.rows.length > 0}
-                                            {#each tableListAttendance.rows as row}
+                                        {#if tableLogAttendance.rows.length > 0}
+                                            {#each tableLogAttendance.rows as row}
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
@@ -880,11 +995,14 @@
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                        <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
+                                                    </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                             {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
+                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -899,23 +1017,19 @@
                                                                         : val.type == "late" ? "red" 
                                                                         : val.type == "lembur" ? "green" 
                                                                         : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
+                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
                                                                                 createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
                                                                             }
                                                                         }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
+                                                                            <SquarePlus size={14}/>
+                                                                        {/if}
                                                                     </Badge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
-                                                        {#if row.payroll != user?.payroll && pecahArray(userProfile.access_attendance, "D")}
-                                                            <MyButton onclick={()=> {
-                                                                formAttendance.modalDelete = true
-                                                                formAttendance.answer.attendance_id = row.attendance_id
-                                                            }}><Trash size={12} /></MyButton>
-                                                        {/if}
                                                         {#if row.attachment}
                                                             <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
                                                         {/if}
@@ -930,178 +1044,17 @@
                                     </TableBody>
                                 {/if}
                             </Table>
-                            {#if tableListAttendance.rows.length > 0}
-                                <div class="flex justify-between items-center gap-2 mt-3">
-                                    <p class='text-textdark self-end text-[.9rem]'>
-                                        Showing {tableListAttendance.rowCount.start} to {tableListAttendance.rowCount.end} of {tableListAttendance.rowCount.total} rows
-                                        <Badge color="dark">Page {tableListAttendance.currentPage}</Badge>
-                                    </p>
-                                    <div class="flex gap-2">
-                                        <MyButton onclick={()=> tableListAttendance.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableListAttendance.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                        {#each tableListAttendance.pages as page}
-                                            <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableListAttendance.setPage(page)} type="button">{page}</MyButton>
-                                        {/each}
-                                        <MyButton onclick={()=> tableListAttendance.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableListAttendance.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                    </div>
-                                </div>
-                            {/if}
+                            
+                            <MyPagination table={tableLogAttendance}/>
                         </Datatable>
                     </div>
                 </TabItem>
-            {/if}
-            <!-- Attendance Log -->
-            <TabItem title="Attendance Log" onclick={()=> modeAttendance.tabNo = 4}>
-                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
-                    <div class="flex flex-col gap-4">
-                        <div class="flex gap-2 items-start">
-                            <select bind:value={tableLogAttendance.rowsPerPage} onchange={() => tableLogAttendance.setPage(1)}>
-                                {#each [30, 60, 90, 120] as option}
-                                    <option value={option}>{option}</option>
-                                {/each}
-                            </select>
-                            <div class="flex flex-col">
-                                <select bind:value={formLogAttendance.type} onchange={()=> tableLogAttendance.invalidate()}>
-                                    {#each filterType as option}
-                                        <option value={option.value}>{option.title}</option>
-                                    {/each}
-                                </select>
-                            </div>
-                            <div class="flex w-full flex-col">
-                                <MyInput type='text' bind:value={tableLogAttendanceSearch.value} onkeydown={e => {
-                                    if(e.key.toLowerCase() === 'enter') tableLogAttendanceSearch.set()
-                                }}/>
-                                <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
-                            </div>
-                            <MyButton className='p-3' onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton className='p-3' onclick={async ()=>{
-                                await invalidateAll()
-                                tableLogAttendance.invalidate()
-                            }}><RefreshCw size={16}/></MyButton>
-                        </div>
-                        <!-- Filter periode -->
-                        <div class="flex gap-2 items-start flex-wrap">
-                            <select bind:value={formLogAttendance.year} onchange={()=> tableLogAttendance.invalidate()}>
-                                {#each dataTahun as {title, value}}
-                                    <option value={value}>{title} {value.toString() == new Date().getFullYear().toString() ? "(Now)" : null}</option>
-                                {/each}
-                            </select>
-                            <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
-                                {#each dataBulan as {title, value}}
-                                    <option value={value}>{title} {value.toString() == format(modeAttendance.periode.start, "M") ? "(Now)" : null}</option>
-                                {/each}
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
-                    <Datatable table={tableLogAttendance}>
-                        <Table>
-                            <TableHead>
-                                <ThSort table={tableLogAttendance} field="check_in">Day</ThSort>
-                                <ThSort table={tableLogAttendance} field="check_in">Date</ThSort>
-                                <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
-                                <ThSort table={tableLogAttendance} field="name">Name</ThSort>
-                                <ThSort table={tableLogAttendance} field="check_in">Clock In</ThSort>
-                                <ThSort table={tableLogAttendance} field="check_out">Clock Out</ThSort>
-                                <ThSort table={tableAttendance} field="">Difference</ThSort>
-                                <ThSort table={tableAttendance} field="type">type</ThSort>
-                                <ThSort table={tableAttendance} field="">Information</ThSort>
-                                <ThSort table={tableAttendance} field="">#</ThSort>
-                            </TableHead>
-    
-                            {#if tableLogAttendance.isLoading}
-                                <div class="flex p-4 items-center">
-                                    <MyLoading message="Loading data"/>
-                                </div>
-                            {:else}
-                                <TableBody tableBodyClass="divide-y">
-                                    {#if tableLogAttendance.rows.length > 0}
-                                        {#each tableLogAttendance.rows as row}
-                                        <TableBodyRow class='h-10'>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
-                                                </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>
-                                                    <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                        {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                            isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
-                                                            (()=> {
-                                                                const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                                const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
-                                                                return isOvertime
-                                                                    ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
-                                                                    : null
-                                                            })(),
-                                                            row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
-                                                            ] as val}
-                                                            {#if val}
-                                                                <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                    : val.type == "late" ? "red" 
-                                                                    : val.type == "lembur" ? "green" 
-                                                                    : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                        if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist){
-                                                                            createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                        }
-                                                                    }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                    {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && row.is_spl_exist}<CircleAlert size={14}/>{/if}
-                                                                </Badge>
-                                                            {/if}
-                                                        {/each}
-                                                    </div>
-                                                </TableBodyCell>
-                                                <TableBodyCell>
-                                                    {#if row.attachment}
-                                                        <MyButton onclick={()=> showAttendanceAttachment(row.attachment)}><Paperclip size={12} /></MyButton>
-                                                    {/if}
-                                                </TableBodyCell>
-                                            </TableBodyRow>
-                                        {/each}
-                                    {:else}
-                                        <TableBodyRow class='h-10'>
-                                            <TableBodyCell colspan={10}>No data available</TableBodyCell>
-                                        </TableBodyRow>
-                                    {/if}
-                                </TableBody>
-                            {/if}
-                        </Table>
-                        {#if tableLogAttendance.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableLogAttendance.rowCount.start} to {tableLogAttendance.rowCount.end} of {tableLogAttendance.rowCount.total} rows
-                                    <Badge color="dark">Page {tableLogAttendance.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableLogAttendance.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableLogAttendance.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableLogAttendance.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableLogAttendance.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableLogAttendance.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableLogAttendance.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
-                    </Datatable>
-                </div>
-            </TabItem>
-        </Tabs>
+            </Tabs>
+        {:else}
+            <div class="flex flex-col gap-4 p-4 border border-slate-400 rounded-lg">
+                <Alert color='red'>You need select user to see this page</Alert>
+            </div>
+        {/if}
     </div>
 
     <Modal bind:open={formSPL.modalSPL} size='xl'>

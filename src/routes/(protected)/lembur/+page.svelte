@@ -4,10 +4,10 @@
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
-	import { Ban, Check, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, CloudCog, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
+	import { Ban, Check, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, namaBulan, generatePeriode, getParams, selisihWaktu, formatDifference } from '$/lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, generatePeriode, getParams, selisihWaktu, formatDifference } from '$/lib/utils.js';
 	import { differenceInHours, format, set, getDay, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
     import stm from '$/lib/assets/stm.png'
@@ -15,6 +15,9 @@
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
     import autoTable, { applyPlugin } from 'jspdf-autotable'
+    import MyPagination from '@/MyPagination.svelte';
+    import { error } from '@sveltejs/kit';
+	import { goto } from '$app/navigation';
     
     let {data} = $props()
     let user = $derived(data.user) 
@@ -131,120 +134,127 @@
     }
 
     const handleCetakSPL = async (id:string) =>{
-        const req = await axios.get(`/api/lembur/spl/${id}/print`)
-        const res = await req.data
+        try {        
+            const req = await axios.get(`/api/lembur/spl/${id}/print`)
+            const res = await req.data
+            
+            if(!res.employee_spl_approval1Toemployee.signature || !res.employee_spl_approval2Toemployee.signature){
+                throw new Error('There is no signature for this SPL')
+            }
 
-        const doc = new jsPDF({
-            orientation:"l",
-            unit:"mm",
-            format:"a4"
-        })
+            const doc = new jsPDF({
+                orientation:"l",
+                unit:"mm",
+                format:"a4"
+            })
 
-        const signatureSize = 20
-        const colData = [8, 90, 160, 230]
-        const rowData = 0
-        let rowInc = 0
-        let row1 = 4
-        let row2 = 6
-        let row3 = 8
-        let row4 = 10
+            const signatureSize = 20
+            const colData = [8, 90, 160, 230]
+            const rowData = 0
+            let rowInc = 0
+            let row1 = 4
+            let row2 = 6
+            let row3 = 8
+            let row4 = 10
 
-        rowInc += row4
-        doc.setFont('times', 'normal', '')
-        doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
-        doc.setFontSize(18)
-        doc.setTextColor("#174ca3")
-        doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
-        doc.setTextColor("#000")
-        doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
-        doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
-        
-        const rightAlign = 238
-        doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
-        doc.setFontSize(10)
-        doc.text("Form No", rightAlign + 2, rowData + rowInc)
-        doc.text(": 11-19", rightAlign + 20, rowData + rowInc)
-        rowInc += 4
-        doc.text("Rev", rightAlign + 2, rowData + rowInc)
-        doc.text(": 2", rightAlign + 20, rowData + rowInc)
-        rowInc += 4
-        doc.text("Rev Date", rightAlign + 2, rowData + rowInc)
-        doc.text(": 22 March 2021", rightAlign + 20, rowData + rowInc)
-        
-        rowInc += row4
-        doc.setFontSize(14)
-        doc.text("OVERTIME AUTHORIZATION FORM", 108, rowData + rowInc)
-        
-        rowInc += row3 * 1.2
-        doc.setFontSize(11)
-        doc.text("Document No", colData[0], rowData + rowInc)
-        doc.text(`:  ${res.spl_id.replace(/\_/g, '/')}`, colData[0] + 30, rowData + rowInc)
-        rowInc += 5
-        doc.text("Date Prepare", colData[0], rowData + rowInc)
-        doc.text(`:  ${format(new Date(), "d MMMM yyyy")}`, colData[0] + 30, rowData + rowInc)
-        rowInc += 5
-        doc.text("Department", colData[0], rowData + rowInc)
-        doc.text(`:  ${res.dept_spl_deptTodept.name}`, colData[0] + 30, rowData + rowInc)
-        
-        rowInc += row4
-        const boxCheck = [colData[0], 105, 180]
-        doc.rect(boxCheck[0], rowData + rowInc - 4, 4, 4)
-        doc.text(`Customer Requirement`, boxCheck[0] + 6, rowData + rowInc)
-        doc.rect(boxCheck[1], rowData + rowInc - 4, 4, 4)
-        doc.text(`Production Process`, boxCheck[1] + 6, rowData + rowInc)
-        doc.rect(boxCheck[2], rowData + rowInc - 4, 4, 4)
-        doc.text(`Project Requirements`, boxCheck[2] + 6, rowData + rowInc)
+            rowInc += row4
+            doc.setFont('times', 'normal', '')
+            doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
+            doc.setFontSize(18)
+            doc.setTextColor("#174ca3")
+            doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
+            doc.setTextColor("#000")
+            doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
+            doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
+            
+            const rightAlign = 238
+            doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
+            doc.setFontSize(10)
+            doc.text("Form No", rightAlign + 2, rowData + rowInc)
+            doc.text(": 11-19", rightAlign + 20, rowData + rowInc)
+            rowInc += 4
+            doc.text("Rev", rightAlign + 2, rowData + rowInc)
+            doc.text(": 2", rightAlign + 20, rowData + rowInc)
+            rowInc += 4
+            doc.text("Rev Date", rightAlign + 2, rowData + rowInc)
+            doc.text(": 22 March 2021", rightAlign + 20, rowData + rowInc)
+            
+            rowInc += row4
+            doc.setFontSize(14)
+            doc.text("OVERTIME AUTHORIZATION FORM", 108, rowData + rowInc)
+            
+            rowInc += row3 * 1.2
+            doc.setFontSize(11)
+            doc.text("Document No", colData[0], rowData + rowInc)
+            doc.text(`:  ${res.spl_id.replace(/\_/g, '/')}`, colData[0] + 30, rowData + rowInc)
+            rowInc += 5
+            doc.text("Date Prepare", colData[0], rowData + rowInc)
+            doc.text(`:  ${format(new Date(), "d MMMM yyyy")}`, colData[0] + 30, rowData + rowInc)
+            rowInc += 5
+            doc.text("Department", colData[0], rowData + rowInc)
+            doc.text(`:  ${res.dept_spl_deptTodept.name}`, colData[0] + 30, rowData + rowInc)
+            
+            rowInc += row4
+            const boxCheck = [colData[0], 105, 180]
+            doc.rect(boxCheck[0], rowData + rowInc - 4, 4, 4)
+            doc.text(`Customer Requirement`, boxCheck[0] + 6, rowData + rowInc)
+            doc.rect(boxCheck[1], rowData + rowInc - 4, 4, 4)
+            doc.text(`Production Process`, boxCheck[1] + 6, rowData + rowInc)
+            doc.rect(boxCheck[2], rowData + rowInc - 4, 4, 4)
+            doc.text(`Project Requirements`, boxCheck[2] + 6, rowData + rowInc)
 
-        const totalMinutes = differenceInMinutes(res.est_end, res.est_start)
-        const hours = Math.floor(totalMinutes / 60)
-        const minutes = totalMinutes % 60
-                
-        rowInc += 2
-        autoTable(doc, {
-            startY: rowData + rowInc,
-            theme:"grid",
-            head: [['No','Name', 'Payroll', 'Start', 'Finish', 'Total Hours', 'Description of Work']],
-            margin: {left: colData[0]},
-            body: res.spl_detail.flatMap((v: any, i: number) => {
-                const [no, nama, payroll, start, finish] = [i + 1, v.employee.name, v.employee.payroll, formatTanggal(res.est_start,"time").substring(0,5), formatTanggal(res.est_end,"time").substring(0,5)]
-                const prev = payroll
-                return v.description.split(',').filter((v: string) => v).map((desc: string, index: number) => {
-                    const [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total] = (index > 0 && prev == payroll)
-                    ? ["", "", "", "", "", ""]
-                    : [no, nama, payroll, start, finish, `${hours} Jam ${minutes} menit`]
-                    return [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total, desc.trim()]
-                })
-            }),
-            styles: {cellPadding: 1, halign: 'center' },
-            headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2, fontSize: 9},
-            bodyStyles:{fontSize: 9, halign: 'center'},
-            columnStyles: {
-                0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
-                3:{cellWidth: 17, valign: 'middle'}, 4:{cellWidth: 17, valign: 'middle'}, 5:{cellWidth: 28, valign: 'middle'}, 6:{cellWidth: 133, halign: 'left', valign: 'middle'}
-            },
-        })
+            const totalMinutes = differenceInMinutes(res.est_end, res.est_start)
+            const hours = Math.floor(totalMinutes / 60)
+            const minutes = totalMinutes % 60
+                    
+            rowInc += 2
+            autoTable(doc, {
+                startY: rowData + rowInc,
+                theme:"grid",
+                head: [['No','Name', 'Payroll', 'Start', 'Finish', 'Total Hours', 'Description of Work']],
+                margin: {left: colData[0]},
+                body: res.spl_detail.flatMap((v: any, i: number) => {
+                    const [no, nama, payroll, start, finish] = [i + 1, v.employee.name, v.employee.payroll, formatTanggal(res.est_start,"time").substring(0,5), formatTanggal(res.est_end,"time").substring(0,5)]
+                    const prev = payroll
+                    return v.description.split(',').filter((v: string) => v).map((desc: string, index: number) => {
+                        const [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total] = (index > 0 && prev == payroll)
+                        ? ["", "", "", "", "", ""]
+                        : [no, nama, payroll, start, finish, `${hours} Jam ${minutes} menit`]
+                        return [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total, desc.trim()]
+                    })
+                }),
+                styles: {cellPadding: 1, halign: 'center' },
+                headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2, fontSize: 9},
+                bodyStyles:{fontSize: 9, halign: 'center'},
+                columnStyles: {
+                    0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
+                    3:{cellWidth: 17, valign: 'middle'}, 4:{cellWidth: 17, valign: 'middle'}, 5:{cellWidth: 28, valign: 'middle'}, 6:{cellWidth: 133, halign: 'left', valign: 'middle'}
+                },
+            })
 
-        rowInc = doc.lastAutoTable.finalY + row2
-        doc.text(`Prepared By,`, colData[0], rowData + rowInc)
-        doc.text(`Approved By,`, colData[1], rowData + rowInc)
-        doc.text(`Reviewer By`, colData[2], rowData + rowInc)
-        doc.text(`Acknowledged By`, colData[3], rowData + rowInc)
+            rowInc = doc.lastAutoTable.finalY + row2
+            doc.text(`Prepared By,`, colData[0], rowData + rowInc)
+            doc.text(`Approved By,`, colData[1], rowData + rowInc)
+            doc.text(`Reviewer By`, colData[2], rowData + rowInc)
+            doc.text(`Acknowledged By`, colData[3], rowData + rowInc)
 
-        rowInc += row3
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval2Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
-        
-        rowInc += signatureSize
-        doc.text(res.employee_spl_approval1Toemployee.name, colData[0], rowData + rowInc)
-        doc.text(res.employee_spl_approval2Toemployee.name, colData[1], rowData + rowInc)
-        doc.text("HR", colData[3], rowData + rowInc)
+            rowInc += row3
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval2Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+            
+            rowInc += signatureSize
+            doc.text(res.employee_spl_approval1Toemployee.name, colData[0], rowData + rowInc)
+            doc.text(res.employee_spl_approval2Toemployee.name, colData[1], rowData + rowInc)
+            doc.text("HR", colData[3], rowData + rowInc)
 
-        const blob = doc.output('blob')
-        const url = URL.createObjectURL(blob);
+            const blob = doc.output('blob')
+            const url = URL.createObjectURL(blob);
 
-        window.open(url); // buka tab baru
-
-        // doc.save(`${id}.pdf`);
+            window.open(url); // buka tab baru
+            // doc.save(`${id}.pdf`);
+        } catch (err) {
+            goto(`/api/handleError?msg=${err.message}`)
+        }
     }
 
     // SPL approval 1
@@ -532,123 +542,131 @@
     // }
 
     const handleCetakSRL= async (id:string) =>{
-        const req = await axios.get(`/api/lembur/srl/${id}/print`)
-        const res = await req.data
+        try {
+            const req = await axios.get(`/api/lembur/srl/${id}/print`)
+            const res = await req.data
 
-        applyPlugin(jsPDF)
+            if(!res.employee.signature || !res.employee_srl_approval1Toemployee.signature || !res.employee_srl_approval2Toemployee.signature){
+                throw new Error('There is no signature for this SRL')
+            }            
+            
+            applyPlugin(jsPDF)
 
-        const doc = new jsPDF({
-            orientation:"l",
-            unit:"mm",
-            format:"a4"
-        })
+            const doc = new jsPDF({
+                orientation:"l",
+                unit:"mm",
+                format:"a4"
+            })
 
-        const signatureSize = 20
-        const colData = [8, 115, 220]
-        const rowData = 0
-        let rowInc = 0
-        let row1 = 4
-        let row2 = 6
-        let row3 = 8
-        let row4 = 10
+            const signatureSize = 20
+            const colData = [8, 115, 220]
+            const rowData = 0
+            let rowInc = 0
+            let row1 = 4
+            let row2 = 6
+            let row3 = 8
+            let row4 = 10
 
-        const totalMinutes = differenceInMinutes(res.real_end, res.real_start)
-        const hours = Math.floor(totalMinutes / 60)
-        const minutes = totalMinutes % 60
+            const totalMinutes = differenceInMinutes(res.real_end, res.real_start)
+            const hours = Math.floor(totalMinutes / 60)
+            const minutes = totalMinutes % 60
 
-        // const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
+            // const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
 
-        rowInc += row4
-        doc.setFont('times', 'normal', '')
-        doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
-        doc.setFontSize(18)
-        doc.setTextColor("#174ca3")
-        doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
-        doc.setTextColor("#000")
-        doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
-        doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
-        
-        doc.setFontSize(16)
-        const rightAlign = 238
-        doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
-        doc.setFontSize(10)
-        doc.text("Form No", rightAlign + 2, rowData + rowInc)
-        doc.text(": 11-20", rightAlign + 20, rowData + rowInc)
-        rowInc += 4
-        doc.text("Rev.", rightAlign + 2, rowData + rowInc)
-        doc.text(": 0", rightAlign + 20, rowData + rowInc)
-        rowInc += 4
-        doc.text("Date", rightAlign + 2, rowData + rowInc)
-        doc.text(": Jan 2020", rightAlign + 20, rowData + rowInc)
-        
-        rowInc += row4 * 1.6
-        doc.setFont('times', 'normal', 'bold')
-        doc.setFontSize(14)
-        doc.text("Formulir Pelaporan Jam Kerja Lembur Pada hari Minggu/Hari libur resmi & hari kerja biasa", 50, rowData + rowInc)
-        doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
-        
-        rowInc += row3
-        doc.setFontSize(11)
-        doc.setFont('times', 'normal', 'bold')
-        doc.text("Kepada", colData[0], rowData + rowInc)
-        doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
-        doc.text(`| Hari Minggu`, colData[0] + 135, rowData + rowInc)
-        rowInc += 5
-        doc.text("Dept.", colData[0], rowData + rowInc)
-        doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
-        doc.text(`| Hari Libur Resmi`, colData[0] + 135, rowData + rowInc)
-        rowInc += 5
-        doc.text("Bulan", colData[0], rowData + rowInc)
-        doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
-        doc.text(`| Hari Kerja Biasa`, colData[0] + 135, rowData + rowInc)
-        
-        rowInc += row2
-        autoTable(doc, {
-            startY: rowData + rowInc,
-            theme:"grid",
-            head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Jumlah Jam Kerja', 'Pekerjaan yang di kerjakan', 'Keterangan']],
-            margin: {left: colData[0]},
-            body: res.srl_detail.map((v:any, i: number) => {
-                const [nama, payroll, tanggal, waktu] = i == 0 
-                ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
-                : ["","","",""]
-                return [i + 1, nama, payroll, tanggal, waktu, `${hours} Jam ${minutes} menit`, v.description, v.status]
-            }),
-            styles: {cellPadding: 1, halign: 'center' },
-            headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
-            bodyStyles:{fontSize: 9, halign: 'center'},
-            columnStyles: {
-                0:{cellWidth: 10, valign: 'middle'}, //No
-                1:{cellWidth: 55, valign: 'middle'}, //Nama
-                2:{cellWidth: 17, valign: 'middle'}, //Payroll
-                3:{cellWidth: 30, valign: 'middle'}, //Tanggal
-                4:{cellWidth: 22, valign: 'middle'}, //Waktu
-                5:{cellWidth: 26, valign: 'middle'}, //Jumlah Jam Kerja
-                6:{cellWidth: 95, valign: 'middle', halign: 'left'},  //Description
-                7:{cellWidth: 25, valign: 'middle'} //Status
-            },
-        })
+            rowInc += row4
+            doc.setFont('times', 'normal', '')
+            doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
+            doc.setFontSize(18)
+            doc.setTextColor("#174ca3")
+            doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
+            doc.setTextColor("#000")
+            doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
+            doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
+            
+            doc.setFontSize(16)
+            const rightAlign = 238
+            doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
+            doc.setFontSize(10)
+            doc.text("Form No", rightAlign + 2, rowData + rowInc)
+            doc.text(": 11-20", rightAlign + 20, rowData + rowInc)
+            rowInc += 4
+            doc.text("Rev.", rightAlign + 2, rowData + rowInc)
+            doc.text(": 0", rightAlign + 20, rowData + rowInc)
+            rowInc += 4
+            doc.text("Date", rightAlign + 2, rowData + rowInc)
+            doc.text(": Jan 2020", rightAlign + 20, rowData + rowInc)
+            
+            rowInc += row4 * 1.6
+            doc.setFont('times', 'normal', 'bold')
+            doc.setFontSize(14)
+            doc.text("Formulir Pelaporan Jam Kerja Lembur Pada hari Minggu/Hari libur resmi & hari kerja biasa", 50, rowData + rowInc)
+            doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
+            
+            rowInc += row3
+            doc.setFontSize(11)
+            doc.setFont('times', 'normal', 'bold')
+            doc.text("Kepada", colData[0], rowData + rowInc)
+            doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
+            doc.text(`| Hari Minggu`, colData[0] + 135, rowData + rowInc)
+            rowInc += 5
+            doc.text("Dept.", colData[0], rowData + rowInc)
+            doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
+            doc.text(`| Hari Libur Resmi`, colData[0] + 135, rowData + rowInc)
+            rowInc += 5
+            doc.text("Bulan", colData[0], rowData + rowInc)
+            doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
+            doc.text(`| Hari Kerja Biasa`, colData[0] + 135, rowData + rowInc)
+            
+            rowInc += row2
+            autoTable(doc, {
+                startY: rowData + rowInc,
+                theme:"grid",
+                head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Jumlah Jam Kerja', 'Pekerjaan yang di kerjakan', 'Keterangan']],
+                margin: {left: colData[0]},
+                body: res.srl_detail.map((v:any, i: number) => {
+                    const [nama, payroll, tanggal, waktu] = i == 0 
+                    ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
+                    : ["","","",""]
+                    return [i + 1, nama, payroll, tanggal, waktu, `${hours} Jam ${minutes} menit`, v.description, v.status]
+                }),
+                styles: {cellPadding: 1, halign: 'center' },
+                headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
+                bodyStyles:{fontSize: 9, halign: 'center'},
+                columnStyles: {
+                    0:{cellWidth: 10, valign: 'middle'}, //No
+                    1:{cellWidth: 55, valign: 'middle'}, //Nama
+                    2:{cellWidth: 17, valign: 'middle'}, //Payroll
+                    3:{cellWidth: 30, valign: 'middle'}, //Tanggal
+                    4:{cellWidth: 22, valign: 'middle'}, //Waktu
+                    5:{cellWidth: 26, valign: 'middle'}, //Jumlah Jam Kerja
+                    6:{cellWidth: 95, valign: 'middle', halign: 'left'},  //Description
+                    7:{cellWidth: 25, valign: 'middle'} //Status
+                },
+            })
 
-        rowInc = doc.lastAutoTable.finalY + row2
-        doc.text(`Dibuat Oleh`, colData[0], rowData + rowInc)
-        doc.text(`Diperiksa Oleh`, colData[1], rowData + rowInc)
-        doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
+            rowInc = doc.lastAutoTable.finalY + row2
+            doc.text(`Dibuat Oleh`, colData[0], rowData + rowInc)
+            doc.text(`Diperiksa Oleh`, colData[1], rowData + rowInc)
+            doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
 
-        rowInc += row3
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
-        doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
-        
-        rowInc += row2 * 3.1
-        doc.text(res.employee.name, colData[0], rowData + rowInc)
-        doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
-        doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
-        
-        const blob = doc.output('blob')
-        const url = URL.createObjectURL(blob);
+            rowInc += row3
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
+            
+            rowInc += row2 * 3.1
+            doc.text(res.employee.name, colData[0], rowData + rowInc)
+            doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
+            doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
+            
+            const blob = doc.output('blob')
+            const url = URL.createObjectURL(blob);
 
-        window.open(url); // buka tab baru
-        // doc.save(`${id}.pdf`);
+            window.open(url); // buka tab baru
+            // doc.save(`${id}.pdf`);
+        } catch (err) {
+            goto(`/api/handleError?msg=${err.message}`)
+        }
     }
 
     // SRL approval 1
@@ -1044,23 +1062,7 @@
                                     </TableBody>
                                 {/if}
                             </Table>
-                            {#if tableSPL.rows.length > 0}
-                                <div class="flex justify-between items-center gap-2 mt-3">
-                                    <p class='text-muted self-end text-[.9rem]'>
-                                        Showing {tableSPL.rowCount.start} to {tableSPL.rowCount.end} of {tableSPL.rowCount.total} rows
-                                        <Badge color="dark">Page {tableSPL.currentPage}</Badge>
-                                    </p>
-                                    <div class="flex gap-2">
-                                        <MyButton onclick={()=> tableSPL.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableSPL.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                        {#each tableSPL.pages as page}
-                                            <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableSPL.setPage(page)} type="button">{page}</MyButton>
-                                        {/each}
-                                        <MyButton onclick={()=> tableSPL.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableSPL.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                    </div>
-                                </div>
-                            {/if}
+                            <MyPagination table={tableSPL}/>
                         </Datatable>
                     </div>
                 </TabItem>
@@ -1122,23 +1124,7 @@
                                         </TableBody>
                                     {/if}
                                 </Table>
-                                {#if tableSPLApproval1.rows.length > 0}
-                                    <div class="flex justify-between items-center gap-2 mt-3">
-                                        <p class='text-textdark self-end text-[.9rem]'>
-                                            Showing {tableSPLApproval1.rowCount.start} to {tableSPLApproval1.rowCount.end} of {tableSPLApproval1.rowCount.total} rows
-                                            <Badge color="dark">Page {tableSPLApproval1.currentPage}</Badge>
-                                        </p>
-                                        <div class="flex gap-2">
-                                            <MyButton onclick={()=> tableSPLApproval1.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSPLApproval1.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                            {#each tableSPLApproval1.pages as page}
-                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPLApproval1.setPage(page)} type="button">{page}</MyButton>
-                                            {/each}
-                                            <MyButton onclick={()=> tableSPLApproval1.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSPLApproval1.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                        </div>
-                                    </div>
-                                {/if}
+                                <MyPagination table={tableSPLApproval1}/>
                             </Datatable>
                         </div>
                     </TabItem>
@@ -1199,23 +1185,7 @@
                                         </TableBody>
                                     {/if}
                                 </Table>
-                                {#if tableSPLApproval2.rows.length > 0}
-                                    <div class="flex justify-between items-center gap-2 mt-3">
-                                        <p class='text-textdark self-end text-[.9rem]'>
-                                            Showing {tableSPLApproval2.rowCount.start} to {tableSPLApproval2.rowCount.end} of {tableSPLApproval2.rowCount.total} rows
-                                            <Badge color="dark">Page {tableSPLApproval2.currentPage}</Badge>
-                                        </p>
-                                        <div class="flex gap-2">
-                                            <MyButton onclick={()=> tableSPLApproval2.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSPLApproval2.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                            {#each tableSPLApproval2.pages as page}
-                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSPLApproval2.setPage(page)} type="button">{page}</MyButton>
-                                            {/each}
-                                            <MyButton onclick={()=> tableSPLApproval2.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSPLApproval2.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                        </div>
-                                    </div>
-                                {/if}
+                                <MyPagination table={tableSPLApproval2}/>
                             </Datatable>
                         </div>
                     </TabItem>
@@ -1412,23 +1382,7 @@
                                     </TableBody>
                                 {/if}
                             </Table>
-                            {#if tableSRL.rows.length > 0}
-                                <div class="flex justify-between items-center gap-2 mt-3">
-                                    <p class='text-muted self-end text-[.9rem]'>
-                                        Showing {tableSRL.rowCount.start} to {tableSRL.rowCount.end} of {tableSRL.rowCount.total} rows
-                                        <Badge color="dark">Page {tableSRL.currentPage}</Badge>
-                                    </p>
-                                    <div class="flex gap-2">
-                                        <MyButton onclick={()=> tableSRL.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableSRL.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                        {#each tableSRL.pages as page}
-                                            <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableSRL.setPage(page)} type="button">{page}</MyButton>
-                                        {/each}
-                                        <MyButton onclick={()=> tableSRL.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                        <MyButton onclick={()=> tableSRL.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                    </div>
-                                </div>
-                            {/if}
+                            <MyPagination table={tableSRL}/>
                         </Datatable>
                     </div>
                 </TabItem>
@@ -1490,23 +1444,7 @@
                                         </TableBody>
                                     {/if}
                                 </Table>
-                                {#if tableSRLApproval1.rows.length > 0}
-                                    <div class="flex justify-between items-center gap-2 mt-3">
-                                        <p class='text-textdark self-end text-[.9rem]'>
-                                            Showing {tableSRLApproval1.rowCount.start} to {tableSRLApproval1.rowCount.end} of {tableSRLApproval1.rowCount.total} rows
-                                            <Badge color="dark">Page {tableSRLApproval1.currentPage}</Badge>
-                                        </p>
-                                        <div class="flex gap-2">
-                                            <MyButton onclick={()=> tableSRLApproval1.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSRLApproval1.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                            {#each tableSRLApproval1.pages as page}
-                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSRLApproval1.setPage(page)} type="button">{page}</MyButton>
-                                            {/each}
-                                            <MyButton onclick={()=> tableSRLApproval1.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSRLApproval1.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                        </div>
-                                    </div>
-                                {/if}
+                                <MyPagination table={tableSRLApproval1}/>
                             </Datatable>
                         </div>
                     </TabItem>
@@ -1567,23 +1505,7 @@
                                         </TableBody>
                                     {/if}
                                 </Table>
-                                {#if tableSRLApproval2.rows.length > 0}
-                                    <div class="flex justify-between items-center gap-2 mt-3">
-                                        <p class='text-textdark self-end text-[.9rem]'>
-                                            Showing {tableSRLApproval2.rowCount.start} to {tableSRLApproval2.rowCount.end} of {tableSRLApproval2.rowCount.total} rows
-                                            <Badge color="dark">Page {tableSRLApproval2.currentPage}</Badge>
-                                        </p>
-                                        <div class="flex gap-2">
-                                            <MyButton onclick={()=> tableSRLApproval2.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSRLApproval2.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                            {#each tableSRLApproval2.pages as page}
-                                                <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableSRLApproval2.setPage(page)} type="button">{page}</MyButton>
-                                            {/each}
-                                            <MyButton onclick={()=> tableSRLApproval2.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                            <MyButton onclick={()=> tableSRLApproval2.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                        </div>
-                                    </div>
-                                {/if}
+                                <MyPagination table={tableSRLApproval2}/>
                             </Datatable>
                         </div>
                     </TabItem>

@@ -1,7 +1,7 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
     import { Tabs, MultiSelect, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Alert, Modal, Timeline, TimelineItem, Badge, Button, Checkbox } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Pencil, Trash, Plus, Save, RotateCw, X} from '@lucide/svelte'
+	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
@@ -13,6 +13,7 @@
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 	import Svelecte from 'svelecte';
+    import MyPagination from '@/MyPagination.svelte';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -567,23 +568,7 @@
                             </TableBody>
                         {/if}
                     </Table>
-                    {#if tableIjin.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-textdark self-end text-[.9rem]'>
-                                Showing {tableIjin.rowCount.start} to {tableIjin.rowCount.end} of {tableIjin.rowCount.total} rows
-                                <Badge color="dark">Page {tableIjin.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableIjin.pages as page}
-                                    <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableIjin.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
-                    {/if}
+                    <MyPagination table={tableIjin} />
                 </Datatable>
             </div>
         </TabItem>
@@ -649,23 +634,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableApprovalIjin.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableApprovalIjin.rowCount.start} to {tableApprovalIjin.rowCount.end} of {tableApprovalIjin.rowCount.total} rows
-                                    <Badge color="dark">Page {tableApprovalIjin.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableApprovalIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableApprovalIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableApprovalIjin.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableApprovalIjin.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableApprovalIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableApprovalIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableApprovalIjin} />
                     </Datatable>
                 </div>
             </TabItem>
@@ -742,23 +711,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableListIjin.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-textdark self-end text-[.9rem]'>
-                                    Showing {tableListIjin.rowCount.start} to {tableListIjin.rowCount.end} of {tableListIjin.rowCount.total} rows
-                                    <Badge color="dark">Page {tableListIjin.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableListIjin.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableListIjin.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableListIjin.pages as page}
-                                        <MyButton className={`text-textdark text-[.9rem] px-3`} onclick={()=> tableListIjin.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableListIjin.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableListIjin.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableListIjin} />
                     </Datatable>
                 </div>
             </TabItem>

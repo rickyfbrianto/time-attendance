@@ -3,7 +3,7 @@
     import { Tabs, TabItem } from 'flowbite-svelte';
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Button, Badge } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, RefreshCw, Search } from '@lucide/svelte';
+	import { RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '$/lib/components/MyButton.svelte'
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
@@ -14,6 +14,7 @@
 	import { format } from 'date-fns';
 	import Svelecte from 'svelecte';
     import { invalidateAll } from '$app/navigation';
+	import MyPagination from '@/MyPagination.svelte';
     
     const rowsPerPage = 30
     let {data} = $props()
@@ -162,11 +163,11 @@
                         }}/>
                         <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                     </div>
-                    <MyButton onclick={()=>tableAbsenSearch.set()}><Search size={16} /></MyButton>
+                    <MyButton onclick={()=>tableAbsenSearch.set()} size='lg'><Search size={16} /></MyButton>
                     <MyButton onclick={async ()=> {
                         await invalidateAll()
                         tableAbsen.invalidate()
-                    }}><RefreshCw size={16}/></MyButton>
+                    }} size='lg'><RefreshCw size={16}/></MyButton>
                 </div>
                 
                 <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
@@ -210,17 +211,15 @@
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                     {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
+                                                        (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
                                                         (()=> {
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                             const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                             return isOvertime
-                                                                ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)})}`}
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                 : null
                                                         })(),
-                                                        row.ijin_info 
-                                                            ? {type:"ijin_info", value: row.ijin_info}
-                                                            : null
+                                                        row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
                                                         ] as val}
                                                         {#if val}
                                                             <Badge rounded color={val.type == "kerja" ? "dark" 
@@ -242,23 +241,7 @@
                             </TableBody>
                         {/if}
                     </Table>
-                    {#if tableAbsen.rows.length > 0}
-                        <div class="flex justify-between items-center gap-2 mt-3">
-                            <p class='text-muted self-end text-[.9rem]'>
-                                Showing {tableAbsen.rowCount.start} to {tableAbsen.rowCount.end} of {tableAbsen.rowCount.total} rows
-                                <Badge color="dark">Page {tableAbsen.currentPage}</Badge>
-                            </p>
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableAbsen.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                <MyButton onclick={()=> tableAbsen.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                {#each tableAbsen.pages as page}
-                                    <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableAbsen.setPage(page)} type="button">{page}</MyButton>
-                                {/each}
-                                <MyButton onclick={()=> tableAbsen.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                <MyButton onclick={()=> tableAbsen.setPage('last')}><ChevronLast size={16} /></MyButton>
-                            </div>
-                        </div>
-                    {/if}
+                    <MyPagination table={tableAbsen} />
                 </Datatable>
             </div>
         </TabItem>
@@ -289,11 +272,11 @@
                             }}/>
                             <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
                         </div>
-                        <MyButton onclick={()=>tableAbsenDeptSearch.set()}><Search size={16} /></MyButton>
+                        <MyButton onclick={()=>tableAbsenDeptSearch.set()} size='lg'><Search size={16} /></MyButton>
                         <MyButton onclick={async ()=> {
                             await invalidateAll()
                             tableAbsenDept.invalidate()
-                        }}><RefreshCw size={16}/></MyButton>
+                        }} size='lg'><RefreshCw size={16}/></MyButton>
                     </div>
                     
                     <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
@@ -339,17 +322,15 @@
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                     {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) ? {type:"late", value:"Late"} : null,
+                                                        (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
                                                         (()=> {
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                             const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
                                                             return isOvertime
-                                                                ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)})}`}
+                                                                ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                 : null
                                                         })(),
-                                                        row.ijin_info 
-                                                            ? {type:"ijin_info", value: row.ijin_info}
-                                                            : null
+                                                        row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
                                                         ] as val}
                                                         {#if val}
                                                             <Badge rounded color={val.type == "kerja" ? "dark" 
@@ -371,23 +352,7 @@
                             </TableBody>                            
                             {/if}
                         </Table>
-                        {#if tableAbsenDept.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-muted self-end text-[.9rem]'>
-                                    Showing {tableAbsenDept.rowCount.start} to {tableAbsenDept.rowCount.end} of {tableAbsenDept.rowCount.total} rows
-                                    <Badge color="dark">Page {tableAbsenDept.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableAbsenDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableAbsenDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableAbsenDept.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3`} onclick={()=> tableAbsenDept.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableAbsenDept.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableAbsenDept.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableAbsenDept} />
                     </Datatable>
                 </div>
             </TabItem>

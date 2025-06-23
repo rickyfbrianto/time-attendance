@@ -33,8 +33,7 @@ export async function POST({ request }) {
 
         const status = await prisma.$transaction(async (tx) => {
             const updateUser = await tx.$executeRawUnsafe(`
-                UPDATE employee SET password=?,phone=?,location=?,signature=? where payroll=?`,
-                data.get('password'),
+                UPDATE employee SET phone=?,location=?,signature=? where payroll=?`,
                 data.get('phone'),
                 data.get('location'),
                 isSignature ? fileSignature : signature,

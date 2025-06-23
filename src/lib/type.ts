@@ -29,7 +29,7 @@ export const UserSchema = z.object({
     profile_id: z.string().trim().min(1),
     email: z.string().email().max(100, "Max 100 Character"),
     name: z.string().min(3, "Min 3 Character").max(250, "Max 250 Character"),
-    password: z.string().min(6, "Min 6 Character").max(30, "Max 30 Character"),
+    password: z.string().min(3, "Min 3 Character").max(30, "Max 30 Character"),
     position: z.string().min(5, "Min 5 Character").max(100, "Max 100 Character"),
     department: z.string().length(4, "Need 4 Character"),
     location: z.string().min(5, "Min 5 Character").max(50, "Max 50 Character"),

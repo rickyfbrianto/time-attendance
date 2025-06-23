@@ -16,6 +16,7 @@
 	import { fromZodError } from 'zod-validation-error';
 	import { invalidateAll } from '$app/navigation';
 	import { ProfileSchema, SettingSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TSettingSchema, type TUserSchema } from '$/lib/type.js';
+    import MyPagination from '@/MyPagination.svelte';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -727,23 +728,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableProfile.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-muted self-end text-[.9rem]'>
-                                    Showing {tableProfile.rowCount.start} to {tableProfile.rowCount.end} of {tableProfile.rowCount.total} rows
-                                    <Badge color="dark" border>Page {tableProfile.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableProfile.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableProfile.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableProfile.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableProfile.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableProfile.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableProfile.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableProfile.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableProfile} />
                     </Datatable>
                 </div>
 
@@ -849,7 +834,14 @@
                             <span class="border-b-[1px] border-slate-300 pb-2">Attendance</span>
                             <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-200">
                                 <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
-                                <MyInput type='number' title='Workhour' name="workhour" bind:value={formUserState.answer.workhour}/>
+
+                                <div class="flex flex-col gap-2">
+                                    <Label for='workhour'>Workhour</Label>
+                                    <Select name='workhour' items={[
+                                        {value:7, name:"7"},
+                                        {value:8, name:"8"},
+                                    ]} bind:value={formUserState.answer.workhour} />
+                                </div>
                                 <Checkbox bind:checked={formUserState.answer.overtime as unknown as boolean}>Overtime</Checkbox>
                                 <MyInput type='text' title='User ID Machine' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
 
@@ -933,23 +925,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableUser.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-muted self-end text-[.9rem]'>
-                                    Showing {tableUser.rowCount.start} to {tableUser.rowCount.end} of {tableUser.rowCount.total} rows
-                                    <Badge color="dark" border>Page {tableUser.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableUser.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableUser.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableUser.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableUser.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableUser.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableUser.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableUser.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableUser} />
                     </Datatable>
                 </div>
 
@@ -1069,23 +1045,7 @@
                                 </TableBody>
                             {/if}
                         </Table>
-                        {#if tableDept.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-muted self-end text-[.9rem]'>
-                                    Showing {tableDept.rowCount.start} to {tableDept.rowCount.end} of {tableDept.rowCount.total} rows
-                                    <Badge color="dark" border>Page {tableDept.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableDept.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableDept.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableDept.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableDept.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableDept.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableDept.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableDept.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                        {/if}
+                        <MyPagination table={tableDept} />
                     </Datatable>
                 </div>
             </TabItem>
@@ -1126,7 +1086,7 @@
                                 </div>
                                 <div class="flex flex-col">
                                     <span class='text-textdark italic'>Minimum minute that allow program to set overtime</span>
-                                    <div class="flex items-end gap-4">
+                                    <div class="flex items-center gap-4">
                                         <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
                                         <Checkbox bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Overtime Round Up</Checkbox>
                                     </div>
@@ -1243,23 +1203,7 @@
                                     </TableBody>
                                 {/if}
                             </Table>
-                            {#if tableCalendar.rows.length > 0}
-                            <div class="flex justify-between items-center gap-2 mt-3">
-                                <p class='text-muted self-end text-[.9rem]'>
-                                    Showing {tableCalendar.rowCount.start} to {tableCalendar.rowCount.end} of {tableCalendar.rowCount.total} rows
-                                    <Badge color="dark" border>Page {tableCalendar.currentPage}</Badge>
-                                </p>
-                                <div class="flex gap-2">
-                                    <MyButton onclick={()=> tableCalendar.setPage(1)}><ChevronFirst size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableCalendar.setPage('previous')}><ChevronLeft size={16} /></MyButton>
-                                    {#each tableCalendar.pages as page}
-                                        <MyButton className={`text-muted text-[.9rem] px-3 ${tableCalendar.currentPage == page ? "bg-bgactive" :""}`} onclick={()=> tableCalendar.setPage(page)} type="button">{page}</MyButton>
-                                    {/each}
-                                    <MyButton onclick={()=> tableCalendar.setPage('next')}><ChevronRight size={16} /></MyButton>
-                                    <MyButton onclick={()=> tableCalendar.setPage('last')}><ChevronLast size={16} /></MyButton>
-                                </div>
-                            </div>
-                            {/if}
+                            <MyPagination table={tableCalendar} />
                         </Datatable>
                     </div>
                 </div>

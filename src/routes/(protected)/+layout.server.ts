@@ -13,6 +13,7 @@ export async function load({ url, locals }) {
 
     if (!userProfile) throw error(500, "User has no Profile ID")
     if (!user?.department) throw error(500, "User has no department")
+    // if (!user?.signature) throw error(500, "User has no signature")
 
     return {
         user,
