@@ -1,0 +1,7 @@
+services:
+  time-fs:
+    build:
+      context: ./express
+      dockerfile: Dockerfile
+    env_file:
+      - .env

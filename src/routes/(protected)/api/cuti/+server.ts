@@ -53,8 +53,8 @@ export async function POST({ request }) {
                 const resCalendar = await tx.$queryRawUnsafe(`SELECT date FROM calendar WHERE YEAR(date) = ? AND month(date) <= ?
                     ORDER BY date asc`, year, month) as { date: string }[]
 
-                const resCuti = await tx.$queryRawUnsafe(`SELECT date FROM cuti WHERE DATE(date) BETWEEN ? AND ?`,
-                    data.date[0], data.date[1]) as { date: string }[]
+                const resCuti = await tx.$queryRawUnsafe(`SELECT date FROM cuti WHERE (DATE(date) BETWEEN ? AND ?) AND payroll = ? AND status IN ('Waiting','Approved')`,
+                    data.date[0], data.date[1], data.payroll) as { date: string }[]
 
                 const daysInRange = eachDayOfInterval({ start: data.date[0], end: data.date[1] })
                 const dayFree = user?.workhour == 7 ? [0] : [0, 6]
@@ -67,6 +67,14 @@ export async function POST({ request }) {
 
                 const cuti_group_id = uuid4()
 
+                const cutiDuplikat = daysInRange.filter(v => {
+                    return resCuti.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date"))
+                }).map(v => format(v, "yyyy-MM-dd"))
+
+                if (cutiDuplikat.length > 0) {
+                    throw new Error(`Cant insert cuti, because there is cuti already inserted ${JSON.stringify(cutiDuplikat)}`)
+                }
+
                 await tx.cuti.createMany({
                     data: [...temp.map((date) => ({
                         cuti_id: uuid4(),
@@ -78,11 +86,12 @@ export async function POST({ request }) {
                         year: getYear(data.date[0]),
                         status: data.status,
                         approval: data.approval,
+                        is_delegate: false,
                         createdAt: formatTanggalISO(new Date())
                     }))]
                 })
 
-                return { message: "Data successfully saved" }
+                return { message: "Cuti successfully saved" }
             } else {
                 const updateCuti = await tx.$executeRawUnsafe(`
                     UPDATE cuti SET date=?,description=?,type=? WHERE cuti_id=?`,
@@ -90,7 +99,7 @@ export async function POST({ request }) {
 
                 if (!updateCuti) throw new Error("Cant update SPL, because data is changed")
 
-                return { message: "Data successfully updated" }
+                return { message: "Cuti successfully updated" }
             }
         })
 

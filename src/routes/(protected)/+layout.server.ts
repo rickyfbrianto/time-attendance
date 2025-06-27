@@ -1,7 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
 import { prisma } from '$/lib/utils.js'
 
-export async function load({ url, locals }) {
+export async function load({ url, locals, depends }) {
+    depends('app:protected')
     if (url.pathname === '/') redirect(303, `/dashboard`)
 
     const { user, userProfile } = locals

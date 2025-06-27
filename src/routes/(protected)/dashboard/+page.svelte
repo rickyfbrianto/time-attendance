@@ -69,7 +69,7 @@
             },
             datalabels: {
                 anchor: 'end',
-                align: 'center',
+                align: 'start',
                 color: '#000',
                 formatter: (value: number | string) => (value > 0) ? value + " days" : null
             },

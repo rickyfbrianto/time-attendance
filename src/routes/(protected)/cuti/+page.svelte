@@ -14,6 +14,7 @@
     import {fromZodError} from 'zod-validation-error'
     import Svelecte from 'svelecte';
     import MyPagination from '@/MyPagination.svelte';
+    import MyAlert from '@/MyAlert.svelte';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -72,11 +73,12 @@
             description: "",
             date:"",
             status: "Waiting",
-            approval: "",
-            user_approval: "",
-            user_delegate: "",
             payroll: (()=> (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll)(),
             dept: (()=> user?.department)(),
+            user_hrd: (()=> userProfile?.user_hrd)(),
+            approval: (() => user?.approver || null)(),
+            user_approval: (()=> user?.employee_employee_approverToemployee?.payroll || null)(),
+            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)()
         },
         dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
         success:"",
@@ -104,7 +106,6 @@
                 const res = await req.data
                 formCutiBatal()
                 tableCuti.invalidate()
-                formCuti.error = ""
                 formCuti.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
@@ -112,7 +113,7 @@
                 formCuti.error = err.message
             }
         } catch (error: any) {
-            formCuti.error = error.message
+            formCuti.error = error.response.data.message
             formCuti.success = ""
         } finally {
             formCuti.loading = false
@@ -412,14 +413,10 @@
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formCuti.error}
                     {#each formCuti.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
-                        </Alert>
+                        <MyAlert pesan={v} func={()=> formCuti.error = ""} color='red'/>
                     {/each}
                 {:else if formCuti.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formCuti.success}</span>
-                    </Alert>
+                    <MyAlert pesan={formCuti.success} func={()=> formCuti.success = ""} color='green'/>
                 {/if}
 
                 {#if pecahArray(userProfile?.access_cuti, "C")}
@@ -485,6 +482,10 @@
                                 <span class='text-[.9rem] italic'>Description min 5 character</span>
                             </div>
                         </div>
+
+                        <div class="flex flex-col">
+                            <span class='text-[.8rem] italic'>*You can insert cuti if there is no applicant with same date and status is not same as "Waiting" and "Approved"</span>
+                        </div>
                     </form>
                 {/if}
                 
@@ -525,7 +526,14 @@
                                             <TableBodyCell tdClass='break-all font-medium'>{row.type ?? "-"}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.approval_name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <div class="flex flex-col">
+                                                    {row.approval_name}
+                                                    {#if row.is_delegate}
+                                                        <Badge class='self-start' color='indigo'>Delegate</Badge>
+                                                    {/if}
+                                                </div>
+                                            </TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formCuti.edit}
                                                     {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
@@ -537,7 +545,7 @@
                                                             formCuti.answer.cuti_id = row.cuti_id
                                                         }}><Trash size={12} /></MyButton>
                                                     {/if}
-                                                    {#if row.status == "Waiting" && row.approval == formCuti.answer.user_approval }
+                                                    {#if row.status == "Waiting" && !row.is_delegate}
                                                         <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
                                                     {/if}
                                                 {/if}
@@ -561,14 +569,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formApprovalCuti.error}
                         {#each formApprovalCuti.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formApprovalCuti.error = ""} color='red'/>
                         {/each}
                     {:else if formApprovalCuti.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formApprovalCuti.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formApprovalCuti.success} func={()=> formApprovalCuti.success = ""} color='green'/>
                     {/if}
 
                     {#if formApprovalCuti.loading}
@@ -628,14 +632,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formListCuti.error}
                         {#each formListCuti.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formListCuti.error = ""} color='red'/>
                         {/each}
                     {:else if formListCuti.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formListCuti.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formListCuti.success} func={()=> formListCuti.success = ""} color='green'/>
                     {/if}
 
                     {#if formListCuti.loading}

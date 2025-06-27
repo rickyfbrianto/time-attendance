@@ -16,7 +16,7 @@
 	import { fromZodError } from 'zod-validation-error';
     import autoTable, { applyPlugin } from 'jspdf-autotable'
     import MyPagination from '@/MyPagination.svelte';
-    import { error } from '@sveltejs/kit';
+    import MyAlert from '@/MyAlert.svelte';
 	import { goto } from '$app/navigation';
     
     let {data} = $props()
@@ -895,14 +895,10 @@
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
                         {#if formSPL.error}
                             {#each formSPL.error.split(';') as v}
-                                <Alert dismissable>
-                                    <span>{v}</span>
-                                </Alert>
+                                <MyAlert pesan={v} func={()=> formSPL.error = ""} color='red'/>
                             {/each}
                         {:else if formSPL.success}
-                            <Alert border color="green" dismissable>
-                                <span>{formSPL.success}</span>
-                            </Alert>
+                            <MyAlert pesan={formSPL.success} func={()=> formSPL.success = ""} color='green'/>
                         {/if}
         
                         <div class="flex gap-2">                        
@@ -1071,14 +1067,10 @@
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSPLApproval1.error}
                                 {#each formSPLApproval1.error.split(';') as v}
-                                    <Alert dismissable>
-                                        <span>{v}</span>
-                                    </Alert>
+                                    <MyAlert pesan={v} func={()=> formSPLApproval1.error = ""} color='red'/>
                                 {/each}
                             {:else if formSPLApproval1.success}
-                                <Alert border color="green" dismissable>
-                                    <span>{formSPLApproval1.success}</span>
-                                </Alert>
+                                <MyAlert pesan={formSPLApproval1.success} func={()=> formSPLApproval1.success = ""} color='green'/>
                             {/if}
             
                             <div class="flex gap-2">
@@ -1132,16 +1124,12 @@
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSPLApproval2.error}
                                 {#each formSPLApproval2.error.split(';') as v}
-                                    <Alert dismissable>
-                                        <span>{v}</span>
-                                    </Alert>
+                                    <MyAlert pesan={v} func={()=> formSPLApproval2.error = ""} color='red'/>
                                 {/each}
                             {:else if formSPLApproval2.success}
-                                <Alert border color="green" dismissable>
-                                    <span>{formSPLApproval2.success}</span>
-                                </Alert>
+                                <MyAlert pesan={formSPLApproval2.success} func={()=> formSPLApproval2.success = ""} color='green'/>
                             {/if}
-            
+                                    
                             <div class="flex gap-2">
                                 <MyButton onclick={()=> tableSPLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
                             </div>
@@ -1199,14 +1187,10 @@
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                         {#if formSRL.error}
                             {#each formSRL.error.split(';') as v}
-                                <Alert dismissable>
-                                    <span>{v}</span>
-                                </Alert>
+                                <MyAlert pesan={v} func={()=> formSRL.error = ""} color='red'/>
                             {/each}
                         {:else if formSRL.success}
-                            <Alert color="green" dismissable>
-                                <span>{formSRL.success}</span>
-                            </Alert>
+                            <MyAlert pesan={formSRL.success} func={()=> formSRL.success = ""} color='green'/>
                         {/if}
         
                         <div class="flex gap-2">                        
@@ -1391,14 +1375,10 @@
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSRLApproval1.error}
                                 {#each formSRLApproval1.error.split(';') as v}
-                                    <Alert dismissable>
-                                        <span>{v}</span>
-                                    </Alert>
+                                    <MyAlert pesan={v} func={()=> formSRLApproval1.error = ""} color='red'/>
                                 {/each}
                             {:else if formSRLApproval1.success}
-                                <Alert border color="green" dismissable>
-                                    <span>{formSRLApproval1.success}</span>
-                                </Alert>
+                                <MyAlert pesan={formSRLApproval1.success} func={()=> formSRLApproval1.success = ""} color='green'/>
                             {/if}
             
                             <div class="flex gap-2">
@@ -1452,14 +1432,10 @@
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSRLApproval2.error}
                                 {#each formSRLApproval2.error.split(';') as v}
-                                    <Alert dismissable>
-                                        <span>{v}</span>
-                                    </Alert>
+                                    <MyAlert pesan={v} func={()=> formSRLApproval2.error = ""} color='red'/>
                                 {/each}
                             {:else if formSRLApproval2.success}
-                                <Alert border color="green" dismissable>
-                                    <span>{formSRLApproval2.success}</span>
-                                </Alert>
+                                <MyAlert pesan={formSRLApproval2.success} func={()=> formSRLApproval2.success = ""} color='green'/>
                             {/if}
             
                             <div class="flex gap-2">

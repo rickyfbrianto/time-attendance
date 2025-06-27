@@ -87,6 +87,7 @@ model check_io {
   datetime        DateTime @db.DateTime(0)
   type            String   @db.VarChar(50)
   transfer_status Boolean? @default(false)
+  machine_no      Int?     @default(6)
 
   @@index([user_id_machine], map: "user_id_mesin")
 }
@@ -102,10 +103,11 @@ model attendance {
   ijin_info                                     String    @db.VarChar(50)
   description                                   String    @db.VarChar(255)
   attachment                                    String    @db.Text
+  reference                                     String    @default("") @db.VarChar(40)
   createdBy                                     String?   @db.VarChar(8)
   createdAt                                     DateTime  @default(now()) @db.DateTime(0)
   employee_attendance_createdByToemployee       employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
-  employee_attendance_user_id_machineToemployee employee? @relation("attendance_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], map: "Attendance_user_id_machine_fkey")
+  employee_attendance_user_id_machineToemployee employee? @relation("attendance_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], onDelete: Cascade, map: "Attendance_user_id_machine_fkey")
 
   @@index([createdBy], map: "createdBy")
   @@index([user_id_machine], map: "user_id_mesin")
@@ -121,6 +123,7 @@ model temp_check_io {
   user_id_machine String   @db.VarChar(6)
   datetime        DateTime @db.DateTime(0)
   type            String   @db.VarChar(50)
+  machine_no      Int?     @default(6)
 
   @@index([user_id_machine], map: "user_id_mesin")
 }
@@ -141,6 +144,7 @@ model setting {
   setting_id        String  @id @db.VarChar(40)
   start_periode     Int     @default(17) @db.TinyInt
   end_periode       Int     @default(16) @db.TinyInt
+  late_dispen       Int     @default(15) @db.TinyInt
   overtime_allow    Int     @default(30) @db.TinyInt
   overtime_round_up Boolean
 }
@@ -185,7 +189,7 @@ model spl_detail {
 model dept {
   dept_id              String      @id @db.VarChar(40)
   dept_code            String      @unique(map: "dept_code") @db.VarChar(6)
-  initial              String      @db.VarChar(10)
+  initial              String      @db.VarChar(15)
   name                 String      @db.VarChar(100)
   status               dept_status
   employee             employee[]
@@ -232,7 +236,7 @@ model srl_detail {
 
 model cuti {
   cuti_id                          String      @id @db.VarChar(40)
-  cuti_group_id                    String      @default("uuid()") @db.VarChar(40)
+  cuti_group_id                    String      @db.VarChar(40)
   payroll                          String?     @db.VarChar(8)
   type                             String      @db.VarChar(50)
   description                      String      @db.VarChar(255)
@@ -240,6 +244,7 @@ model cuti {
   year                             Int         @db.SmallInt
   status                           cuti_status
   approval                         String?     @db.VarChar(8)
+  is_delegate                      Boolean
   createdAt                        DateTime    @db.DateTime(0)
   employee_cuti_approvalToemployee employee?   @relation("cuti_approvalToemployee", fields: [approval], references: [payroll])
   employee                         employee?   @relation(fields: [payroll], references: [payroll])
@@ -247,6 +252,7 @@ model cuti {
   @@index([payroll], map: "payroll")
   @@index([approval], map: "approval")
   @@index([date], map: "date")
+  @@index([cuti_group_id], map: "cuti_group_id")
 }
 
 model sppd {
@@ -301,12 +307,14 @@ model skpd {
 
 model ijin {
   ijin_id                          String      @id @db.VarChar(40)
+  ijin_group_id                    String      @db.VarChar(40)
   payroll                          String?     @db.VarChar(8)
   type                             String      @db.VarChar(50)
   description                      String      @db.VarChar(255)
   date                             DateTime    @db.Date
   status                           ijin_status
   approval                         String?     @db.VarChar(8)
+  is_delegate                      Boolean
   createdAt                        DateTime    @db.DateTime(0)
   employee_ijin_approvalToemployee employee?   @relation("ijin_approvalToemployee", fields: [approval], references: [payroll])
   employee                         employee?   @relation(fields: [payroll], references: [payroll])
@@ -314,6 +322,7 @@ model ijin {
   @@index([payroll], map: "payroll")
   @@index([approval], map: "approval")
   @@index([date], map: "date")
+  @@index([ijin_group_id], map: "ijin_group_id")
 }
 
 enum calendar_type {

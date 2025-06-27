@@ -183,7 +183,7 @@ export function pecahKataOther(val: string, potong: number = 1) {
     return newTemp
 }
 
-export const isLate = (w1: string, w2: string) => {
+export const isLate = (w1: string, w2: string, dispen: number = 0) => {
     const temp1 = w1.split(' ').map((v: string) => v)[1]
     const temp2 = w2.split(' ').map((v: string) => v)[1]
 
@@ -192,7 +192,7 @@ export const isLate = (w1: string, w2: string) => {
 
     const new1 = set(new Date(), {
         hours: Number(hours1),
-        minutes: 0,
+        minutes: 0 + dispen,
         seconds: 0
     })
 

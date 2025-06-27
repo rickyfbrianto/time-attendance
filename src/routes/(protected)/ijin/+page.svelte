@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, MultiSelect, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Alert, Modal, Timeline, TimelineItem, Badge, Button, Checkbox } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Modal, Timeline, TimelineItem, Badge, Button } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X} from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '$/lib/components/MyButton.svelte';
@@ -14,6 +14,7 @@
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 	import Svelecte from 'svelecte';
     import MyPagination from '@/MyPagination.svelte';
+    import MyAlert from '@/MyAlert.svelte';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -35,7 +36,8 @@
                 ['Bencana Alam', 7],
                 ['Keluarga Rawat Inap', 6],
                 ['Cuti Khitanan/Baptis', 7],
-                ['Ibadah Haji', 30]
+                ['Ibadah Haji', 30],
+                ['Other', 0],
             ]
             : 
             [
@@ -72,16 +74,15 @@
             date: "",
             status: "Waiting",
             askDuration:0,
-            approval: "",
-            user_approval: "",
-            user_delegate: "",
             payroll: (() => user?.payroll)(),
             dept: (()=> user?.department)(),
-            // get approval() { return user?.approver || null},
-            // get user_approval() { return user?.employee_employee_approverToemployee?.payroll || null},
-            // get user_delegate() { return user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null},
+            user_hrd: (()=> userProfile?.user_hrd)(),
+            approval: (() => user?.approver || null)(),
+            user_approval: (()=> user?.employee_employee_approverToemployee?.payroll || null)(),
+            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)()
         },
         dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        payroll: (()=> user?.payroll)(),
         autoWeekend: false,
         success:"",
         error:"",
@@ -92,6 +93,16 @@
     }
 
     let formIjin = $state({...formIjinAnswer})
+
+    let modeIjin = $state({
+        payroll: formIjinAnswer.payroll,
+        name: "",
+        periode: {
+            start: "",
+            end: "",
+        },
+        tabNo: 1
+    })
     
     const formIjinSubmit = async () =>{
         try {
@@ -106,9 +117,9 @@
             if(isValid.success){
                 const req = await axios.post('/api/ijin', formIjin.answer)
                 const res = await req.data
-                formIjin.success = res.message
                 formIjinBatal()
                 tableIjin.invalidate()
+                formIjin.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
                 formIjin.success = ""
@@ -236,11 +247,11 @@
 
     let formListIjin = $state({...formListIjinAnswer})
     
-    const getCutiUser = async () =>{
+    const getCutiUser = async (payroll: string) =>{
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=get_cuti_user&val=${payroll}&year=${year}&month=${month}`)
         const res = await req.json()
         headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
     }
@@ -288,7 +299,7 @@
     $effect(()=>{
         tableIjin.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${user?.payroll}`)
+                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${modeIjin.payroll}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -341,7 +352,7 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#await getCutiUser()}
+    {#await getCutiUser(modeIjin.payroll)}
         <MyLoading message={`Loading users data`}/>
     {:then}
         <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark`}>
@@ -375,7 +386,7 @@
                         </button>
                     {/each}
                 </div>
-                <MyButton className='self-start' onclick={getCutiUser}>Refresh</MyButton>
+                <MyButton className='self-start' onclick={()=> getCutiUser(modeIjin.payroll)}>Refresh</MyButton>
             </div>
         </div>
     {/await}
@@ -422,24 +433,20 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Ijin">
+        <TabItem open title={`${modeIjin.payroll == user.payroll ? "My Ijin": "Ijin " + modeIjin.name}`}>
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formIjin.modalDelete}
                     <MyLoading message="Deleting data"/>
                 {/if}
                 {#if formIjin.error}
                     {#each formIjin.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
-                        </Alert>
+                        <MyAlert pesan={v} func={()=> formIjin.error = ""} color='red'/>
                     {/each}
                 {:else if formIjin.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formIjin.success}</span>
-                    </Alert>
+                    <MyAlert pesan={formIjin.success} func={()=> formIjin.success = ""} color='green'/>
                 {/if}
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center w-full">
                     {#if formIjin.add || formIjin.edit}
                         {#if pecahArray(userProfile?.access_ijin, "C") || pecahArray(userProfile.access_ijin, "U")}
                             <MyButton onclick={formIjinBatal}><Ban size={16} /></MyButton>
@@ -452,6 +459,21 @@
                                 formIjin.add = true
                             }}><Plus size={16}/></MyButton>
                         {/if}
+                    {/if}
+
+                    {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                        <div class="flex flex-1 gap-2">
+                            {#await getUser(formIjin.dept)}
+                                <MyLoading message="Loading data"/>
+                            {:then val}
+                                <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeIjin.payroll}
+                                    options={val.map((v:any) => ({value: v.payroll, name: v.name, text:v.payroll + " - " + v.name}))}
+                                    onChange={(e) => {
+                                        modeIjin.name = e.name
+                                        tableIjin.invalidate()
+                                }}/>
+                            {/await}
+                        </div>
                     {/if}
                 </div>
 
@@ -486,7 +508,12 @@
 
                             <div class="flex flex-col gap-2">
                                 {#if formIjin.add}
-                                    <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                    <div class="flex flex-col">
+                                        <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                        {#if formIjin.answer.askDuration > 0}
+                                            <span class='italic'>Duration {formIjin.answer.askDuration} days</span>
+                                        {/if}
+                                    </div>
                                 {:else if formIjin.edit}
                                     <MyInput type='date' disabled={formIjin.edit} title='Date' name="date" bind:value={formIjin.answer.date}/>
                                 {/if}
@@ -500,6 +527,12 @@
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formIjin.answer.description}/>
                                 <span class='text-[.9rem] italic'>Description min 5 character</span>
                             </div>
+                        </div>
+                        <div class="flex flex-col">
+                            {#if userProfile.user_hrd}
+                                <span class='text-[.8rem] italic'>*If you are HRD user then ijin will automatically granted as approved</span>
+                            {/if}
+                            <span class='text-[.8rem] italic'>*You can insert ijin if there is no applicant with same date and status is not same as "Waiting" and "Approved"</span>
                         </div>
                     </form>
                 {/if}
@@ -541,7 +574,14 @@
                                             <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.approval_name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <div class="flex flex-col">
+                                                    {row.approval_name}
+                                                    {#if row.is_delegate}
+                                                        <Badge class='self-start' color='indigo'>Delegate</Badge>
+                                                    {/if}
+                                                </div>
+                                            </TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formIjin.edit}
                                                     {#if pecahArray(userProfile.access_ijin, "U") && row.status == "Waiting"}
@@ -553,8 +593,8 @@
                                                             formIjin.answer.ijin_id = row.ijin_id
                                                         }}><Trash size={12} /></MyButton>
                                                     {/if}
-                                                    {#if row.status == "Waiting" && row.approval == formIjin.answer.user_approval }
-                                                    <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                    {#if row.status == "Waiting" && !row.is_delegate}
+                                                        <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
                                                     {/if}
                                                 {/if}
                                             </TableBodyCell>
@@ -577,14 +617,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formApprovalIjin.error}
                         {#each formApprovalIjin.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formApprovalIjin.error = ""} color='red'/>
                         {/each}
                     {:else if formApprovalIjin.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formApprovalIjin.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formApprovalIjin.success} func={()=> formApprovalIjin.success = ""} color='green'/>
                     {/if}
 
                     {#if formApprovalIjin.loading}
@@ -644,14 +680,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formListIjin.error}
                         {#each formListIjin.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formListIjin.error = ""} color='red'/>
                         {/each}
                     {:else if formListIjin.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formListIjin.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formListIjin.success} func={()=> formListIjin.success = ""} color='green'/>
                     {/if}
 
                     {#if formListIjin.loading}

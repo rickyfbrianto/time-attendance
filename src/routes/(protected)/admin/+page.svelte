@@ -4,19 +4,20 @@
     import MyInput from '$/lib/components/MyInput.svelte'
     import MyButton from '$/lib/components/MyButton.svelte'
     import axios from 'axios'
-    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, Check, KeyRound } from '@lucide/svelte'
+    import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, Check, KeyRound } from '@lucide/svelte'
     import {formatTanggal, getParams, pecahArray} from '$/lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
     import bgadmin from '$lib/assets/bg-admin.jpg'
     import { page } from '$app/stores';
-	import { getYear } from 'date-fns';
+	import { format, getYear } from 'date-fns';
 	import { z } from 'zod';
     import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
 	import { invalidateAll } from '$app/navigation';
 	import { ProfileSchema, SettingSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TSettingSchema, type TUserSchema } from '$/lib/type.js';
     import MyPagination from '@/MyPagination.svelte';
+    import MyAlert from '@/MyAlert.svelte';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -339,6 +340,7 @@
             setting_id:"id",
             start_periode: 1,
             end_periode: 1,
+            late_dispen: 0,
             overtime_allow: 30,
             overtime_round_up: false
         },
@@ -355,6 +357,7 @@
         if(res){
             formSettingState.answer.start_periode = res.start_periode
             formSettingState.answer.end_periode = res.end_periode
+            formSettingState.answer.late_dispen = res.late_dispen
             formSettingState.answer.overtime_allow = res.overtime_allow
             formSettingState.answer.overtime_round_up = res.overtime_round_up
         }
@@ -554,9 +557,7 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#if urlTab}
-        <Alert class='my-2'>
-            <span>{urlMessage}</span>
-        </Alert>
+        <MyAlert pesan={urlMessage} color='red'/>
     {/if}
 
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
@@ -570,14 +571,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     {#if formProfileState.error}
                         {#each formProfileState.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formProfileState.error = ""} color='red'/>
                         {/each}
                     {:else if formProfileState.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formProfileState.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formProfileState.success} func={()=> formProfileState.success = ""} color='green'/>
                     {/if}
 
                     {#if pecahArray(userProfile?.access_profile, "C") || pecahArray(userProfile?.access_profile, "U")}
@@ -743,14 +740,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     {#if formUserState.error}
                         {#each formUserState.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formUserState.error = ""} color='red'/>
                         {/each}
                     {:else if formUserState.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formUserState.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formUserState.success} func={()=> formUserState.success = ""} color='green'/>
                     {/if}
                     
                     {#if pecahArray(userProfile?.access_user, "C") || pecahArray(userProfile.access_user, "U")}
@@ -950,14 +943,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     {#if formDeptState.error}
                         {#each formDeptState.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formDeptState.error = ""} color='red'/>
                         {/each}
                     {:else if formDeptState.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formDeptState.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formDeptState.success} func={()=> formDeptState.success = ""} color='green'/>
                     {/if}
 
                     {#if pecahArray(userProfile?.access_dept, "C") || pecahArray(userProfile?.access_dept, "U")}
@@ -1052,17 +1041,13 @@
         {/if}
         {#if pecahArray(userProfile?.access_setting, "R")}
             <TabItem title="Setting" open={urlTab == 'setting'}>
-                <div class="flex flex-col gap-4">                
+                <div class="flex flex-col gap-4">
                     {#if formSettingState.error}
                         {#each formSettingState.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formSettingState.error = ""}/>
                         {/each}
                     {:else if formSettingState.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formSettingState.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formSettingState.success} func={()=> formSettingState.success = ""}/>
                     {/if}
 
                     {#await getSetting()}
@@ -1078,18 +1063,24 @@
 
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
                                 <div class="flex flex-col">
-                                    <span class='text-textdark italic'>Allow you to calculate period on calendar</span>
                                     <div class="flex gap-2">
                                         <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
                                         <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
                                     </div>
+                                    <span class='text-textdark italic'>Allow you to calculate period on calendar</span>
                                 </div>
                                 <div class="flex flex-col">
-                                    <span class='text-textdark italic'>Minimum minute that allow program to set overtime</span>
                                     <div class="flex items-center gap-4">
                                         <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
                                         <Checkbox bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Overtime Round Up</Checkbox>
                                     </div>
+                                    <span class='text-textdark italic'>Minimum minute that allow program to set overtime</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-4">
+                                        <MyInput type='number' title='Late Dispen' name="late_dispen" bind:value={formSettingState.answer.late_dispen}/>
+                                    </div>
+                                    <span class='text-textdark italic'>Dispensation for late</span>
                                 </div>
                             </form>
                         {/if}
@@ -1103,14 +1094,10 @@
                     <div class="flex flex-col gap-4">                
                         {#if formCalendar.error}
                             {#each formCalendar.error.split(';') as v}
-                                <Alert dismissable>
-                                    <span>{v}</span>
-                                </Alert>
+                                <MyAlert pesan={v} func={()=> formCalendar.error = ""}/>
                             {/each}
                         {:else if formCalendar.success}
-                            <Alert border color="green" dismissable>
-                                <span>{formCalendar.success}</span>
-                            </Alert>
+                            <MyAlert pesan={formCalendar.success} func={()=> formCalendar.success = ""}/>
                         {/if}
                         
                         {#if pecahArray(userProfile?.access_calendar, "C") || pecahArray(userProfile?.access_calendar, "U")}
@@ -1178,7 +1165,7 @@
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>{row.description}</TableBodyCell>
-                                                    <TableBodyCell>{formatTanggal(row.date, 'date')}</TableBodyCell>
+                                                    <TableBodyCell>{format(formatTanggal(row.date), "d MMMM yyyy")}</TableBodyCell>
                                                     <TableBodyCell>
                                                         {#if !formCalendar.edit}
                                                             {#if pecahArray(userProfile?.access_calendar, "U")}

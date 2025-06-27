@@ -211,7 +211,7 @@
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                     {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                        (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
                                                         (()=> {
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                             const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -322,7 +322,7 @@
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex gap-1 flex-wrap max-w-[10rem]">
                                                     {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                        (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in)) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                        (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
                                                         (()=> {
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                             const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime

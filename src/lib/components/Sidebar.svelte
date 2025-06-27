@@ -1,21 +1,21 @@
 <script lang="ts">
     import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, IdCard, Award, Share2, Settings, Ban, Save } from '@lucide/svelte'
     import usercowo from '$/lib/assets/user-man.svg'
-    import usercewe from '$/lib/assets/user-woman.svg'
     import { fade, fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Card, Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, Alert } from 'flowbite-svelte';
+	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, Alert } from 'flowbite-svelte';
     import {appstore } from '$/lib/store/appstore'
     import { page } from '$app/state';
-	import { pecahArray } from '$/lib/utils';
+	import { pecahArray, formatTanggal } from '$/lib/utils';
     import { invalidateAll } from '$app/navigation';
 	import axios from 'axios';
     import { fromZodError } from 'zod-validation-error';
 	import { UserSchema } from '@lib/type';
-	import { z } from 'zod';
 	import MyButton from './MyButton.svelte';
 	import MyInput from './MyInput.svelte';
 	import { format } from 'date-fns';
+	import MyImage from './MyImage.svelte';
+	import MyAlert from './MyAlert.svelte';
 	
     let {data} = $props()
     let user = $derived(data.user) 
@@ -183,7 +183,7 @@
             <div class="relative flex self-center">
                 <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[7rem] h-[7rem] mb-2"/>
                 <Tooltip class='z-10'>{user.name}</Tooltip>
-                <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute right-[-15px]' title="tes" />
+                <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute right-[-15px]' />
                 <Tooltip class='z-10'>Setting</Tooltip>
             </div>
             <span class="text-[14px] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
@@ -212,17 +212,18 @@
         <Modal title={"My Account"} bind:open={defaultModal} autoclose>
             <div class="relative grid grid-cols-2 gap-3 items-center justify-center">
                 <div class="flex flex-col gap-2 items-center justify-center">
-                    <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem]"/>
+                    <Avatar src={usercowo} border class="self-center ring-slate-600 w-[10rem] h-[10rem]"/>
                     <span class='italic'>{user.name}</span>
-                    <img src={import.meta.env.VITE_VIEW_SIGNATURE+user.signature} alt="Signature" class="border border-slate-300 rounded-xl w-[7rem] h-[7rem] p-2" title={`Signature ${user.name}`}/>
+                    <MyImage src={import.meta.env.VITE_VIEW_SIGNATURE+user.signature} className="mt-4 border border-slate-300 rounded-xl w-[10rem] h-[10rem]" title={`Signature ${user.name}`}/>
                     <span class='italic'>Signature</span>
                 </div>
                 <div class="flex flex-col">
-                    <Timeline>
+                    <Timeline >
                         <TimelineItem title={user.payroll} date="Payroll"/>
                         <TimelineItem title={user.position} date="Position"/>
                         <TimelineItem title={user.location} date="Location"/>
                         <TimelineItem title={user.email} date="Email"/>
+                        <TimelineItem title={format(user.join_date, "d MMMM yyyy")} date="Join Date"/>
                     </Timeline>
                 </div>
             </div>
@@ -231,14 +232,10 @@
         <Modal title={"User "} bind:open={formUserState.modal} size={"lg"}>
             {#if formUserState.error}
                 {#each formUserState.error.split(';') as v}
-                    <Alert dismissable>
-                        <span>{v}</span>
-                    </Alert>
+                    <MyAlert pesan={v} func={()=> formUserState.error = ""} color='red'/>
                 {/each}
             {:else if formUserState.success}
-                <Alert border color="green" dismissable>
-                    <span>{formUserState.success}</span>
-                </Alert>
+                <MyAlert pesan={formUserState.success} func={()=> formUserState.success = ""} color='green'/>
             {/if}
             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                 <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
@@ -271,7 +268,7 @@
                     
                     <div class="flex flex-col gap-2">
                         <Label>Signature</Label>
-                        <input class="rounded-lg border border-slate-300" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
+                        <input class="rounded-lg border border-slate-300" type="file" accept=".jpg" onchange={(e: any) => formUserState.answer.signature = e.target.files[0]}/>
                     </div>
                 </div>
 

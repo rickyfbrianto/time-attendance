@@ -1,8 +1,8 @@
 <script lang="ts">    
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Table, Badge, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert, Badge, Tooltip } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import { Ban, Search, RefreshCw, Pencil, Trash, Plus, Save, Minus, Printer} from '@lucide/svelte'
+    import { Ban, Search, RefreshCw, Pencil, Trash, Plus, Save, Minus, Printer, CalendarArrowDown, CalendarArrowUp } from '@lucide/svelte'
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
@@ -16,6 +16,7 @@
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
     import MyPagination from '@/MyPagination.svelte';
+    import MyAlert from '@/MyAlert.svelte';
 	import { goto } from '$app/navigation';
 
     let {data} = $props()
@@ -324,6 +325,7 @@
                 const res = await req.data
                 formSKPDBatal()
                 tableSKPD.invalidate()
+                tableSPPD.invalidate()
                 formSKPD.success = res.message
             } else {
                 const err = fromZodError(isValid.error)
@@ -609,14 +611,10 @@
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formSPPD.error}
                         {#each formSPPD.error.split(';') as v}
-                            <Alert dismissable>
-                                <span>{v}</span>
-                            </Alert>
+                            <MyAlert pesan={v} func={()=> formSPPD.error = ""} color='red'/>
                         {/each}
                     {:else if formSPPD.success}
-                        <Alert border color="green" dismissable>
-                            <span>{formSPPD.success}</span>
-                        </Alert>
+                        <MyAlert pesan={formSPPD.success} func={()=> formSPPD.success = ""} color='green'/>
                     {/if}
                     
                     {#if (userProfile?.user_hrd || userProfile?.level > 1)}
@@ -728,13 +726,18 @@
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.sppd_id.replace(/\_/g,'/')}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'><div title={row.name}>{pecahKataOther(row.name, 1)}</div></TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>
+                                                    <div>
+                                                        <span>{pecahKataOther(row.name, 1)}</span>
+                                                        <Tooltip>{row.name}</Tooltip>
+                                                    </div>
+                                                </TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.end_date, "date")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formSPPD.edit}
-                                                        {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                                                        {#if (userProfile?.user_hrd || userProfile?.level > 1) && !row.isSKPDFromSPPD}
                                                             {#if pecahArray(userProfile.access_sppd, "U")}
                                                                 <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
                                                             {/if}
@@ -767,14 +770,10 @@
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
-                        <Alert dismissable>
-                            <span>{v}</span>
-                        </Alert>
+                        <MyAlert pesan={v} func={()=> formSKPD.error = ""} color='red'/>
                     {/each}
                 {:else if formSKPD.success}
-                    <Alert border color="green" dismissable>
-                        <span>{formSKPD.success}</span>
-                    </Alert>
+                    <MyAlert pesan={formSKPD.success} func={()=> formSKPD.success = ""} color='green'/>
                 {/if}
         
                 {#if (userProfile?.user_hrd)}
@@ -813,7 +812,7 @@
                 
                         {#if formSKPD.answer.sppd_id}
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <MyInput type='daterange' disabled title='Date' name="date" bind:value={formSKPD.answer.date}/>
+                                <MyInput type='daterange' title='Date' name="date" bind:value={formSKPD.answer.date}/>
 
                                 <div class="flex flex-col gap-2">
                                     <Label>Status</Label>
@@ -873,12 +872,21 @@
                                 {#if tableSKPD.rows.length > 0}
                                     {#each tableSKPD.rows as row:any}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.skpd_id.replace(/\_/g,'/')}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <div>{row.skpd_id.replace(/\_/g,'/')}</div>
+                                                <Tooltip class='z-10'>{row.sppd_id.replace(/\_/g,'/')}</Tooltip>
+                                            </TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "date")}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "date")}</TableBodyCell>
+                                            <!-- <TableBodyCell tdClass='break-all font-medium'>
+                                                <div class="flex flex-col items-start gap-2">
+                                                    <span class='flex items-center gap-2'><CalendarArrowDown size={14} /> {formatTanggal(row.real_start, "date")}</span>
+                                                    <span class='flex items-center gap-2'><CalendarArrowUp size={14} /> {formatTanggal(row.real_end, "date")}</span>
+                                                </div>
+                                            </TableBodyCell> -->
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formSKPD.edit}

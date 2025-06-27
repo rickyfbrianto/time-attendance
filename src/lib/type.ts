@@ -50,7 +50,7 @@ export type TUserSchema = z.infer<typeof UserSchema>
 export const DeptSchema = z.object({
     dept_id: z.string(),
     dept_code: z.number().min(4, "Min 4 Character").max(6, "Max 6 Character"),
-    initial: z.string().min(2, "Min 2 Character").max(10, "Max 10 Character"),
+    initial: z.string().min(2, "Min 2 Character").max(15, "Max 15 Character"),
     name: z.string().min(3, "Min 3 Character").max(100, "Max 100 Character"),
     status: z.string().trim().min(1),
 })
@@ -61,6 +61,7 @@ export const SettingSchema = z.object({
     setting_id: z.string(),
     start_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
     end_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
+    late_dispen: z.number().gte(0, "Min 0").lte(60, "Max 60"),
     overtime_allow: z.number().gte(1, "Min 1").lte(60, "Max 60"),
     overtime_round_up: z.boolean()
 })

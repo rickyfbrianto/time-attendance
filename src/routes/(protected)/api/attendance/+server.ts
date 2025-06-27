@@ -86,24 +86,23 @@ export async function POST({ request, url, locals }) {
             })
 
             if (!getAttendance) {
-                console.log('insert time attendance baru')
                 // if(cekRules(locals.user, "access_attendance","C")){
                 const user = await tx.employee.findUnique({
                     select: { workhour: true },
                     where: { user_id_machine: data.get('user_id_machine') }
                 })
+                const fileAttachment = isAttachment ? attendance_id + extname(attachment?.name || "") : ""
 
                 if (data.get('type') == 'Sakit') {
-                    const eventSkip = ['Hari Libur', 'Cuti Bersama', 'Event Kantor', 'Sakit']
-                    const resAttendance = await prisma.$queryRawUnsafe(`SELECT type, check_in as date FROM attendance where DATE(check_in) BETWEEN ? AND ? AND user_id_machine = ?`,
-                        data.get('check_in'), data.get('check_out'), data.get('user_id_machine')) as { type: string, date: string }[]
+                    // const eventSkip = ['Hari Libur', 'Cuti Bersama', 'Event Kantor', 'Sakit']
+                    // const resAttendance = await prisma.$queryRawUnsafe(`SELECT type, check_in as date FROM attendance where DATE(check_in) BETWEEN ? AND ? AND user_id_machine = ?`,
+                    //     data.get('check_in'), data.get('check_out'), data.get('user_id_machine')) as { type: string, date: string }[]
 
                     const daysInRange = eachDayOfInterval({ start: data.get('check_in'), end: data.get('check_out') })
                     const dayFree = user?.workhour == 7 ? [0] : [0, 6]
 
-                    const temp = daysInRange.filter(v =>
-                        !dayFree.includes(getDay(v))
-                    ).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
+                    const temp = daysInRange.filter(v => !dayFree.includes(getDay(v)))
+                        .map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
 
                     const query = temp.map(async (v: string) => {
                         return tx.$executeRawUnsafe(`INSERT INTO attendance
@@ -119,14 +118,18 @@ export async function POST({ request, url, locals }) {
                             data.get('type'),
                             data.get('ijin_info'),
                             data.get('description'),
-                            attachment ? attendance_id + extname(attachment.name) : null,
+                            // attachment ? attendance_id + extname(attachment.name) : null,
+                            fileAttachment,
                             data.get('createdBy')
                         )
                     })
-                    await Promise.all(query)
-                } else {
-                    const fileAttachment = isAttachment ? attendance_id + extname(attachment?.name || "") : ""
+                    const tempHasil = await Promise.all(query)
 
+                    if (tempHasil && attachment) {
+                        const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${fileAttachment}`
+                        await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
+                    }
+                } else {
                     const attendance = await tx.$executeRawUnsafe(`INSERT INTO attendance
                             (attendance_id,user_id_machine,check_in,check_out,check_in2,check_out2,
                             type,ijin_info,description,attachment,createdBy,createdAt)
@@ -145,18 +148,15 @@ export async function POST({ request, url, locals }) {
                     )
 
                     if (attendance && attachment) {
-                        // const filename = path.resolve('src/lib/assets/media/attach_attendance') + `/${attendance_id + extname(attachment.name)}`
-                        // const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${attendance_id + extname(attachment.name)}`
                         const filename = path.resolve(process.env.ATTACH_ATTANDANCE) + `/${fileAttachment}`
                         await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                     }
                 }
-                return { message: "Data successfully saved" }
+                return { message: "Attendance successfully saved" }
                 // }
             } else {
                 // if(cekRules(locals.user, "access_attendance","U")){
                 const fileAttachment = isAttachment ? data.get('attendance_id') + extname(attachment?.name || "") : ""
-                console.log('update time attendance baru')
 
                 const attendance = await tx.$executeRawUnsafe(`
                         UPDATE attendance SET user_id_machine=?,check_in=?,check_out=?,
@@ -181,7 +181,7 @@ export async function POST({ request, url, locals }) {
                     await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                 }
 
-                return { message: "Data successfully updated" }
+                return { message: "Attendance successfully updated" }
                 // }
             }
         })
