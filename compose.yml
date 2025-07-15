@@ -1,0 +1,18 @@
+services:
+  time-fs:
+    build:
+      context: ./express
+      dockerfile: Dockerfile
+    container_name: time-fs
+    networks:
+      - saga-net
+    env_file:
+      - .env
+    ports:
+      - 1111:1111
+    volumes:
+      - /mnt/d/time-attendance/media:/mnt/media
+    hostname: ricky
+networks:
+  saga-net:
+    external: true

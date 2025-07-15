@@ -1,8 +1,8 @@
-import {error, json} from '@sveltejs/kit'
-import {prisma, prismaErrorHandler } from '@lib/utils'
+import { error, json } from '@sveltejs/kit'
+import { pecahArray, prisma, prismaErrorHandler } from '@lib/utils'
 import { v4 } from 'uuid'
 
-export async function GET({url}){
+export async function GET({ url }) {
     try {
         const page = Number(url.searchParams.get('_page')) || 1
         const limit = Number(url.searchParams.get('_limit')) || 10
@@ -10,59 +10,61 @@ export async function GET({url}){
         const sort = url.searchParams.get('_sort') ?? "dept_id"
         const order = url.searchParams.get('_order') ?? "asc"
         const search = url.searchParams.get('_search') ?? ""
-        
+
         const status = await prisma.$transaction(async (tx) => {
             const items: Dept = await tx.$queryRawUnsafe(`
                 SELECT * FROM dept 
                 WHERE (dept_code like ? OR name like ? OR status like ?)
                 ORDER by ${sort} ${order}
                 LIMIT ${limit} OFFSET ${offset}`,
-            `%${search}%`, `%${search}%`, `%${search}%`)
+                `%${search}%`, `%${search}%`, `%${search}%`)
 
-            const [{count}] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM dept 
+            const [{ count }] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM dept 
                 WHERE (dept_code like ? OR name like ? OR status like ?)`,
-            `%${search}%`, `%${search}%`, `%${search}%`) as {count:number}[]
+                `%${search}%`, `%${search}%`, `%${search}%`) as { count: number }[]
 
-            return {items, totalItems: Number(count)}
+            return { items, totalItems: Number(count) }
         })
-        
+
         return json(status)
     } catch (err: any) {
         console.log(err.message)
-        error(500, err.messsage)        
+        error(500, err.messsage)
     }
 }
 
-export async function POST({request}){
+export async function POST({ request, locals }) {
     try {
         const data = await request.json()
-
+        const { userProfile } = locals
         const status = await prisma.$transaction(async tx => {
             const getDept = await prisma.dept.findUnique({
-                where:{dept_id: data.dept_id}
+                where: { dept_id: data.dept_id }
             })
 
-            if(!getDept){
+            if (!getDept) {
+                if (!pecahArray(userProfile.access_dept, "C")) throw new Error("Cant insert Department, because you have no authorization")
                 await tx.dept.create({
-                    data:{
+                    data: {
                         ...data,
                         dept_id: v4()
                     }
                 })
-                
-                return {message:"Data successfully saved"}
-            }else{
+
+                return { message: "Data successfully saved" }
+            } else {
+                if (!pecahArray(userProfile.access_dept, "U")) throw new Error("Cant update Department, because you have no authorization")
                 await tx.dept.update({
-                    data:{
+                    data: {
                         dept_code: data.dept_code,
                         initial: data.initial,
-                        name:data.name, 
-                        status:data.status
-                    }, where:{
+                        name: data.name,
+                        status: data.status
+                    }, where: {
                         dept_id: data.dept_id
                     }
                 })
-                return {message:"Data successfully updated"}
+                return { message: "Data successfully updated" }
             }
         })
 

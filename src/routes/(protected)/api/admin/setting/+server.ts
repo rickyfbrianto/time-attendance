@@ -1,4 +1,4 @@
-import { prismaErrorHandler } from '@lib/utils';
+import { pecahArray, prismaErrorHandler } from '@lib/utils';
 import { error, json } from '@sveltejs/kit'
 import { prisma } from '@lib/utils.js'
 
@@ -12,20 +12,23 @@ export async function GET() {
     }
 }
 
-export async function POST({ request }) {
+export async function POST({ request, locals }) {
     try {
         const data = await request.json()
+        const { userProfile } = locals
 
         const status = await prisma.$transaction(async tx => {
             const getSetting = await tx.setting.findFirst()
 
             if (!getSetting) {
+                if (!pecahArray(userProfile.access_setting, "C")) throw new Error("Cant insert Setting, because you have no authorization")
                 await prisma.setting.create({
                     data: { ...data },
                 })
 
                 return { message: "Setting successfully saved" }
             } else {
+                if (!pecahArray(userProfile.access_setting, "U")) throw new Error("Cant update Setting, because you have no authorization")
                 await prisma.setting.update({
                     data: { ...data },
                     where: { setting_id: getSetting.setting_id }

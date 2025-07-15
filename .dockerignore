@@ -1,8 +1,4 @@
-.git
-build
 node_modules
 .docker-ignore
 .gitignore
 Dockerfile
-*.log
-/static/media

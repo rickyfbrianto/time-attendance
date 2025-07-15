@@ -8,7 +8,7 @@ export async function GET({ url }) {
         const limit = Number(url.searchParams.get('_limit')) || 10
         const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
         const sort = url.searchParams.get('_sort') || "att.check_in"
-        const order = url.searchParams.get('_order') || "asc"
+        const order = url.searchParams.get('_order') || "desc"
         const search = url.searchParams.get('_search') || ""
 
         const payroll = url.searchParams.get('payroll') || ""
@@ -22,7 +22,7 @@ export async function GET({ url }) {
             const date1 = format(subMonths(temp, 1), "yyyy-MM-dd")
             const date2 = format(new Date(Number(year), Number(month), getSetting?.end_periode), "yyyy-MM-dd")
 
-            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, 
+            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, user.department as dept,
                 att.check_in AS check_in, att.check_out AS check_out, att.check_in2, att.check_out2, 
                 att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd,
                 getUserWeekend(att.check_in, user.workhour) as isWeekend,

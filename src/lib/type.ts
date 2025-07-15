@@ -40,8 +40,10 @@ export const UserSchema = z.object({
     approver: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
     substitute: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
     join_date: z.string().date(),
-    // signature: z.string().max(250, "Max 250 Character"),
     signature: z.union([z.string().max(250, "Max 250 Character"), z.object({})]),
+    user_security: z.boolean(),
+    user_hod: z.boolean(),
+    hostname: z.string().min(6, "Min 11 Character").max(31, "Max 31 Character"),
     status: z.string().min(1)
 })
 
@@ -62,7 +64,7 @@ export const SettingSchema = z.object({
     start_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
     end_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
     late_dispen: z.number().gte(0, "Min 0").lte(60, "Max 60"),
-    overtime_allow: z.number().gte(1, "Min 1").lte(60, "Max 60"),
+    overtime_allow: z.number().gte(1, "Min 1").lte(29, "Max 29"),
     overtime_round_up: z.boolean()
 })
 

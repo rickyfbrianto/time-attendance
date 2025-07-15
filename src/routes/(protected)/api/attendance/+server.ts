@@ -1,4 +1,4 @@
-import { cekRules, formatTanggal, formatTanggalISO, prismaErrorHandler } from "@lib/utils";
+import { formatTanggal, formatTanggalISO, pecahArray, prismaErrorHandler } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
 import { extname } from "node:path";
 import { v4 as uuid4 } from "uuid";
@@ -13,7 +13,7 @@ export async function GET({ url }) {
         const limit = Number(url.searchParams.get('_limit')) || 10
         const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
         const sort = url.searchParams.get('_sort') || "att.check_in"
-        const order = url.searchParams.get('_order') || "asc"
+        const order = url.searchParams.get('_order') || "desc"
         const search = url.searchParams.get('_search') || ""
 
         const dept = url.searchParams.get('dept') || ""
@@ -23,7 +23,7 @@ export async function GET({ url }) {
         const end_date = url.searchParams.get('end_date') || ""
 
         const status = await prisma.$transaction(async (tx) => {
-            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, 
+            const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, user.department as dept,
                 att.check_in AS check_in, att.check_out AS check_out, att.check_in2, att.check_out2, 
                 att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd,
                 getSPL(user.payroll, att.check_in) as is_spl_exist,
@@ -60,10 +60,11 @@ export async function GET({ url }) {
     }
 }
 
-export async function POST({ request, url, locals }) {
+export async function POST({ request, locals }) {
     try {
         const attendance_id = uuid4()
         const data = await request.formData()
+        const { userProfile } = locals
         const attachment = data.get('attachment')
         const isAttachment = typeof attachment == "object" ? true : false
 
@@ -86,7 +87,7 @@ export async function POST({ request, url, locals }) {
             })
 
             if (!getAttendance) {
-                // if(cekRules(locals.user, "access_attendance","C")){
+                if (!pecahArray(userProfile.access_attendance, "C")) throw new Error("Cant insert Attendance, because you have no authorization")
                 const user = await tx.employee.findUnique({
                     select: { workhour: true },
                     where: { user_id_machine: data.get('user_id_machine') }
@@ -153,9 +154,9 @@ export async function POST({ request, url, locals }) {
                     }
                 }
                 return { message: "Attendance successfully saved" }
-                // }
             } else {
-                // if(cekRules(locals.user, "access_attendance","U")){
+                if (!pecahArray(userProfile.access_attendance, "U")) throw new Error("Cant update Attendance, because you have no authorization")
+
                 const fileAttachment = isAttachment ? data.get('attendance_id') + extname(attachment?.name || "") : ""
 
                 const attendance = await tx.$executeRawUnsafe(`
@@ -182,7 +183,6 @@ export async function POST({ request, url, locals }) {
                 }
 
                 return { message: "Attendance successfully updated" }
-                // }
             }
         })
 

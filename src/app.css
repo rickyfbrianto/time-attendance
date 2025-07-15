@@ -7,41 +7,47 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary-50: #fff5f2;
-  --color-primary-100: #fff1ee;
-  --color-primary-200: #ffe4de;
-  --color-primary-300: #ffd5cc;
-  --color-primary-400: #ffbcad;
-  --color-primary-500: #fe795d;
-  --color-primary-600: #ef562f;
-  --color-primary-700: #eb4f27;
-  --color-primary-800: #cc4522;
-  --color-primary-900: #a5371b;
+    --color-primary-50: #fff5f2;
+    --color-primary-100: #fff1ee;
+    --color-primary-200: #ffe4de;
+    --color-primary-300: #ffd5cc;
+    --color-primary-400: #ffbcad;
+    --color-primary-500: #fe795d;
+    --color-primary-600: #ef562f;
+    --color-primary-700: #eb4f27;
+    --color-primary-800: #cc4522;
+    --color-primary-900: #a5371b;
 
-  --color-bgactive: #E7ECEF;
-  --color-bgdark: #FFF;
-  --color-bgdark2: #F2F7F2;
-  --color-textdark: var(--color-slate-800);
-  --color-textdark2: #0E273C;
-  --color-bgside: var(--warna-base);
-  --color-bgside2: #FFF;
-  --color-textside: var(--color-slate-700);
+    --color-bgactive: #E7ECEF;
+    --color-bgdark: #FFF;
+    --color-bgdark2: #F2F7F2;
+    --color-textdark: var(--color-slate-800);
+    --color-textdark2: #0E273C;
+    --color-bgside: var(--warna-base);
+    --color-bgside2: #FFF;
+    --color-textside: var(--color-slate-700);
+
+    --color-kuning: #F9DB6D;
+    --color-hijau: #337357;
+    --color-merah: #922D50;
+    /* --biru: #1098F7; */
+    --color-biru: #2374AB;
 }
 
 @layer theme {
-  .dark {
-    --color-bgactive: #656565;
-    --color-bgdark: #1F2421;
-    --color-bgdark2: #353531;
-    --color-textdark: #FFF;
-    --color-textdark2: #F0E7D8;
-    --color-bgside: #191919;
-    --color-bgside2: #353531;
-    --color-textside: var(--color-slate-300);
-  }
+    .dark {
+        --color-bgactive: #656565;
+        --color-bgdark: #1F2421;
+        --color-bgdark2: #353531;
+        --color-textdark: #FFF;
+        --color-textdark2: #F0E7D8;
+        --color-bgside: #191919;
+        --color-bgside2: #353531;
+        --color-textside: var(--color-slate-300);
+    }
 }
 
-:root{
+:root {
     --ukuran1: 2rem;
     --ukuran2: 2.5rem;
     --ukuran3: 3rem;
@@ -74,12 +80,11 @@
     --ukuran30: 16.5rem;
 
     --warna-base: #F0EBD8;
-    /* --warna-base: #fff; */
     --warna-base2: #add;
 }
 
 body * {
-  @apply transition-colors duration-100;
+    @apply transition-colors duration-100;
 }
 
 @source "../node_modules/flowbite-svelte/dist";

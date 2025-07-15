@@ -5,7 +5,8 @@
     "type": "module",
     "scripts": {
         "db": "pnpm prisma db pull && pnpm prisma generate",
-        "dev": "vite dev -- --open",
+        "dev": "vite dev",
+        "dev:dev": "dotenv -e .env.dev -- vite dev --mode dev",
         "build": "vite build",
         "test": "vitest",
         "preview": "vite preview",
@@ -59,6 +60,7 @@
         "date-fns": "^4.1.0",
         "date-fns-tz": "^3.2.0",
         "dotenv": "^16.5.0",
+        "dotenv-cli": "^8.0.0",
         "express": "^5.1.0",
         "jsonwebtoken": "^9.0.2",
         "jspdf": "^3.0.1",

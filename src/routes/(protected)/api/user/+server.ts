@@ -1,5 +1,5 @@
-import { json } from '@sveltejs/kit'
-import { encryptData, prismaErrorHandler } from "@lib/utils";
+import { error, json } from '@sveltejs/kit'
+import { prismaErrorHandler } from "@lib/utils";
 import { extname } from "node:path";
 import { writeFileSync } from 'fs'
 import path from 'path'

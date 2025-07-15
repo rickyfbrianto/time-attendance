@@ -3,7 +3,7 @@ import { prisma } from '$/lib/utils.js'
 
 export async function load({ url, locals, depends }) {
     depends('app:protected')
-    if (url.pathname === '/') redirect(303, `/dashboard`)
+    if (url.pathname == '/') throw redirect(307, `/dashboard`)
 
     const { user, userProfile } = locals
 
@@ -14,7 +14,7 @@ export async function load({ url, locals, depends }) {
 
     if (!userProfile) throw error(500, "User has no Profile ID")
     if (!user?.department) throw error(500, "User has no department")
-    // if (!user?.signature) throw error(500, "User has no signature")
+    if (!user?.signature) throw error(500, "User has no signature")
 
     return {
         user,

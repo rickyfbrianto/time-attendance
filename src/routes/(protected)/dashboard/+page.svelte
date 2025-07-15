@@ -13,12 +13,6 @@
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
-        
-    const filterDate = [
-        {name:"year", value:"This Year"},
-        {name:"month", value:"This Month"},
-        {name:"date", value:"This Date"},
-    ]
 
     const modeView = {
         dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
@@ -57,7 +51,7 @@
         return chartData
     }
     
-    let chartOptionsBar =  $derived({
+    let chartOptionsBar = $derived({
         responsive: true,
         plugins: {
             legend: {
@@ -80,7 +74,7 @@
         },
     });
 
-    let chartOptionsPie = {
+    let chartOptionsPie = $derived({
         responsive: true,
         plugins: {
             legend: {
@@ -101,7 +95,7 @@
                 text: `Attendance Pie Chart's ${modeDashboard.name}`
             }
         },
-    };
+    });
 </script>
 
 <svelte:head>

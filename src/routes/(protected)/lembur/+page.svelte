@@ -4,7 +4,7 @@
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
-	import { Ban, Check, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X } from '@lucide/svelte';
+	import { Ban, Check, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X, Eye } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
 	import { pecahArray, formatTanggal, getPeriode, namaHari, generatePeriode, getParams, selisihWaktu, formatDifference } from '$/lib/utils.js';
@@ -37,9 +37,11 @@
             est_start:"",
             est_end:"",            
             approval1:"",
+            status1:"",
             approval2:"",            
+            status2:"",
             dept: (()=> user?.department)(),
-            spl_detail:[{payroll:"", description:""}],
+            spl_detail:[{payroll:"", name:"", description:""}],
         },
         dept: (()=> user?.department)(),
         payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
@@ -49,6 +51,7 @@
         loading:false,
         add:false,
         edit:false,
+        modalPreview: false
     }
     
     let formSPL = $state({...formSPLAnswer})
@@ -303,7 +306,7 @@
         error:"",
         loading:false,
         add:false,
-        edit:false,
+        edit:false
     }
     
     let formSPLApproval2 = $state({...formSPLApproval2Answer})
@@ -324,6 +327,20 @@
         }
     }
     
+    const showPreviewSPL = async (value: string) => {
+        formSPL.modalPreview = true
+
+        const req = await axios.get(`/api/lembur/spl/${value}/preview`)
+        const res = await req.data
+        if(res){
+            formSPL.answer = {...res,
+                est_start: formatTanggal(res.est_start),
+                est_end: formatTanggal(res.est_end),
+                spl_detail: res.spl_detail.map((val) => ({name: val.employee.name, description: val.description.trim() }))
+            }
+        }
+    }
+    
     // SRL
     let tableSRL = $state(new TableHandler([], {rowsPerPage}))
     let tableSRLSearch = tableSRL.createSearch()
@@ -340,6 +357,7 @@
             payroll: (()=> user?.payroll)(),
             srl_detail:[{description:"", status: ""}],
         },
+        createdByName: "",
         payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
         success:"",
         error:"",
@@ -347,6 +365,7 @@
         loading:false,
         add:false,
         edit:false,
+        modalPreview:false
     }
 
     let formSRLDetailAnswer = $state([])
@@ -601,7 +620,7 @@
             doc.setFontSize(14)
             doc.text("Formulir Pelaporan Jam Kerja Lembur Pada hari Minggu/Hari libur resmi & hari kerja biasa", 50, rowData + rowInc)
             doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
-            
+
             rowInc += row3
             doc.setFontSize(11)
             doc.setFont('times', 'normal', 'bold')
@@ -733,6 +752,21 @@
         } catch (error: any) {
             formSRLApproval2.error = error.response.data.message
             formSRLApproval2.success = ""
+        }
+    }
+    
+    const showPreviewSRL = async (value: string) => {
+        formSRL.modalPreview = true
+
+        const req = await axios.get(`/api/lembur/srl/${value}/preview`)
+        const res = await req.data
+        if(res){
+            formSRL.answer = {...res,
+                real_start: formatTanggal(res.real_start),
+                real_end: formatTanggal(res.real_end),
+                overtime: differenceInHours(res.real_end,res.real_start)
+            }
+            formSRL.createdByName = res.employee.name
         }
     }
     
@@ -885,6 +919,88 @@
         <svelte:fragment slot="footer">
             <Button color='green' disabled={formSRL.loading} onclick={() => formSRLDelete(formSRL.answer.srl_id)}>Yes, delete this data</Button>
             <Button color='red' onclick={() => formSRL.modalDelete = false}>No</Button>
+        </svelte:fragment>
+    </Modal>
+
+    <Modal bind:open={formSPL.modalPreview} autoclose>
+        <div class="flex flex-col gap-2 max-h-[85vh]">
+            <MyInput type='textarea' disabled title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
+                                
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">                
+                <MyInput type='text' disabled title='Estimated Start' name="est_start" bind:value={formSPL.answer.est_start}/>
+                <MyInput type='text' disabled title='Estimated End' name="est_end" bind:value={formSPL.answer.est_end}/>
+                {#await getUserByDept() then val}
+                    <div class="flex flex-col gap-2 flex-1">
+                        <Label>Approval 1</Label>
+                        <Svelecte class='rounded-lg' disabled bind:value={formSPL.answer.approval1} 
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                        />
+                    </div>
+                    <div class="flex flex-col gap-2 flex-1">
+                        <Label>Approval 2</Label>
+                        <Svelecte class='rounded-lg' disabled bind:value={formSPL.answer.approval2} 
+                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                        />
+                    </div>
+                {/await}
+            </div>
+
+            <div class="flex flex-col gap-2">
+                {#each formSPL.answer.spl_detail as val1, i}
+                    <div class="flex flex-col gap-1">
+                        <Badge class='self-start'>{val1.name}</Badge>
+                        <div class="flex p-2 px-3 gap-2 border border-bgside rounded-lg flex-wrap">
+                            {#each val1.description.split(",").map(v => v.trim()) as val2, i}
+                                <span class='text-wrap break-all'>{(i+1) + ". " + val2}</span>
+                            {/each}
+                        </div>
+                    </div>
+                {/each}
+            </div>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button onclick={()=> formSPL.modalPreview = false} class='flex gap-2 px-3 py-2' pill>Close</Button>
+        </svelte:fragment>
+    </Modal>
+
+    <Modal bind:open={formSRL.modalPreview} autoclose>
+        <div class="flex flex-col gap-2 max-h-[85vh]">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {#if formSRL.answer.spl_id}
+                    <MyInput type='text' disabled title='SRL ID' name="srl_id" bind:value={formSRL.answer.srl_id}/>    
+                    <MyInput type='text' disabled title='Overtime (hours)' name="overtime" bind:value={formSRL.answer.overtime}/>
+                    <MyInput type='text' disabled title='Realisasi Start' name="real_start" bind:value={formSRL.answer.real_start}/>
+                    <MyInput type='text' disabled title='Realisasi End' name="real_end" bind:value={formSRL.answer.real_end}/>
+                    {#await getUserByDept() then val}
+                        <div class="flex flex-col gap-2 flex-1">
+                            <Label>Approval 1</Label>
+                            <Svelecte class='rounded-lg' disabled bind:value={formSRL.answer.approval1} 
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                            />
+                        </div>
+                        <div class="flex flex-col gap-2 flex-1">
+                            <Label>Approval 2</Label>
+                            <Svelecte class='rounded-lg' disabled bind:value={formSRL.answer.approval2} 
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                            />
+                        </div>
+                    {/await}
+                {/if}
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <span class='text-[.9rem] italic'>Job description and status</span>
+                {#each formSRL.answer.srl_detail as val1, i}
+                    <div class="flex items-center gap-1 flex-wrap p-2 border-[1px] border-bgside rounded-lg">
+                        <Badge class='self-start'>{val1.status}</Badge>
+                        <span class="text-[.8rem] text-wrap break-all italic">{val1.description}</span>
+                    </div>
+                {/each}
+            </div>
+            <span class='text-[.8rem]'>createdBy <Badge color='dark'>{formSRL.createdByName}</Badge> </span>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button onclick={()=> formSPL.modalPreview = false} class='flex gap-2 px-3 py-2' pill>Close</Button>
         </svelte:fragment>
     </Modal>
     
@@ -1104,6 +1220,7 @@
                                                             {#if row.status1 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Button onclick={()=> showPreviewSPL(row.spl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>
@@ -1161,6 +1278,7 @@
                                                             {#if row.status2 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Button onclick={()=> showPreviewSPL(row.spl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>
@@ -1412,6 +1530,7 @@
                                                             {#if row.status1 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Button onclick={()=> showPreviewSRL(row.srl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>
@@ -1469,6 +1588,7 @@
                                                             {#if row.status2 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
                                                                 <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Button onclick={()=> showPreviewSRL(row.srl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>

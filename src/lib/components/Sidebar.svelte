@@ -22,20 +22,35 @@
     let userProfile = $derived(data.userProfile)
     let pathname:string[] = $state([])
 
-    $effect(()=>{
+    $effect(()=> {
         pathname = page.url.pathname.split('/').filter(v => v)
     })
         
+    // const linkSidebar = [
+    //     {type:"separator", title:"Core"},
+    //     {link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
+    //     {link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
+    //     {type:"separator", title:"Main"},
+    //     {link:"/absen", title:"Check In/Out", icon: Clock8},
+    //     {link:"/lembur", title:"Lembur", icon: Hourglass},
+    //     {link:"/dinas", title:"Dinas", icon: Plane},
+    //     {link:"/ijin", title:"Ijin", icon: TicketsPlane},
+    //     {link:"/cuti", title:"Cuti", icon: TicketsPlane},
+    // ]
     const linkSidebar = [
-        {type:"separator", title:"Core"},
-        {link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
-        {link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
-        {type:"separator", title:"Main"},
-        {link:"/absen", title:"Check In/Out", icon: Clock8},
-        {link:"/lembur", title:"Lembur", icon: Hourglass},
-        {link:"/dinas", title:"Dinas", icon: Plane},
-        {link:"/ijin", title:"Ijin", icon: TicketsPlane},
-        {link:"/cuti", title:"Cuti", icon: TicketsPlane},
+        {type:"core", title:"Core", separator: true},
+        {type:"core", link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
+        {type:"core", link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
+        {type:"main", title:"Main", separator: true},
+        {type:"main", link:"/absen", title:"Check In/Out", icon: Clock8},
+        {type:"main", link:"/lembur", title:"Lembur", icon: Hourglass},
+        {type:"main", link:"/dinas", title:"Dinas", icon: Plane},
+        {type:"main", link:"/ijin", title:"Ijin", icon: TicketsPlane},
+        {type:"main", link:"/cuti", title:"Cuti", icon: TicketsPlane},
+        {type:"security", title:"Security", separator: true},
+        {type:"security", link:"/security", title:"Security", icon: ShieldUser},
+        {type:"admin", title:"Admin", separator: true},
+        {type:"admin", link:"/admin", title:"Admin", icon: ShieldUser},
     ]
     let defaultModal = $state(false)
 
@@ -154,29 +169,22 @@
         </a>
 
         <div class="flex flex-col flex-1 gap-y-1">
-            {#each linkSidebar as {link, title, icon: Icon, type}}
-                {#if type == "separator"}
-                    <div class="flex justify-center bg-bgside2 text-textside px-3 py-1 rounded-lg mt-1 shadow-xl">
-                        <span class='text-muted font-bold italic text-[.7rem]'>{title}</span>
-                    </div>
-                {:else}
-                    <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-lg gap-3 shadow-lg`}>
-                        <Icon size=14/>
-                        <span class={`text-[.75rem] font-bold `}>{title}</span>
-                    </a>
-                    <Tooltip class='z-10'>{title}</Tooltip>
+            {#each linkSidebar as {link, title, icon: Icon, type, separator}}            
+                {#if type == "admin" && (pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R"))
+                    || ["core", "main"].includes(type) }                
+                    {#if separator}
+                        <div class="flex justify-center bg-bgside2 text-textside px-3 py-[3px] rounded-lg mt-1 shadow-xl">
+                            <span class='text-muted font-bold italic text-[.7rem]'>{title}</span>
+                        </div>
+                    {:else}
+                        <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[6px] rounded-lg gap-3 shadow-lg`}>
+                            <Icon size=14/>
+                            <span class={`text-[.75rem] font-bold `}>{title}</span>
+                        </a>
+                        <Tooltip class='z-10'>{title}</Tooltip>
+                    {/if}
                 {/if}
             {/each}
-            {#if pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R")}
-                <div class="flex justify-center bg-bgside2 text-textside px-3 py-1 rounded-lg mt-1 shadow-xl">
-                    <span class='text-muted font-bold italic text-[.7rem]'>Admin</span>
-                </div>
-                <a href={'/admin'} class={`relative flex items-center ${'/admin' == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-2 rounded-lg gap-3 shadow-lg`}>
-                    <ShieldUser size=14/>
-                    <span class={`text-[.75rem] font-bold `}>Admin</span>
-                </a>
-                <Tooltip class='z-10'>Admin</Tooltip>
-            {/if}
         </div>
 
         <div class="relative flex flex-col mb-5 mt-12 bg-bgside2 py-5 px-3 rounded-xl shadow-xl">
@@ -187,15 +195,15 @@
                 <Tooltip class='z-10'>Setting</Tooltip>
             </div>
             <span class="text-[14px] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
-            <Badge class='bg-slate-200 text-slate-800 self-center py-1' title={user.email}>{user.email}</Badge>
+            <Badge class='bg-slate-200 text-slate-800 self-center py-1'>{user.email}</Badge>
             <Tooltip class='z-10'>{user.email}</Tooltip>
             <Hr hrClass="my-3 text-slate-300 h-[1.2px]"/>
             <div class='flex flex-col gap-1 px-1'>
-                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1" title={user.payroll}><IdCard size={14}/>{user.payroll}</span>
+                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
                 <Tooltip class='z-10'>{user.payroll}</Tooltip>
-                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1" title={user.position}><Award size={14}/>{user.position}</span>
+                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
                 <Tooltip class='z-10'>{user.position}</Tooltip>
-                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1" title={userProfile.name}><Share2 size={14}/>Profile ({userProfile?.name} - Level {userProfile?.level})</span>
+                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Share2 size={14}/>Profile ({userProfile?.name} - Level {userProfile?.level})</span>
                 <Tooltip class='z-10'>{userProfile.name}</Tooltip>
                 <!-- <span class="text-[12px] text-textdark">{user.position}</span>
                 <span class="text-[12px] text-textdark">Profile ({userProfile?.name} - Level {userProfile?.level}) </span> -->

@@ -27,6 +27,9 @@ model employee {
   substitute                                      String?         @db.VarChar(8)
   join_date                                       DateTime        @default(now()) @db.Date
   signature                                       String          @db.VarChar(250)
+  user_security                                   Boolean
+  user_hod                                        Boolean
+  hostname                                        String          @db.VarChar(31)
   status                                          employee_status @default(Aktif)
   attendance_attendance_createdByToemployee       attendance[]    @relation("attendance_createdByToemployee")
   attendance_attendance_user_id_machineToemployee attendance[]    @relation("attendance_user_id_machineToemployee")
@@ -213,7 +216,7 @@ model srl {
   employee_srl_approval1Toemployee employee?    @relation("srl_approval1Toemployee", fields: [approval1], references: [payroll])
   employee_srl_approval2Toemployee employee?    @relation("srl_approval2Toemployee", fields: [approval2], references: [payroll])
   employee                         employee?    @relation(fields: [payroll], references: [payroll])
-  spl                              spl?         @relation(fields: [spl_id], references: [spl_id])
+  spl                              spl?         @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
   srl_detail                       srl_detail[]
 
   @@index([payroll], map: "payroll")

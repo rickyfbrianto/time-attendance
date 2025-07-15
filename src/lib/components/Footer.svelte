@@ -1,5 +1,5 @@
 <script lang='ts'>
-    import { Footer, FooterCopyright, FooterLinkGroup, FooterBrand, FooterLink } from "flowbite-svelte";
+    import { Footer, FooterCopyright, FooterLinkGroup, FooterBrand, Badge } from "flowbite-svelte";
 	import { Moon, Sun } from '@lucide/svelte';
     import { appstore } from "$/lib/store/appstore";
     import { Toggle } from 'flowbite-svelte';
@@ -21,13 +21,16 @@
             <FooterBrand href="https://flowbite.com" src={bg} alt="Time Attendance" />
             <FooterCopyright class='text-[1.4rem]' href="/" year={new Date().getFullYear()} />
         </div>
-        <Toggle bind:checked={$appstore.darkMode} onchange={e => handleDarkMode(e.target.checked)} class='ring-0 border-none outline-none'>
-            {#if $appstore.darkMode}
-                <Sun size={16} />
-            {:else}
-                <Moon size={16} />
-            {/if}
-        </Toggle>
+        <div class="flex gap-2">
+            <Badge>DB {import.meta.env.VITE_INFO_ENV}</Badge>
+            <Toggle bind:checked={$appstore.darkMode} onchange={e => handleDarkMode(e.target.checked)} class='ring-0 border-none outline-none'>
+                {#if $appstore.darkMode}
+                    <Sun size={16} />
+                {:else}
+                    <Moon size={16} />
+                {/if}
+            </Toggle>
+        </div>
         <!-- <FooterLinkGroup class="flex flex-wrap items-center text-sm text-gray-500 sm:mb-0 dark:text-gray-200">
             <FooterLink href="/">Dashboard</FooterLink>
         </FooterLinkGroup> -->

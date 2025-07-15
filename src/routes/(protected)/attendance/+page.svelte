@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Alert, Badge, Select, Radio, Modal, Button } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, SquarePlus, Pencil, Trash, Plus, Save, Paperclip, IdCard, CalendarClock } from '@lucide/svelte'
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Badge, Select, Radio, Modal, Button, Alert, Tooltip } from 'flowbite-svelte';
+    import {Calendar, Ban, Search, RefreshCw, SquarePlus, Pencil, Trash, Plus, Save, Paperclip, IdCard, CalendarClock, BookOpen, CalendarCheck2 } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
@@ -9,18 +9,19 @@
 	import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
 	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference } from '$/lib/utils';
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference, hitungLate, formatLate } from '$/lib/utils';
     import { format, set } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
-    import { invalidateAll } from '$app/navigation';
+    import { goto, invalidateAll } from '$app/navigation';
 	import MyCalendar from '@/MyCalendar.svelte';
 	import MyPagination from '@/MyPagination.svelte';
 	import MyAlert from '@/MyAlert.svelte';
 	import MyImage from '@/MyImage.svelte';
-    
+	import MyBadge from '@/MyBadge.svelte';
+        
     const rowsPerPage = 30
     let {data} = $props()
     let user = $derived(data.user)
@@ -50,15 +51,16 @@
     }
     
     let headerData: {title:string, value:string, icon: any }[] = $state([])
-
     
     const listType = $derived.by(()=> {
         const temp = [
             {value:"HKM", name:"Hari Kerja Manual"},
             {value:"Mangkir", name:"Mangkir"},
+            {value:"Off", name:"Off Security"},
             {value:"Sakit", name:"Sakit Berkepanjangan/Sakit Ringan"}
         ]
-        return temp.filter(v => v.value != (formAttendance.add ? "Mangkir" : "Sakit"))
+        // return temp.filter(v => v.value != (formAttendance.add ? "Mangkir" : "Sakit"))
+        return temp.filter(v => formAttendance.add ? !["Mangkir","Off"].includes(v.value) : !["Sakit"].includes(v.value))
     })
         
     let tableAttendance = $state(new TableHandler([], {rowsPerPage}))
@@ -99,12 +101,14 @@
     let formAttendance = $state({...formAttendanceAnswer})
 
     let modeAttendance = $state({
-        payroll: formAttendanceAnswer.payroll,
+        payroll: (()=> user?.payroll)(),
         name: "",
         periode: {
             start: "",
             end: "",
         },
+        hari_kerja: 0,
+        hari_weekend: 0,
         tabNo: 1
     })
 
@@ -211,6 +215,8 @@
         tableLogAttendance.invalidate()
         // tableAttendanceDept.invalidate()
     }
+    
+    const handleReportAttendance = () => goto('/attendance/report')
     
     // Attendance dept
     let tableAttendanceDept = $state(new TableHandler([], {rowsPerPage}))
@@ -324,10 +330,16 @@
         // const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${formLogAttendance.year}&month=${formLogAttendance.month}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
         const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}&start_date=${start_date}&end_date=${end_date}`)
         const res = await req.json()
-        modeAttendance.name = res.Name
-        
-        delete res.Name
-        headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
+        setTimeout(()=> {
+            modeAttendance.name = res.Name
+            modeAttendance.hari_kerja = res.hari_kerja
+            modeAttendance.hari_weekend = res.hari_weekend
+            
+            delete res.Name
+            delete res.hari_kerja
+            delete res.hari_weekend
+            headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
+        }, 100)
     }
 
     const getUserByDept = $derived.by(() => {
@@ -459,7 +471,17 @@
                             {/each}
                         </div>
                         <div class="flex gap-4">
+                            <Alert class='p-1 px-3 flex items-center gap-2' color={"blue"}>
+                                <CalendarCheck2 size={16}/>
+                                <span class="text-[.75rem] font-medium">{modeAttendance.hari_kerja} Day Work, {modeAttendance.hari_weekend} Weekend</span>
+                            </Alert>
+                            <Tooltip>*{modeAttendance.hari_kerja} Day Work (Monday to Friday), {modeAttendance.hari_weekend} Weekend (Saturday to Sunday)</Tooltip>
                             <MyButton className='flex items-center gap-2' onclick={()=> formAttendance.showCalendar = true}><Calendar size={16} /> Calendar</MyButton>
+                            {#if userProfile?.user_hrd}
+                                <MyButton className='flex items-center gap-2' onclick={handleReportAttendance}>
+                                    <BookOpen size={16} />Report
+                                </MyButton>
+                            {/if}
                         </div>
                     </div>
                 </div>
@@ -551,13 +573,13 @@
                         <Datatable table={tableAttendance}>
                             <Table divClass="w-auto">
                                 <TableHead>
-                                    <ThSort table={tableAttendance} field="check_in">Day</ThSort>
-                                    <ThSort table={tableAttendance} field="check_in">Date</ThSort>
-                                    <ThSort table={tableAttendance} field="check_in">Clock In</ThSort>
-                                    <ThSort table={tableAttendance} field="check_out">Clock Out</ThSort>
-                                    <ThSort table={tableAttendance} field="">Difference</ThSort>
-                                    <ThSort table={tableAttendance} field="type">type</ThSort>
-                                    <ThSort table={tableAttendance} field="">Information</ThSort>
+                                    <ThSort table={tableAttendance} field="check_in">Hari</ThSort>
+                                    <ThSort table={tableAttendance} field="check_in">Tanggal</ThSort>
+                                    <ThSort table={tableAttendance} field="check_in">Absen Masuk</ThSort>
+                                    <ThSort table={tableAttendance} field="check_out">Absen Keluar</ThSort>
+                                    <ThSort table={tableAttendance} field="">Selisih</ThSort>
+                                    <ThSort table={tableAttendance} field="type">Tipe</ThSort>
+                                    <ThSort table={tableAttendance} field="">Informasi</ThSort>
                                     <ThSort table={tableAttendance} field="">#</ThSort>
                                 </TableHead>
         
@@ -570,26 +592,29 @@
                                         {#if tableAttendance.rows.length > 0}
                                             {#each tableAttendance.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                                    <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
+                                                        <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                                    <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
+                                                        <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                            {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        {#if row.type}<MyBadge bold border>{row.type}</MyBadge>{/if}
+                                                    </TableBodyCell>
+                                                    <TableBodyCell tdClass='font-medium'>
+                                                        <div class="flex gap-1 flex-wrap">
+                                                            {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
+                                                                    {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -597,21 +622,23 @@
                                                                         ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                         : null
                                                                 })(),
-                                                                row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
+                                                                row.ijin_info ? {type:"ijin_info", value: row.ijin_info + ` (${row.description})`} : null
                                                                 ] as val}
                                                                 {#if val}
-                                                                    <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                        : val.type == "late" ? "red" 
-                                                                        : val.type == "lembur" ? "green" 
-                                                                        : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
+                                                                    <MyBadge italic border={val.type == "kerja"} color={
+                                                                        ["kerja"].includes(val.type) ? "default"
+                                                                        : ["late"].includes(val.type) ? "red" 
+                                                                        : ["lembur"].includes(val.type) ? "green" 
+                                                                        : ["ijin_info"].includes(val.type) ? "yellow" 
+                                                                        : "dark"} onclick={()=> {
+                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept)
                                                                                 createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                            }
-                                                                        }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
-                                                                            <SquarePlus size={14}/>
+                                                                        }}>
+                                                                        {val.value}
+                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept}
+                                                                            <Plus size={12}/>
                                                                         {/if}
-                                                                    </Badge>
+                                                                    </MyBadge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
@@ -691,15 +718,15 @@
                             <Datatable table={tableAttendanceDept}>
                                 <Table>
                                     <TableHead>
-                                        <ThSort table={tableAttendanceDept} field="check_in">Day</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="check_in">Date</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_in">Hari</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_in">Tanggal</ThSort>
                                         <ThSort table={tableAttendanceDept} field="payroll">Payroll</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="name">Name</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="check_in">Clock In</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="check_out">Clock Out</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="">Difference</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="type">type</ThSort>
-                                        <ThSort table={tableAttendanceDept} field="">Information</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="name">Nama</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_in">Absen Masuk</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="check_out">Absen Keluar</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="">Selisih</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="type">Tipe</ThSort>
+                                        <ThSort table={tableAttendanceDept} field="">Informasi</ThSort>
                                         <ThSort table={tableAttendanceDept} field="">#</ThSort>
                                     </TableHead>
             
@@ -712,28 +739,31 @@
                                             {#if tableAttendanceDept.rows.length > 0}
                                                 {#each tableAttendanceDept.rows as row}
                                                     <TableBodyRow class='h-10'>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                                        <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
+                                                            <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                                        <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
+                                                            <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                                {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                            {#if row.type}<MyBadge bold border>{row.type}</MyBadge>{/if}    
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='font-medium'>
+                                                            <div class="flex gap-1 flex-wrap">
+                                                                {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
+                                                                        {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
                                                                     (()=> {
                                                                         const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                         const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -741,21 +771,23 @@
                                                                             ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                             : null
                                                                     })(),
-                                                                    row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
+                                                                    row.ijin_info ? {type:"ijin_info", value: row.ijin_info + ` (${row.description})`} : null
                                                                     ] as val}
                                                                     {#if val}
-                                                                        <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                            : val.type == "late" ? "red" 
-                                                                            : val.type == "lembur" ? "green" 
-                                                                            : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                                if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
+                                                                        <MyBadge italic border={val.type == "kerja"} color={
+                                                                            ["kerja"].includes(val.type) ? "default"
+                                                                            : ["late"].includes(val.type) ? "red" 
+                                                                            : ["lembur"].includes(val.type) ? "green" 
+                                                                            : ["ijin_info"].includes(val.type) ? "yellow" 
+                                                                            : "dark"} onclick={()=> {
+                                                                                if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept)
                                                                                     createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                                }
-                                                                            }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                            {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
-                                                                                <SquarePlus size={14}/>
+                                                                            }}>
+                                                                            {val.value}
+                                                                            {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept}
+                                                                                <Plus size={12}/>
                                                                             {/if}
-                                                                        </Badge>
+                                                                        </MyBadge>
                                                                     {/if}
                                                                 {/each}
                                                             </div>
@@ -824,14 +856,14 @@
                             <Datatable table={tableListAttendance}>
                                 <Table>
                                     <TableHead>
-                                        <ThSort table={tableListAttendance} field="check_in">Day</ThSort>
-                                        <ThSort table={tableListAttendance} field="check_in">Date</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_in">Hari</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_in">Tanggal</ThSort>
                                         <ThSort table={tableListAttendance} field="payroll">Payroll</ThSort>
-                                        <ThSort table={tableListAttendance} field="name">Name</ThSort>
-                                        <ThSort table={tableListAttendance} field="check_in">Clock In</ThSort>
-                                        <ThSort table={tableListAttendance} field="check_out">Clock Out</ThSort>
-                                        <ThSort table={tableListAttendance} field="type">type</ThSort>
-                                        <ThSort table={tableListAttendance} field="">Information</ThSort>
+                                        <ThSort table={tableListAttendance} field="name">Nama</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_in">Absen Masuk</ThSort>
+                                        <ThSort table={tableListAttendance} field="check_out">Absen Keluar</ThSort>
+                                        <ThSort table={tableListAttendance} field="type">Tipe</ThSort>
+                                        <ThSort table={tableListAttendance} field="">Informasi</ThSort>
                                         <ThSort table={tableListAttendance} field="">#</ThSort>
                                     </TableHead>
             
@@ -844,25 +876,28 @@
                                             {#if tableListAttendance.rows.length > 0}
                                                 {#each tableListAttendance.rows as row}
                                                     <TableBodyRow class='h-10'>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                                        <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
+                                                            <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                                        <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
+                                                            <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                                {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                            {#if row.type}<MyBadge bold border>{row.type}</MyBadge>{/if}
+                                                        </TableBodyCell>
+                                                        <TableBodyCell tdClass='font-medium'>
+                                                            <div class="flex gap-1 flex-wrap">
+                                                                {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
+                                                                        {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
                                                                     (()=> {
                                                                         const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                         const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -870,21 +905,17 @@
                                                                             ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                             : null
                                                                     })(),
-                                                                    row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
+                                                                    row.ijin_info ? {type:"ijin_info", value: row.ijin_info + ` (${row.description})`} : null
                                                                     ] as val}
                                                                     {#if val}
-                                                                        <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                            : val.type == "late" ? "red" 
-                                                                            : val.type == "lembur" ? "green" 
-                                                                            : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                                if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
-                                                                                    createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                                }
-                                                                            }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                            {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
-                                                                                <SquarePlus size={14}/>
-                                                                            {/if}
-                                                                        </Badge>
+                                                                        <MyBadge italic border={val.type == "kerja"} color={
+                                                                            ["kerja"].includes(val.type) ? "default"
+                                                                            : ["late"].includes(val.type) ? "red" 
+                                                                            : ["lembur"].includes(val.type) ? "green" 
+                                                                            : ["ijin_info"].includes(val.type) ? "yellow" 
+                                                                            : "dark"}>
+                                                                            {val.value}
+                                                                        </MyBadge>
                                                                     {/if}
                                                                 {/each}
                                                             </div>
@@ -958,7 +989,7 @@
                                     {#each dataBulan as {title, value}}
                                         <option value={value}>
                                             {title} {value.toString() == format(modeAttendance.periode.start, "M") ? "(Select)" : null}
-                                            {value.toString() == (new Date().getMonth() + 1).toString() ? "(Now)" : null}
+                                            {value.toString() == (new Date().getMonth()).toString() ? "(Now)" : null}
                                         </option>
                                     {/each}
                                 </select>
@@ -969,18 +1000,18 @@
                         <Datatable table={tableLogAttendance}>
                             <Table>
                                 <TableHead>
-                                    <ThSort table={tableLogAttendance} field="check_in">Day</ThSort>
-                                    <ThSort table={tableLogAttendance} field="check_in">Date</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_in">Hari</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_in">Tanggal</ThSort>
                                     <ThSort table={tableLogAttendance} field="payroll">Payroll</ThSort>
-                                    <ThSort table={tableLogAttendance} field="name">Name</ThSort>
-                                    <ThSort table={tableLogAttendance} field="check_in">Clock In</ThSort>
-                                    <ThSort table={tableLogAttendance} field="check_out">Clock Out</ThSort>
-                                    <ThSort table={tableLogAttendance} field="">Difference</ThSort>
-                                    <ThSort table={tableLogAttendance} field="type">type</ThSort>
-                                    <ThSort table={tableLogAttendance} field="">Information</ThSort>
+                                    <ThSort table={tableLogAttendance} field="name">Nama</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_in">Absen Masuk</ThSort>
+                                    <ThSort table={tableLogAttendance} field="check_out">Absen Keluar</ThSort>
+                                    <ThSort table={tableLogAttendance} field="">Selisih</ThSort>
+                                    <ThSort table={tableLogAttendance} field="type">Tipe</ThSort>
+                                    <ThSort table={tableLogAttendance} field="">Informasi</ThSort>
                                     <ThSort table={tableLogAttendance} field="">#</ThSort>
                                 </TableHead>
-        
+
                                 {#if tableLogAttendance.isLoading}
                                     <div class="flex p-4 items-center">
                                         <MyLoading message="Loading data"/>
@@ -990,28 +1021,31 @@
                                         {#if tableLogAttendance.rows.length > 0}
                                             {#each tableLogAttendance.rows as row}
                                                 <TableBodyRow class='h-10'>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(formatTanggal(row.check_in), "c")) - 1]}</div>
+                                                    <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
+                                                        <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class={format(formatTanggal(row.check_in), "EEE") == "Sun" ? "text-red-500":""}>{format(formatTanggal(row.check_in), "d MMMM yyyy")}</div>
+                                                    <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
+                                                        <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class="flex gap-1 flex-wrap max-w-[10rem]">
-                                                            {#each [...row.description.split(",").filter((v: string) => v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? {type:"late", value:"Late"} : null,
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        {#if row.type}<MyBadge bold border>{row.type}</MyBadge>{/if}
+                                                    </TableBodyCell>
+                                                    <TableBodyCell tdClass='font-medium'>
+                                                        <div class="flex gap-1 flex-wrap">
+                                                            {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
+                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
+                                                                    {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
@@ -1019,21 +1053,17 @@
                                                                         ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                         : null
                                                                 })(),
-                                                                row.ijin_info ? {type:"ijin_info", value: row.ijin_info} : null
+                                                                row.ijin_info ? {type:"ijin_info", value: row.ijin_info + ` (${row.description})`} : null
                                                                 ] as val}
                                                                 {#if val}
-                                                                    <Badge rounded color={val.type == "kerja" ? "dark" 
-                                                                        : val.type == "late" ? "red" 
-                                                                        : val.type == "lembur" ? "green" 
-                                                                        : val.type == "ijin_info" ? "yellow" : "none"} onclick={()=> {
-                                                                            if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist){
-                                                                                createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
-                                                                            }
-                                                                        }} class='flex gap-2 break-words whitespace-normal'>{val.value}
-                                                                        {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist}
-                                                                            <SquarePlus size={14}/>
-                                                                        {/if}
-                                                                    </Badge>
+                                                                    <MyBadge italic border={val.type == "kerja"} color={
+                                                                        ["kerja"].includes(val.type) ? "default"
+                                                                        : ["late"].includes(val.type) ? "red" 
+                                                                        : ["lembur"].includes(val.type) ? "green" 
+                                                                        : ["ijin_info"].includes(val.type) ? "yellow" 
+                                                                        : "dark"}>
+                                                                        {val.value}
+                                                                    </MyBadge>
                                                                 {/if}
                                                             {/each}
                                                         </div>
@@ -1145,7 +1175,7 @@
     </Modal>
     
     <Modal bind:open={formAttendance.showCalendar} size={"xl"} >
-        <div class="flex flex-col mt-7 p-4 gap-4">
+        <div class="flex flex-col p-4 gap-4 h-[85vh]">
             <MyCalendar payroll={modeAttendance.payroll}/>
         </div>
     </Modal>

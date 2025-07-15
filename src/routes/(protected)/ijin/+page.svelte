@@ -1,13 +1,13 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Modal, Timeline, TimelineItem, Badge, Button } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X} from '@lucide/svelte'
+    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Modal, Timeline, TimelineItem, Badge, Button, Tooltip } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X, Highlighter } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, generatePeriode, pecahArray, getParams, getLastIjinDate } from '$/lib/utils.js';
+	import { formatTanggal, generatePeriode, pecahArray, getParams } from '$/lib/utils.js';
     import { differenceInDays, eachDayOfInterval, format, getDay, getYear } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
@@ -27,24 +27,18 @@
     // (khitan/baptis,haji,nikah
 
     const typeList = $derived.by(()=> {
-        return userProfile.user_hrd ?
-            [
-                ['Pernikahan', 3], 
-                ['Pernikahan Anak/Saudara Kandung', 3],
-                ['Kelahiran Anak', 3],
-                ['Kematian Anggota Keluarga', 7],
-                ['Bencana Alam', 7],
-                ['Keluarga Rawat Inap', 6],
-                ['Cuti Khitanan/Baptis', 7],
-                ['Ibadah Haji', 30],
-                ['Other', 0],
+        const temp = [
+                {value: 'Pernikahan', hari: 1},
+                {value: 'Pernikahan Anak/Saudara Kandung', hari: 1},
+                {value: 'Kelahiran Anak', hari: 1},
+                {value: 'Kematian Anggota Keluarga', hari: 1},
+                {value: 'Bencana Alam', hari: 1},
+                {value: 'Keluarga Rawat Inap', hari: 1},
+                {value: 'Cuti Khitanan/Baptis', hari: 1},
+                {value: 'Ibadah Haji', hari: 1},
+                {value: 'Other', hari: 1},
             ]
-            : 
-            [
-                ['Pernikahan', 3], 
-                ['Cuti Khitanan/Baptis', 7],
-                ['Ibadah Haji', 30]
-            ]
+        return userProfile.user_hrd ? temp : temp.filter(v => v.value !== 'Other')
     })
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
@@ -481,6 +475,9 @@
                     <MyLoading message="Load ijin data"/>
                 {/if}
                 
+
+                {JSON.stringify(formIjin.answer)}
+                
                 {#if formIjin.add || formIjin.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -520,7 +517,7 @@
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formIjin.answer.type} 
-                                        options={typeList.map(([v, duration]) => ({value: v, text: v + " - " + duration}))}/>
+                                        options={typeList.map((v) => ({value: v.value, text: v.value + " - " + v.hari + " days"}))}/>
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">
@@ -536,7 +533,6 @@
                         </div>
                     </form>
                 {/if}
-                
                 <div class="flex gap-2">
                     <select bind:value={tableIjin.rowsPerPage} onchange={() => tableIjin.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
@@ -586,15 +582,18 @@
                                                 {#if !formIjin.edit}
                                                     {#if pecahArray(userProfile.access_ijin, "U") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>
+                                                        <Tooltip class='z-10'>Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_ijin, "D") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> {
                                                             formIjin.modalDelete = true
                                                             formIjin.answer.ijin_id = row.ijin_id
                                                         }}><Trash size={12} /></MyButton>
+                                                        <Tooltip class='z-10'>Hapus</Tooltip>
                                                     {/if}
                                                     {#if row.status == "Waiting" && !row.is_delegate}
-                                                        <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                        <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <Highlighter size={12}/> </MyButton>
+                                                        <Tooltip class='z-10'>Delegate</Tooltip>
                                                     {/if}
                                                 {/if}
                                             </TableBodyCell>

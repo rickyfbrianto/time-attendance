@@ -6,11 +6,27 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	
-    let pathname:string[] = $state([])
-    
-    $effect(()=>{
-        pathname = page.url.pathname.split('/').filter(v => v && v != 'dashboard')
+    let pathname:{url: string, title:string}[] = $derived.by(()=> {
+        let urlTemp = page.url.pathname.split('/').filter(v => v && v != 'dashboard')
+        let path = '';
+        let result = []
+        for (const part of urlTemp) {
+            path = path ? `${path}/${part}` : part;
+            result.push({url: path, title: part});
+        }
+        return  result
     })
+    
+    // $effect(()=>{
+    //     // pathname = page.url.pathname.split('/').filter(v => v && v != 'dashboard')
+
+    //     let urlTemp = page.url.pathname.split('/').filter(v => v && v != 'dashboard')
+    //     let path = '';
+    //     for (const part of urlTemp) {
+    //         path = path ? `${path}/${part}` : part;
+    //         pathname.push(path);
+    //     }
+    // })
 
     let logoutState = $state({
         message:"",
@@ -40,8 +56,8 @@
                 <AlignJustify class='cursor-pointer'/>
             </button>
             <BreadcrumbItem href="/dashboard" home homeClass='flex items-center text-textdark ms-2 '><span class="text-textdark text-sm">Dashboard</span></BreadcrumbItem>
-            {#each pathname as val}
-                <BreadcrumbItem class='capitalize' href={val}><span class="text-textdark text-sm">{val}</span></BreadcrumbItem>
+            {#each pathname as {url, title}}
+                <BreadcrumbItem class='capitalize' href={`/${url}`}><span class="text-textdark text-sm">{title}</span></BreadcrumbItem>
             {/each}
         </Breadcrumb>
     </div>

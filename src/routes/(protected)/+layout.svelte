@@ -9,7 +9,7 @@
 	import Footer from '@/Footer.svelte';
 
     let {children, data} :LayoutProps = $props()
-
+    
     $effect(()=>{
         if(localStorage.getItem('appstore')){
             const temp = JSON.parse(localStorage.getItem('appstore') || "")

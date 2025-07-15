@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit'
-import { prisma, prismaErrorHandler } from '@lib/utils'
+import { prisma, prismaErrorHandler, pecahArray } from '@lib/utils'
 import { v4 } from 'uuid'
 
 export async function GET({ url }) {
@@ -35,9 +35,10 @@ export async function GET({ url }) {
     }
 }
 
-export async function POST({ request }) {
+export async function POST({ request, locals }) {
     try {
         const data = await request.json()
+        const { userProfile } = locals
 
         const status = await prisma.$transaction(async tx => {
             const getCalendar = await prisma.calendar.findUnique({
@@ -45,11 +46,13 @@ export async function POST({ request }) {
             })
 
             if (!getCalendar) {
+                if (!pecahArray(userProfile.access_calendar, "C")) throw new Error("Cant insert Calendar, because you have no authorization")
                 await tx.$executeRawUnsafe(`
                     INSERT INTO calendar (calendar_id, description, type, date, createdBy, createdAt) VALUES (?,?,?,?,?,now())`,
                     v4(), data.description, data.type, data.date, data.createdBy)
                 return { message: "Data successfully saved" }
             } else {
+                if (!pecahArray(userProfile.access_calendar, "U")) throw new Error("Cant update Calendar, because you have no authorization")
                 await tx.$executeRawUnsafe(`
                     UPDATE calendar SET description=?, type=?, date=? WHERE calendar_id=?`,
                     data.description, data.type, data.date, data.calendar_id)

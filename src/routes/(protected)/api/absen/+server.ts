@@ -6,8 +6,8 @@ export async function GET({ url }) {
         const page = Number(url.searchParams.get('_page')) || 1
         const limit = Number(url.searchParams.get('_limit')) || 10
         const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
-        const sort = url.searchParams.get('_sort') || "check_in"
-        const order = url.searchParams.get('_order') || "asc"
+        const sort = url.searchParams.get('_sort') || "att.check_in"
+        const order = url.searchParams.get('_order') || "desc"
         const search = url.searchParams.get('_search') || ""
 
         // const dept = url.searchParams.get('dept') || ""

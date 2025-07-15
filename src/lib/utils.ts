@@ -2,14 +2,13 @@ import { DateTime } from "luxon";
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
 import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set, differenceInMinutes, parse } from "date-fns";
-import { Prisma } from '@prisma-app/client';
-import { PrismaClient } from '@prisma-app/client'
+import { Prisma, PrismaClient } from '@prisma-app/client';
 import type { State } from "@vincjo/datatables/server";
 
 export const prisma = new PrismaClient({
     transactionOptions: {
         maxWait: 5000,
-        timeout: 10000
+        timeout: 20000
     }
 })
 
@@ -22,17 +21,12 @@ interface EncryptedData {
     encrypted: string;
 }
 
-export const cekRules = (user: {}, type: string, akses: string) => {
-    let temp = user?.profile[type]?.split('')
-    return temp.includes(akses)
-}
-
-export const formatTanggal = (val: string, mode: "date" | "time" | "datetime" = "datetime") => {
+export const formatTanggal = (val: string, mode: "date" | "time" | "datetime" = "datetime", format: "system" | "app" = "system") => {
     if (!val) return ""
     const temp = DateTime.fromISO(val, { zone: "UTC" })
-    const newMode = mode == "datetime" ? "yyyy-MM-dd HH:mm:ss" : (mode == "date" ? "yyyy-MM-dd" : (mode == "time" ? "HH:mm:ss" : ""))
-    const newFormat = temp.setLocale('id').toFormat(newMode).trim()
-    return newFormat
+    const formatDate = format == "system" ? "yyyy-MM-dd" : "dd-MM-yyyy"
+    const newMode = mode == "datetime" ? `${formatDate} HH:mm:ss` : (mode == "date" ? formatDate : (mode == "time" ? "HH:mm:ss" : ""))
+    return temp.setLocale('id').toFormat(newMode).trim()
 }
 
 export const formatTanggalISO = (val: Date | string) => {
@@ -245,12 +239,32 @@ export const selisihWaktu = (val1: string | Date, val2: string | Date) => {
     return { hour, minute }
 }
 
-export const hitungDifference = (check_in, check_out, check_in2, check_out2) => {
-    const hoursA = selisihWaktu(check_out, check_in).hour;
-    const minutesA = selisihWaktu(check_out, check_in).minute;
+export const hitungLate = (check_in: number | string | Date, start_work: number | string | Date, late_minute_dispen: number, late_dispen_check: boolean = true) => {
+    const tempCheckin = new Date(check_in)
+    const tempStart = new Date(start_work)
 
-    const hoursB = selisihWaktu(check_out2, check_in2).hour;
-    const minutesB = selisihWaktu(check_out2, check_in2).minute;
+    const newCheckin = set(tempCheckin, {
+        hours: tempCheckin.getUTCHours(),
+        minutes: tempCheckin.getUTCMinutes(),
+        seconds: tempCheckin.getUTCSeconds()
+    })
+    const newStart = set(tempCheckin, {
+        hours: tempStart.getUTCHours(),
+        minutes: tempStart.getUTCMinutes() + (late_dispen_check ? late_minute_dispen : 0),
+        seconds: tempStart.getUTCSeconds()
+    })
+    return selisihWaktu(newCheckin, newStart)
+}
+
+export const formatLate = ({ hour, minute }: { hour: number, minute: number }) => {
+    const tempHour = hour > 0 ? hour + " Jam" : ""
+    const tempMinute = minute > 0 ? minute + " Menit" : ""
+    return tempHour + " " + tempMinute
+}
+
+export const hitungDifference = (check_in, check_out, check_in2, check_out2) => {
+    const { hour: hoursA, minute: minutesA } = selisihWaktu(check_out, check_in);
+    const { hour: hoursB, minute: minutesB } = selisihWaktu(check_out2, check_in2);
 
     let totalMinutes = 0;
     if (new Date(check_in) < new Date(check_out)) {
@@ -268,10 +282,20 @@ export const hitungDifference = (check_in, check_out, check_in2, check_out2) => 
     }
 }
 
-// export const formatDifference = (hour: number, minute: number) => {
+// export const formatDifference = ({ hour, minute, overtime, round_up = false }: { hour: number, minute: number, overtime: number, round_up: boolean }) => {
+//     hour += round_up ? (minute >= overtime ? 1 : 0) : 0
+//     minute = round_up ? (minute >= overtime ? 0 : minute) : minute
+//     const temp = `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
+//     return temp
+// }
 export const formatDifference = ({ hour, minute, overtime, round_up = false }: { hour: number, minute: number, overtime: number, round_up: boolean }) => {
-    hour += round_up ? (minute >= overtime ? 1 : 0) : 0
-    minute = round_up ? (minute >= overtime ? 0 : minute) : minute
-    const temp = `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
-    return temp
+    const roundUpTo = 30
+    hour += round_up ? (minute > roundUpTo && (minute % roundUpTo) >= overtime ? 1 : 0) : 0
+    minute = round_up
+        ? minute < roundUpTo && minute >= overtime
+            ? 30
+            : minute > roundUpTo && (minute % roundUpTo) >= overtime ? 0 : minute
+        : minute
+
+    return `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
 }

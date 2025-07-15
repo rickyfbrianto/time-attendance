@@ -1,22 +1,24 @@
-import {error, json} from '@sveltejs/kit'
-import { prisma, prismaErrorHandler } from '@lib/utils.js'
+import { error, json } from '@sveltejs/kit'
+import { pecahArray, prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function GET({params}){
-    const {id} = params
+export async function GET({ params }) {
+    const { id } = params
     const req = await prisma.profile.findUnique({
-        where:{profile_id:id}
+        where: { profile_id: id }
     })
     return json(req)
 }
 
-export async function DELETE({params}){
+export async function DELETE({ params, locals }) {
     try {
-        const {id} = params
+        const { id } = params
+        const { userProfile } = locals
+        if (!pecahArray(userProfile.access_profile, "D")) throw new Error("Cant delete Profile, because you have no authorization")
         await prisma.profile.update({
-            data:{
+            data: {
                 status: "Nonaktif"
             },
-            where:{profile_id:id}
+            where: { profile_id: id }
         })
         return json({ message: "Profile successfully deleted" });
     } catch (err) {

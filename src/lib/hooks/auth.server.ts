@@ -11,7 +11,8 @@ export const handle: Handle = async ({ event, resolve }) => {
         const token = cookies.get('token')
         let payroll
 
-        if (rootGroup == "(protected)" && rootRoute != "api") {
+        // if (rootGroup == "(protected)" && rootRoute != "api") {
+        if (rootGroup == "(protected)") {
             if (!token) {
                 throw new Error(`/signin?redirectTo=${url.pathname}`)
             } else {

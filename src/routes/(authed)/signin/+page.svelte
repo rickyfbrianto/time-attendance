@@ -29,16 +29,16 @@
             formLoginState.loading = true
             const req = await axios.post('/signin', formLoginState.answer)
             const res = await req.data
-            formLoginState.loading = false
             formLoginState.error = ""
             formLoginState.success = res.message
             setTimeout(()=>{
                 goto(redirectTo ? `${redirectTo}` : '/')
             }, 1000)
         } catch (error: any) {
-            formLoginState.loading = false
             formLoginState.error = error.response.data.message
             formLoginState.success = ""
+        } finally {
+            formLoginState.loading = false
         }
     }
 </script>
@@ -72,7 +72,11 @@
             <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
             <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
             <Checkbox bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Remember Me</Checkbox>
-            <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
+            {#if formLoginState.loading}
+                <span>Verifikasi data</span>
+            {:else}
+                <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
+            {/if}
         </div>
     </form>        
 </main>

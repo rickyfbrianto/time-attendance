@@ -9,6 +9,7 @@ export async function GET({ url }) {
         const month = url.searchParams.get('month')
         const year = url.searchParams.get('year')
         const payroll = url.searchParams.get('payroll') || ""
+        const dept = url.searchParams.get('dept') || ""
         const start_date = url.searchParams.get('start_date') || ""
         const end_date = url.searchParams.get('end_date') || ""
 
@@ -53,6 +54,9 @@ export async function GET({ url }) {
                     profile_id: true,
                     name: true,
                     description: true
+                },
+                where: {
+                    status: "Aktif"
                 }
             })
             return json(req)
@@ -101,14 +105,27 @@ export async function GET({ url }) {
             return json(req)
         } else if (type == 'sum_attendance_by_payroll') {
             const req = await prisma.$transaction(async tx => {
+                const [Hari_Kerja] = await tx.$queryRawUnsafe(`
+                    WITH RECURSIVE date_range AS (
+                        SELECT DATE(?) AS tanggal
+                        UNION ALL
+                        SELECT DATE_ADD(tanggal, INTERVAL 1 DAY)
+                        FROM date_range
+                        WHERE tanggal < ?)
+
+                        SELECT SUM(CASE WHEN DAYOFWEEK(tanggal) BETWEEN 2 AND 6 THEN 1 ELSE 0 END) as hari_kerja,
+                        SUM(CASE WHEN DAYOFWEEK(tanggal) IN (1, 7) THEN 1 ELSE 0 END) as hari_weekend
+                        FROM date_range;
+                `, start_date, end_date) as { 'hari_kerja': string, 'hari_weekend': string }[]
+
                 const [Day_work] = await tx.$queryRawUnsafe(`
                     select 
-                        sum(case when type IN ('HKC','HKM') then 1 else 0 end) AS 'Day Work'
+                        sum(case when type IN ('HKC','HKM') then 1 else 0 end) AS 'Attendance'
                     FROM attendance as a 
                     LEFT JOIN employee as e ON e.user_id_machine = a.user_id_machine
                     WHERE e.payroll = ? AND DATE(check_in) BETWEEN ? AND ?`,
                     val, start_date, end_date
-                ) as { 'Day Work': string }[]
+                ) as { 'Attendance': string }[]
 
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select e.name as Name,
@@ -125,7 +142,7 @@ export async function GET({ url }) {
                 ) as { "Name": string, 'Dinas': string, 'Sick': string, 'Cuti Bersama': string, 'Cuti Tahunan': string, 'Cuti Resmi': string, 'Ijin Resmi': string }[]
 
                 const newData = Object.fromEntries(
-                    Object.entries({ ...Day_work, ...getDataLibur }).map(([key, value]) => ([key, typeof value == "string" ? value : Number(value)]))
+                    Object.entries({ ...Hari_Kerja, ...Day_work, ...getDataLibur }).map(([key, value]) => ([key, typeof value == "string" ? value : Number(value)]))
                 )
 
                 return { ...newData }
@@ -197,6 +214,70 @@ export async function GET({ url }) {
                         .map(([key, value]) => ([key, Number(value)]))
                 )
                 return { ...newData }
+            })
+            return json(req)
+        } else if (type == "get_report_attendance_dept") {
+            const req = await prisma.$transaction(async tx => {
+                const result = await prisma.$queryRawUnsafe(`
+                    SELECT e.name, 
+                        getWorkday(e.user_id_machine, ?, ?) as 'Workday',
+                        SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
+                        SUM(CASE WHEN a.type = 'Hari Libur' THEN 1 ELSE 0 END) as 'Libur',
+                        SUM(CASE WHEN a.type = 'Cuti Bersama' THEN 1 ELSE 0 END) as 'Cuti Bersama',
+                        SUM(CASE WHEN a.type = 'Ijin Resmi' THEN 1 ELSE 0 END) as 'Ijin Resmi',
+                        SUM(CASE WHEN a.type = 'Sakit' THEN 1 ELSE 0 END) as 'Sakit',
+                        SUM(CASE WHEN a.type = 'Dinas' THEN 1 ELSE 0 END) as 'Dinas',
+                        SUM(CASE WHEN a.type = 'Mangkir' THEN 1 ELSE 0 END) as 'Mangkir',
+                        SUM(CASE WHEN a.type = 'Cuti Tahunan' THEN 1 ELSE 0 END) as 'Cuti Tahunan'
+
+                        FROM attendance as a
+                        LEFT JOIN employee as e ON a.user_id_machine = e.user_id_machine
+                        WHERE (DATE(a.check_in) BETWEEN ? AND ?) AND e.department = ?
+                        GROUP BY a.user_id_machine
+                        ORDER BY e.name  ASC;`,
+                    start_date, end_date, start_date, end_date, dept) as {}[]
+                return result
+            })
+            return json(req)
+        } else if (type == "get_report_disiplin_dept") {
+            const req = await prisma.$transaction(async tx => {
+                const result = await prisma.$queryRawUnsafe(`
+                    select e.name, 
+                    getWorkday(e.user_id_machine, ?, ?) as 'Workday',
+                    SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
+                    SUM(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN 1 ELSE 0 END) as 'Late',
+                    IFNULL(ROUND(AVG(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN TIMESTAMPDIFF(MINUTE, TIME('08:00:00'), TIME(a.check_in)) END)), 0) AS 'Avg Telat',
+                    SUM(CASE WHEN a.type IN ("HKM") THEN 1 ELSE 0 END) as 'Lupa Kartu',
+                    SUM(CASE WHEN TIME(a.check_in) <> '00:00:00' AND TIME(a.check_out) = '00:00:00' THEN 1 ELSE 0 END) AS 'Check In No Out',
+                    SUM(CASE WHEN TIME(a.check_in) = '00:00:00' AND TIME(a.check_out) <> '00:00:00' THEN 1 ELSE 0 END) AS 'Check Out No In',
+                    SUM(CASE WHEN a.type IN ("Mangkir") THEN 1 ELSE 0 END) as 'Not Absen',
+                    SUM(CASE WHEN a.type = "" THEN 1 ELSE 0 END) as 'Never Absen'
+                    FROM attendance a 
+                    LEFT JOIN employee e ON a.user_id_machine = e.user_id_machine
+                    WHERE (DATE(a.check_in) BETWEEN ? AND ?) AND e.department = ?
+                    GROUP BY a.user_id_machine
+                    ORDER BY e.name ASC`,
+                    start_date, end_date, start_date, end_date, dept) as {}[]
+                return result
+            })
+            return json(req)
+        } else if (type == "get_report_lembur_dept") {
+            const req = await prisma.$transaction(async tx => {
+                const result = await prisma.$queryRawUnsafe(`
+                    select e.name, 
+                    getWorkday(e.user_id_machine, ?, ?) as 'Workday',
+                    SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
+                    SUM(CASE WHEN getSPL(e.payroll, a.check_in) = true THEN 1 ELSE 0 END) as Lembur,
+                    SUM(CASE WHEN getSPL(e.payroll, a.check_in) = true THEN 
+                        getHourOvertime(IFNULL(TIMESTAMPDIFF(MINUTE, getStartOvertime(a.attendance_id, e.workhour, e.start_work), a.check_out), 0) + IFNULL(TIMESTAMPDIFF(MINUTE, a.check_in2, a.check_out2), 0))
+                    ELSE 0 END) as 'Jam Lembur'
+                    FROM attendance as a
+                    LEFT JOIN employee e ON a.user_id_machine = e.user_id_machine
+                    WHERE (DATE(a.check_in) BETWEEN ? AND ?) AND e.department = ? AND e.overtime = true
+                    GROUP BY a.user_id_machine
+                    ORDER BY e.name ASC`,
+                    start_date, end_date, start_date, end_date, dept) as {}[]
+                return result
             })
             return json(req)
         } else {

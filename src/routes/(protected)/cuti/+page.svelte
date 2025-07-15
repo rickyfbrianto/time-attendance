@@ -1,7 +1,7 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Select, Modal, Timeline, TimelineItem, Alert, Button } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X } from '@lucide/svelte'
+    import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tooltip, Modal, Timeline, TimelineItem, Alert, Button } from 'flowbite-svelte';
+	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X, Eye, Highlighter } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
@@ -9,12 +9,16 @@
     import axios from 'axios';
 	import { formatTanggal, pecahArray, generatePeriode, getParams } from '$/lib/utils.js';
 	import { format, getYear, differenceInDays } from 'date-fns';
-    import { CalendarWeekSolid, FileCloneOutline } from 'flowbite-svelte-icons';
+    import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
     import Svelecte from 'svelecte';
     import MyPagination from '@/MyPagination.svelte';
     import MyAlert from '@/MyAlert.svelte';
+    import stm from '$/lib/assets/stm.png'
+	import jsPDF from 'jspdf';
+    import { applyPlugin } from 'jspdf-autotable'
+	import { goto } from '$app/navigation';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -25,18 +29,13 @@
     
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList = $derived.by(()=> {
-        return userProfile.user_hrd ? 
-            [
-                ['Cuti Tahunan', ""],
-                ['Cuti Hamil & Melahirkan', 90], 
-                ['Cuti Keguguran', 7],
-                ['Cuti Haid', 1],
-            ] 
-            :
-            [
-                ['Cuti Tahunan', ""],
-                ['Cuti Hamil & Melahirkan', 90], 
-            ] 
+        const temp = [
+            {value: 'Cuti Tahunan', hari: 1},
+            {value: 'Cuti Hamil & Melahirkan', hari: 1},
+            {value: 'Cuti Keguguran', hari: 1},
+            {value: 'Cuti Haid', hari: 1}             
+        ]
+        return temp
     })
 
     let openRow: string[] = $state([]) 
@@ -217,6 +216,139 @@
         } catch (error: any) {
             formApprovalCuti.error = error.response.data.message
             formApprovalCuti.success = ""
+        }
+    }
+
+    const handleCetakCuti = async (id:string) =>{
+        try {
+            applyPlugin(jsPDF)
+
+            const req = await axios.get(`/api/cuti/${id}/print`)
+            const res = await req.data[0]
+
+            console.log(res)
+
+            if(!res.cuti_signature) throw new Error('There is no signature for Applicant')
+            if(!res.approval_signature) throw new Error('There is no signature for Approval')
+
+            const doc = new jsPDF({
+                orientation:"l",
+                unit:"mm",
+                format:"A4"
+            })
+
+            const colData = [12, 150, 172]
+            let rowInc = 0
+            let row1 = 4
+            let row2 = 6
+            let row3 = 8
+            let row4 = 10
+
+            rowInc += row2
+            doc.setFont('times', 'normal', '')
+            doc.addImage(stm, colData[0], rowInc, 20, 20)
+            rowInc += row4
+            doc.setFontSize(24)
+            doc.text("P T. SAGATRADE MURNI", colData[0] + 75, rowInc).setFont(undefined, 'bold');
+            rowInc += row3
+            doc.setFontSize(18)
+            doc.text("SURAT PERMOHONAN CUTI", colData[0] + 80, rowInc).setFont(undefined, 'bold');
+            rowInc += row2
+            doc.line(colData[0] , rowInc, 280, rowInc)
+            
+            doc.setFontSize(13)
+            rowInc += row3
+            let spasi = [44, 34]
+            doc.text("NAMA", colData[0], rowInc)
+            doc.text(": " + res.cuti_name, colData[0] + spasi[0], rowInc)
+            doc.text("TGL", colData[2], rowInc)
+            doc.text(": " + format(new Date().toString(), "d MMMM yyyy"), colData[2] + spasi[1], rowInc)
+            rowInc += row3
+            doc.text("NO. PEGAWAI", colData[0], rowInc)
+            doc.text(": " + res.cuti_payroll, colData[0] + spasi[0], rowInc)
+            doc.text("BAGIAN", colData[2], rowInc)
+            doc.text(": " + res.cuti_dept, colData[2] + spasi[1], rowInc)
+            rowInc += row3
+            doc.text("TGL MULAI CUTI", colData[0], rowInc)
+            doc.text(": " + format(res.start_date, "d MMMM yyyy"), colData[0] + spasi[0], rowInc)
+            doc.text("SAMPAI TGL.", colData[2], rowInc)
+            doc.text(": " + format(res.end_date, "d MMMM yyyy"), colData[2] + spasi[1], rowInc)
+            
+            doc.setFontSize(12)
+            spasi = [70, 68]
+            rowInc += row2
+            doc.line(colData[0] , rowInc, 280, rowInc)
+            doc.line(colData[1] - 5, rowInc, colData[1] - 5, rowInc + 38)
+            const spasiHari = 50
+            rowInc += row3
+            doc.text("JUMLAH HARI CUTI YANG AKAN DIAMBIL", colData[0], rowInc)
+            // doc.text("= ", colData[0] + spasi[0], rowInc)
+            doc.text("JUMLAH HAK CUTI TAHUN INI", colData[1], rowInc)
+            doc.text("= ", colData[1] + spasi[1], rowInc)
+            doc.text("Hari", colData[1] + spasi[1] + spasiHari, rowInc)
+            const indent = 8
+            rowInc += row3
+            doc.text("Hari kerja biasa", colData[0] + indent, rowInc)
+            doc.text("= ", colData[0] + spasi[0], rowInc)
+            doc.text("Hari", colData[0] + spasi[0] + spasiHari, rowInc)
+            doc.text("Sudah diambil", colData[1] + indent, rowInc)
+            doc.text("= ", colData[1] + spasi[1], rowInc)
+            doc.text("Hari", colData[1] + spasi[1] + spasiHari, rowInc)
+            rowInc += row3
+            doc.text("Bukan hari kerja biasa/hr Libur", colData[0] + indent, rowInc)
+            doc.text("= ", colData[0] + spasi[0], rowInc)
+            doc.text("Hari", colData[0] + spasi[0] + spasiHari, rowInc)
+            doc.text("Akan diambil/Hari kerja biasa", colData[1] + indent, rowInc)
+            doc.text("= ", colData[1] + spasi[1], rowInc)
+            doc.text("Hari", colData[1] + spasi[1] + spasiHari, rowInc)
+            rowInc += row3
+            doc.text("J U M L A H", colData[0] + indent, rowInc)
+            doc.text("= " + res.approve_cuti, colData[0] + spasi[0], rowInc)
+            doc.text("Hari", colData[0] + spasi[0] + spasiHari, rowInc)
+            doc.text("SISA YANG BELUM DIAMBIL", colData[1], rowInc)
+            doc.text("= ", colData[1] + spasi[1], rowInc)
+            doc.text("Hari", colData[1] + spasi[1] + spasiHari, rowInc)
+            rowInc += row2
+            doc.line(colData[0] , rowInc, 280, rowInc)
+
+            rowInc += row2
+            doc.text("Tanda Tangan Pemohon :", colData[1] - 30, rowInc)
+            
+            rowInc += row1
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.cuti_signature, colData[1] - 20, rowInc, 18, 18)
+            
+            rowInc += row4 * 2.4
+            doc.text(res.cuti_name, colData[1] - 30, rowInc)
+            rowInc += row2
+            doc.line(colData[0] , rowInc, 280, rowInc)
+            doc.line(colData[1] - 5, rowInc, colData[1] - 5, rowInc + 44)
+            
+            rowInc += row3
+            doc.text("Diketahui/Diperiksa oleh :", colData[0], rowInc)
+            doc.text("Direkomendasi oleh :", colData[0] + 80, rowInc)
+            doc.text("Disetujui oleh :", colData[1] + 5, rowInc)
+            doc.text("BAG. PERSONALIA :", colData[1] + 80, rowInc)
+            doc.line(colData[1] + 70, rowInc - row3, colData[1] + 70, rowInc + 36) //Vertical
+            doc.line(colData[1] + 70, rowInc + 6, colData[1] + 130, rowInc + 6) //Horizontal
+            
+            rowInc += row2
+            doc.text("BAG. PERSONALIA", colData[0], rowInc)
+
+            rowInc += 2
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.approval_signature, colData[1] + 5, rowInc, 20, 20)
+            rowInc += row4 * 2.4
+            doc.text("HRD", colData[0], rowInc)
+            doc.text("", colData[0] + 80, rowInc)
+            doc.text(res.approval_name, colData[1] + 5, rowInc)
+            rowInc += row1
+            doc.line(colData[0] , rowInc, 280, rowInc)
+
+            const blob = doc.output('blob')
+            const url = URL.createObjectURL(blob);
+
+            window.open(url); // buka tab baru
+        } catch (err) {
+            goto(`/api/handleError?msg=${err.message}`)
         }
     }
     
@@ -474,7 +606,7 @@
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formCuti.answer.type} 
-                                        options={typeList.map(([v, duration]) => ({value: v, text: v + " - " + duration}))}/>                                    
+                                        options={typeList.map((v) => ({value: v.value, text: v.value + " - " + v.hari + " days"}))}/>
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">
@@ -538,16 +670,23 @@
                                                 {#if !formCuti.edit}
                                                     {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
+                                                        <Tooltip class='z-10'>Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_cuti, "D") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> {
                                                             formCuti.modalDelete = true
                                                             formCuti.answer.cuti_id = row.cuti_id
                                                         }}><Trash size={12} /></MyButton>
+                                                        <Tooltip class='z-10'>Hapus</Tooltip>
                                                     {/if}
                                                     {#if row.status == "Waiting" && !row.is_delegate}
-                                                        <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <span class="text-[.8rem]">Delegate</span> </MyButton>
+                                                        <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <Highlighter size={12}/> </MyButton>
+                                                        <Tooltip class='z-10'>Delegate</Tooltip>
                                                     {/if}
+                                                {/if}
+                                                {#if row.status}
+                                                    <MyButton onclick={()=> handleCetakCuti(row.cuti_group_id)} color='dark' class='p-2' pill><Eye size={12} /></MyButton>
+                                                    <Tooltip class='z-10'>Preview</Tooltip>
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
