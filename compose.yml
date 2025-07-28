@@ -1,4 +1,23 @@
 services:
+  time-nginx:
+    build:
+      context: ./nginx
+    container_name: time-nginx
+    ports:
+      - 80:80
+    networks:
+      - saga-net
+  time-app:
+    build: .
+    container_name: time-app
+    # ports:
+    #   - 1000:1000
+    networks:
+      - saga-net
+    env_file:
+      - .env
+    volumes:
+      - /d/time-attendance/media:/app/src/lib/assets/media
   time-fs:
     build:
       context: ./express
@@ -11,7 +30,7 @@ services:
     ports:
       - 1111:1111
     volumes:
-      - /mnt/d/time-attendance/media:/mnt/media
+      - /d/time-attendance/media:/app/storage/media
     hostname: ricky
 networks:
   saga-net:

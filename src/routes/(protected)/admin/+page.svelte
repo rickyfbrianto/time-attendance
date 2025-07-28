@@ -27,7 +27,7 @@
     const urlMessage = $page.url.searchParams.get('message')
 
     const rowsPerPage = 20
-    const listLevel = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(v => ({value : v, name : v}))
+    const listLevel = [0, 1, 2, 3, 4, 5].map(v => ({value : v, name : v}))
     
     const ListAccess = [
         {value:"C", name:"Create"},
@@ -147,23 +147,24 @@
     const formUserAnswer = {
         answer:{
             payroll:"",
-            profile_id:"",
             user_id_machine:"",
+            profile_id:"",
+            email:"",
             name:"",
             password:"",
             position:"",
             department:"",
             location:"",
             phone:"",
-            workhour: 8,
             overtime: false,
+            workhour: 8,
             start_work: "",
-            email:"",
             approver: "",
             substitute: "",
             join_date: "",
             signature: "",
-            user_security: false,
+            user_type: "",
+            user_hod: false,
             hostname: "",
             status:"",
         },
@@ -691,8 +692,8 @@
                     <Datatable table={tableProfile}>
                         <Table >
                             <TableHead>
-                                <ThSort table={tableProfile} field="name">Name</ThSort>
-                                <ThSort table={tableProfile} field="description">Description</ThSort>
+                                <ThSort table={tableProfile} field="name">Nama</ThSort>
+                                <ThSort table={tableProfile} field="description">Deskripsi</ThSort>
                                 <ThSort table={tableProfile} field="user_hrd">User HRD</ThSort>
                                 <ThSort table={tableProfile} field="level">Level</ThSort>
                                 <ThSort table={tableProfile} field="status">Status</ThSort>
@@ -800,7 +801,7 @@
                                     <div class="flex flex-col gap-2">
                                         <Label>Department</Label>
                                         <Svelecte class='border-none' optionClass='p-2' name='department' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.department} 
-                                        options={val.map((v:any) => ({value: v.dept_code, text: v.initial + " - " + v.name }))}/>
+                                        options={val.map((v:any) => ({value: v.dept_code, text: v.dept_code + " - " + v.name }))}/>
                                     </div>
                                 {/await}
                                 
@@ -838,9 +839,22 @@
                             </div>
 
                             <span class="border-b-[1px] border-slate-300 pb-2">Attendance</span>
-                            <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-200">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border-[1px] border-slate-200">
                                 <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
 
+                                <div class="flex items-center gap-2">
+                                    <Checkbox bind:checked={formUserState.answer.overtime}>Overtime</Checkbox>
+                                    <Checkbox bind:checked={formUserState.answer.user_hod}>User HOD</Checkbox>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <Label for='user_type'>User Tipe</Label>
+                                    <Select name='user_type' items={[
+                                        {value:"Security", name:"Security"},
+                                        {value:"OB", name:"OB"},
+                                        {value:"Messenger", name:"Messenger"},
+                                        {value:"Other", name:"Other"},
+                                    ]} bind:value={formUserState.answer.user_type} />
+                                </div>
                                 <div class="flex flex-col gap-2">
                                     <Label for='workhour'>Workhour</Label>
                                     <Select name='workhour' items={[
@@ -848,12 +862,8 @@
                                         {value:8, name:"8"},
                                     ]} bind:value={formUserState.answer.workhour} />
                                 </div>
-                                <div class="flex gap-2">
-                                    <Checkbox bind:checked={formUserState.answer.overtime as unknown as boolean}>Overtime</Checkbox>
-                                    <Checkbox bind:checked={formUserState.answer.user_security as unknown as boolean}>User Security</Checkbox>
-                                </div>
                                 <MyInput type='text' title='User ID Machine' name="user_id_machine" bind:value={formUserState.answer.user_id_machine}/>
-                                <div class="flex flex-col gap-2">
+                                <div class="flex flex-col">
                                     <MyInput type='text' title='Hostname' name="hostname" bind:value={formUserState.answer.hostname}/>
                                     <span class='italic text-[.8rem]'>Different name separate with |</span>
                                 </div>
@@ -888,10 +898,11 @@
                         <Table>
                             <TableHead>
                                 <ThSort table={tableUser} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="position"><TableHeadCell>Position</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="department"><TableHeadCell>Department</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="location"><TableHeadCell>Location</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="name"><TableHeadCell>Nama</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="profile_name"><TableHeadCell>Profil</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="position"><TableHeadCell>Posisi</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="department"><TableHeadCell>Departemen</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="location"><TableHeadCell>Lokasi</TableHeadCell></ThSort>
                                 <ThSort table={tableUser} field="email"><TableHeadCell>Email</TableHeadCell></ThSort>
                                 <ThSort table={tableUser} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                             </TableHead>
@@ -905,10 +916,11 @@
                                     {#if tableUser.rows.length > 0}
                                         {#each tableUser.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all'>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{row.profile_name}</TableBodyCell>
                                                 <TableBodyCell>{row.position}</TableBodyCell>
-                                                <TableBodyCell>{row.dept}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all'>{row.dept}</TableBodyCell>
                                                 <TableBodyCell>{row.location}</TableBodyCell>
                                                 <TableBodyCell>{row.email}</TableBodyCell>
                                                 <TableBodyCell>
@@ -1022,8 +1034,8 @@
                         <Table>
                             <TableHead>
                                 <ThSort table={tableDept} field="dept_code"><TableHeadCell>Dept Code</TableHeadCell></ThSort>
-                                <ThSort table={tableDept} field="name"><TableHeadCell>Name</TableHeadCell></ThSort>
-                                <ThSort table={tableDept} field="initial"><TableHeadCell>Initial</TableHeadCell></ThSort>
+                                <ThSort table={tableDept} field="name"><TableHeadCell>Nama</TableHeadCell></ThSort>
+                                <ThSort table={tableDept} field="initial"><TableHeadCell>Inisial</TableHeadCell></ThSort>
                                 <ThSort table={tableDept} field="status"><TableHeadCell>Status</TableHeadCell></ThSort>
                                 <ThSort table={tableDept} field=""><TableHeadCell>#</TableHeadCell></ThSort>
                             </TableHead>

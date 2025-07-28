@@ -7,8 +7,8 @@
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, generatePeriode, pecahArray, getParams } from '$/lib/utils.js';
-    import { differenceInDays, eachDayOfInterval, format, getDay, getYear } from 'date-fns';
+	import { formatTanggal, generatePeriode, pecahArray, getParams, dataTahun, dataBulan, namaHari } from '$/lib/utils.js';
+    import { differenceInDays, eachDayOfInterval, format, getDay, getYear, set } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
@@ -54,7 +54,7 @@
             modalHeader.val = title
         }
     }
-    
+        
     // Table Ijin
     let tableIjin = $state(new TableHandler([], {rowsPerPage}))
     let tableIjinSearch = tableIjin.createSearch()
@@ -77,6 +77,8 @@
         },
         dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
         payroll: (()=> user?.payroll)(),
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         autoWeekend: false,
         success:"",
         error:"",
@@ -87,13 +89,15 @@
     }
 
     let formIjin = $state({...formIjinAnswer})
-
+    
     let modeIjin = $state({
+        modalAttachment: false,
+        attachment: "",
         payroll: formIjinAnswer.payroll,
         name: "",
         periode: {
-            start: "",
-            end: "",
+            start: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start)(),
+            end: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end)(),
         },
         tabNo: 1
     })
@@ -232,6 +236,8 @@
             cuti_id: "id",
             status: "Waiting",
         },
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         success:"",
         error:"",
         loading:false,
@@ -293,7 +299,7 @@
     $effect(()=>{
         tableIjin.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${modeIjin.payroll}`)
+                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${modeIjin.payroll}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -320,7 +326,7 @@
         if (userProfile.user_hrd){
             tableListIjin.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/ijin/list?${getParams(state)}&`)
+                    const req = await fetch(`/api/ijin/list?${getParams(state)}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -329,6 +335,16 @@
                     console.log(err.message)
                 }
             })
+        }
+    })
+    
+    $effect(()=> {
+        const temp = modeIjin.tabNo == 1 
+            ? set(new Date(), {year: formIjin.year, month: formIjin.month, date: setting?.end_periode})
+            : set(new Date(), {year: formListIjin.year, month: formListIjin.month, date: setting?.end_periode})
+        modeIjin.periode = {
+            start: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start,
+            end: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end,
         }
     })
     
@@ -354,15 +370,15 @@
                 <div class="flex items-center gap-2">
                     <Calendar size={18}/>
                     <div class="flex gap-2">
-                        <span class="font-bold">Today,</span>
+                        <span class="font-bold">Hari ini,</span>
                         <span>{format(new Date(), "dd-MM-yyyy")}</span>
                     </div>
                 </div>
                 <div class="flex gap-2 items-center">
                     <span>Periode</span>
                     <div class="flex flex-col gap-2">
-                        <Badge color='indigo'>{periode.start}</Badge>
-                        <Badge color='indigo'>{periode.end}</Badge>
+                        <Badge color='indigo'>{modeIjin.periode.start}</Badge>
+                        <Badge color='indigo'>{modeIjin.periode.end}</Badge>
                     </div>
                 </div>
             </div>
@@ -391,15 +407,15 @@
         {:then val}
             {#if val.length > 0}
                 <div class="ps-4">
-                    <p class='-ms-3 mb-5'>There {val.length} day{val.length > 1 ? "s":""} on '{modalHeader.val}' events</p>
+                    <p class='-ms-3 mb-5'>Ada {val.length} hari pada event '{modalHeader.val}'</p>
                     <Timeline order="vertical">
                         {#each val as {description, date}}
                             {#if differenceInDays(date, new Date()) > 0}
-                                <Badge class='ms-2 mb-2'>Upcoming</Badge>
+                                <Badge class='ms-2 mb-2'>Yang akan datang</Badge>
                             {:else if differenceInDays(date, new Date()) == 0}
-                                <Badge class='ms-2 mb-2' color="green">Today</Badge>
+                                <Badge class='ms-2 mb-2' color="green">Hari ini</Badge>
                             {/if}
-                            <TimelineItem title={formatTanggal(date, "date")} date={format(date, "EEEE")}>
+                            <TimelineItem title={formatTanggal(date, "date")} date={namaHari[getDay(date)]}>
                                 <svelte:fragment slot="icon">
                                     <span class="flex absolute -start-3 justify-center items-center w-6 h-6 bg-primary-200 rounded-full ring-8 ring-white dark:ring-gray-900 dark:bg-primary-900">
                                         <CalendarWeekSolid class="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -411,7 +427,7 @@
                     </Timeline>
                 </div>
             {:else}
-                <span class='text-center'>There is no events</span>
+                <span class='text-center'>Tidak ada event</span>
             {/if}
         {/await}
     </Modal>
@@ -427,7 +443,7 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title={`${modeIjin.payroll == user.payroll ? "My Ijin": "Ijin " + modeIjin.name}`}>
+        <TabItem open title={`${modeIjin.payroll == user.payroll ? "Ijin Saya": "Ijin " + modeIjin.name}`} onclick={() => modeIjin.tabNo = 1}>
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formIjin.modalDelete}
                     <MyLoading message="Deleting data"/>
@@ -474,10 +490,7 @@
                 {#if formIjin.loading}
                     <MyLoading message="Load ijin data"/>
                 {/if}
-                
 
-                {JSON.stringify(formIjin.answer)}
-                
                 {#if formIjin.add || formIjin.edit}
                     <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -539,6 +552,20 @@
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
+                    <select bind:value={formIjin.year} onchange={()=> tableIjin.invalidate()}>
+                        {#each dataTahun as {title, value}}
+                            <option value={value}>
+                                {title} {value.toString() == format(modeIjin.periode.start, "yyyy") ? "(Select)" : null}
+                            </option>
+                        {/each}
+                    </select>
+                    <select bind:value={formIjin.month} onchange={()=> tableIjin.invalidate()}>
+                        {#each dataBulan as {title, value}}
+                            <option value={value}>
+                                {title} {value == Number(format(modeIjin.periode.start, "M")) ? "(Select)" : null}
+                            </option>
+                        {/each}
+                    </select>
                     <MyInput type='text' bind:value={tableIjinSearch.value}/>
                     <MyButton onclick={()=>tableIjinSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableIjin.invalidate()}><RefreshCw size={16}/></MyButton>
@@ -547,10 +574,10 @@
                 <Datatable table={tableIjin}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableIjin} field="name">Name</ThSort>
-                            <ThSort table={tableIjin} field="date">Date</ThSort>
-                            <ThSort table={tableIjin} field="type">Type</ThSort>
-                            <ThSort table={tableIjin} field="description">Description</ThSort>
+                            <ThSort table={tableIjin} field="name">Nama</ThSort>
+                            <ThSort table={tableIjin} field="date">Tanggal</ThSort>
+                            <ThSort table={tableIjin} field="type">Tipe</ThSort>
+                            <ThSort table={tableIjin} field="description">Deskripsi</ThSort>
                             <ThSort table={tableIjin} field="status">Status</ThSort>
                             <ThSort table={tableIjin} field="approval_name">Approval</ThSort>
                             <ThSort table={tableIjin} field="">#</ThSort>
@@ -612,7 +639,7 @@
             </div>
         </TabItem>
         {#if userProfile.level > 1}
-            <TabItem title="Approval Ijin">
+            <TabItem title="Approval Ijin" onclick={() => modeIjin.tabNo = 2}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formApprovalIjin.error}
                         {#each formApprovalIjin.error.split(';') as v}
@@ -634,9 +661,9 @@
                         <Table>
                             <TableHead>
                                 <ThSort table={tableApprovalIjin} field="name">Payroll</ThSort>
-                                <ThSort table={tableApprovalIjin} field="name">Name</ThSort>
-                                <ThSort table={tableApprovalIjin} field="date">Date</ThSort>
-                                <ThSort table={tableApprovalIjin} field="description">Reason</ThSort>
+                                <ThSort table={tableApprovalIjin} field="name">Nama</ThSort>
+                                <ThSort table={tableApprovalIjin} field="date">Tanggal</ThSort>
+                                <ThSort table={tableApprovalIjin} field="description">Deskripsi</ThSort>
                                 <ThSort table={tableApprovalIjin} field="">#</ThSort>
                             </TableHead>
 
@@ -675,7 +702,7 @@
             </TabItem>
         {/if}
         {#if userProfile?.user_hrd}
-            <TabItem title="List Ijin">
+            <TabItem title="Daftar Ijin" onclick={() => modeIjin.tabNo = 3}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formListIjin.error}
                         {#each formListIjin.error.split(';') as v}
@@ -695,6 +722,20 @@
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
+                        <select bind:value={formListIjin.year} onchange={()=> tableListIjin.invalidate()}>
+                            {#each dataTahun as {title, value}}
+                                <option value={value}>
+                                    {title} {value.toString() == format(modeIjin.periode.start, "yyyy") ? "(Select)" : null}
+                                </option>
+                            {/each}
+                        </select>
+                        <select bind:value={formListIjin.month} onchange={()=> tableListIjin.invalidate()}>
+                            {#each dataBulan as {title, value}}
+                                <option value={value}>
+                                    {title} {value == Number(format(modeIjin.periode.start, "M")) ? "(Select)" : null}
+                                </option>
+                            {/each}
+                        </select>
                         <MyInput type='text' bind:value={tableListIjinSearch.value}/>
                         <MyButton onclick={()=>tableListIjinSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableListIjin.invalidate()}><RefreshCw size={16}/></MyButton>
@@ -704,10 +745,10 @@
                         <Table>
                             <TableHead>
                                 <ThSort table={tableListIjin} field="name">Payroll</ThSort>
-                                <ThSort table={tableListIjin} field="name">Name</ThSort>
-                                <ThSort table={tableListIjin} field="date">Date</ThSort>
+                                <ThSort table={tableListIjin} field="name">Nama</ThSort>
+                                <ThSort table={tableListIjin} field="date">Tanggal</ThSort>
                                 <ThSort table={tableListIjin} field="approval_name">Approval</ThSort>
-                                <ThSort table={tableListIjin} field="description">Reason</ThSort>
+                                <ThSort table={tableListIjin} field="description">Deskripsi</ThSort>
                                 <ThSort table={tableListIjin} field="status">Status</ThSort>
                                 <!-- <ThSort table={tableListIjin} field="">#</ThSort> -->
                             </TableHead>

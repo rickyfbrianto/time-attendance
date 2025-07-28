@@ -21,7 +21,7 @@ export default defineConfig({
     },
     preview: {
         port: 1000,
-        allowedHosts: ['ricky.dev', 'ricky'],
+        allowedHosts: ['ricky', 'time-app'],
     },
     resolve: {
         alias: {

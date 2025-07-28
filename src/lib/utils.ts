@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
-import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set, differenceInMinutes, parse } from "date-fns";
+import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set, differenceInMinutes, parse, differenceInDays, differenceInHours } from "date-fns";
 import { Prisma, PrismaClient } from '@prisma-app/client';
 import type { State } from "@vincjo/datatables/server";
 
@@ -15,6 +15,16 @@ export const prisma = new PrismaClient({
 export const namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 export const namaBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+let dataTahun: { value: number, title: string }[] = []
+let dataBulan: { value: number, title: string }[] = []
+
+for (let a = 2020; a <= new Date().getFullYear() + 1; a++) {
+    dataTahun.push({ value: a, title: a.toString() })
+}
+for (let a = 0; a < 12; a++) {
+    dataBulan.push({ value: Number(a), title: namaBulan[a] })
+}
 
 interface EncryptedData {
     iv: string;
@@ -46,20 +56,17 @@ export function handleLoginRedirect(e: RequestEvent, pesan: string = "You need t
     return '/login?redirectTo=' + encodeURIComponent(redirectTo) + "&pesan=" + encodeURIComponent(pesan)
 }
 
-export function isEmpty(obj: any): boolean {
-    for (let key in obj) {
-        //if the value is 'object'
-        if (obj[key] instanceof Object === true) {
-            if (isEmpty(obj[key]) === false) return false;
-        }
-        //if value is string/number
-        else {
-            //if array or string have length is not 0.
-            if (obj[key].length !== 0) return false;
-        }
-    }
-    return true;
-}
+// export function isEmpty(obj: any): boolean {
+//     for (let key in obj) {
+//         if (obj[key] instanceof Object === true) {
+//             if (isEmpty(obj[key]) === false) return false;
+//         }
+//         else {
+//             if (obj[key].length !== 0) return false;
+//         }
+//     }
+//     return true;
+// }
 
 export function encryptDynamic(value: string, secretKey: string): EncryptedData {
     const iv = CryptoJS.lib.WordArray.random(128 / 8); //iv untuk generate acak setiap value meskipun nilainya sama
@@ -113,7 +120,7 @@ export function prismaErrorHandler(error: any) {
                 return `Database failure (${error.message})`
         }
     }
-    return `There is error cause (${error.message || "Server error"})`
+    return `Muncul error (${error.message || "Server error"})`
 }
 
 export function pecahArray(value: string, check: string) {
@@ -239,6 +246,18 @@ export const selisihWaktu = (val1: string | Date, val2: string | Date) => {
     return { hour, minute }
 }
 
+export const selisihWaktuHari = (start: Date | string, end: Date | string) => {
+    const day = differenceInDays(end, start);
+    const hour = differenceInHours(end, start) - day * 24;
+    const minute = differenceInMinutes(end, start) - (day * 24 * 60) - (hour * 60);
+    return { day, hour, minute };
+}
+
+export const formatWaktuHari = ({ day, hour, minute }: { day: number, hour: number, minute: number }) => {
+    const temp = `${day > 0 ? day + " Hari" : ""} ${hour > 0 ? hour + " Jam" : ""} ${minute > 0 ? minute + " Menit" : ""}`
+    return temp
+}
+
 export const hitungLate = (check_in: number | string | Date, start_work: number | string | Date, late_minute_dispen: number, late_dispen_check: boolean = true) => {
     const tempCheckin = new Date(check_in)
     const tempStart = new Date(start_work)
@@ -282,20 +301,24 @@ export const hitungDifference = (check_in, check_out, check_in2, check_out2) => 
     }
 }
 
-// export const formatDifference = ({ hour, minute, overtime, round_up = false }: { hour: number, minute: number, overtime: number, round_up: boolean }) => {
-//     hour += round_up ? (minute >= overtime ? 1 : 0) : 0
-//     minute = round_up ? (minute >= overtime ? 0 : minute) : minute
-//     const temp = `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
-//     return temp
-// }
 export const formatDifference = ({ hour, minute, overtime, round_up = false }: { hour: number, minute: number, overtime: number, round_up: boolean }) => {
-    const roundUpTo = 30
-    hour += round_up ? (minute > roundUpTo && (minute % roundUpTo) >= overtime ? 1 : 0) : 0
-    minute = round_up
-        ? minute < roundUpTo && minute >= overtime
-            ? 30
-            : minute > roundUpTo && (minute % roundUpTo) >= overtime ? 0 : minute
-        : minute
-
-    return `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
+    hour += round_up ? (minute >= overtime ? 1 : 0) : 0
+    minute = round_up ? (minute >= overtime ? 0 : minute) : minute
+    const temp = `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
+    return temp
 }
+
+export { dataTahun, dataBulan }
+
+// Untuk >= 15 ? 30 jika >= 45 60
+// export const formatDifference = ({ hour, minute, overtime, round_up = false }: { hour: number, minute: number, overtime: number, round_up: boolean }) => {
+//     const roundUpTo = 30
+//     hour += round_up ? (minute > roundUpTo && (minute % roundUpTo) >= overtime ? 1 : 0) : 0
+//     minute = round_up
+//         ? minute < roundUpTo && minute >= overtime
+//             ? 30
+//             : minute > roundUpTo && (minute % roundUpTo) >= overtime ? 0 : minute
+//         : minute
+
+//     return `${hour > 0 ? hour + " Hour" : ""} ${minute > 0 ? minute + " Minute" : ""}`
+// }

@@ -7,7 +7,7 @@
 	import { Ban, Check, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X, Eye } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, generatePeriode, getParams, selisihWaktu, formatDifference } from '$/lib/utils.js';
+	import { pecahArray, formatTanggal, getPeriode, namaHari, generatePeriode, getParams, selisihWaktu, formatDifference, dataTahun, dataBulan } from '$/lib/utils.js';
 	import { differenceInHours, format, set, getDay, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
     import stm from '$/lib/assets/stm.png'
@@ -25,6 +25,14 @@
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
 
+    let modeLembur = $state({
+        periode: {
+            start: (()=> periode.start)(),
+            end: (()=> periode.end)(),
+        },
+        tabNo: 1
+    })
+    
     const rowsPerPage = 10
     
     let tableSPL = $state(new TableHandler([], {rowsPerPage}))
@@ -45,6 +53,8 @@
         },
         dept: (()=> user?.department)(),
         payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         success:"",
         error:"",
         modalDelete: false,
@@ -359,6 +369,8 @@
         },
         createdByName: "",
         payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         success:"",
         error:"",
         modalDelete: false,
@@ -643,10 +655,10 @@
                 head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Jumlah Jam Kerja', 'Pekerjaan yang di kerjakan', 'Keterangan']],
                 margin: {left: colData[0]},
                 body: res.srl_detail.map((v:any, i: number) => {
-                    const [nama, payroll, tanggal, waktu] = i == 0 
-                    ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
-                    : ["","","",""]
-                    return [i + 1, nama, payroll, tanggal, waktu, `${hours} Jam ${minutes} menit`, v.description, v.status]
+                    const [nama, payroll, tanggal, waktu, jumlah] = i == 0 
+                        ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5), `${hours} Jam ${minutes} menit`]
+                        : ["","","","", ""]
+                    return [i + 1, nama, payroll, tanggal, waktu, jumlah, v.description, v.status]
                 }),
                 styles: {cellPadding: 1, halign: 'center' },
                 headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
@@ -811,20 +823,12 @@
 
     $effect(()=>{
         tableSPL.load(async (state:State) => {
-            try {
-                const req = await fetch('/api/data?type=setting')
-                const res = await req.json()
-                if(res){
-                    const temp = set(new Date(), {year: 2025, month: 3})
-                    const {start_periode, end_periode} = getPeriode({...res, date: temp})
-
-                    const req = await fetch(`/api/lembur/spl?${getParams(state)}&dept=${formSPL.dept}&payroll=${formSPL.payroll}&start_periode=${start_periode}&end_periode=${end_periode}`)
-                    const {items, totalItems} = await req.json()
-                    state.setTotalRows(totalItems)
-                    return items
-                }else{
-                    throw new Error("Periode perlu disetting")
-                }
+            try {           
+                const req = await fetch(`/api/lembur/spl?${getParams(state)}&dept=${formSPL.dept}&payroll=${formSPL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
+                if(!req.ok) throw new Error('Gagal mengambil data')
+                const {items, totalItems} = await req.json()
+                state.setTotalRows(totalItems)
+                return items
             } catch (err:any) {
                 console.log(err.message)
             }
@@ -854,7 +858,7 @@
         
         tableSRL.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/srl?${getParams(state)}&payroll=${formSRL.payroll}`)
+                const req = await fetch(`/api/lembur/srl?${getParams(state)}&payroll=${formSRL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -885,6 +889,16 @@
                 console.log(err.message)
             }
         })
+    })
+    
+    $effect(()=> {
+        const temp = modeLembur.tabNo == 1 
+            ? set(new Date(), {year: formSPL.year, month: formSPL.month, date: setting?.end_periode})
+            : set(new Date(), {year: formSRL.year, month: formSRL.month, date: setting?.end_periode})
+        modeLembur.periode = {
+            start: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start,
+            end: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end,
+        }
     })
     
     setTimeout(()=>{
@@ -1005,7 +1019,7 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Surat Perintah Lembur">
+        <TabItem open title="Surat Perintah Lembur" onclick={()=> modeLembur.tabNo = 1}>
             <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
                 <TabItem open title="List">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
@@ -1090,26 +1104,45 @@
                             </form>
                         {/if}
                         
-                        <div class="flex gap-2">
-                            <select bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
-                                {#each [10, 20, 50, 100] as option}
-                                    <option value={option}>{option}</option>
-                                {/each}
-                            </select>
-                            <MyInput type='text' bind:value={tableSPLSearch.value} onkeydown={(e: KeyboardEvent) => {
-                                if(e.key.toLowerCase() === 'enter') tableSPLSearch.set()
-                            }}/>
-                            <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex gap-2 items-start">
+                                <select bind:value={tableSPL.rowsPerPage} onchange={() => tableSPL.setPage(1)}>
+                                    {#each [10, 20, 50, 100] as option}
+                                        <option value={option}>{option}</option>
+                                    {/each}
+                                </select>
+                                <select bind:value={formSPL.year} onchange={()=> tableSPL.invalidate()}>
+                                    {#each dataTahun as {title, value}}
+                                        <option value={value}>
+                                            {title} {value.toString() == format(modeLembur.periode.start, "yyyy") ? "(Select)" : null}
+                                        </option>
+                                    {/each}
+                                </select>
+                                <select bind:value={formSPL.month} onchange={()=> tableSPL.invalidate()}>
+                                    {#each dataBulan as {title, value}}
+                                        <option value={value}>
+                                            {title} {value == Number(format(modeLembur.periode.end, "M")) - 1 ? "(Select)" : null}
+                                        </option>
+                                    {/each}
+                                </select>
+                                <div class="flex w-full flex-col">
+                                    <MyInput type='text' bind:value={tableSPLSearch.value} onkeydown={(e: KeyboardEvent) => {
+                                        if(e.key.toLowerCase() === 'enter') tableSPLSearch.set()
+                                    }}/>
+                                    <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
+                                </div>
+                                <MyButton onclick={()=>tableSPLSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton onclick={()=>tableSPL.invalidate()}><RefreshCw size={16}/></MyButton>
+                            </div>
                         </div>
                         
                         <Datatable table={tableSPL}>
                             <Table>
                                 <TableHead class="bg-slate-500" >
                                     <ThSort table={tableSPL} field="spl_id">SPL ID</ThSort>
-                                    <ThSort table={tableSPL} field="purpose">Purpose</ThSort>
-                                    <ThSort table={tableSPL} field="est_start">Datetime Start</ThSort>
-                                    <ThSort table={tableSPL} field="est_end">Datetime End</ThSort>
+                                    <ThSort table={tableSPL} field="purpose">Deskripsi</ThSort>
+                                    <ThSort table={tableSPL} field="est_start">Tanggal Mulai</ThSort>
+                                    <ThSort table={tableSPL} field="est_end">Tanggal Selesai</ThSort>
                                     <ThSort table={tableSPL} field="approval1">Approval 1</ThSort>
                                     <ThSort table={tableSPL} field="approval2">Approval 2</ThSort>
                                     {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
@@ -1196,9 +1229,9 @@
                             <Datatable table={tableSPLApproval1}>
                                 <Table>
                                     <TableHead>
-                                        <ThSort table={tableSPLApproval1} field="purpose">Purpose</ThSort>
-                                        <ThSort table={tableSPLApproval1} field="est_start">Est Start</ThSort>
-                                        <ThSort table={tableSPLApproval1} field="est_end">Est End</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="purpose">Deskripsi</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="est_start">Tanggal Mulai</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="est_end">Tanggal Selesai</ThSort>
                                         <ThSort table={tableSPLApproval1} field="approval1">Approval 1</ThSort>
                                         <ThSort table={tableSPLApproval1} field="">#</ThSort>
                                     </TableHead>
@@ -1254,9 +1287,9 @@
                             <Datatable table={tableSPLApproval2}>
                                 <Table>
                                     <TableHead>
-                                        <ThSort table={tableSPLApproval2} field="purpose">Purpose</ThSort>
-                                        <ThSort table={tableSPLApproval2} field="est_start">Est Start</ThSort>
-                                        <ThSort table={tableSPLApproval2} field="est_end">Est End</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="purpose">Deskripsi</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="est_start">Tanggal Mulai</ThSort>
+                                        <ThSort table={tableSPLApproval2} field="est_end">Tanggal Selesai</ThSort>
                                         <ThSort table={tableSPLApproval2} field="approval2">Approval 2</ThSort>
                                         <ThSort table={tableSPLApproval2} field="">#</ThSort>
                                     </TableHead>
@@ -1299,7 +1332,7 @@
             </Tabs>
         </TabItem>
         
-        <TabItem title="Surat Realisasi Lembur">
+        <TabItem title="Surat Realisasi Lembur" onclick={()=> modeLembur.tabNo = 2}>
             <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
                 <TabItem open title="List">
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
@@ -1391,27 +1424,47 @@
                             </form>
                         {/if}
                         
-                        <div class="flex gap-2">
-                            <select bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
-                                {#each [10, 20, 50, 100] as option}
-                                    <option value={option}>{option}</option>
-                                {/each}
-                            </select>
-                            <MyInput type='text' bind:value={tableSRLSearch.value} onkeydown={(e: KeyboardEvent) => {
-                                if(e.key.toLowerCase() === 'enter') tableSRLSearch.set()
-                            }}/>
-                            <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
-                            <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex gap-2 items-start">
+                                <select bind:value={tableSRL.rowsPerPage} onchange={() => tableSRL.setPage(1)}>
+                                    {#each [10, 20, 50, 100] as option}
+                                        <option value={option}>{option}</option>
+                                    {/each}
+                                </select>
+                                <select bind:value={formSRL.year} onchange={()=> tableSRL.invalidate()}>
+                                    {#each dataTahun as {title, value}}
+                                        <option value={value}>
+                                            {title} {value.toString() == format(modeLembur.periode.start, "yyyy") ? "(Select)" : null}
+                                        </option>
+                                    {/each}
+                                </select>
+                                <select bind:value={formSRL.month} onchange={()=> tableSRL.invalidate()}>
+                                    {#each dataBulan as {title, value}}
+                                        <option value={value}>
+                                            {title} {value == Number(format(modeLembur.periode.end, "M")) - 1 ? "(Select)" : null}
+                                        </option>
+                                    {/each}
+                                </select>
+                                <div class="flex w-full flex-col">
+                                    <MyInput type='text' bind:value={tableSRLSearch.value} onkeydown={(e: KeyboardEvent) => {
+                                        if(e.key.toLowerCase() === 'enter') tableSRLSearch.set()
+                                    }}/>
+                                    <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
+                                </div>
+                                <MyButton onclick={()=>tableSRLSearch.set()}><Search size={16} /></MyButton>
+                                <MyButton onclick={()=>tableSRL.invalidate()}><RefreshCw size={16}/></MyButton>
+                            </div>
                         </div>
                         
                         <Datatable table={tableSRL}>
                             <Table>
                                 <TableHead class="bg-slate-500" >
                                     <ThSort table={tableSRL} field="srl_id">SRL ID</ThSort>
-                                    <ThSort table={tableSRL} field="real_start">Date</ThSort>
-                                    <ThSort table={tableSRL} field="real_start">Clock In</ThSort>
-                                    <ThSort table={tableSRL} field="real_start">Clock Out</ThSort>
-                                    <ThSort table={tableSRL} field="real_end">Total Hours</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Tanggal</ThSort>
+                                    <ThSort table={tableSRL} field="name">Nama</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Jam Mulai</ThSort>
+                                    <ThSort table={tableSRL} field="real_start">Jam Selesai</ThSort>
+                                    <ThSort table={tableSRL} field="real_end">Total Jam</ThSort>
                                     <ThSort table={tableSRL} field="approval1">Approval 1</ThSort>
                                     <ThSort table={tableSRL} field="approval2">Approval 2</ThSort>
                                     <ThSort table={tableSRL} field="">#</ThSort>
@@ -1433,6 +1486,7 @@
                                                             {format(formatTanggal(row.real_start), "d MMMM yyyy")}
                                                         </div>
                                                     </TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "time")}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "time")}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
@@ -1507,8 +1561,8 @@
                                 <Table>
                                     <TableHead>
                                         <ThSort table={tableSRLApproval1} field="payroll">Payroll</ThSort>
-                                        <ThSort table={tableSRLApproval1} field="real_start">Real Start</ThSort>
-                                        <ThSort table={tableSRLApproval1} field="real_end">Real End</ThSort>
+                                        <ThSort table={tableSRLApproval1} field="real_start">Tanggal Mulai</ThSort>
+                                        <ThSort table={tableSRLApproval1} field="real_end">Tanggal Selesai</ThSort>
                                         <ThSort table={tableSRLApproval1} field="approval1">Approval 1</ThSort>
                                         <ThSort table={tableSRLApproval1} field="">#</ThSort>
                                     </TableHead>
@@ -1565,8 +1619,8 @@
                                 <Table>
                                     <TableHead>
                                         <ThSort table={tableSRLApproval2} field="payroll">Payroll</ThSort>
-                                        <ThSort table={tableSRLApproval2} field="real_start">Real Start</ThSort>
-                                        <ThSort table={tableSRLApproval2} field="real_end">Real End</ThSort>
+                                        <ThSort table={tableSRLApproval2} field="real_start">Tanggal Mulai</ThSort>
+                                        <ThSort table={tableSRLApproval2} field="real_end">Tanggal Selesai</ThSort>
                                         <ThSort table={tableSRLApproval2} field="approval2">Approval 2</ThSort>
                                         <ThSort table={tableSRLApproval2} field="">#</ThSort>
                                     </TableHead>

@@ -1,5 +1,5 @@
 /express/node_modules
-/express/storage
+/express/storage/*
 
 /node_modules
 

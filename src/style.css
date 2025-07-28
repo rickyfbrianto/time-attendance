@@ -1,4 +1,4 @@
-p,
+/* p,
 span,
 a,
 input,
@@ -6,7 +6,7 @@ button,
 label,
 textarea {
     font-family: "Poppins", sans-serif;
-}
+} */
 
 #MyButton {
     font-size: .9rem;
@@ -17,7 +17,8 @@ tr {
     background-color: var(--bg-bgdark);
 }
 
-td {
+td,
+td div {
     color: var(--color-textdark);
     word-break: break-all;
 }
@@ -115,11 +116,20 @@ select {
     background-color: #17BEBB;
 }
 
+.ec-title {
+    font-size: 2rem;
+}
+
 div,
 td,
 select,
 option {
     font-size: 13px;
+}
+
+button,
+a {
+    cursor: pointer;
 }
 
 .dark tr:hover {

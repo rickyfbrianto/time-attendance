@@ -1,19 +1,20 @@
 <script lang="ts">
-    import {fade} from 'svelte/transition'
+    import {fade, slide} from 'svelte/transition'
     import { Tabs, TabItem, Badge, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tooltip, Modal, Timeline, TimelineItem, Alert, Button } from 'flowbite-svelte';
-	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X, Eye, Highlighter } from '@lucide/svelte'
+	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X, Paperclip, Highlighter, Printer } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, pecahArray, generatePeriode, getParams } from '$/lib/utils.js';
-	import { format, getYear, differenceInDays } from 'date-fns';
+	import { formatTanggal, pecahArray, generatePeriode, getParams, dataTahun, dataBulan, namaHari } from '$/lib/utils.js';
+	import { format, getYear, differenceInDays, set, getDay } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
     import Svelecte from 'svelecte';
     import MyPagination from '@/MyPagination.svelte';
+    import MyImage from '@/MyImage.svelte';
     import MyAlert from '@/MyAlert.svelte';
     import stm from '$/lib/assets/stm.png'
 	import jsPDF from 'jspdf';
@@ -60,6 +61,16 @@
         }
     }
 
+    const modeCuti = $state({
+        modalAttachment: false,
+        attachment: "",
+        periode: {
+            start: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start)(),
+            end: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end)(),
+        },
+        tabNo: 1
+    })
+
     // Table Cuti
     let tableCuti = $state(new TableHandler([], {rowsPerPage}))
     let tableCutiSearch = tableCuti.createSearch()
@@ -72,7 +83,9 @@
             description: "",
             date:"",
             status: "Waiting",
-            payroll: (()=> (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll)(),
+            attachment: "",
+            // payroll: (()=> (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll)(),
+            payroll: "111111",
             dept: (()=> user?.department)(),
             user_hrd: (()=> userProfile?.user_hrd)(),
             approval: (() => user?.approver || null)(),
@@ -80,6 +93,8 @@
             user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)()
         },
         dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         success:"",
         error:"",
         modalDelete: false,
@@ -99,9 +114,15 @@
                 description: z.string().trim().min(5),
                 approval: z.string().trim().min(1),
             })
+
+            const formData = new FormData()
+            Object.entries(formCuti.answer).forEach(val=>{
+                formData.append(val[0], val[1])
+            })  
+            
             const isValid = valid.safeParse(formCuti.answer)
             if(isValid.success){
-                const req = await axios.post('/api/cuti', formCuti.answer)
+                const req = await axios.post('/api/cuti', formData)
                 const res = await req.data
                 formCutiBatal()
                 tableCuti.invalidate()
@@ -184,6 +205,11 @@
         }
     }
 
+    const showCutiAttachment = (id:string) =>{
+        modeCuti.modalAttachment = true
+        modeCuti.attachment = id
+    }
+    
     // Approval Cuti
     let tableApprovalCuti = $state(new TableHandler([], {rowsPerPage}))
     
@@ -225,8 +251,6 @@
 
             const req = await axios.get(`/api/cuti/${id}/print`)
             const res = await req.data[0]
-
-            console.log(res)
 
             if(!res.cuti_signature) throw new Error('There is no signature for Applicant')
             if(!res.approval_signature) throw new Error('There is no signature for Approval')
@@ -361,6 +385,8 @@
             cuti_id: "id",
             status: "Waiting",
         },
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         success:"",
         error:"",
         loading:false,
@@ -398,6 +424,7 @@
         const res = await req.json()
         if(res){
             formCuti.answer.name = res.name
+            formCuti.answer.name = res.name
             formCuti.answer.approval = res.employee_employee_approverToemployee.payroll
             formCuti.answer.user_approval = res.employee_employee_approverToemployee.name
             formCuti.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
@@ -408,7 +435,7 @@
     $effect(()=>{
         tableCuti.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/cuti?${getParams(state)}&payroll=${user?.payroll}`)
+                const req = await fetch(`/api/cuti?${getParams(state)}&payroll=${user?.payroll}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -434,7 +461,7 @@
         if (userProfile.user_hrd){
             tableListCuti.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/cuti/list?${getParams(state)}`)
+                    const req = await fetch(`/api/cuti/list?${getParams(state)}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -443,6 +470,16 @@
                     console.log(err.message)
                 }
             })
+        }
+    })
+    
+    $effect(()=> {
+        const temp = modeCuti.tabNo == 1 
+            ? set(new Date(), {year: formCuti.year, month: formCuti.month, date: setting?.end_periode})
+            : set(new Date(), {year: formListCuti.year, month: formListCuti.month, date: setting?.end_periode})
+        modeCuti.periode = {
+            start: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start,
+            end: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end,
         }
     })
     
@@ -459,7 +496,7 @@
     <title>Cuti</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     {#await getCutiUser()}
         <MyLoading message={`Loading users data`}/>
     {:then}
@@ -475,8 +512,8 @@
                 <div class="flex gap-2 items-center">
                     <span>Periode</span>
                     <div class="flex flex-col gap-2">
-                        <Badge color='indigo'>{periode.start}</Badge>
-                        <Badge color='indigo'>{periode.end}</Badge>
+                        <Badge color='indigo'>{modeCuti.periode.start}</Badge>
+                        <Badge color='indigo'>{modeCuti.periode.end}</Badge>
                     </div>
                 </div>
             </div>
@@ -513,7 +550,7 @@
                             {:else if differenceInDays(date, new Date()) == 0}
                                 <Badge class='ms-2 mb-2' color="green">Today</Badge>
                             {/if}
-                            <TimelineItem  title={formatTanggal(date, "date")} date={format(date, "EEEE")}>
+                            <TimelineItem  title={formatTanggal(date, "date")} date={namaHari[getDay(date)]}>
                                 <svelte:fragment slot="icon">
                                     <span class="flex absolute -start-3 justify-center items-center w-6 h-6 bg-primary-200 rounded-full ring-8 ring-white dark:ring-gray-900 dark:bg-primary-900">
                                         <CalendarWeekSolid class="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -539,9 +576,19 @@
             <Button color='red' onclick={() => formCuti.modalDelete = false}>No</Button>
         </svelte:fragment>
     </Modal>
+
+    <Modal bind:open={modeCuti.modalAttachment} autoclose>
+        <div class="flex flex-col gap-6 overflow-hidden max-h-[80vh]">
+            <h3>Attachment</h3>
+            <MyImage src={import.meta.env.VITE_VIEW_CUTI+modeCuti.attachment}/>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button color='red' onclick={() => modeCuti.modalAttachment = false}>Tutup</Button>
+        </svelte:fragment>
+    </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="My Cuti">
+        <TabItem open title="My Cuti" onclick={()=> modeCuti.tabNo = 1}>
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formCuti.error}
                     {#each formCuti.error.split(';') as v}
@@ -574,7 +621,7 @@
                 {/if}
 
                 {#if formCuti.add || formCuti.edit}
-                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="cuti_id" disabled={formCuti.edit} bind:value={formCuti.answer.cuti_id}/>
 
@@ -585,7 +632,7 @@
                                     <div class="flex flex-col justify-start gap-2">
                                         <Label>Payroll</Label>
                                         <Svelecte class='border-none' disabled={userProfile.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formCuti.answer.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name + (v.user_hrd ? " (HRD)":"")}))}
                                         onChange={(e) => fillCuti(e.value)}/>
                                     </div>
                                 {/await}
@@ -598,15 +645,23 @@
                             <MyInput type='text' title='Substitute' disabled value={formCuti.answer.user_delegate}/>
                             
                             <div class="flex flex-col gap-2">
-                                {#if formCuti.add}
-                                    <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
-                                {:else if formCuti.edit}
-                                    <MyInput type='date' title='Date' disabled={formCuti.answer.type != "Cuti Tahunan"} name="date" bind:value={formCuti.answer.date}/>
-                                {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formCuti.answer.type} 
                                         options={typeList.map((v) => ({value: v.value, text: v.value + " - " + v.hari + " days"}))}/>
+                                </div>
+                                {#if formCuti.answer.type}
+                                    <div in:slide out:slide={{duration:1000}}>
+                                        {#if formCuti.add}
+                                            <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
+                                        {:else if formCuti.edit}
+                                            <MyInput type='date' title='Date' disabled={formCuti.answer.type != "Cuti Tahunan"} name="date" bind:value={formCuti.answer.date}/>
+                                        {/if}
+                                    </div>
+                                {/if}
+                                <div class="flex flex-col gap-2">
+                                    <Label>Attachment</Label>
+                                    <input class="border" type="file" accept=".jpg" onchange={e => formCuti.answer.attachment = e.target.files[0]}/>
                                 </div>
                             </div>
                             <div class="flex flex-col self-start">
@@ -614,10 +669,7 @@
                                 <span class='text-[.9rem] italic'>Description min 5 character</span>
                             </div>
                         </div>
-
-                        <div class="flex flex-col">
-                            <span class='text-[.8rem] italic'>*You can insert cuti if there is no applicant with same date and status is not same as "Waiting" and "Approved"</span>
-                        </div>
+                        <span class='text-[.8rem] italic'>*Cuti dapat diajukan jika tidak ada pengajuan ditanggal yang sama dan statusnya bukan "Waiting" atau "Approved"</span>
                     </form>
                 {/if}
                 
@@ -625,6 +677,20 @@
                     <select bind:value={tableCuti.rowsPerPage} onchange={() => tableCuti.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
+                        {/each}
+                    </select>
+                    <select bind:value={formCuti.year} onchange={()=> tableCuti.invalidate()}>
+                        {#each dataTahun as {title, value}}
+                            <option value={value}>
+                                {title} {value.toString() == format(modeCuti.periode.start, "yyyy") ? "(Select)" : null}
+                            </option>
+                        {/each}
+                    </select>
+                    <select bind:value={formCuti.month} onchange={()=> tableCuti.invalidate()}>
+                        {#each dataBulan as {title, value}}
+                            <option value={value}>
+                                {title} {value == Number(format(modeCuti.periode.start, "M")) ? "(Select)" : null}
+                            </option>
                         {/each}
                     </select>
                     <MyInput type='text' bind:value={tableCutiSearch.value}/>
@@ -635,10 +701,10 @@
                 <Datatable table={tableCuti}>
                     <Table>
                         <TableHead>
-                            <ThSort table={tableCuti} field="name">Name</ThSort>
-                            <ThSort table={tableCuti} field="date">Date</ThSort>
-                            <ThSort table={tableCuti} field="type">Type</ThSort>
-                            <ThSort table={tableCuti} field="description">Description</ThSort>
+                            <ThSort table={tableCuti} field="name">Nama</ThSort>
+                            <ThSort table={tableCuti} field="date">Tanggal</ThSort>
+                            <ThSort table={tableCuti} field="type">Tipe</ThSort>
+                            <ThSort table={tableCuti} field="description">Alasan</ThSort>
                             <ThSort table={tableCuti} field="status">Status</ThSort>
                             <ThSort table={tableCuti} field="approval_name">Approval</ThSort>
                             <ThSort table={tableCuti} field="">#</ThSort>
@@ -685,8 +751,12 @@
                                                     {/if}
                                                 {/if}
                                                 {#if row.status}
-                                                    <MyButton onclick={()=> handleCetakCuti(row.cuti_group_id)} color='dark' class='p-2' pill><Eye size={12} /></MyButton>
-                                                    <Tooltip class='z-10'>Preview</Tooltip>
+                                                    <MyButton onclick={()=> handleCetakCuti(row.cuti_group_id)} color='dark' class='p-2' pill><Printer size={12} /></MyButton>
+                                                    <Tooltip class='z-10'>Print</Tooltip>
+                                                {/if}
+                                                {#if row.attachment}
+                                                    <MyButton onclick={()=> showCutiAttachment(row.attachment)} color='dark' class='p-2' pill><Paperclip size={12} /></MyButton>
+                                                    <Tooltip class='z-10'>View Attachment</Tooltip>
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
@@ -704,7 +774,7 @@
             </div>
         </TabItem>
         {#if userProfile.level > 1}
-            <TabItem title="Approval Cuti">
+            <TabItem title="Approval Cuti" onclick={()=> modeCuti.tabNo = 2}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formApprovalCuti.error}
                         {#each formApprovalCuti.error.split(';') as v}
@@ -767,7 +837,7 @@
             </TabItem>
         {/if}
         {#if userProfile?.user_hrd}
-            <TabItem title="List Cuti">
+            <TabItem title="List Cuti" onclick={()=> modeCuti.tabNo = 3}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formListCuti.error}
                         {#each formListCuti.error.split(';') as v}
@@ -787,6 +857,20 @@
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
+                        <select bind:value={formListCuti.year} onchange={()=> tableListCuti.invalidate()}>
+                            {#each dataTahun as {title, value}}
+                                <option value={value}>
+                                    {title} {value.toString() == format(modeCuti.periode.start, "yyyy") ? "(Select)" : null}
+                                </option>
+                            {/each}
+                        </select>
+                        <select bind:value={formListCuti.month} onchange={()=> tableListCuti.invalidate()}>
+                            {#each dataBulan as {title, value}}
+                                <option value={value}>
+                                    {title} {value == Number(format(modeCuti.periode.start, "M")) ? "(Select)" : null}
+                                </option>
+                            {/each}
+                        </select>
                         <MyInput type='text' bind:value={tableListCutiSearch.value}/>
                         <MyButton onclick={()=>tableListCutiSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableListCuti.invalidate()}><RefreshCw size={16}/></MyButton>
@@ -796,12 +880,13 @@
                         <Table>
                             <TableHead>
                                 <ThSort table={tableListCuti} field="name">Payroll</ThSort>
-                                <ThSort table={tableListCuti} field="name">Name</ThSort>
-                                <ThSort table={tableListCuti} field="date">Date</ThSort>
+                                <ThSort table={tableListCuti} field="name">Nama</ThSort>
+                                <ThSort table={tableListCuti} field="date">Tanggal</ThSort>
+                                <ThSort table={tableListCuti} field="type">Tipe</ThSort>
                                 <ThSort table={tableListCuti} field="approval_name">Approval</ThSort>
-                                <ThSort table={tableListCuti} field="description">Reason</ThSort>
+                                <ThSort table={tableListCuti} field="description">Alasan</ThSort>
                                 <ThSort table={tableListCuti} field="status">Status</ThSort>
-                                <!-- <ThSort table={tableListCuti} field="">#</ThSort> -->
+                                <ThSort table={tableListCuti} field="">#</ThSort>
                             </TableHead>
 
                             {#if tableListCuti.isLoading}
@@ -816,14 +901,16 @@
                                                 <TableBodyCell><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>{row.approval_name}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.status}</TableBodyCell>
-                                                <!-- <TableBodyCell>
-                                                    {#if row.payroll != user.payroll}
-                                                        <Button onclick={()=> handleApproveCuti(row.cuti_id, row.approval, 'Cancelled')} color='dark' class='p-2' pill><Ban size={14} /></Button>
+                                                <TableBodyCell>
+                                                    {#if row.attachment}
+                                                        <MyButton onclick={()=> showCutiAttachment(row.attachment)} color='dark' class='p-2' pill><Paperclip size={12} /></MyButton>
+                                                        <Tooltip class='z-10'>View Attachment</Tooltip>
                                                     {/if}
-                                                </TableBodyCell> -->
+                                                </TableBodyCell>
                                             </TableBodyRow>
                                         {/each}
                                     {:else}

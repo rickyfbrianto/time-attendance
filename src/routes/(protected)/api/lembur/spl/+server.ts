@@ -2,7 +2,7 @@ import { error, json } from "@sveltejs/kit";
 import { formatTanggalISO, pecahArray, prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 
 export async function GET({ url }) {
     const page = Number(url.searchParams.get('_page')) || 1
@@ -12,8 +12,9 @@ export async function GET({ url }) {
     const order = url.searchParams.get('_order') ?? "asc"
     const search = url.searchParams.get('_search') ?? ""
 
-    const dept = url.searchParams.get('dept') || ""
     const payroll = url.searchParams.get('payroll') || ""
+    const start_date = url.searchParams.get('start_date') || ""
+    const end_date = url.searchParams.get('end_date') || ""
 
     const status = await prisma.$transaction(async (tx) => {
         const items = await tx.$queryRawUnsafe(`
@@ -21,20 +22,20 @@ export async function GET({ url }) {
 			LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
             LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
             LEFT JOIN employee as approval2 ON approval2.payroll = s.approval2
-            WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ? OR s.est_end like ?) AND sd.payroll like ?
+            WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ?) AND sd.payroll like ? AND DATE(s.est_start) BETWEEN ? AND ?
             GROUP BY s.spl_id
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            `%${search.replace(/\//g, '_')}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${payroll}%`, limit, offset)
+            `%${search.replace(/\//g, '_')}%`, `%${search}%`, `%${search}%`, `%${payroll}%`, start_date, end_date, limit, offset)
 
         const [{ count }] = await tx.$queryRawUnsafe(`SELECT COUNT(*) as count FROM (
             SELECT s.spl_id FROM SPL as s
                 LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
                 LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
                 LEFT JOIN employee as approval2 ON approval2.payroll = s.approval2
-                WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ? OR s.est_end like ?) AND sd.payroll like ?
+                WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ?) AND sd.payroll like ? AND DATE(s.est_start) BETWEEN ? AND ?
                 GROUP BY s.spl_id
             ) as tmp;`,
-            `%${search.replace(/\//g, '_')}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${payroll}%`) as { count: number }[]
+            `%${search.replace(/\//g, '_')}%`, `%${search}%`, `%${search}%`, `%${payroll}%`, start_date, end_date) as { count: number }[]
 
         return { items, totalItems: Number(count) }
     })

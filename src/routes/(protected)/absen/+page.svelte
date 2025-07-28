@@ -128,7 +128,7 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full border-slate-300">        
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="Absent">
+        <TabItem open title="Absen">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                 {#if userProfile.level > 1}
                     <div class="flex flex-1 gap-2">
@@ -146,7 +146,7 @@
                                 onChange={() => tableAbsen.invalidate()}/>
                             
                             {#if formAbsen.payroll !== user?.payroll}
-                                <Button onclick={handleBackToMyAbsent}>Back to my absent</Button>
+                                <Button onclick={handleBackToMyAbsent}>Kembali ke attendance saya</Button>
                             {/if}
                         {/await}
                     </div>
@@ -162,7 +162,7 @@
                         <MyInput type='text' bind:value={tableAbsenSearch.value} onkeydown={(e: KeyboardEvent) => {
                             if(e.key.toLowerCase() === 'enter') tableAbsenSearch.set()
                         }}/>
-                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                        <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
                     </div>
                     <MyButton onclick={()=>tableAbsenSearch.set()} size='lg'><Search size={16} /></MyButton>
                     <MyButton onclick={async ()=> {
@@ -171,7 +171,7 @@
                     }} size='lg'><RefreshCw size={16}/></MyButton>
                 </div>
                 
-                <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                <span class='italic text-[.8rem] text-blue-400'>* Overtime dimulai setelah {setting?.overtime_allow} menit {setting?.overtime_round_up ? "(Round up)":""}</span>
                 <Datatable table={tableAbsen}>
                     <Table>
                         <TableHead>
@@ -251,7 +251,7 @@
             </div>
         </TabItem>
         {#if userProfile.level > 1}
-            <TabItem title="Departement">
+            <TabItem title="Departemen">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     {#if userProfile.user_hrd}
                         <div class="flex flex-1 gap-2">
@@ -275,7 +275,7 @@
                             <MyInput type='text' bind:value={tableAbsenDeptSearch.value} onkeydown={(e: KeyboardEvent) => {
                                 if(e.key.toLowerCase() === 'enter') tableAbsenDeptSearch.set()
                             }}/>
-                            <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                            <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
                         </div>
                         <MyButton onclick={()=>tableAbsenDeptSearch.set()} size='lg'><Search size={16} /></MyButton>
                         <MyButton onclick={async ()=> {
@@ -284,7 +284,7 @@
                         }} size='lg'><RefreshCw size={16}/></MyButton>
                     </div>
                     
-                    <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                    <span class='italic text-[.8rem] text-blue-400'>* Overtime dimulai setelah {setting?.overtime_allow} menit {setting?.overtime_round_up ? "(Round up)":""}</span>
                     <Datatable table={tableAbsenDept}>
                         <Table>
                             <TableHead>

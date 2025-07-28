@@ -705,12 +705,12 @@
                         <Table>
                             <TableHead>
                                 <ThSort table={tableSPPD} field="sppd_id">SPPD ID</ThSort>
-                                <ThSort table={tableSPPD} field="purpose">Purpose</ThSort>
-                                <ThSort table={tableSPPD} field="location">Location</ThSort>
-                                <ThSort table={tableSPPD} field="name">Name</ThSort>
-                                <ThSort table={tableSPPD} field="start_date">Start Date</ThSort>
-                                <ThSort table={tableSPPD} field="end_date">End Date</ThSort>
-                                <ThSort table={tableSPPD} field="duration">Duration</ThSort>
+                                <ThSort table={tableSPPD} field="purpose">Deskripsi</ThSort>
+                                <ThSort table={tableSPPD} field="location">Lokasi</ThSort>
+                                <ThSort table={tableSPPD} field="name">Nama</ThSort>
+                                <ThSort table={tableSPPD} field="start_date">Tanggal Mulai</ThSort>
+                                <ThSort table={tableSPPD} field="end_date">Tanggal Selesai</ThSort>
+                                <ThSort table={tableSPPD} field="duration">Durasi</ThSort>
                                 <ThSort table={tableSPPD} field="">#</ThSort>
                             </TableHead>
 
@@ -766,7 +766,7 @@
                 </div>
             </TabItem>
         {/if}
-        <TabItem open title="SKPD">
+        <TabItem title="SKPD">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
@@ -854,11 +854,11 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
-                            <ThSort table={tableSKPD} field="name">Name</ThSort>
-                            <ThSort table={tableSKPD} field="location">Location</ThSort>
-                            <ThSort table={tableSKPD} field="description">Description</ThSort>
-                            <ThSort table={tableSPPD} field="real_start">Start Date</ThSort>
-                            <ThSort table={tableSPPD} field="real_end">End Date</ThSort>
+                            <ThSort table={tableSKPD} field="name">Nama</ThSort>
+                            <ThSort table={tableSKPD} field="location">Lokasi</ThSort>
+                            <ThSort table={tableSKPD} field="description">Deskripsi</ThSort>
+                            <ThSort table={tableSPPD} field="real_start">Tanggal Mulai</ThSort>
+                            <ThSort table={tableSPPD} field="real_end">Tanggal Selesai</ThSort>
                             <ThSort table={tableSKPD} field="status">Status</ThSort>
                             <ThSort table={tableSKPD} field="">#</ThSort>
                         </TableHead>

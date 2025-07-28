@@ -10,7 +10,6 @@ export async function GET({ url }) {
         const order = url.searchParams.get('_order') || "desc"
         const search = url.searchParams.get('_search') || ""
 
-        // const dept = url.searchParams.get('dept') || ""
         const dept = url.searchParams.get('dept') || ""
         const payroll = url.searchParams.get('payroll') || ""
         const start_date = url.searchParams.get('start_date') || ""

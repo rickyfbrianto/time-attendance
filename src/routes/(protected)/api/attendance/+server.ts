@@ -119,7 +119,6 @@ export async function POST({ request, locals }) {
                             data.get('type'),
                             data.get('ijin_info'),
                             data.get('description'),
-                            // attachment ? attendance_id + extname(attachment.name) : null,
                             fileAttachment,
                             data.get('createdBy')
                         )

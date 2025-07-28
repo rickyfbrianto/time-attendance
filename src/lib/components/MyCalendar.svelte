@@ -9,6 +9,8 @@
     
     let {payroll} = $props()
     
+    let calendarEl = $state()
+    
     let plugins = [TimeGrid, dayGridPlugin, listPlugin];
     let opsiCalendar = $state({
         timeZone: 'UTC',
@@ -20,8 +22,9 @@
         headerToolbar:{
             start: 'refresh prev,today,next', center: 'title', end: 'listMonth,dayGridMonth,timeGridWeek,timeGridDay'
         },
+        locale: "id",
         titleFormat:{
-            year: 'numeric', month: 'long', day: 'numeric'
+            day: 'numeric', month: 'long', year: 'numeric',
         },
         customButtons:{
             refresh:{
@@ -51,11 +54,11 @@
     }
 </script>
 
-<div class="flex flex-col flex-1 gap-2 p-4 border-[var(--color-bgside)] border-[2px] rounded-lg">
+<div class="flex flex-col flex-1 gap-2 p-4 border-[var(--color-bgside)] border-[1px] rounded-lg">
     <span class="text-[1.5rem] font-bold">Calendar {payroll}</span>
     {#await getCalendar('')}
         <MyLoading message="Loading calendar data"/>
     {:then val}
-        <Calendar {plugins} options={opsiCalendar} />
+        <Calendar bind:this={calendarEl} {plugins} options={opsiCalendar} />
     {/await}
 </div>

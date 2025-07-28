@@ -20,7 +20,8 @@ export async function GET({ url }) {
         } else if (type == "user_for_ijin") {
             const req = await prisma.employee.findFirst({
                 select: {
-                    payroll: true, name: true,
+                    payroll: true,
+                    name: true,
                     employee_employee_approverToemployee: {
                         select: {
                             payroll: true, name: true,
@@ -30,20 +31,31 @@ export async function GET({ url }) {
                         }
                     },
                 },
-                where: { payroll: val }
+                where: {
+                    payroll: val,
+                    status: "Aktif"
+                }
             })
             return json(req)
         } else if (type == "user_for_lembur") {
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, employee.name, user_id_machine, department 
-                FROM employee 
-                LEFT JOIN profile on profile.profile_id = employee.profile_id
-                WHERE department LIKE ? && employee.overtime = true ORDER BY employee.name`, `%${val}%`)
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, e.name, user_id_machine, department 
+                FROM employee AS e
+                LEFT JOIN profile on profile.profile_id = e.profile_id
+                WHERE department LIKE ? && e.overtime = true AND e.status = 'Aktif'
+                ORDER BY e.name`, `%${val}%`)
             return json(req)
         } else if (type == "user_by_dept") {
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee WHERE department LIKE ? ORDER BY name`, `%${val}%`)
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT e.payroll, e.name, e.user_id_machine, e.department, p.user_hrd
+                FROM employee as e
+                LEFT JOIN profile p ON e.profile_id = p.profile_id
+                WHERE department LIKE ? AND e.status = 'Aktif'
+                ORDER BY name`,
+                `%${val}%`)
             return json(req)
         } else if (type == 'dept') {
-            const req = await prisma.$queryRawUnsafe(`SELECT * FROM DEPT WHERE dept_code LIKE ? ORDER BY dept_code`, `%${val}%`)
+            const req = await prisma.$queryRawUnsafe(`SELECT * FROM DEPT WHERE dept_code LIKE ? AND status = 'Aktif'
+                ORDER BY dept_code`, `%${val}%`)
             return json(req)
         } else if (type == "setting") {
             const req = await prisma.setting.findFirst()
@@ -130,7 +142,7 @@ export async function GET({ url }) {
                 const [getDataLibur] = await tx.$queryRawUnsafe(`
                     select e.name as Name,
                         sum(case when type = 'Dinas' then 1 else 0 end) AS 'Dinas',
-                        sum(case when type = 'Sakit' then 1 else 0 end) AS 'Sick',
+                        sum(case when type = 'Sakit' then 1 else 0 end) AS 'Sakit',
                         sum(case when type = 'Cuti Bersama' then 1 else 0 end) AS 'Cuti Bersama',
                         sum(case when type = 'Cuti Tahunan' then 1 else 0 end) AS 'Cuti Tahunan',
                         sum(case when type = 'Cuti Resmi' then 1 else 0 end) AS 'Cuti Resmi',
@@ -139,7 +151,7 @@ export async function GET({ url }) {
                     LEFT JOIN employee as e ON e.user_id_machine = a.user_id_machine
                     WHERE e.payroll = ? AND year(check_in) = ? AND month(check_in) <= ?`,
                     val, year, month
-                ) as { "Name": string, 'Dinas': string, 'Sick': string, 'Cuti Bersama': string, 'Cuti Tahunan': string, 'Cuti Resmi': string, 'Ijin Resmi': string }[]
+                ) as { "Name": string, 'Dinas': string, 'Sakit': string, 'Cuti Bersama': string, 'Cuti Tahunan': string, 'Cuti Resmi': string, 'Ijin Resmi': string }[]
 
                 const newData = Object.fromEntries(
                     Object.entries({ ...Hari_Kerja, ...Day_work, ...getDataLibur }).map(([key, value]) => ([key, typeof value == "string" ? value : Number(value)]))
@@ -246,7 +258,7 @@ export async function GET({ url }) {
                     getWorkday(e.user_id_machine, ?, ?) as 'Workday',
                     SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
                     SUM(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN 1 ELSE 0 END) as 'Late',
-                    IFNULL(ROUND(AVG(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN TIMESTAMPDIFF(MINUTE, TIME('08:00:00'), TIME(a.check_in)) END)), 0) AS 'Avg Telat',
+                    IFNULL(ROUND(AVG(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN TIMESTAMPDIFF(MINUTE, TIME('08:00:00'), TIME(a.check_in)) END)), 0) AS 'Avg Telat (Menit)',
                     SUM(CASE WHEN a.type IN ("HKM") THEN 1 ELSE 0 END) as 'Lupa Kartu',
                     SUM(CASE WHEN TIME(a.check_in) <> '00:00:00' AND TIME(a.check_out) = '00:00:00' THEN 1 ELSE 0 END) AS 'Check In No Out',
                     SUM(CASE WHEN TIME(a.check_in) = '00:00:00' AND TIME(a.check_out) <> '00:00:00' THEN 1 ELSE 0 END) AS 'Check Out No In',
@@ -278,6 +290,41 @@ export async function GET({ url }) {
                     ORDER BY e.name ASC`,
                     start_date, end_date, start_date, end_date, dept) as {}[]
                 return result
+            })
+            return json(req)
+        } else if (type == "get_notif") {
+            const req = await prisma.$transaction(async tx => {
+                const hasil = await prisma.$queryRawUnsafe(`
+                    SELECT c.createdAt AS waktu, 'cuti' AS link, CONCAT(e.name, " mengajukan cuti") as deskripsi
+                    FROM cuti AS c
+                    LEFT JOIN employee AS e ON e.payroll = c.payroll
+                    WHERE c.status = 'Waiting' AND c.approval = ?
+                    
+                    UNION ALL
+                    
+                    SELECT i.createdAt AS waktu, 'ijin' AS link, CONCAT(e.name, " mengajukan ijin ", i.description) as deskripsi
+                    FROM ijin AS i
+                    LEFT JOIN employee AS e ON e.payroll = i.payroll
+                    WHERE i.status = 'Waiting' AND i.approval = ?
+                    
+                    UNION ALL
+                    
+                    SELECT s.createdAt AS waktu, 'lembur' AS link, CONCAT("SPL ", s.purpose, " menunggu approval") as deskripsi
+                    FROM SPL AS s
+                    LEFT JOIN employee AS e ON e.payroll = s.approval1
+                    WHERE s.status1 = 'Waiting' AND s.approval1 = ?
+
+                    UNION ALL
+
+                    SELECT s.createdAt AS waktu, 'lembur' AS link, CONCAT("SRL dari SPL ", spl.purpose , " menunggu approval") as deskripsi
+                    FROM SRL AS s
+                    LEFT JOIN employee AS e ON e.payroll = s.approval1
+                    LEFT JOIN spl ON spl.spl_id = s.spl_id
+                    WHERE s.status1 = 'Waiting' AND s.approval1 = ?
+
+                    ORDER BY waktu DESC`,
+                    payroll, payroll, payroll, payroll) as {}[]
+                return hasil
             })
             return json(req)
         } else {

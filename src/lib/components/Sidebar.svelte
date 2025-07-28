@@ -1,12 +1,12 @@
 <script lang="ts">
-    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, IdCard, Award, Share2, Settings, Ban, Save } from '@lucide/svelte'
+    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, IdCard, Award, Share2, Settings, Ban, Save, CircleUserRound, Logs } from '@lucide/svelte'
     import usercowo from '$/lib/assets/user-man.svg'
     import { fade, fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, Alert } from 'flowbite-svelte';
+	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, Alert, FooterBrand } from 'flowbite-svelte';
     import {appstore } from '$/lib/store/appstore'
     import { page } from '$app/state';
-	import { pecahArray, formatTanggal } from '$/lib/utils';
+	import { pecahArray } from '$/lib/utils';
     import { invalidateAll } from '$app/navigation';
 	import axios from 'axios';
     import { fromZodError } from 'zod-validation-error';
@@ -14,8 +14,10 @@
 	import MyButton from './MyButton.svelte';
 	import MyInput from './MyInput.svelte';
 	import { format } from 'date-fns';
+    import { id } from 'date-fns/locale'
 	import MyImage from './MyImage.svelte';
 	import MyAlert from './MyAlert.svelte';
+	import MyClock from './MyClock.svelte';
 	
     let {data} = $props()
     let user = $derived(data.user) 
@@ -25,32 +27,21 @@
     $effect(()=> {
         pathname = page.url.pathname.split('/').filter(v => v)
     })
-        
-    // const linkSidebar = [
-    //     {type:"separator", title:"Core"},
-    //     {link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
-    //     {link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
-    //     {type:"separator", title:"Main"},
-    //     {link:"/absen", title:"Check In/Out", icon: Clock8},
-    //     {link:"/lembur", title:"Lembur", icon: Hourglass},
-    //     {link:"/dinas", title:"Dinas", icon: Plane},
-    //     {link:"/ijin", title:"Ijin", icon: TicketsPlane},
-    //     {link:"/cuti", title:"Cuti", icon: TicketsPlane},
-    // ]
+
     const linkSidebar = [
-        {type:"core", title:"Core", separator: true},
-        {type:"core", link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
-        {type:"core", link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
-        {type:"main", title:"Main", separator: true},
-        {type:"main", link:"/absen", title:"Check In/Out", icon: Clock8},
+        {type:"main", title:"Menu", separator: true},
+        {type:"main", link:"/dashboard", title:"Dashboard", icon: LayoutDashboard},
+        {type:"main", link:"/attendance", title:"Attendance", icon: GalleryHorizontalEnd},
+        {type:"main", link:"/absen", title:"Absen", icon: Clock8},
         {type:"main", link:"/lembur", title:"Lembur", icon: Hourglass},
         {type:"main", link:"/dinas", title:"Dinas", icon: Plane},
         {type:"main", link:"/ijin", title:"Ijin", icon: TicketsPlane},
         {type:"main", link:"/cuti", title:"Cuti", icon: TicketsPlane},
-        {type:"security", title:"Security", separator: true},
-        {type:"security", link:"/security", title:"Security", icon: ShieldUser},
+        {type:"other", title:"Other", separator: true},
+        {type:"other", link:"/security", title:"Security", icon: ShieldUser},
+        {type:"other", link:"/Logs", title:"Logs", icon: Logs},
         {type:"admin", title:"Admin", separator: true},
-        {type:"admin", link:"/admin", title:"Admin", icon: ShieldUser},
+        {type:"admin", link:"/admin", title:"Admin", icon: CircleUserRound},
     ]
     let defaultModal = $state(false)
 
@@ -64,8 +55,8 @@
             location: (()=> user.location)(),
             phone: (()=> user.phone)(),
             email:  (()=> user.email)(),
-            approver: (()=> user.employee_employee_approverToemployee.name)(),
-            substitute: (()=> user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name)(),
+            approver: (()=> user.employee_employee_approverToemployee?.name || "")(),
+            substitute: (()=> user.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.name || "")(),
             join_date: (()=> format(user.join_date, 'd MMMM yyyy'))(),
             signature: (()=> user.signature)(),
         },
@@ -151,35 +142,32 @@
             formUserState.loading = false
         }
     }
-
-    const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
-        return await req.json()
-    }
 </script>
 
 {#if $appstore.showSidebar}
     <div style="scrollbar-width: none;" transition:fly={{x: "-200px", easing: quadIn}} class="relative flex flex-col bg-bgside px-3 min-w-[16rem] w-[16rem] max-w-[16rem] text-textside overflow-y-scroll">
         <a class="sticky top-0 bg-bgside z-[10] flex items-center justify-center gap-3 py-[.6rem] text-textdark" href="/">
-            <Clock8 size={44}/>        
+            <div class="flex h-[4.5rem]">
+                <MyClock/>   
+            </div>
             <div class="flex flex-col">
-                <span class="text-[1.2rem] font-[700]">Time</span>
-                <span class="indent-6 mt-[-5px] text-[1.1rem]">Attendance</span>
+                <span class="text-[1.5rem] font-dancing font-[700] tracking-widest">Time</span>
+                <span class="indent-5 mt-[-5px] font-quicksand text-[1.25rem]">Attendance</span>
             </div>
         </a>
 
-        <div class="flex flex-col flex-1 gap-y-1">
+        <div class="flex flex-col flex-1 gap-y-[3px]">
             {#each linkSidebar as {link, title, icon: Icon, type, separator}}            
                 {#if type == "admin" && (pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R"))
-                    || ["core", "main"].includes(type) }                
+                    || ["core", "main", "other"].includes(type) }                
                     {#if separator}
                         <div class="flex justify-center bg-bgside2 text-textside px-3 py-[3px] rounded-lg mt-1 shadow-xl">
-                            <span class='text-muted font-bold italic text-[.7rem]'>{title}</span>
+                            <span class='text-muted font-bold font-quicksand text-[.75rem]'>{title}</span>
                         </div>
                     {:else}
-                        <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[6px] rounded-lg gap-3 shadow-lg`}>
+                        <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[4px] rounded-lg gap-3 shadow-lg`}>
                             <Icon size=14/>
-                            <span class={`text-[.75rem] font-bold `}>{title}</span>
+                            <span class={`text-[.75rem] font-bold font-quicksand`}>{title}</span>
                         </a>
                         <Tooltip class='z-10'>{title}</Tooltip>
                     {/if}
@@ -187,7 +175,7 @@
             {/each}
         </div>
 
-        <div class="relative flex flex-col mb-5 mt-12 bg-bgside2 py-5 px-3 rounded-xl shadow-xl">
+        <div class="relative flex flex-col mb-3 bg-bgside2 pt-5 pb-3 px-3 rounded-xl shadow-xl">
             <div class="relative flex self-center">
                 <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[7rem] h-[7rem] mb-2"/>
                 <Tooltip class='z-10'>{user.name}</Tooltip>
@@ -198,21 +186,20 @@
             <Badge class='bg-slate-200 text-slate-800 self-center py-1'>{user.email}</Badge>
             <Tooltip class='z-10'>{user.email}</Tooltip>
             <Hr hrClass="my-3 text-slate-300 h-[1.2px]"/>
-            <div class='flex flex-col gap-1 px-1'>
-                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
+            <div class='flex flex-col gap-1 px-1 justify-center'>
+                <span class="flex items-center gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
                 <Tooltip class='z-10'>{user.payroll}</Tooltip>
-                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
+                <span class="flex items-center gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
                 <Tooltip class='z-10'>{user.position}</Tooltip>
-                <span class="flex gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Share2 size={14}/>Profile ({userProfile?.name} - Level {userProfile?.level})</span>
+                <span class="flex items-center gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Share2 size={14}/>Profile ({userProfile?.name} - Level {userProfile?.level})</span>
                 <Tooltip class='z-10'>{userProfile.name}</Tooltip>
-                <!-- <span class="text-[12px] text-textdark">{user.position}</span>
-                <span class="text-[12px] text-textdark">Profile ({userProfile?.name} - Level {userProfile?.level}) </span> -->
-                <!-- <span class="text-[12px] text-textdark">{user.email}</span> -->
             </div>
 
+            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-2 font-quicksand text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
+
             {#if userProfile.user_hrd}
-                <div class="absolute h-[2.5rem] flex items-center top-[-2.5rem] left-[50%] translate-x-[-50%] bg-bgside2 px-4 rounded-t-xl">
-                    <span class='font-bold text-[.9rem]'>HRD User</span>
+                <div class="absolute h-[2rem] w-[4rem] flex items-center top-[-1.5rem] right-[0] rounded-t-lg bg-bgside2 px-4">
+                    <span class='font-bold text-[.75rem]'>HRD</span>
                 </div>
             {/if}
         </div>
@@ -231,7 +218,7 @@
                         <TimelineItem title={user.position} date="Position"/>
                         <TimelineItem title={user.location} date="Location"/>
                         <TimelineItem title={user.email} date="Email"/>
-                        <TimelineItem title={format(user.join_date, "d MMMM yyyy")} date="Join Date"/>
+                        <TimelineItem title={format(user.join_date, "d MMMM yyyy", {locale: id})} date="Join Date"/>
                     </Timeline>
                 </div>
             </div>

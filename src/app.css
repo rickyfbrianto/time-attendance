@@ -6,6 +6,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@font-face {
+    font-family: 'Quicksand';
+    src: url('/fonts/Quicksand-Regular.ttf');
+}
+
+@font-face {
+    font-family: 'Dancing Script';
+    src: url('/fonts/DancingScript-Regular.ttf');
+}
+
 @theme {
     --color-primary-50: #fff5f2;
     --color-primary-100: #fff1ee;
@@ -20,7 +30,8 @@
 
     --color-bgactive: #E7ECEF;
     --color-bgdark: #FFF;
-    --color-bgdark2: #F2F7F2;
+    /* --color-bgdark2: #FCFAF9; */
+    --color-bgdark2: #F7F9F9;
     --color-textdark: var(--color-slate-800);
     --color-textdark2: #0E273C;
     --color-bgside: var(--warna-base);
@@ -30,21 +41,21 @@
     --color-kuning: #F9DB6D;
     --color-hijau: #337357;
     --color-merah: #922D50;
-    /* --biru: #1098F7; */
     --color-biru: #2374AB;
+
+    --font-quicksand: Quicksand;
+    --font-dancing: "Dancing Script";
 }
 
-@layer theme {
-    .dark {
-        --color-bgactive: #656565;
-        --color-bgdark: #1F2421;
-        --color-bgdark2: #353531;
-        --color-textdark: #FFF;
-        --color-textdark2: #F0E7D8;
-        --color-bgside: #191919;
-        --color-bgside2: #353531;
-        --color-textside: var(--color-slate-300);
-    }
+.dark {
+    --color-bgactive: #656565;
+    --color-bgdark: #1F2421;
+    --color-bgdark2: #353531;
+    --color-textdark: #FFF;
+    --color-textdark2: #F0E7D8;
+    --color-bgside: #191919;
+    --color-bgside2: #353531;
+    --color-textside: var(--color-slate-300);
 }
 
 :root {

@@ -10,49 +10,49 @@ datasource db {
 }
 
 model employee {
-  payroll                                         String          @id @db.VarChar(8)
-  user_id_machine                                 String          @unique(map: "user_id_mesin") @db.VarChar(10)
-  profile_id                                      String?         @db.VarChar(50)
-  email                                           String          @unique(map: "Employee_Email_key") @db.VarChar(100)
-  name                                            String          @db.VarChar(250)
-  password                                        String          @db.VarChar(250)
-  position                                        String          @db.VarChar(100)
-  department                                      String?         @db.VarChar(6)
-  location                                        String          @db.VarChar(50)
-  phone                                           String          @db.VarChar(13)
+  payroll                                         String             @id @db.VarChar(8)
+  user_id_machine                                 String             @unique(map: "user_id_mesin") @db.VarChar(10)
+  profile_id                                      String?            @db.VarChar(50)
+  email                                           String             @unique(map: "Employee_Email_key") @db.VarChar(100)
+  name                                            String             @db.VarChar(250)
+  password                                        String             @db.VarChar(250)
+  position                                        String             @db.VarChar(100)
+  department                                      String?            @db.VarChar(6)
+  location                                        String             @db.VarChar(50)
+  phone                                           String             @db.VarChar(13)
   overtime                                        Boolean
-  workhour                                        Int             @default(8) @db.SmallInt
-  start_work                                      DateTime        @default(dbgenerated("('08:00:00')")) @db.Time(0)
-  approver                                        String?         @db.VarChar(8)
-  substitute                                      String?         @db.VarChar(8)
-  join_date                                       DateTime        @default(now()) @db.Date
-  signature                                       String          @db.VarChar(250)
-  user_security                                   Boolean
+  workhour                                        Int                @default(8) @db.SmallInt
+  start_work                                      DateTime           @default(dbgenerated("('08:00:00')")) @db.Time(0)
+  approver                                        String?            @db.VarChar(8)
+  substitute                                      String?            @db.VarChar(8)
+  join_date                                       DateTime           @default(now()) @db.Date
+  signature                                       String             @db.VarChar(250)
+  user_type                                       employee_user_type @default(Other)
   user_hod                                        Boolean
-  hostname                                        String          @db.VarChar(31)
-  status                                          employee_status @default(Aktif)
-  attendance_attendance_createdByToemployee       attendance[]    @relation("attendance_createdByToemployee")
-  attendance_attendance_user_id_machineToemployee attendance[]    @relation("attendance_user_id_machineToemployee")
+  hostname                                        String             @db.VarChar(31)
+  status                                          employee_status    @default(Aktif)
+  attendance_attendance_createdByToemployee       attendance[]       @relation("attendance_createdByToemployee")
+  attendance_attendance_user_id_machineToemployee attendance[]       @relation("attendance_user_id_machineToemployee")
   calendar                                        calendar[]
-  cuti_cuti_approvalToemployee                    cuti[]          @relation("cuti_approvalToemployee")
+  cuti_cuti_approvalToemployee                    cuti[]             @relation("cuti_approvalToemployee")
   cuti                                            cuti[]
-  profile                                         profile?        @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
-  employee_employee_approverToemployee            employee?       @relation("employee_approverToemployee", fields: [approver], references: [payroll])
-  other_employee_employee_approverToemployee      employee[]      @relation("employee_approverToemployee")
-  dept                                            dept?           @relation(fields: [department], references: [dept_code])
-  employee_employee_substituteToemployee          employee?       @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
-  other_employee_employee_substituteToemployee    employee[]      @relation("employee_substituteToemployee")
-  ijin_ijin_approvalToemployee                    ijin[]          @relation("ijin_approvalToemployee")
+  profile                                         profile?           @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  employee_employee_approverToemployee            employee?          @relation("employee_approverToemployee", fields: [approver], references: [payroll])
+  other_employee_employee_approverToemployee      employee[]         @relation("employee_approverToemployee")
+  dept                                            dept?              @relation(fields: [department], references: [dept_code])
+  employee_employee_substituteToemployee          employee?          @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
+  other_employee_employee_substituteToemployee    employee[]         @relation("employee_substituteToemployee")
+  ijin_ijin_approvalToemployee                    ijin[]             @relation("ijin_approvalToemployee")
   ijin                                            ijin[]
-  skpd_skpd_createdByToemployee                   skpd[]          @relation("skpd_createdByToemployee")
-  skpd_skpd_payrollToemployee                     skpd[]          @relation("skpd_payrollToemployee")
-  spl_spl_approval1Toemployee                     spl[]           @relation("spl_approval1Toemployee")
-  spl_spl_approval2Toemployee                     spl[]           @relation("spl_approval2Toemployee")
+  skpd_skpd_createdByToemployee                   skpd[]             @relation("skpd_createdByToemployee")
+  skpd_skpd_payrollToemployee                     skpd[]             @relation("skpd_payrollToemployee")
+  spl_spl_approval1Toemployee                     spl[]              @relation("spl_approval1Toemployee")
+  spl_spl_approval2Toemployee                     spl[]              @relation("spl_approval2Toemployee")
   spl_detail                                      spl_detail[]
   sppd                                            sppd[]
   sppd_detail                                     sppd_detail[]
-  srl_srl_approval1Toemployee                     srl[]           @relation("srl_approval1Toemployee")
-  srl_srl_approval2Toemployee                     srl[]           @relation("srl_approval2Toemployee")
+  srl_srl_approval1Toemployee                     srl[]              @relation("srl_approval1Toemployee")
+  srl_srl_approval2Toemployee                     srl[]              @relation("srl_approval2Toemployee")
   srl                                             srl[]
 
   @@index([profile_id], map: "Employee_profile_id_fkey")
@@ -245,6 +245,7 @@ model cuti {
   description                      String      @db.VarChar(255)
   date                             DateTime    @db.Date
   year                             Int         @db.SmallInt
+  attachment                       String      @db.Text
   status                           cuti_status
   approval                         String?     @db.VarChar(8)
   is_delegate                      Boolean
@@ -394,4 +395,11 @@ enum employee_status {
 enum profile_status {
   Aktif
   Nonaktif
+}
+
+enum employee_user_type {
+  Security
+  OB
+  Messenger
+  Other
 }

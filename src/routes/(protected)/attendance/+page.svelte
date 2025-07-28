@@ -9,7 +9,7 @@
 	import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
 	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference, hitungLate, formatLate } from '$/lib/utils';
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference, hitungLate, formatLate, dataTahun, dataBulan } from '$/lib/utils';
     import { format, set } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
@@ -39,17 +39,7 @@
         {value:"Dinas", title: "Dinas"},
         {value:"Sakit", title: "Sakit"},
     ]
-    
-    let dataTahun: {value: number, title: string}[] = []
-    let dataBulan: {value: number, title: string}[] = []
-    for(let a = 2020; a <= new Date().getFullYear() + 1; a++){
-        dataTahun.push({value: a, title: a.toString()})
-    }
-    
-    for(let a = 0; a < 12; a++){
-        dataBulan.push({value: Number(a), title: format(new Date(2000, a, 1), "MMMM")})
-    }
-    
+
     let headerData: {title:string, value:string, icon: any }[] = $state([])
     
     const listType = $derived.by(()=> {
@@ -57,7 +47,7 @@
             {value:"HKM", name:"Hari Kerja Manual"},
             {value:"Mangkir", name:"Mangkir"},
             {value:"Off", name:"Off Security"},
-            {value:"Sakit", name:"Sakit Berkepanjangan/Sakit Ringan"}
+            {value:"Sakit", name:"SAKIT"}
         ]
         // return temp.filter(v => v.value != (formAttendance.add ? "Mangkir" : "Sakit"))
         return temp.filter(v => formAttendance.add ? !["Mangkir","Off"].includes(v.value) : !["Sakit"].includes(v.value))
@@ -121,6 +111,7 @@
                 check_out: z.string().trim().min(1),
                 type: z.string().trim().min(1),
             })
+            
             const formData = new FormData()
             Object.entries(formAttendance.answer).forEach(val=>{
                 formData.append(val[0], val[1])
@@ -242,7 +233,7 @@
     let formLogAttendance = $state({
         attendance_id:"",
         year: new Date().getFullYear(),
-        month: new Date().getMonth(),
+        month: new Date().getMonth() + 1,
         type:"",
         error:"",
         success:"",
@@ -476,7 +467,7 @@
                                 <span class="text-[.75rem] font-medium">{modeAttendance.hari_kerja} Day Work, {modeAttendance.hari_weekend} Weekend</span>
                             </Alert>
                             <Tooltip>*{modeAttendance.hari_kerja} Day Work (Monday to Friday), {modeAttendance.hari_weekend} Weekend (Saturday to Sunday)</Tooltip>
-                            <MyButton className='flex items-center gap-2' onclick={()=> formAttendance.showCalendar = true}><Calendar size={16} /> Calendar</MyButton>
+                            <MyButton className='flex items-center gap-2' onclick={()=> formAttendance.showCalendar = true}><Calendar size={16} /> Kalender</MyButton>
                             {#if userProfile?.user_hrd}
                                 <MyButton className='flex items-center gap-2' onclick={handleReportAttendance}>
                                     <BookOpen size={16} />Report
@@ -518,7 +509,7 @@
                                 tableLogAttendance.invalidate()
                         }}/>
                         {#if modeAttendance.payroll !== user?.payroll}
-                            <Button onclick={handleBackToMyAttendance}>Back to my attendance</Button>
+                            <Button onclick={handleBackToMyAttendance}>Kembali ke attendance saya</Button>
                         {/if}
                     {/await}
                 </div>
@@ -528,7 +519,7 @@
         {#if modeAttendance.payroll}
             <Tabs contentClass='w-full' tabStyle="underline">
                 <!-- Attendance pribadi/orang lain -->
-                <TabItem open={modeAttendance.tabNo == 1} title={user?.payroll == modeAttendance.payroll ? "My Attendance": `Attendance ${modeAttendance.name}`} onclick={()=> modeAttendance.tabNo = 1} >
+                <TabItem open={modeAttendance.tabNo == 1} title={user?.payroll == modeAttendance.payroll ? "Attendance Saya": `Attendance ${modeAttendance.name}`} onclick={()=> modeAttendance.tabNo = 1} >
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
@@ -548,7 +539,7 @@
                                     <MyInput type='text' bind:value={tableAttendanceSearch.value} onkeydown={(e: KeyboardEvent)=> {
                                         if(e.key.toLowerCase() === 'enter') tableAttendanceSearch.set()
                                     }}/>
-                                    <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                    <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30" </span>
                                 </div>
                                 <MyButton className='p-3' onclick={()=>tableAttendanceSearch.set()}><Search size={16} /></MyButton>
                                 <MyButton className='p-3' onclick={async ()=>{
@@ -569,7 +560,7 @@
                             {/if} -->
                         </div>
                         
-                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                        <span class='italic text-[.8rem] text-blue-400'>* Overtime dimulai setelah {setting?.overtime_allow} menit {setting?.overtime_round_up ? "(Round up)":""}</span>
                         <Datatable table={tableAttendance}>
                             <Table divClass="w-auto">
                                 <TableHead>
@@ -673,7 +664,7 @@
                 </TabItem>
                 <!-- Attendance department -->
                 {#if userProfile.level > 1 || userProfile.user_hrd}
-                    <TabItem open={modeAttendance.tabNo == 2} title="Attendance Department" onclick={()=> modeAttendance.tabNo = 2} >
+                    <TabItem open={modeAttendance.tabNo == 2} title="Attendance Departemen" onclick={()=> modeAttendance.tabNo = 2} >
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                             <div class="flex flex-col gap-4">
                                 <div class="flex gap-2 items-start">
@@ -693,7 +684,7 @@
                                         <MyInput type='text' bind:value={tableAttendanceDeptSearch.value} onkeydown={e => {
                                             if(e.key.toLowerCase() === 'enter') tableAttendanceDeptSearch.set()
                                         }}/>
-                                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                        <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30" </span>
                                     </div>
                                     <MyButton className='p-3' onclick={()=>tableAttendanceDeptSearch.set()}><Search size={16} /></MyButton>
                                     <MyButton className='p-3' onclick={async ()=> {
@@ -714,7 +705,7 @@
                                 {/if}
                             </div>
                             
-                            <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                            <span class='italic text-[.8rem] text-blue-400'>* Overtime dimulai setelah {setting?.overtime_allow} menit {setting?.overtime_round_up ? "(Round up)":""}</span>
                             <Datatable table={tableAttendanceDept}>
                                 <Table>
                                     <TableHead>
@@ -820,9 +811,9 @@
                         </div>
                     </TabItem>
                 {/if}
-                <!-- Attendance Double -->
+                <!-- Attendance Duplikat -->
                 {#if userProfile.user_hrd}
-                    <TabItem open={modeAttendance.tabNo == 3} title="Attendance Double (Conflict)" onclick={()=> modeAttendance.tabNo = 3}>
+                    <TabItem open={modeAttendance.tabNo == 3} title="Attendance Duplikat" onclick={()=> modeAttendance.tabNo = 3}>
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                             <div class="flex flex-col gap-4">
                                 <div class="flex gap-2 items-start">
@@ -842,7 +833,7 @@
                                         <MyInput type='text' bind:value={tableListAttendanceSearch.value} onkeydown={e => {
                                             if(e.key.toLowerCase() === 'enter') tableListAttendanceSearch.set()
                                         }}/>
-                                        <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                        <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
                                     </div>
                                     <MyButton className='p-3' onclick={()=>tableListAttendanceSearch.set()}><Search size={16} /></MyButton>
                                     <MyButton className='p-3' onclick={async ()=> {
@@ -852,7 +843,7 @@
                                 </div>
                             </div>
                             
-                            <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                            <span class='italic text-[.8rem] text-blue-400'>* Overtime dimulai setelah {setting?.overtime_allow} menit {setting?.overtime_round_up ? "(Round up)":""}</span>
                             <Datatable table={tableListAttendance}>
                                 <Table>
                                     <TableHead>
@@ -967,7 +958,7 @@
                                     <MyInput type='text' bind:value={tableLogAttendanceSearch.value} onkeydown={e => {
                                         if(e.key.toLowerCase() === 'enter') tableLogAttendanceSearch.set()
                                     }}/>
-                                    <span class="italic text-[.8rem]">For date must be following format example "2025-12-30" </span>
+                                    <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
                                 </div>
                                 <MyButton className='p-3' onclick={()=>tableLogAttendanceSearch.set()}><Search size={16} /></MyButton>
                                 <MyButton className='p-3' onclick={async ()=>{
@@ -988,15 +979,15 @@
                                 <select bind:value={formLogAttendance.month} onchange={()=> tableLogAttendance.invalidate()}>
                                     {#each dataBulan as {title, value}}
                                         <option value={value}>
-                                            {title} {value.toString() == format(modeAttendance.periode.start, "M") ? "(Select)" : null}
-                                            {value.toString() == (new Date().getMonth()).toString() ? "(Now)" : null}
+                                            {title} {value == Number(format(modeAttendance.periode.end, "M")) - 1 ? "(Select)" : null}
+                                            {value == new Date().getMonth() + 1 ? "(Now)" : null}
                                         </option>
                                     {/each}
                                 </select>
                             </div>
                         </div>
-                        
-                        <span class='italic text-[.8rem] text-blue-400'>* Overtime start from {setting?.overtime_allow} minute {setting?.overtime_round_up ? "(Round up)":""}</span>
+                                                
+                        <span class='italic text-[.8rem] text-blue-400'>* Overtime dimulai setelah {setting?.overtime_allow} menit {setting?.overtime_round_up ? "(Round up)":""}</span>
                         <Datatable table={tableLogAttendance}>
                             <Table>
                                 <TableHead>
@@ -1157,7 +1148,6 @@
         <div class="flex flex-col gap-6 overflow-hidden max-h-[80vh]">
             <h3>Attachment</h3>
             <MyImage src={import.meta.env.VITE_VIEW_ATTANDANCE+formAttendance.attachment}/>
-            <!-- <img src={import.meta.env.VITE_VIEW_ATTANDANCE+formAttendance.attachment} class='' alt="Preview attachment" title='Preview attachment'> -->
         </div>
         <svelte:fragment slot="footer">
             <Button color='red' onclick={() => formAttendance.modalAttachment = false}>Tutup</Button>
@@ -1248,8 +1238,8 @@
                                 <Label>Information</Label>
                                 <div class="flex gap-4 border-[2px] border-slate-200 p-2 rounded-lg">
                                     <Radio value="" bind:group={formAttendance.answer.ijin_info}>None</Radio>
-                                    <Radio value="Permit" bind:group={formAttendance.answer.ijin_info}>Permit</Radio>
-                                    <Radio value="Sick" bind:group={formAttendance.answer.ijin_info}>Sick</Radio>
+                                    <Radio value="Permit" bind:group={formAttendance.answer.ijin_info}>Ijin</Radio>
+                                    <Radio value="Sick" bind:group={formAttendance.answer.ijin_info}>Sakit</Radio>
                                 </div>
                             </div>
                             

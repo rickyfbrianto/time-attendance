@@ -259,7 +259,7 @@
                                     <MyChart chartData={handleFilterChart(val, "Late", "Late")?.data} chartOptions={handleFilterChart(val, "Late", "Late (Days)")?.option} type={"bar"} chartClass='max-h-[20rem]' />
                                 </div>
                                 <div class="flex flex-1 border-[var(--color-bgside)] border rounded-lg p-4">
-                                    <MyChart chartData={handleFilterChart(val, "Avg Telat", "Avg Minutes Telat")?.data} chartOptions={handleFilterChart(val, "Avg Telat", "Avg Minutes Telat (Minutes)")?.option} type={"bar"} chartClass='max-h-[20rem]' />
+                                    <MyChart chartData={handleFilterChart(val, "Avg Telat (Menit)", "Avg Minutes Telat")?.data} chartOptions={handleFilterChart(val, "Avg Telat", "Avg Minutes Telat (Minutes)")?.option} type={"bar"} chartClass='max-h-[20rem]' />
                                 </div>  
                             </div>
                         </div>

@@ -6,9 +6,8 @@
     import {appstore } from '$/lib/store/appstore'
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
-	import Footer from '@/Footer.svelte';
 
-    let {children, data} :LayoutProps = $props()
+    let {children, data } :LayoutProps = $props()
     
     $effect(()=>{
         if(localStorage.getItem('appstore')){
@@ -26,16 +25,16 @@
 
 <svelte:window bind:innerWidth={$appstore.appWidth}/>
 
-<div class="relative flex h-screen bg-bgdark overflow-hidden">
+<div class="relative flex h-screen bg-bgdark">
     <Sidebar {data}/>
     <div class="flex flex-col flex-1">
-        <Header/>
+        <Header {data} notif={data.notif}/>
         <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll bg-bgdark text-textdark">
             <div style="scrollbar-width: none;" class="overflow-scroll h-full">
                 {@render children()}
             </div>
         </div>
-        <Footer/>
+        <!-- <Footer/> -->
     </div>
 </div>
 
