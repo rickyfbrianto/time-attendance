@@ -1,6 +1,5 @@
 <script lang='ts'>
     import classNames from 'classnames'
-    import { Tooltip } from 'flowbite-svelte'
     let {children, italic = false, bold = false, underline = false, border = false, onclick= ()=> {}, size = "sm", color = "default", className = ""}: 
     {children: any, italic?: boolean, bold?: boolean, underline?: boolean, border?: boolean, onclick?: ()=> void, size?: "sm"|"md"|"lg", color?: "red"|"blue"|"green"|"yellow"|"dark"|"default", className?: string} = $props()
     const myClass = classNames(`flex gap-1 items-center px-2 rounded-xl py-[2px] text-[.7rem] min-w-fit

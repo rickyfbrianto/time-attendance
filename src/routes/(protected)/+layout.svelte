@@ -6,6 +6,7 @@
     import {appstore } from '$/lib/store/appstore'
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
+    import 'balloon-css';
 
     let {children, data } :LayoutProps = $props()
     

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {fade} from 'svelte/transition'
+    import {fade, slide} from 'svelte/transition'
     import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Modal, Timeline, TimelineItem, Badge, Button, Tooltip } from 'flowbite-svelte';
 	import {Calendar, Ban, Check, Search, RefreshCw, Pencil, Trash, Plus, Save, X, Highlighter } from '@lucide/svelte'
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
@@ -7,13 +7,14 @@
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, generatePeriode, pecahArray, getParams, dataTahun, dataBulan, namaHari } from '$/lib/utils.js';
+	import { formatTanggal, generatePeriode, pecahArray, getParams, dataTahun, dataBulan, namaHari, capitalEachWord } from '$/lib/utils.js';
     import { differenceInDays, eachDayOfInterval, format, getDay, getYear, set } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
 	import Svelecte from 'svelecte';
     import MyPagination from '@/MyPagination.svelte';
+    import MyDatePicker from '@/MyDatePicker.svelte';
     import MyAlert from '@/MyAlert.svelte';
 
     const rowsPerPage = 10
@@ -24,8 +25,6 @@
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
 
     const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
-    // (khitan/baptis,haji,nikah
-
     const typeList = $derived.by(()=> {
         const temp = [
                 {value: 'Pernikahan', hari: 1},
@@ -38,11 +37,10 @@
                 {value: 'Ibadah Haji', hari: 1},
                 {value: 'Other', hari: 1},
             ]
-        return userProfile.user_hrd ? temp : temp.filter(v => v.value !== 'Other')
+        return userProfile.user_type == 'HR' ? temp : temp.filter(v => v.value !== 'Other')
     })
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
-    
     let modalHeader = $state({
         modal:false,
         val:""
@@ -54,7 +52,17 @@
             modalHeader.val = title
         }
     }
-        
+
+    let modeIjin = $state({
+        modalAttachment: false,
+        attachment: "",
+        periode: {
+            start: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start)(),
+            end: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end)(),
+        },
+        tabNo: 1
+    })
+    
     // Table Ijin
     let tableIjin = $state(new TableHandler([], {rowsPerPage}))
     let tableIjinSearch = tableIjin.createSearch()
@@ -62,23 +70,23 @@
     let formIjinAnswer = {
         answer:{
             ijin_id: "id",
-            name: "",
+            payroll: (() => user?.payroll)(),
+            name: (() => user?.name)(),
             type:"",
             description: "",
             date: "",
             status: "Waiting",
             askDuration:0,
-            payroll: (() => user?.payroll)(),
             dept: (()=> user?.department)(),
-            user_hrd: (()=> userProfile?.user_hrd)(),
-            approval: (() => user?.approver || null)(),
-            user_approval: (()=> user?.employee_employee_approverToemployee?.payroll || null)(),
-            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)()
+            user_hrd: (()=> user?.user_type == 'HR')(),
+            approval: (()=> user?.employee_employee_approverToemployee?.payroll || null)(),
+            user_approval_name: "",
+            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)(),
+            user_delegate_name: ""
         },
-        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
-        payroll: (()=> user?.payroll)(),
+        dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         year: new Date().getFullYear(),
-        month: new Date().getMonth() + 1,
+        month: new Date().getMonth(),
         autoWeekend: false,
         success:"",
         error:"",
@@ -89,19 +97,7 @@
     }
 
     let formIjin = $state({...formIjinAnswer})
-    
-    let modeIjin = $state({
-        modalAttachment: false,
-        attachment: "",
-        payroll: formIjinAnswer.payroll,
-        name: "",
-        periode: {
-            start: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start)(),
-            end: (()=> generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end)(),
-        },
-        tabNo: 1
-    })
-    
+
     const formIjinSubmit = async () =>{
         try {
             formIjin.loading = true
@@ -110,6 +106,7 @@
                 type: z.string().trim().min(1),
                 description: z.string().trim().min(5),
                 approval: z.string().trim().min(1),
+                user_delegate: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formIjin.answer)
             if(isValid.success){
@@ -117,6 +114,7 @@
                 const res = await req.data
                 formIjinBatal()
                 tableIjin.invalidate()
+                formIjin.error = ""
                 formIjin.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
@@ -217,7 +215,7 @@
             formApprovalIjin.answer.status = status
             const req = await axios.post('/api/ijin/approve', formApprovalIjin.answer)
             const res = await req.data
-            if(userProfile.user_hrd) tableListIjin.invalidate()
+            if(user.user_type == 'HR') tableListIjin.invalidate()
             tableApprovalIjin.invalidate()
             formApprovalIjin.error = ""
             formApprovalIjin.success = res.message
@@ -275,11 +273,13 @@
         const res = await req.json()
         if(res){
             formIjin.answer.name = res.name
-            formIjin.answer.approval = res.employee_employee_approverToemployee.payroll
-            formIjin.answer.user_approval = res.employee_employee_approverToemployee.name
-            formIjin.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
+
+            formIjin.answer.approval = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.payroll : ""
+            formIjin.answer.user_approval_name = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.name : ""
+
+            formIjin.answer.user_delegate = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || ""
+            formIjin.answer.user_delegate_name = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.name || ""
         }
-        // return await res
     }
     
     $effect(()=>{
@@ -299,7 +299,7 @@
     $effect(()=>{
         tableIjin.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${modeIjin.payroll}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
+                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${user.payroll}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -309,10 +309,10 @@
             }
         })
 
-        if (userProfile.level > 1){
+        if (user.level > 1){
             tableApprovalIjin.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/ijin/approve?${getParams(state)}&payroll=${user?.payroll}&dept=${user?.department}`)
+                    const req = await fetch(`/api/ijin/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -323,7 +323,7 @@
             })
         }
 
-        if (userProfile.user_hrd){
+        if (user.user_type == 'HR'){
             tableListIjin.load(async (state:State) =>{
                 try {
                     const req = await fetch(`/api/ijin/list?${getParams(state)}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
@@ -350,9 +350,9 @@
     
     setTimeout(()=>{
         tableIjin.invalidate()
-        if (userProfile.level > 1)
+        if (user.level > 1)
             tableApprovalIjin.invalidate()
-        if (userProfile.user_hrd)
+        if (user.user_type == 'HR')
             tableListIjin.invalidate()
     }, 1000)
 </script>
@@ -443,7 +443,7 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title={`${modeIjin.payroll == user.payroll ? "Ijin Saya": "Ijin " + modeIjin.name}`} onclick={() => modeIjin.tabNo = 1}>
+        <TabItem open title={`Ijin Saya`} onclick={() => modeIjin.tabNo = 1}>
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formIjin.modalDelete}
                     <MyLoading message="Deleting data"/>
@@ -470,21 +470,6 @@
                             }}><Plus size={16}/></MyButton>
                         {/if}
                     {/if}
-
-                    {#if (userProfile?.user_hrd || userProfile?.level > 1)}
-                        <div class="flex flex-1 gap-2">
-                            {#await getUser(formIjin.dept)}
-                                <MyLoading message="Loading data"/>
-                            {:then val}
-                                <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeIjin.payroll}
-                                    options={val.map((v:any) => ({value: v.payroll, name: v.name, text:v.payroll + " - " + v.name}))}
-                                    onChange={(e) => {
-                                        modeIjin.name = e.name
-                                        tableIjin.invalidate()
-                                }}/>
-                            {/await}
-                        </div>
-                    {/if}
                 </div>
 
                 {#if formIjin.loading}
@@ -502,8 +487,8 @@
                                 {:then val}
                                     <div class="flex flex-col justify-start gap-2">
                                         <Label>Payroll</Label>
-                                        <Svelecte class='border-none' disabled={userProfile.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formIjin.answer.payroll} 
-                                        options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                        <Svelecte class='border-none' disabled={user.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formIjin.answer.payroll} 
+                                        options={[...val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))]}
                                         onChange={(e) => fillIjin(e.value)}/>
                                     </div>
                                 {/await}
@@ -511,38 +496,45 @@
                                 <MyInput type='text' title='Payroll' disabled value={formIjin.answer.payroll}/>
                             {/if}
                             
-                            <!-- <MyInput type='text' title='Payroll' disabled value={user.payroll}/> -->
-                            <MyInput type='text' title='Name' disabled value={user.name}/>
-                            <MyInput type='text' title='Approval' disabled value={user.employee_employee_approverToemployee.name}/>
-                            <MyInput type='text' title='Substitute' disabled value={user.employee_employee_approverToemployee.employee_employee_substituteToemployee.name}/>
+                            <MyInput type='text' title='Name' disabled value={formIjin.answer.name}/>
+                            <MyInput type='text' title='Approval' disabled value={formIjin.answer.user_approval_name}/>
+                            <MyInput type='text' title='Substitute' disabled value={formIjin.answer.user_delegate_name}/>
 
                             <div class="flex flex-col gap-2">
-                                {#if formIjin.add}
-                                    <div class="flex flex-col">
-                                        <MyInput type='daterange' title='Date' name="date" bind:value={formIjin.answer.date}/>
-                                        {#if formIjin.answer.askDuration > 0}
-                                            <span class='italic'>Duration {formIjin.answer.askDuration} days</span>
-                                        {/if}
-                                    </div>
-                                {:else if formIjin.edit}
-                                    <MyInput type='date' disabled={formIjin.edit} title='Date' name="date" bind:value={formIjin.answer.date}/>
-                                {/if}
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <Svelecte class='border-none' optionClass='p-2' name='payroll' required selectOnTab multiple={false} bind:value={formIjin.answer.type} 
                                         options={typeList.map((v) => ({value: v.value, text: v.value + " - " + v.hari + " days"}))}/>
                                 </div>
+                                {#if formIjin.answer.type}
+                                    <div in:slide out:slide={{duration:1000}}>
+                                        {#if formIjin.add}
+                                            <div class="flex flex-col">
+                                                <div class="flex flex-col gap-2 flex-1">
+                                                    <Label>Date</Label>
+                                                    <MyDatePicker bind:value={formIjin.answer.date} mode='range'/>
+                                                </div>                 
+        
+                                                {#if formIjin.answer.askDuration > 0}
+                                                    <span class='italic'>Durasi {formIjin.answer.askDuration} hari</span>
+                                                {/if}
+                                            </div>
+                                        {:else if formIjin.edit}
+                                            <MyInput type='date' disabled={formIjin.edit} title='Date' name="date" bind:value={formIjin.answer.date}/>
+                                        {/if}
+                                    </div>
+                                {/if}
                             </div>
                             <div class="flex flex-col self-start">
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formIjin.answer.description}/>
-                                <span class='text-[.9rem] italic'>Description min 5 character</span>
+                                <span class='text-[.9rem] italic'>Deskripsi minimal 5 karakter</span>
                             </div>
                         </div>
                         <div class="flex flex-col">
-                            {#if userProfile.user_hrd}
-                                <span class='text-[.8rem] italic'>*If you are HRD user then ijin will automatically granted as approved</span>
+                            {#if user.user_type == 'HR'}
+                                <span class='text-[.8rem] italic'>*Jika yang buat ijin adalah HRD, maka status otomatis di approved</span>
                             {/if}
-                            <span class='text-[.8rem] italic'>*You can insert ijin if there is no applicant with same date and status is not same as "Waiting" and "Approved"</span>
+                            <span class='text-[.8rem] italic'>*Kamu dapat mengajukan ijin jika tidak ada pengajuan di tanggal yang sama dan status tidak ada yang "Waiting" atau "Approved"</span>
                         </div>
                     </form>
                 {/if}
@@ -562,7 +554,7 @@
                     <select bind:value={formIjin.month} onchange={()=> tableIjin.invalidate()}>
                         {#each dataBulan as {title, value}}
                             <option value={value}>
-                                {title} {value == Number(format(modeIjin.periode.start, "M")) ? "(Select)" : null}
+                                {title} {value == Number(format(modeIjin.periode.end, "M")) - 1? "(Select)" : null}
                             </option>
                         {/each}
                     </select>
@@ -592,14 +584,14 @@
                                 {#if tableIjin.rows.length > 0}
                                     {#each tableIjin.rows as row:any}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date")}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex flex-col">
-                                                    {row.approval_name}
+                                                    {capitalEachWord(row.approval_name)}
                                                     {#if row.is_delegate}
                                                         <Badge class='self-start' color='indigo'>Delegate</Badge>
                                                     {/if}
@@ -609,18 +601,15 @@
                                                 {#if !formIjin.edit}
                                                     {#if pecahArray(userProfile.access_ijin, "U") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>
-                                                        <Tooltip class='z-10'>Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_ijin, "D") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> {
                                                             formIjin.modalDelete = true
                                                             formIjin.answer.ijin_id = row.ijin_id
                                                         }}><Trash size={12} /></MyButton>
-                                                        <Tooltip class='z-10'>Hapus</Tooltip>
                                                     {/if}
                                                     {#if row.status == "Waiting" && !row.is_delegate}
                                                         <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <Highlighter size={12}/> </MyButton>
-                                                        <Tooltip class='z-10'>Delegate</Tooltip>
                                                     {/if}
                                                 {/if}
                                             </TableBodyCell>
@@ -638,7 +627,7 @@
                 </Datatable>
             </div>
         </TabItem>
-        {#if userProfile.level > 1}
+        {#if user.level > 1}
             <TabItem title="Approval Ijin" onclick={() => modeIjin.tabNo = 2}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formApprovalIjin.error}
@@ -677,7 +666,7 @@
                                         {#each tableApprovalIjin.rows as row}
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                                 <TableBodyCell>
@@ -701,8 +690,8 @@
                 </div>
             </TabItem>
         {/if}
-        {#if userProfile?.user_hrd}
-            <TabItem title="Daftar Ijin" onclick={() => modeIjin.tabNo = 3}>
+        {#if user.user_type == 'HR'}
+            <TabItem title={"Daftar Ijin"} onclick={() => modeIjin.tabNo = 3}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formListIjin.error}
                         {#each formListIjin.error.split(';') as v}
@@ -716,6 +705,21 @@
                         <MyLoading message="Load cuti data"/>
                     {/if}
 
+                    <!-- {#if (user?.user_type == 'HR' || user.level > 1)}
+                        <div class="flex flex-1 gap-2">
+                            {#await getUser(formIjin.dept)}
+                                <MyLoading message="Loading data"/>
+                            {:then val}
+                                <Svelecte class='border-none' optionClass='p-2' name='payroll' searchable selectOnTab multiple={false} bind:value={formListIjin.payroll}
+                                    options={val.map((v:any) => ({value: v.payroll, name: v.name, text:v.payroll + " - " + v.name}))}
+                                    onChange={(e) => {
+                                        modeIjin.name = e.name
+                                        tableListIjin.invalidate()
+                                }}/>
+                            {/await}
+                        </div>
+                    {/if} -->
+                    
                     <div class="flex gap-2">
                         <select bind:value={tableListIjin.rowsPerPage} onchange={() => tableListIjin.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
@@ -762,11 +766,11 @@
                                     {#if tableListIjin.rows.length > 0}
                                         {#each tableListIjin.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell tdClass='break-all font-medium'><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.approval_name}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.approval_name)}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{row.type + " (" + row.description + ")"}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                                 <!-- <TableBodyCell>
                                                     {#if row.payroll != user.payroll}
@@ -790,4 +794,3 @@
         {/if}
     </Tabs>
 </main>
-

@@ -9,92 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model employee {
-  payroll                                         String             @id @db.VarChar(8)
-  user_id_machine                                 String             @unique(map: "user_id_mesin") @db.VarChar(10)
-  profile_id                                      String?            @db.VarChar(50)
-  email                                           String             @unique(map: "Employee_Email_key") @db.VarChar(100)
-  name                                            String             @db.VarChar(250)
-  password                                        String             @db.VarChar(250)
-  position                                        String             @db.VarChar(100)
-  department                                      String?            @db.VarChar(6)
-  location                                        String             @db.VarChar(50)
-  phone                                           String             @db.VarChar(13)
-  overtime                                        Boolean
-  workhour                                        Int                @default(8) @db.SmallInt
-  start_work                                      DateTime           @default(dbgenerated("('08:00:00')")) @db.Time(0)
-  approver                                        String?            @db.VarChar(8)
-  substitute                                      String?            @db.VarChar(8)
-  join_date                                       DateTime           @default(now()) @db.Date
-  signature                                       String             @db.VarChar(250)
-  user_type                                       employee_user_type @default(Other)
-  user_hod                                        Boolean
-  hostname                                        String             @db.VarChar(31)
-  status                                          employee_status    @default(Aktif)
-  attendance_attendance_createdByToemployee       attendance[]       @relation("attendance_createdByToemployee")
-  attendance_attendance_user_id_machineToemployee attendance[]       @relation("attendance_user_id_machineToemployee")
-  calendar                                        calendar[]
-  cuti_cuti_approvalToemployee                    cuti[]             @relation("cuti_approvalToemployee")
-  cuti                                            cuti[]
-  profile                                         profile?           @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
-  employee_employee_approverToemployee            employee?          @relation("employee_approverToemployee", fields: [approver], references: [payroll])
-  other_employee_employee_approverToemployee      employee[]         @relation("employee_approverToemployee")
-  dept                                            dept?              @relation(fields: [department], references: [dept_code])
-  employee_employee_substituteToemployee          employee?          @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
-  other_employee_employee_substituteToemployee    employee[]         @relation("employee_substituteToemployee")
-  ijin_ijin_approvalToemployee                    ijin[]             @relation("ijin_approvalToemployee")
-  ijin                                            ijin[]
-  skpd_skpd_createdByToemployee                   skpd[]             @relation("skpd_createdByToemployee")
-  skpd_skpd_payrollToemployee                     skpd[]             @relation("skpd_payrollToemployee")
-  spl_spl_approval1Toemployee                     spl[]              @relation("spl_approval1Toemployee")
-  spl_spl_approval2Toemployee                     spl[]              @relation("spl_approval2Toemployee")
-  spl_detail                                      spl_detail[]
-  sppd                                            sppd[]
-  sppd_detail                                     sppd_detail[]
-  srl_srl_approval1Toemployee                     srl[]              @relation("srl_approval1Toemployee")
-  srl_srl_approval2Toemployee                     srl[]              @relation("srl_approval2Toemployee")
-  srl                                             srl[]
-
-  @@index([profile_id], map: "Employee_profile_id_fkey")
-  @@index([department], map: "employee_department_fkey")
-  @@index([approver], map: "approver")
-  @@index([substitute], map: "substitute")
-  @@fulltext([payroll, user_id_machine, profile_id, email, name, position, department, location, phone], map: "payroll")
-}
-
-model profile {
-  profile_id        String         @id @db.VarChar(50)
-  name              String         @db.VarChar(100)
-  description       String         @db.VarChar(255)
-  level             Int            @db.TinyInt
-  user_hrd          Boolean
-  access_sppd       String         @db.VarChar(4)
-  access_skpd       String         @db.VarChar(4)
-  access_attendance String         @db.VarChar(4)
-  access_spl        String         @db.VarChar(4)
-  access_srl        String         @db.VarChar(4)
-  access_cuti       String         @db.VarChar(4)
-  access_ijin       String         @db.VarChar(4)
-  access_calendar   String         @db.VarChar(4)
-  access_user       String         @db.VarChar(4)
-  access_profile    String         @db.VarChar(4)
-  access_dept       String         @db.VarChar(4)
-  access_setting    String         @db.VarChar(4)
-  status            profile_status
-  employee          employee[]
-}
-
-model check_io {
-  check_io_id     String   @id @db.VarChar(40)
-  user_id_machine String   @db.VarChar(6)
-  datetime        DateTime @db.DateTime(0)
-  type            String   @db.VarChar(50)
-  transfer_status Boolean? @default(false)
-  machine_no      Int?     @default(6)
-
-  @@index([user_id_machine], map: "user_id_mesin")
-}
-
 model attendance {
   attendance_id                                 String    @id @db.VarChar(40)
   user_id_machine                               String?   @db.VarChar(6)
@@ -112,22 +26,12 @@ model attendance {
   employee_attendance_createdByToemployee       employee? @relation("attendance_createdByToemployee", fields: [createdBy], references: [payroll], map: "Attendance_created_by_fkey")
   employee_attendance_user_id_machineToemployee employee? @relation("attendance_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], onDelete: Cascade, map: "Attendance_user_id_machine_fkey")
 
-  @@index([createdBy], map: "createdBy")
-  @@index([user_id_machine], map: "user_id_mesin")
   @@index([check_in], map: "check_in")
   @@index([check_in2], map: "check_in2")
   @@index([check_out], map: "check_out")
   @@index([check_out2], map: "check_out2")
+  @@index([createdBy], map: "createdBy")
   @@index([type], map: "type")
-}
-
-model temp_check_io {
-  check_io_id     String   @id @db.VarChar(40)
-  user_id_machine String   @db.VarChar(6)
-  datetime        DateTime @db.DateTime(0)
-  type            String   @db.VarChar(50)
-  machine_no      Int?     @default(6)
-
   @@index([user_id_machine], map: "user_id_mesin")
 }
 
@@ -143,98 +47,15 @@ model calendar {
   @@index([createdBy], map: "createdBy")
 }
 
-model setting {
-  setting_id        String  @id @db.VarChar(40)
-  start_periode     Int     @default(17) @db.TinyInt
-  end_periode       Int     @default(16) @db.TinyInt
-  late_dispen       Int     @default(15) @db.TinyInt
-  overtime_allow    Int     @default(30) @db.TinyInt
-  overtime_round_up Boolean
-}
+model check_io {
+  check_io_id     String   @id @db.VarChar(40)
+  user_id_machine String   @db.VarChar(6)
+  datetime        DateTime @db.DateTime(0)
+  type            String   @db.VarChar(50)
+  transfer_status Boolean? @default(false)
+  machine_no      Int?     @default(6)
 
-model spl {
-  spl_id                           String       @id @db.VarChar(40)
-  purpose                          String       @db.VarChar(255)
-  dept                             String?      @db.VarChar(6)
-  est_start                        DateTime     @db.DateTime(0)
-  est_end                          DateTime     @db.DateTime(0)
-  status1                          spl_status1  @default(Waiting)
-  approval1                        String?      @db.VarChar(8)
-  status2                          spl_status2  @default(Waiting)
-  approval2                        String?      @db.VarChar(8)
-  createdAt                        DateTime     @default(now()) @db.DateTime(0)
-  employee_spl_approval1Toemployee employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
-  employee_spl_approval2Toemployee employee?    @relation("spl_approval2Toemployee", fields: [approval2], references: [payroll])
-  dept_spl_deptTodept              dept?        @relation("spl_deptTodept", fields: [dept], references: [dept_code])
-  spl_detail                       spl_detail[]
-  srl                              srl[]
-
-  @@index([est_end], map: "est_end")
-  @@index([est_start], map: "est_start")
-  @@index([approval1], map: "approval1")
-  @@index([approval2], map: "approval2")
-  @@index([dept], map: "dept")
-}
-
-model spl_detail {
-  spl_detail_id String    @id @db.VarChar(40)
-  step          Int       @db.TinyInt
-  spl_id        String    @db.VarChar(40)
-  payroll       String?   @db.VarChar(8)
-  description   String    @db.VarChar(255)
-  employee      employee? @relation(fields: [payroll], references: [payroll])
-  spl           spl       @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
-
-  @@index([spl_id], map: "spl_id")
-  @@index([payroll], map: "payroll")
-}
-
-model dept {
-  dept_id              String      @id @db.VarChar(40)
-  dept_code            String      @unique(map: "dept_code") @db.VarChar(6)
-  initial              String      @db.VarChar(15)
-  name                 String      @db.VarChar(100)
-  status               dept_status
-  employee             employee[]
-  spl_spl_deptTodept   spl[]       @relation("spl_deptTodept")
-  sppd_sppd_deptTodept sppd[]      @relation("sppd_deptTodept")
-
-  @@fulltext([dept_code, name], map: "dept_code_2")
-}
-
-model srl {
-  srl_id                           String       @id @db.VarChar(40)
-  spl_id                           String?      @db.VarChar(40)
-  payroll                          String?      @db.VarChar(8)
-  real_start                       DateTime     @db.DateTime(0)
-  real_end                         DateTime     @db.DateTime(0)
-  status1                          srl_status1  @default(Waiting)
-  approval1                        String?      @db.VarChar(8)
-  status2                          srl_status2  @default(Waiting)
-  approval2                        String?      @db.VarChar(8)
-  createdAt                        DateTime     @db.DateTime(0)
-  employee_srl_approval1Toemployee employee?    @relation("srl_approval1Toemployee", fields: [approval1], references: [payroll])
-  employee_srl_approval2Toemployee employee?    @relation("srl_approval2Toemployee", fields: [approval2], references: [payroll])
-  employee                         employee?    @relation(fields: [payroll], references: [payroll])
-  spl                              spl?         @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
-  srl_detail                       srl_detail[]
-
-  @@index([payroll], map: "payroll")
-  @@index([spl_id], map: "spl_id")
-  @@index([approval1], map: "approval")
-  @@index([approval2], map: "approval2")
-  @@index([real_end], map: "real_end")
-  @@index([real_start], map: "real_start")
-}
-
-model srl_detail {
-  srl_detail_id String  @id @db.VarChar(40)
-  srl_id        String? @db.VarChar(40)
-  description   String  @db.VarChar(255)
-  status        String  @db.VarChar(50)
-  srl           srl?    @relation(fields: [srl_id], references: [srl_id], onDelete: Cascade)
-
-  @@index([srl_id], map: "srl_id")
+  @@index([user_id_machine], map: "user_id_mesin")
 }
 
 model cuti {
@@ -251,12 +72,212 @@ model cuti {
   is_delegate                      Boolean
   createdAt                        DateTime    @db.DateTime(0)
   employee_cuti_approvalToemployee employee?   @relation("cuti_approvalToemployee", fields: [approval], references: [payroll])
-  employee                         employee?   @relation(fields: [payroll], references: [payroll])
+  employee_cuti_payrollToemployee  employee?   @relation("cuti_payrollToemployee", fields: [payroll], references: [payroll], onDelete: Cascade)
 
+  @@index([approval], map: "approval")
+  @@index([cuti_group_id], map: "cuti_group_id")
+  @@index([date], map: "date")
   @@index([payroll], map: "payroll")
+}
+
+model dept {
+  dept_id              String      @id @db.VarChar(40)
+  dept_code            String      @unique(map: "dept_code") @db.VarChar(6)
+  initial              String      @db.VarChar(15)
+  name                 String      @db.VarChar(100)
+  status               dept_status
+  employee             employee[]
+  spl_spl_deptTodept   spl[]       @relation("spl_deptTodept")
+  sppd_sppd_deptTodept sppd[]      @relation("sppd_deptTodept")
+
+  @@fulltext([dept_code, name], map: "dept_code_2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model employee {
+  payroll                                                     String             @id @db.VarChar(8)
+  user_id_machine                                             String             @unique(map: "user_id_mesin") @db.VarChar(10)
+  profile_id                                                  String?            @db.VarChar(50)
+  email                                                       String             @db.VarChar(100)
+  name                                                        String             @db.VarChar(250)
+  password                                                    String             @db.VarChar(250)
+  position                                                    String             @db.VarChar(100)
+  department                                                  String?            @db.VarChar(6)
+  location                                                    String             @db.VarChar(50)
+  phone                                                       String             @db.VarChar(13)
+  overtime                                                    Boolean
+  workhour                                                    Int                @default(8) @db.SmallInt
+  start_work                                                  DateTime           @default(dbgenerated("('08:00:00')")) @db.Time(0)
+  approver                                                    String?            @db.VarChar(8)
+  substitute                                                  String?            @db.VarChar(8)
+  join_date                                                   DateTime           @default(now()) @db.Date
+  signature                                                   String             @db.VarChar(250)
+  level                                                       Int                @db.TinyInt
+  user_type                                                   employee_user_type @default(Other)
+  user_hod                                                    Boolean
+  hostname                                                    String             @db.VarChar(31)
+  status                                                      employee_status    @default(Aktif)
+  attendance_attendance_createdByToemployee                   attendance[]       @relation("attendance_createdByToemployee")
+  attendance_attendance_user_id_machineToemployee             attendance[]       @relation("attendance_user_id_machineToemployee")
+  attendance_copy1_attendance_copy1_createdByToemployee       attendance_copy1[] @relation("attendance_copy1_createdByToemployee")
+  attendance_copy1_attendance_copy1_user_id_machineToemployee attendance_copy1[] @relation("attendance_copy1_user_id_machineToemployee")
+  calendar                                                    calendar[]
+  cuti_cuti_approvalToemployee                                cuti[]             @relation("cuti_approvalToemployee")
+  cuti_cuti_payrollToemployee                                 cuti[]             @relation("cuti_payrollToemployee")
+  profile                                                     profile?           @relation(fields: [profile_id], references: [profile_id], map: "Employee_profile_id_fkey")
+  employee_employee_approverToemployee                        employee?          @relation("employee_approverToemployee", fields: [approver], references: [payroll])
+  other_employee_employee_approverToemployee                  employee[]         @relation("employee_approverToemployee")
+  dept                                                        dept?              @relation(fields: [department], references: [dept_code])
+  employee_employee_substituteToemployee                      employee?          @relation("employee_substituteToemployee", fields: [substitute], references: [payroll])
+  other_employee_employee_substituteToemployee                employee[]         @relation("employee_substituteToemployee")
+  ijin_ijin_approvalToemployee                                ijin[]             @relation("ijin_approvalToemployee")
+  ijin_ijin_payrollToemployee                                 ijin[]             @relation("ijin_payrollToemployee")
+  setting_setting_approval_dinasToemployee                    setting[]          @relation("setting_approval_dinasToemployee")
+  setting_setting_approval_lembur_obToemployee                setting[]          @relation("setting_approval_lembur_obToemployee")
+  setting_setting_approval_lembur_securityToemployee          setting[]          @relation("setting_approval_lembur_securityToemployee")
+  skpd_skpd_approveToemployee                                 skpd[]             @relation("skpd_approveToemployee")
+  skpd_skpd_createdByToemployee                               skpd[]             @relation("skpd_createdByToemployee")
+  skpd_skpd_payrollToemployee                                 skpd[]             @relation("skpd_payrollToemployee")
+  spl_spl_approval1Toemployee                                 spl[]              @relation("spl_approval1Toemployee")
+  spl_spl_createdByToemployee                                 spl[]              @relation("spl_createdByToemployee")
+  spl_detail                                                  spl_detail[]
+  sppd                                                        sppd[]
+  sppd_detail                                                 sppd_detail[]
+  srl_srl_approval1Toemployee                                 srl[]              @relation("srl_approval1Toemployee")
+  srl_srl_approval2Toemployee                                 srl[]              @relation("srl_approval2Toemployee")
+  srl_srl_payrollToemployee                                   srl[]              @relation("srl_payrollToemployee")
+
+  @@index([profile_id], map: "Employee_profile_id_fkey")
+  @@index([approver], map: "approver")
+  @@index([department], map: "employee_department_fkey")
+  @@index([substitute], map: "substitute")
+  @@fulltext([payroll, user_id_machine, profile_id, email, name, position, department, location, phone], map: "payroll")
+}
+
+model ijin {
+  ijin_id                          String      @id @db.VarChar(40)
+  ijin_group_id                    String      @db.VarChar(40)
+  payroll                          String?     @db.VarChar(8)
+  type                             String      @db.VarChar(50)
+  description                      String      @db.VarChar(255)
+  date                             DateTime    @db.Date
+  status                           ijin_status
+  approval                         String?     @db.VarChar(8)
+  is_delegate                      Boolean
+  createdAt                        DateTime    @db.DateTime(0)
+  employee_ijin_approvalToemployee employee?   @relation("ijin_approvalToemployee", fields: [approval], references: [payroll])
+  employee_ijin_payrollToemployee  employee?   @relation("ijin_payrollToemployee", fields: [payroll], references: [payroll], onDelete: Cascade)
+
   @@index([approval], map: "approval")
   @@index([date], map: "date")
-  @@index([cuti_group_id], map: "cuti_group_id")
+  @@index([ijin_group_id], map: "ijin_group_id")
+  @@index([payroll], map: "payroll")
+}
+
+model profile {
+  profile_id        String         @id @db.VarChar(50)
+  name              String         @db.VarChar(100)
+  description       String         @db.VarChar(255)
+  access_sppd       String         @db.VarChar(4)
+  access_skpd       String         @db.VarChar(4)
+  access_attendance String         @db.VarChar(4)
+  access_spl        String         @db.VarChar(4)
+  access_srl        String         @db.VarChar(4)
+  access_cuti       String         @db.VarChar(4)
+  access_ijin       String         @db.VarChar(4)
+  access_calendar   String         @db.VarChar(4)
+  access_user       String         @db.VarChar(4)
+  access_profile    String         @db.VarChar(4)
+  access_dept       String         @db.VarChar(4)
+  access_setting    String         @db.VarChar(4)
+  status            profile_status
+  employee          employee[]
+}
+
+model security {
+  id      String   @id @db.VarChar(40)
+  payroll String   @db.VarChar(8)
+  date    DateTime @db.DateTime(0)
+  shift   String   @db.VarChar(10)
+  area    String   @db.VarChar(50)
+
+  @@index([payroll], map: "payroll")
+}
+
+model setting {
+  setting_id                                          String    @id @db.VarChar(40)
+  start_periode                                       Int       @default(17) @db.TinyInt
+  end_periode                                         Int       @default(16) @db.TinyInt
+  late_dispen                                         Int       @default(15) @db.TinyInt
+  overtime_allow                                      Int       @default(30) @db.TinyInt
+  overtime_round_up                                   Boolean
+  approval_dinas                                      String?   @db.VarChar(8)
+  approval_lembur_ob                                  String?   @db.VarChar(8)
+  approval_lembur_security                            String?   @db.VarChar(8)
+  employee_setting_approval_dinasToemployee           employee? @relation("setting_approval_dinasToemployee", fields: [approval_dinas], references: [payroll], map: "setting_dinas_fkey")
+  employee_setting_approval_lembur_obToemployee       employee? @relation("setting_approval_lembur_obToemployee", fields: [approval_lembur_ob], references: [payroll], map: "setting_ob_fkey")
+  employee_setting_approval_lembur_securityToemployee employee? @relation("setting_approval_lembur_securityToemployee", fields: [approval_lembur_security], references: [payroll], map: "setting_security_fkey")
+
+  @@index([approval_dinas], map: "approval_dinas")
+  @@index([approval_lembur_ob], map: "approval_lembur_ob")
+  @@index([approval_lembur_security], map: "approval_lembur_security")
+}
+
+model skpd {
+  skpd_id                           String      @id @db.VarChar(40)
+  sppd_id                           String?     @db.VarChar(40)
+  payroll                           String?     @db.VarChar(8)
+  real_start                        DateTime    @db.DateTime(0)
+  real_end                          DateTime    @db.DateTime(0)
+  status                            skpd_status
+  approve                           String?     @db.VarChar(8)
+  createdBy                         String?     @db.VarChar(8)
+  createdAt                         DateTime    @db.DateTime(0)
+  employee_skpd_approveToemployee   employee?   @relation("skpd_approveToemployee", fields: [approve], references: [payroll], map: "skpd_approve _fkey")
+  employee_skpd_createdByToemployee employee?   @relation("skpd_createdByToemployee", fields: [createdBy], references: [payroll])
+  employee_skpd_payrollToemployee   employee?   @relation("skpd_payrollToemployee", fields: [payroll], references: [payroll], onDelete: Cascade)
+  sppd                              sppd?       @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
+
+  @@index([createdBy], map: "createdBy")
+  @@index([payroll], map: "payroll")
+  @@index([sppd_id], map: "sppd_id")
+  @@index([approve], map: "approve")
+}
+
+model spl {
+  spl_id                           String       @id @db.VarChar(40)
+  purpose                          String       @db.VarChar(255)
+  dept                             String?      @db.VarChar(6)
+  est_start                        DateTime     @db.DateTime(0)
+  est_end                          DateTime     @db.DateTime(0)
+  status1                          spl_status1  @default(Waiting)
+  approval1                        String?      @db.VarChar(8)
+  createdBy                        String?      @db.VarChar(8)
+  createdAt                        DateTime     @default(now()) @db.DateTime(0)
+  employee_spl_approval1Toemployee employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
+  employee_spl_createdByToemployee employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll])
+  dept_spl_deptTodept              dept?        @relation("spl_deptTodept", fields: [dept], references: [dept_code])
+  spl_detail                       spl_detail[]
+  srl                              srl[]
+
+  @@index([approval1], map: "approval1")
+  @@index([dept], map: "dept")
+  @@index([est_end], map: "est_end")
+  @@index([est_start], map: "est_start")
+  @@index([createdBy], map: "createdBy")
+}
+
+model spl_detail {
+  spl_detail_id String    @id @db.VarChar(40)
+  step          Int       @db.TinyInt
+  spl_id        String    @db.VarChar(40)
+  payroll       String?   @db.VarChar(8)
+  description   String    @db.VarChar(255)
+  employee      employee? @relation(fields: [payroll], references: [payroll], onDelete: Cascade)
+  spl           spl       @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
+
+  @@index([payroll], map: "payroll")
+  @@index([spl_id], map: "spl_id")
 }
 
 model sppd {
@@ -264,8 +285,8 @@ model sppd {
   purpose              String        @db.VarChar(255)
   location             String        @db.VarChar(100)
   dept                 String?       @db.VarChar(6)
-  start_date           DateTime      @db.DateTime(0)
-  end_date             DateTime      @db.DateTime(0)
+  start_date           DateTime      @db.Date
+  end_date             DateTime      @db.Date
   duration             Int           @db.TinyInt
   createdBy            String?       @db.VarChar(8)
   createdAt            DateTime      @db.DateTime(0)
@@ -284,49 +305,93 @@ model sppd_detail {
   sppd_id        String?   @db.VarChar(40)
   payroll        String?   @db.VarChar(8)
   description    String    @db.VarChar(255)
-  employee       employee? @relation(fields: [payroll], references: [payroll])
+  employee       employee? @relation(fields: [payroll], references: [payroll], onDelete: Cascade)
   sppd           sppd?     @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
 
   @@index([payroll], map: "payroll")
   @@index([sppd_id], map: "sppd_id")
 }
 
-model skpd {
-  skpd_id                           String      @id @default("getNomorSKPD()") @db.VarChar(40)
-  sppd_id                           String?     @db.VarChar(40)
-  payroll                           String?     @db.VarChar(8)
-  real_start                        DateTime    @db.DateTime(0)
-  real_end                          DateTime    @db.DateTime(0)
-  status                            skpd_status
-  createdBy                         String?     @db.VarChar(8)
-  createdAt                         DateTime    @db.DateTime(0)
-  employee_skpd_createdByToemployee employee?   @relation("skpd_createdByToemployee", fields: [createdBy], references: [payroll])
-  employee_skpd_payrollToemployee   employee?   @relation("skpd_payrollToemployee", fields: [payroll], references: [payroll])
-  sppd                              sppd?       @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
+model srl {
+  srl_id                           String       @id @db.VarChar(40)
+  spl_id                           String?      @db.VarChar(40)
+  payroll                          String?      @db.VarChar(8)
+  real_start                       DateTime     @db.DateTime(0)
+  real_end                         DateTime     @db.DateTime(0)
+  status1                          srl_status1  @default(Waiting)
+  approval1                        String?      @db.VarChar(8)
+  status2                          srl_status2  @default(Waiting)
+  approval2                        String?      @db.VarChar(8)
+  createdAt                        DateTime     @db.DateTime(0)
+  employee_srl_approval1Toemployee employee?    @relation("srl_approval1Toemployee", fields: [approval1], references: [payroll])
+  employee_srl_approval2Toemployee employee?    @relation("srl_approval2Toemployee", fields: [approval2], references: [payroll])
+  employee_srl_payrollToemployee   employee?    @relation("srl_payrollToemployee", fields: [payroll], references: [payroll], onDelete: Cascade)
+  spl                              spl?         @relation(fields: [spl_id], references: [spl_id], onDelete: Cascade)
+  srl_detail                       srl_detail[]
 
-  @@index([createdBy], map: "createdBy")
+  @@index([approval1], map: "approval")
+  @@index([approval2], map: "approval2")
   @@index([payroll], map: "payroll")
-  @@index([sppd_id], map: "sppd_id")
+  @@index([real_end], map: "real_end")
+  @@index([real_start], map: "real_start")
+  @@index([spl_id], map: "spl_id")
 }
 
-model ijin {
-  ijin_id                          String      @id @db.VarChar(40)
-  ijin_group_id                    String      @db.VarChar(40)
-  payroll                          String?     @db.VarChar(8)
-  type                             String      @db.VarChar(50)
-  description                      String      @db.VarChar(255)
-  date                             DateTime    @db.Date
-  status                           ijin_status
-  approval                         String?     @db.VarChar(8)
-  is_delegate                      Boolean
-  createdAt                        DateTime    @db.DateTime(0)
-  employee_ijin_approvalToemployee employee?   @relation("ijin_approvalToemployee", fields: [approval], references: [payroll])
-  employee                         employee?   @relation(fields: [payroll], references: [payroll])
+model srl_detail {
+  srl_detail_id String  @id @db.VarChar(40)
+  srl_id        String? @db.VarChar(40)
+  description   String  @db.VarChar(255)
+  status        String  @db.VarChar(50)
+  srl           srl?    @relation(fields: [srl_id], references: [srl_id], onDelete: Cascade)
 
-  @@index([payroll], map: "payroll")
-  @@index([approval], map: "approval")
-  @@index([date], map: "date")
-  @@index([ijin_group_id], map: "ijin_group_id")
+  @@index([srl_id], map: "srl_id")
+}
+
+model temp_check_io {
+  check_io_id     String   @id @db.VarChar(40)
+  user_id_machine String   @db.VarChar(6)
+  datetime        DateTime @db.DateTime(0)
+  type            String   @db.VarChar(50)
+  machine_no      Int?     @default(6)
+
+  @@index([user_id_machine], map: "user_id_mesin")
+}
+
+model attendance_copy1 {
+  attendance_id                                       String    @id @db.VarChar(40)
+  user_id_machine                                     String?   @db.VarChar(6)
+  check_in                                            DateTime  @db.DateTime(0)
+  check_out                                           DateTime  @db.DateTime(0)
+  check_in2                                           DateTime? @db.DateTime(0)
+  check_out2                                          DateTime? @db.DateTime(0)
+  type                                                String    @db.VarChar(50)
+  ijin_info                                           String    @db.VarChar(50)
+  description                                         String    @db.VarChar(255)
+  attachment                                          String    @db.Text
+  reference                                           String    @default("") @db.VarChar(40)
+  createdBy                                           String?   @db.VarChar(8)
+  createdAt                                           DateTime  @default(now()) @db.DateTime(0)
+  employee_attendance_copy1_createdByToemployee       employee? @relation("attendance_copy1_createdByToemployee", fields: [createdBy], references: [payroll], map: "attendance_copy1_ibfk_1")
+  employee_attendance_copy1_user_id_machineToemployee employee? @relation("attendance_copy1_user_id_machineToemployee", fields: [user_id_machine], references: [user_id_machine], onDelete: Cascade, map: "attendance_copy1_ibfk_2")
+
+  @@index([check_in], map: "check_in")
+  @@index([check_in2], map: "check_in2")
+  @@index([check_out], map: "check_out")
+  @@index([check_out2], map: "check_out2")
+  @@index([createdBy], map: "createdBy")
+  @@index([type], map: "type")
+  @@index([user_id_machine], map: "user_id_mesin")
+}
+
+model check_io_copy1 {
+  check_io_id     String   @id @db.VarChar(40)
+  user_id_machine String   @db.VarChar(6)
+  datetime        DateTime @db.DateTime(0)
+  type            String   @db.VarChar(50)
+  transfer_status Boolean? @default(false)
+  machine_no      Int?     @default(6)
+
+  @@index([user_id_machine], map: "user_id_mesin")
 }
 
 enum calendar_type {
@@ -345,14 +410,7 @@ enum skpd_status {
   CLOSE
 }
 
-enum ijin_status {
-  Waiting
-  Reject
-  Approved
-  Cancelled
-}
-
-enum cuti_status {
+enum spl_status1 {
   Waiting
   Reject
   Approved
@@ -366,6 +424,13 @@ enum srl_status1 {
   Cancelled
 }
 
+enum ijin_status {
+  Waiting
+  Reject
+  Approved
+  Cancelled
+}
+
 enum srl_status2 {
   Waiting
   Reject
@@ -373,23 +438,11 @@ enum srl_status2 {
   Cancelled
 }
 
-enum spl_status1 {
+enum cuti_status {
   Waiting
   Reject
   Approved
   Cancelled
-}
-
-enum spl_status2 {
-  Waiting
-  Reject
-  Approved
-  Cancelled
-}
-
-enum employee_status {
-  Aktif
-  Nonaktif
 }
 
 enum profile_status {
@@ -398,8 +451,14 @@ enum profile_status {
 }
 
 enum employee_user_type {
-  Security
+  HR
   OB
+  Security
   Messenger
   Other
+}
+
+enum employee_status {
+  Aktif
+  Nonaktif
 }

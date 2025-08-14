@@ -1,15 +1,12 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Badge, Select, Radio, Modal, Button, Alert, Tooltip } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, SquarePlus, Pencil, Trash, Plus, Save, Paperclip, IdCard, CalendarClock, BookOpen, CalendarCheck2 } from '@lucide/svelte'
+    import {Calendar, Ban, Search, RefreshCw, Building, Pencil, Trash, Plus, Save, Paperclip, IdCard, CalendarClock, BookOpen, CalendarCheck2 } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-	import MyButton from '$/lib/components/MyButton.svelte';
-	import MyLoading from '$/lib/components/MyLoading.svelte';
-	import MyInput from '$/lib/components/MyInput.svelte';
 	import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
 	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference, hitungLate, formatLate, dataTahun, dataBulan } from '$/lib/utils';
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference, hitungLate, formatLate, dataTahun, dataBulan, capitalEachWord } from '$/lib/utils';
     import { format, set } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
@@ -21,6 +18,10 @@
 	import MyAlert from '@/MyAlert.svelte';
 	import MyImage from '@/MyImage.svelte';
 	import MyBadge from '@/MyBadge.svelte';
+	import MyDatePicker from '@/MyDatePicker.svelte';
+    import MyButton from '@/MyButton.svelte';
+	import MyLoading from '@/MyLoading.svelte';
+	import MyInput from '@/MyInput.svelte';
         
     const rowsPerPage = 30
     let {data} = $props()
@@ -73,7 +74,7 @@
             attachment: "",
             createdBy: (()=> user?.payroll)(),
         },
-        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         payroll: (()=> user?.payroll)(),
         type:"",
         success:"",
@@ -159,15 +160,14 @@
             const res = await req.data
             
             formAttendance.answer = {...res}
-            setTimeout(()=>{
-                formAttendance.answer.attachment = res.attachment == null ? null : res.attachment
-                formAttendance.answer.check_in = formatTanggal(res.check_in)
-                formAttendance.answer.check_out = formatTanggal(res.check_out)
-                formAttendance.answer.check_in2 = formatTanggal(res.check_in2)
-                formAttendance.answer.check_out2 = formatTanggal(res.check_out2)
-                formAttendance.answer.temp_type = res.type
-                formAttendance.answer.createdBy = user?.payroll
-            }, 100)
+            formAttendance.answer.attachment = res.attachment == null ? null : res.attachment
+            formAttendance.answer.check_in = formatTanggal(res.check_in)
+            formAttendance.answer.check_out = formatTanggal(res.check_out)
+            formAttendance.answer.check_in2 = formatTanggal(res.check_in2)
+            formAttendance.answer.check_out2 = formatTanggal(res.check_out2)
+            formAttendance.answer.temp_type = res.type
+            formAttendance.answer.createdBy = user?.payroll
+
             formAttendance.edit = true
             formAttendance.add = false
             formAttendance.loading = false
@@ -214,7 +214,7 @@
     let tableAttendanceDeptSearch = tableAttendanceDept.createSearch()
     
     let formAttendanceDept = $state({
-        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         type:"",
     })
 
@@ -251,10 +251,10 @@
             est_start:"",
             est_end:"",            
             approval1:"",
-            approval2:"",            
+            createdBy: (()=> user?.payroll)(),
         },
         dept: (()=> user?.department)(),
-        payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
+        payroll: (()=> user.level > 1 ? "": user?.payroll)(),
         success:"",
         error:"",
         modalSPL: false,
@@ -280,16 +280,20 @@
             const valid = z.object({
                 purpose: z.string().trim().min(1),
                 approval1: z.string().trim().min(1),
-                approval2: z.string().trim().min(1),
                 spl_detail: z.array(z.object({
                     description: z.string().trim().min(1)
-                }))
+                })),
+                createdBy: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
                 const req = await axios.post('/api/lembur/spl', formSPL.answer)
                 const res = await req.data
                 formSPL.success = res.message
+                setTimeout(()=> {
+                    formSPL = {...formSPLAnswer}
+                    tableAttendance.invalidate()
+                }, 1000)
             }else{
                 const err = fromZodError(isValid.error)
                 formSPL.success = ""
@@ -354,7 +358,7 @@
             }
         })
 
-        if (userProfile.level > 1 || userProfile.user_hrd) {
+        if (user.level > 1 || user.user_type == 'HR') {
             tableAttendanceDept.load(async (state: any) => {
                 try {
                     const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
@@ -368,7 +372,7 @@
             })
         }
 
-        if(userProfile.user_hrd){
+        if(user.user_type == 'HR'){
             tableListAttendance.load(async (state: any) => {
                 try {
                     const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formListAttendance.type}`)
@@ -405,9 +409,9 @@
     
     setTimeout(()=>{
         tableAttendance.invalidate()
-        if (userProfile.level > 1 || userProfile.user_hrd)
+        if (user.level > 1 || user.user_type == 'HR')
             tableAttendanceDept.invalidate()
-        if(userProfile.user_hrd)
+        if(user.user_type == 'HR')
             tableListAttendance.invalidate()
         
         formLogAttendance.month = Number(format(modeAttendance.periode.start, "M"))
@@ -416,7 +420,7 @@
 </script>
 
 <svelte:head>
-    <title>Attendance {(modeAttendance.payroll !== user?.payroll ? "View | " : "") + modeAttendance.name}</title>
+    <title>Attendance {(modeAttendance.payroll !== user?.payroll ? "View | " : "") + capitalEachWord(modeAttendance.name)}</title>
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full w-full">
@@ -468,7 +472,7 @@
                             </Alert>
                             <Tooltip>*{modeAttendance.hari_kerja} Day Work (Monday to Friday), {modeAttendance.hari_weekend} Weekend (Saturday to Sunday)</Tooltip>
                             <MyButton className='flex items-center gap-2' onclick={()=> formAttendance.showCalendar = true}><Calendar size={16} /> Kalender</MyButton>
-                            {#if userProfile?.user_hrd}
+                            {#if user.user_type == 'HR'}
                                 <MyButton className='flex items-center gap-2' onclick={handleReportAttendance}>
                                     <BookOpen size={16} />Report
                                 </MyButton>
@@ -492,7 +496,7 @@
         {/if}
 
         <!-- Tombol Add -->
-        {#if ((userProfile?.user_hrd || userProfile?.level > 1) && modeAttendance.tabNo != 2)}
+        {#if ((user.user_type == 'HR' || user.level > 1) && modeAttendance.tabNo != 2)}
             <div class="flex gap-2 items-center w-full">
                 {#if (!formAttendance.add || !formAttendance.edit) && pecahArray(userProfile?.access_attendance, "C")}
                     <MyButton onclick={formAttendanceAdd}><Plus size={16}/></MyButton>
@@ -502,7 +506,7 @@
                         <MyLoading message="Loading data"/>
                     {:then val}
                         <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeAttendance.payroll} 
-                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                            options={val.map((v:any) => ({value: v.payroll, text: capitalEachWord(v.payroll + " - " + v.name)}))}
                             onChange={() => {
                                 tableAttendance.invalidate()
                                 tableListAttendance.invalidate()
@@ -547,7 +551,7 @@
                                     tableAttendance.invalidate()
                                 }}><RefreshCw size={16}/></MyButton>
                             </div>
-                            <!-- {#if userProfile.user_hrd || userProfile.level > 1}
+                            <!-- {#if userProfile.user_hrd || user.level > 1}
                                 <div class="flex gap-2 items-start">
                                     {#await getUser(formAttendance.dept)}
                                         <MyLoading message="Loading data"/>
@@ -619,11 +623,11 @@
                                                                     <MyBadge italic border={val.type == "kerja"} color={
                                                                         ["kerja"].includes(val.type) ? "default"
                                                                         : ["late"].includes(val.type) ? "red" 
-                                                                        : ["lembur"].includes(val.type) ? "green" 
-                                                                        : ["ijin_info"].includes(val.type) ? "yellow" 
-                                                                        : "dark"} onclick={()=> {
+                                                                        : ["ijin_info"].includes(val.type) ? "dark" 
+                                                                        : ["lembur"].includes(val.type) && row.is_spl_exist ? "green" 
+                                                                        : "yellow"} onclick={()=> {
                                                                             if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept)
-                                                                                createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                                createSPL(row.payroll, capitalEachWord(row.name), row.lembur_start, row.check_out)
                                                                         }}>
                                                                         {val.value}
                                                                         {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept}
@@ -636,9 +640,9 @@
                                                     </TableBodyCell>
                                                     <TableBodyCell>
                                                         {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
-                                                            {#if (!userProfile.user_hrd && userProfile.level > row.level) 
-                                                                || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
-                                                                || (userProfile.user_hrd && !row.user_hrd)
+                                                            {#if (user.user_type != 'HR' && user.level > row.level) 
+                                                                || (user.user_type == 'HR' && row.user_type == 'HR' && user.level > row.level) 
+                                                                || (user.user_type == 'HR' && row.user_type != 'HR')
                                                             }
                                                                 <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                             {/if}
@@ -663,7 +667,7 @@
                     </div>
                 </TabItem>
                 <!-- Attendance department -->
-                {#if userProfile.level > 1 || userProfile.user_hrd}
+                {#if user.level > 1 || user.user_type == 'HR'}
                     <TabItem open={modeAttendance.tabNo == 2} title="Attendance Departemen" onclick={()=> modeAttendance.tabNo = 2} >
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                             <div class="flex flex-col gap-4">
@@ -692,8 +696,9 @@
                                         tableAttendanceDept.invalidate()
                                     }}><RefreshCw size={16}/></MyButton>
                                 </div>
-                                {#if userProfile.user_hrd}
-                                    <div class="flex gap-2 items-start">
+                                {#if user.user_type == 'HR'}
+                                    <div class="flex gap-4 items-center">
+                                        <Building size={14} />
                                         {#await getDept()}
                                             <MyLoading message="Loading data"/>
                                         {:then val}
@@ -737,7 +742,7 @@
                                                             <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                                         <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                         </TableBodyCell>
@@ -772,7 +777,7 @@
                                                                             : ["ijin_info"].includes(val.type) ? "yellow" 
                                                                             : "dark"} onclick={()=> {
                                                                                 if(val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept)
-                                                                                    createSPL(row.payroll, row.name, row.lembur_start, row.check_out)
+                                                                                    createSPL(row.payroll, capitalEachWord(row.name), row.lembur_start, row.check_out)
                                                                             }}>
                                                                             {val.value}
                                                                             {#if val.type == 'lembur' && pecahArray(userProfile.access_spl, "C") && row.overtime && !row.is_spl_exist && user.dept.dept_code == row.dept}
@@ -785,9 +790,9 @@
                                                         </TableBodyCell>
                                                         <TableBodyCell>
                                                             {#if row.payroll != user.payroll && pecahArray(userProfile.access_attendance, "U")}
-                                                                {#if (!userProfile.user_hrd && userProfile.level > row.level) 
-                                                                    || (userProfile.user_hrd && row.user_hrd && userProfile.level > row.level) 
-                                                                    || (userProfile.user_hrd && !row.user_hrd)
+                                                                {#if (user.user_type != 'HR' && user.level > row.level) 
+                                                                    || (user.user_type == 'HR' && row.user_type == 'HR' && user.level > row.level) 
+                                                                    || (user.user_type == 'HR' && row.user_type != 'HR')
                                                                 }
                                                                     <MyButton onclick={()=> formAttendanceEdit(row.attendance_id)}><Pencil size={12} /></MyButton>
                                                                 {/if}
@@ -812,7 +817,7 @@
                     </TabItem>
                 {/if}
                 <!-- Attendance Duplikat -->
-                {#if userProfile.user_hrd}
+                {#if user.user_type == 'HR'}
                     <TabItem open={modeAttendance.tabNo == 3} title="Attendance Duplikat" onclick={()=> modeAttendance.tabNo = 3}>
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
                             <div class="flex flex-col gap-4">
@@ -874,7 +879,7 @@
                                                             <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                                         <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                             <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                         </TableBodyCell>
@@ -1019,7 +1024,7 @@
                                                         <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                                     <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
@@ -1109,13 +1114,7 @@
                         <div class="flex flex-col gap-2 flex-1">
                             <Label>Approval 1</Label>
                             <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval1} 
-                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
-                            />
-                        </div>
-                        <div class="flex flex-col gap-2 flex-1">
-                            <Label>Approval 2</Label>
-                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval2} 
-                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                options={val.map((v:any) => ({value: v.payroll, text: capitalEachWord(v.payroll +" - "+v.name)}))}
                             />
                         </div>
                     {/await}
@@ -1203,13 +1202,12 @@
                             <div class="flex flex-col gap-2">
                                 <Label>User Id Machine</Label>
                                 <Svelecte disabled={formAttendance.edit} clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formAttendance.answer.user_id_machine} 
-                                    options={val.map((v:any) => ({value: v.user_id_machine, text:v.payroll + " | " + v.user_id_machine + " | " + v.name}))}
+                                    options={val.map((v:any) => ({value: v.user_id_machine, text:v.payroll + " | " + v.user_id_machine + " | " + capitalEachWord(v.name)}))}
                                 />
                             </div>
-                        {/await}                        
+                        {/await}
                         
                         {#if formAttendance.answer.user_id_machine}
-                        
                             {#if formAttendance.edit && formAttendance.answer.temp_type}
                                 <MyInput type='text' title='Type' disabled={(formAttendance.answer.type ? true : false) && formAttendance.edit} bind:value={formAttendance.answer.type} />
                             {:else if formAttendance.add || (formAttendance.edit && !formAttendance.answer.temp_type)}
@@ -1221,11 +1219,23 @@
 
                             <div class="flex flex-col md:flex-row gap-2">
                                 {#if formAttendance.answer.type == 'Sakit'}
-                                    <MyInput type='date' title='Date From' name="check_in" endDate={formAttendance.answer.check_out} bind:value={formAttendance.answer.check_in} disabled={formAttendance.edit}/>
-                                    <MyInput type='date' title='Date End' name="check_out" startDate={formAttendance.answer.check_in} bind:value={formAttendance.answer.check_out} disabled={formAttendance.edit}/>
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Date From</Label>
+                                        <MyDatePicker bind:value={formAttendance.answer.check_in} disabled={formAttendance.edit}/>
+                                    </div>
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Date End</Label>
+                                        <MyDatePicker bind:value={formAttendance.answer.check_out} disabled={formAttendance.edit}/>
+                                    </div>
                                 {:else}
-                                    <MyInput type='datetime' title='Check In' name="check_in" bind:value={formAttendance.answer.check_in} disabled={formAttendance.answer.type != "HKM"}/>
-                                    <MyInput type='datetime' title='Check Out' name="check_out" bind:value={formAttendance.answer.check_out} disabled={formAttendance.answer.type != "HKM"}/>
+                                    <div class="flex flex-col gap-2 flex-1">                                        
+                                        <Label>Check In</Label>
+                                        <MyDatePicker bind:value={formAttendance.answer.check_in} time disabled={formAttendance.answer.type != "HKM"}/>
+                                    </div>
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Check Out</Label>
+                                        <MyDatePicker bind:value={formAttendance.answer.check_out} time disabled={formAttendance.answer.type != "HKM"}/>
+                                    </div>
                                 {/if}
                             </div>
 

@@ -6,7 +6,7 @@ import path from 'path'
 import { prisma } from '@lib/utils.js'
 
 export async function GET({ locals, url }) {
-    const payroll = url.searchParams.get('payroll')
+    const payroll = url.searchParams.get('payroll') as string
 
     const data = await prisma.employee.findFirst({
         select: {
@@ -33,15 +33,18 @@ export async function POST({ request }) {
 
         const status = await prisma.$transaction(async (tx) => {
             const updateUser = await tx.$executeRawUnsafe(`
-                UPDATE employee SET phone=?,location=?,signature=? where payroll=?`,
+                UPDATE employee SET phone=?,email=?,approver=?,substitute=?,location=?,signature=? where payroll=?`,
                 data.get('phone'),
+                data.get('email'),
+                data.get('approver'),
+                data.get('substitute'),
                 data.get('location'),
                 isSignature ? fileSignature : signature,
                 data.get('payroll'),
             )
 
             if (updateUser && isSignature) {
-                const uploadsDir = path.join(process.env.ATTACH_SIGNATURE, fileSignature)
+                const uploadsDir = path.join(process.env.ATTACH_SIGNATURE as string, fileSignature)
                 const filePath = path.resolve(uploadsDir);
                 writeFileSync(filePath, Buffer.from(await signature?.arrayBuffer()));
             }

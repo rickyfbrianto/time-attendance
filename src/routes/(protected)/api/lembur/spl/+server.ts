@@ -9,7 +9,7 @@ export async function GET({ url }) {
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
     const sort = url.searchParams.get('_sort') ?? "est_start"
-    const order = url.searchParams.get('_order') ?? "asc"
+    const order = url.searchParams.get('_order') ?? "desc"
     const search = url.searchParams.get('_search') ?? ""
 
     const payroll = url.searchParams.get('payroll') || ""
@@ -18,10 +18,9 @@ export async function GET({ url }) {
 
     const status = await prisma.$transaction(async (tx) => {
         const items = await tx.$queryRawUnsafe(`
-            SELECT s.spl_id, s.purpose, s.est_start, s.est_end, approval1.name as approval1, s.status1, approval2.name as approval2, s.status2 FROM SPL as s
+            SELECT s.spl_id, s.purpose, s.est_start, s.est_end, approval1.name as approval1, s.status1 FROM SPL as s
 			LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
             LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
-            LEFT JOIN employee as approval2 ON approval2.payroll = s.approval2
             WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ?) AND sd.payroll like ? AND DATE(s.est_start) BETWEEN ? AND ?
             GROUP BY s.spl_id
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
@@ -31,7 +30,6 @@ export async function GET({ url }) {
             SELECT s.spl_id FROM SPL as s
                 LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
                 LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
-                LEFT JOIN employee as approval2 ON approval2.payroll = s.approval2
                 WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ?) AND sd.payroll like ? AND DATE(s.est_start) BETWEEN ? AND ?
                 GROUP BY s.spl_id
             ) as tmp;`,
@@ -87,8 +85,8 @@ export async function POST({ request, locals }) {
                 newID = `${lastID}-SPL${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
 
                 await tx.$queryRawUnsafe(`
-                    INSERT INTO SPL (spl_id,purpose,dept,est_start,est_end,approval1,approval2, createdAt) VALUES (?,?,?,?,?,?,?, now())`,
-                    newID, data.purpose, data.dept, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.approval1, data.approval2
+                    INSERT INTO SPL (spl_id,purpose,dept,est_start,est_end,approval1,createdBy,createdAt) VALUES (?,?,?,?,?,?,?,now())`,
+                    newID, data.purpose, data.dept, formatTanggalISO(data.est_start), formatTanggalISO(data.est_end), data.approval1, data.createdBy
                 )
 
                 await tx.spl_detail.createMany({
@@ -99,12 +97,12 @@ export async function POST({ request, locals }) {
                     }))
                 })
 
-                return { message: "Data successfully saved" }
+                return { message: "SPL Berhasil Disimpan" }
             } else {
                 if (!pecahArray(userProfile.access_spl, "U")) throw new Error("Cant update SPL, because you have no authorization")
                 const updateSPL = await tx.$executeRawUnsafe(`
-                    UPDATE SPL SET purpose=?,est_start=?,est_end=?,approval1=?,approval2=? WHERE spl_id=? AND status1 = ? AND status2 = ?`,
-                    data.purpose, data.est_start, data.est_end, data.approval1, data.approval2, data.spl_id, 'Waiting', 'Waiting'
+                    UPDATE SPL SET purpose=?,est_start=?,est_end=?,approval1=? WHERE spl_id=? AND status1 = ? `,
+                    data.purpose, data.est_start, data.est_end, data.approval1, data.spl_id, 'Waiting'
                 )
 
                 if (!updateSPL) throw new Error("Cant update SPL, because data is changed")
@@ -121,7 +119,7 @@ export async function POST({ request, locals }) {
                     }))
                 })
 
-                return { message: "Data successfully updated" }
+                return { message: "SPL Berhasil Diubah" }
             }
         })
 

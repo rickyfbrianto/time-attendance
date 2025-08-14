@@ -19,7 +19,7 @@ export async function GET({ url }) {
             const items = await tx.$queryRawUnsafe(`SELECT 
                 att.attendance_id, att.user_id_machine, user.name, user.payroll, 
                 att.check_in AS check_in, att.check_out AS check_out, att.check_in2, att.check_out2, 
-                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd, 
+                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, user.level, user.user_type, 
                 getUserWeekend(att.check_in, user.workhour) as isWeekend,
                 getStartOvertime(att.attendance_id, user.workhour, user.start_work) AS lembur_start,
                 roundCheckOut( att.check_in, att.check_out) as lembur_end
@@ -37,7 +37,7 @@ export async function GET({ url }) {
 
             const [{ count }] = await tx.$queryRawUnsafe(`SELECT CAST(COUNT(*) as UNSIGNED) as count FROM (
                 SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, att.check_in AS check_in, att.check_out AS check_out,
-                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd 
+                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, user.level, user.user_type 
                 FROM attendance as att
                 LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
                 LEFT JOIN profile as profile on user.profile_id = profile.profile_id

@@ -124,7 +124,7 @@ div,
 td,
 select,
 option {
-    font-size: 13px;
+    font-size: 12px;
 }
 
 button,
@@ -138,4 +138,49 @@ a {
 
 tr:hover {
     background-color: #EEE !important;
+}
+
+
+.flatpickr-months {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    position: static;
+}
+
+.flatpickr-months .flatpickr-month {
+    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+}
+
+.flatpickr-current-month {
+    position: static;
+    display: flex;
+    justify-content: center;
+    column-gap: 1rem;
+    width: 100%;
+    padding: 0;
+    border-bottom: 1px solid #EEE;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background-color: #fff !important;
+}
+
+.flatpickr-current-month .numInputWrapper {
+    width: fit-content;
+    border: none !important;
+    outline: none !important;
+}
+
+.flatpickr-current-month input.cur-year,
+.flatpickr-current-month input.cur-year:focus {
+    padding: 4px;
+    font-size: 18px;
 }

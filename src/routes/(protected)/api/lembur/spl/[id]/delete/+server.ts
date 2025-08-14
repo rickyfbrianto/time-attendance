@@ -10,7 +10,6 @@ export async function DELETE({ params, locals }) {
             where: {
                 spl_id: id,
                 status1: "Waiting",
-                status2: "Waiting",
             }
         })
         return json({ message: "Data successfully deleted" })

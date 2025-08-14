@@ -39,7 +39,7 @@
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const reqCalendar = await fetch(`/api/data?type=get_calendar&val=${v}&year=${year}&month=${month}`)
+        const reqCalendar = await fetch(`/api/data?type=get_calendar&year=${year}&month=${month}`)
         const resCalendar = await reqCalendar.json() as any[]
         const temp = resCalendar.map((v: any) => ({title: v.description, start: v.date, end: v.date, allDay:true, backgroundColor:"#B0413E"}))
 

@@ -2,7 +2,6 @@
 	import { fade, slide } from "svelte/transition";
 	import { Clock } from "@lucide/svelte";
 	import { formatTanggal, formatTanggalISO, formatWaktuHari, selisihWaktuHari } from "@lib/utils.js";
-    import {Tooltip} from 'flowbite-svelte'
 
     let { data } = $props()
     let user = $derived(data.user)
@@ -36,8 +35,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <Clock size={14} class='w-[1.5rem]'/>
-                            <span class="text-[.75rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
-                            <Tooltip>{formatTanggal(waktu)}</Tooltip>
+                            <span aria-label={formatTanggal(waktu)} data-balloon-pos="up" class="text-[.75rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
                         </div>
                     </a>
                 {/each}

@@ -4,6 +4,7 @@ import CryptoJS from "crypto-js";
 import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set, differenceInMinutes, parse, differenceInDays, differenceInHours } from "date-fns";
 import { Prisma, PrismaClient } from '@prisma-app/client';
 import type { State } from "@vincjo/datatables/server";
+import { formatInTimeZone } from 'date-fns-tz';
 
 export const prisma = new PrismaClient({
     transactionOptions: {
@@ -31,12 +32,43 @@ interface EncryptedData {
     encrypted: string;
 }
 
-export const formatTanggal = (val: string, mode: "date" | "time" | "datetime" = "datetime", format: "system" | "app" = "system") => {
+// export const formatTanggal = (val: string, mode: "date" | "time" | "datetime" = "datetime", format: "system" | "app" = "system") => {
+//     if (!val) return ""
+//     const temp = DateTime.fromISO(val, { zone: "UTC" })
+//     const formatDate = format == "system" ? "yyyy-MM-dd" : "dd-MM-yyyy"
+//     const newMode = mode == "datetime" ? `${formatDate} HH:mm:ss` : (mode == "date" ? formatDate : (mode == "time" ? "HH:mm:ss" : ""))
+//     return temp.setLocale('id').toFormat(newMode).trim()
+// }
+
+export const formatTanggal = (val: string | Date, mode: "date" | "time" | "datetime" = "datetime", formatTanggal: "system" | "app" = "system") => {
     if (!val) return ""
-    const temp = DateTime.fromISO(val, { zone: "UTC" })
-    const formatDate = format == "system" ? "yyyy-MM-dd" : "dd-MM-yyyy"
+    const formatDate = formatTanggal == "system" ? "yyyy-MM-dd" : "d MMMM yyyy"
     const newMode = mode == "datetime" ? `${formatDate} HH:mm:ss` : (mode == "date" ? formatDate : (mode == "time" ? "HH:mm:ss" : ""))
-    return temp.setLocale('id').toFormat(newMode).trim()
+    return formatInTimeZone(val, 'UTC', newMode)
+}
+
+// export const formatSQL = (value: string | Date, mode: "date" | "time" | "datetime" = "datetime", formatTanggal: "system" | "app" = "system") => {
+//     const formatDate = formatTanggal == "system" ? "yyyy-MM-dd" : "dd-MM-yyyy"
+//     const newMode = mode == "datetime" ? `${formatDate} HH:mm:ss` : (mode == "date" ? formatDate : (mode == "time" ? "HH:mm:ss" : ""))
+//     return format(value, newMode)
+// }
+
+export function capitalEachWord(text: string) {
+    return text
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+export function formatDateToSQLString(val: string | Date) {
+    const date = new Date(val)
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(0).padStart(2, '0');
+    const mi = String(0).padStart(2, '0');
+    const ss = String(0).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
 }
 
 export const formatTanggalISO = (val: Date | string) => {
@@ -97,7 +129,6 @@ export function decryptDynamic(encryptedObj: EncryptedData, secretKey: string): 
 
 export function encryptData(value: string, secretKey: string): string {
     const encrypted = CryptoJS.AES.encrypt(value, secretKey);
-
     return encrypted.toString()
 }
 
@@ -153,8 +184,12 @@ export const getColorCalendar = (val: string) => {
         { type: 'Lembur', color: '#1D2D44' },
         { type: 'Sakit', color: '#E43F6F' },
         { type: 'HKC', color: '#99D17B' },
-        { type: 'HKM', color: '#99D17B' }
+        { type: 'HKM', color: '#99D17B' },
+        { type: 'Off', color: '#D7263D' },
+        { type: 'Pagi', color: '#588B8B' },
+        { type: 'Malam', color: '#363537' },
     ]
+
     const newType = type.find((v) => v.type == val)
     return newType?.color || '#1D2D44'
 }
@@ -180,7 +215,7 @@ export function pecahKataOther(val: string, potong: number = 1) {
     const andOthers = temp.length - potong
     const newSplit = temp.slice(0, potong).join(', ')
     let newTemp = newSplit
-    newTemp += andOthers > 0 ? " and " + (andOthers) + ` other${andOthers > 1 ? "s" : ""}` : ""
+    newTemp += andOthers > 0 ? " dan " + (andOthers) + ` lainnya` : ""
     return newTemp
 }
 

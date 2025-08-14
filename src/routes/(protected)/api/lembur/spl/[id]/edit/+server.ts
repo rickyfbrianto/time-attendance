@@ -9,7 +9,6 @@ export async function GET({ params }) {
             est_start: true,
             est_end: true,
             approval1: true,
-            approval2: true,
             purpose: true,
             spl_detail: {
                 select: {
@@ -34,7 +33,6 @@ export async function GET({ params }) {
         where: {
             spl_id: id,
             status1: "Waiting",
-            status2: "Waiting",
         },
     })
     return json(req)

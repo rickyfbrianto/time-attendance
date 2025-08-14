@@ -38,18 +38,26 @@ export async function GET({ url }) {
             })
             return json(req)
         } else if (type == "user_for_lembur") {
-            const req = await prisma.$queryRawUnsafe(`SELECT payroll, e.name, user_id_machine, department 
+            const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department 
                 FROM employee AS e
-                LEFT JOIN profile on profile.profile_id = e.profile_id
-                WHERE department LIKE ? && e.overtime = true AND e.status = 'Aktif'
-                ORDER BY e.name`, `%${val}%`)
+                WHERE department LIKE ? && overtime = 1 AND status = 'Aktif'
+                ORDER BY name`, `%${val}%`)
             return json(req)
         } else if (type == "user_by_dept") {
             const req = await prisma.$queryRawUnsafe(`
-                SELECT e.payroll, e.name, e.user_id_machine, e.department, p.user_hrd
+                SELECT e.payroll, e.name, e.user_id_machine, e.department, e.user_type
                 FROM employee as e
                 LEFT JOIN profile p ON e.profile_id = p.profile_id
                 WHERE department LIKE ? AND e.status = 'Aktif'
+                ORDER BY name`,
+                `%${val}%`)
+            return json(req)
+        } else if (type == "user_by_user_type") {
+            const req = await prisma.$queryRawUnsafe(`
+                SELECT e.payroll, e.name, e.user_id_machine, e.department, e.user_type
+                FROM employee as e
+                LEFT JOIN profile p ON e.profile_id = p.profile_id
+                WHERE user_type LIKE ? AND e.status = 'Aktif'
                 ORDER BY name`,
                 `%${val}%`)
             return json(req)
@@ -80,9 +88,9 @@ export async function GET({ url }) {
                     roundCheckOut(a.check_in, a.check_out) AS est_end
                 FROM
                     spl s, spl_detail sd, employee e, attendance a
-                WHERE sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in )= DATE (s.est_start) 
+                WHERE sd.spl_id = s.spl_id AND e.payroll = sd.payroll AND a.user_id_machine = e.user_id_machine AND DATE ( a.check_in ) = DATE (s.est_start) 
                     AND NOT EXISTS (SELECT 1 FROM srl WHERE s.spl_id = srl.spl_id)
-                    AND sd.payroll = ? AND s.status1 = 'Approved' AND s.status2 = 'Approved'`,
+                    AND sd.payroll = ? AND s.status1 = 'Approved'`,
                 val) as any[]
             return json(req)
         } else if (type == 'sppd_not_in_skpd') {

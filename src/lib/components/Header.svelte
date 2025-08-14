@@ -1,7 +1,7 @@
 <script lang='ts'>
     import MyButton from '$/lib/components/MyButton.svelte'
     import {AlignJustify, Check, DoorOpen, Bell, Clock, Sun, Moon, Database } from '@lucide/svelte'
-	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Dropdown, Badge, DropdownHeader, Tooltip } from 'flowbite-svelte';
+	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Dropdown, Badge, DropdownHeader } from 'flowbite-svelte';
     import { appstore } from "$/lib/store/appstore";
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -85,7 +85,9 @@
             <div class="flex">
                 <button class='relative bg-bgside rounded-l-lg text-textdark p-3 '>
                     <Bell size={14} />
-                    <span class="flex items-center justify-center font-bold absolute top-[-.75rem] right-[-.75rem] bg-merah text-white min-w-[1.5rem] min-h-[1.5rem] text-[.7rem] rounded-full">{notifLengthShow}</span>
+                    {#if notifLength > 0}
+                        <span class="flex items-center justify-center font-bold absolute top-[-.75rem] right-[-.75rem] bg-merah text-white min-w-[1.5rem] min-h-[1.5rem] text-[.7rem] rounded-full">{notifLengthShow}</span>
+                    {/if}
                 </button>
                 <Dropdown class='w-[30rem] border-[1px] border-[var(--color-bgside)] rounded-lg'>
                     <div in:slide={{duration:250, delay:100}} out:slide={{duration:250, delay:100}} class="flex flex-col">
@@ -104,8 +106,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <Clock size={14} class='w-[1.5rem]'/>
-                                        <span class="text-[.7rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
-                                        <Tooltip>{formatTanggal(waktu)}</Tooltip>
+                                        <span aria-label={formatTanggal(waktu)} data-balloon-pos="up" class="text-[.7rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
                                     </div>
                                 </a>
                             {/each}
@@ -130,7 +131,7 @@
     </div>
 
     <Modal class='bg-bgdark' title="Logout" bind:open={logoutState.modal}>
-        <p class="text-base leading-relaxed">Are you sure want logout?</p>
+        <p class="text-base leading-relaxed">Apa anda ingin keluar?</p>
         {#if logoutState.message}
             <Alert color="green" class='flex items-center'>
                 <Check />
@@ -138,7 +139,7 @@
             </Alert>
         {/if}
         <svelte:fragment slot="footer">
-            <MyButton disabled={logoutState.loading} onclick={() => handleLogout()}>Yes, log me out</MyButton>
+            <MyButton disabled={logoutState.loading} onclick={() => handleLogout()}>Yes, daddy</MyButton>
         </svelte:fragment>
     </Modal>
 </div>

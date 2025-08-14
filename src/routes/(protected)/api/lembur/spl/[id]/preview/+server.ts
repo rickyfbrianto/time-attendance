@@ -1,7 +1,8 @@
 import { error, json } from "@sveltejs/kit";
 import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function GET({ params }) {
+export async function GET({ params, locals }) {
+    const { user } = locals
     const { id } = params
     const req = await prisma.spl.findUnique({
         select: {
@@ -10,8 +11,6 @@ export async function GET({ params }) {
             est_end: true,
             approval1: true,
             status1: true,
-            approval2: true,
-            status2: true,
             purpose: true,
             spl_detail: {
                 select: {
@@ -32,9 +31,15 @@ export async function GET({ params }) {
                     step: 'asc'
                 }
             },
+            employee_spl_approval1Toemployee: {
+                select: {
+                    name: true
+                }
+            }
         },
         where: {
             spl_id: id,
+            approval1: user.payroll
         },
     })
     return json(req)

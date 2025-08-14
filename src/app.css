@@ -1,7 +1,7 @@
 @import 'tailwindcss';
+@import 'flatpickr/dist/flatpickr.min.css';
 @plugin '@tailwindcss/typography';
 @plugin '@tailwindcss/forms';
-
 @plugin 'flowbite/plugin';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -30,7 +30,6 @@
 
     --color-bgactive: #E7ECEF;
     --color-bgdark: #FFF;
-    /* --color-bgdark2: #FCFAF9; */
     --color-bgdark2: #F7F9F9;
     --color-textdark: var(--color-slate-800);
     --color-textdark2: #0E273C;
@@ -42,6 +41,7 @@
     --color-hijau: #337357;
     --color-merah: #922D50;
     --color-biru: #2374AB;
+    --color-black: #00272B;
 
     --font-quicksand: Quicksand;
     --font-dancing: "Dancing Script";
@@ -92,6 +92,8 @@
 
     --warna-base: #F0EBD8;
     --warna-base2: #add;
+
+    --balloon-color: blue;
 }
 
 body * {

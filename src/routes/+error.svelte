@@ -12,17 +12,17 @@
 
  <main class='flex flex-col gap-4 justify-center items-center h-screen w-full'>
     <Card img="/reaction.gif" size="lg" class="">
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-center">Something went wrong</h5>
+        <h5 class="mb-2 text-2xl font-bold tracking-tight text-center">Ada yang salah nih</h5>
         <div class="flex flex-col gap-2">
             <Badge color='red' class='self-center'><kbd class="text-[1rem] p-2 font-normal text-gray-700 dark:text-gray-400 leading-tight">{page.status} | {page.error?.message}</kbd></Badge>
             <div class="flex gap-4 justify-center">
-                <MyButton onclick={()=> goto('/dashboard')}>Dashboard</MyButton>
+                <MyButton onclick={()=> goto('/dashboard')}>Beranda</MyButton>
                 <MyButton onclick={()=> page.url.pathname.startsWith('/api') ? history.back() : location.reload()}>
-                    {page.url.pathname.startsWith('/api') ? 'Back' : 'Refresh'}
+                    {page.url.pathname.startsWith('/api') ? 'Kembali' : 'Refresh'}
                 </MyButton>
             </div>
             <Hr/>
-            <q class="font-normal text-center italic ">Please order some coffee and ask your IT or HRD to solve this problem</q>
+            <q class="font-normal text-center italic ">Hubungi team IT jika ada kendala </q>
         </div>
     </Card>
 </main>

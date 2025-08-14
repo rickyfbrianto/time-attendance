@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Tabs, TabItem } from 'flowbite-svelte';
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Button, Badge } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Button } from 'flowbite-svelte';
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import { RefreshCw, Search } from '@lucide/svelte';
     import MyButton from '$/lib/components/MyButton.svelte'
@@ -10,7 +10,7 @@
     import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
 	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, generatePeriode, namaHari, isLate, getParams, hitungDifference, formatDifference, formatLate, hitungLate } from '$/lib/utils.js';
+	import { formatTanggal, generatePeriode, namaHari, isLate, getParams, hitungDifference, formatDifference, formatLate, hitungLate, capitalEachWord } from '$/lib/utils.js';
 	import { format } from 'date-fns';
 	import Svelecte from 'svelecte';
     import { invalidateAll } from '$app/navigation';
@@ -38,14 +38,8 @@
 
     const formAbsenAnswer = {
         payroll: (()=> user?.payroll)(),
-        dept: (()=> user?.department)(),
-        name: "",
-        success:"",
-        error:"",
+        dept: (()=> user?.user_type == "HR" ? "" : user?.department)(),
         showCalendar: false,
-        loading:false,
-        add:false,
-        edit:false,
     }
     
     let formAbsen = $state({...formAbsenAnswer})
@@ -99,7 +93,7 @@
             }
         })
 
-        if (userProfile.level > 1){
+        if (user.level > 1){
             tableAbsenDept.load(async (state: State) => {
                 try {
                     const req = await fetch(`/api/absen?${getParams(state)}&dept=${formAbsenDept.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
@@ -116,33 +110,27 @@
 
     setTimeout(()=>{
         tableAbsen.invalidate()
-        if (userProfile.level > 1){
+        if (user.level > 1){
             tableAbsenDept.invalidate()
         }
     }, 1000)
 </script>
 
 <svelte:head>
-    <title>Check In & Out</title>
+    <title>Absen</title>
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full border-slate-300">        
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Absen">
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                {#if userProfile.level > 1}
+                {#if user.level > 1}
                     <div class="flex flex-1 gap-2">
                         {#await getUser(formAbsen.dept)}
                             <MyLoading message="Loading data"/>
                         {:then val}
-                            <!-- <select bind:value={formAbsen.payroll} class='flex-1' onchange={e=> tableAbsen.invalidate()}>
-                                {#each val as {payroll, name}}
-                                    <option value={payroll}>{payroll + " - " + name}</option>
-                                {/each}
-                            </select> -->
-
                             <Svelecte searchable selectOnTab bind:value={formAbsen.payroll} 
-                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))}
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + capitalEachWord(v.name)}))}
                                 onChange={() => tableAbsen.invalidate()}/>
                             
                             {#if formAbsen.payroll !== user?.payroll}
@@ -193,7 +181,7 @@
                                 {#if tableAbsen.rows.length > 0}
                                     {#each tableAbsen.rows as row}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell tdClass='min-w-[50px] w-[250px] max-w-[250px] break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='min-w-[50px] w-[250px] max-w-[250px] break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
                                                 <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
                                             </TableBodyCell>
@@ -250,10 +238,10 @@
                 </Datatable>
             </div>
         </TabItem>
-        {#if userProfile.level > 1}
+        {#if user.level > 1}
             <TabItem title="Departemen">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                    {#if userProfile.user_hrd}
+                    {#if userProfile.user_type == 'HR'}
                         <div class="flex flex-1 gap-2">
                             {#await getDept()}
                                 <MyLoading message="Loading data"/>
@@ -314,7 +302,7 @@
                                                 <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
                                             </TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                 <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                             </TableBodyCell>

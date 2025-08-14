@@ -24,7 +24,7 @@ export async function GET({ url }) {
 
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, user.department as dept,
                 att.check_in AS check_in, att.check_out AS check_out, att.check_in2, att.check_out2, 
-                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, profile.level, profile.user_hrd,
+                att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, user.level, user.user_type,
                 getUserWeekend(att.check_in, user.workhour) as isWeekend,
                 getStartOvertime(att.attendance_id, user.workhour, user.start_work) AS lembur_start,
                 roundCheckOut( att.check_in, att.check_out) as lembur_end

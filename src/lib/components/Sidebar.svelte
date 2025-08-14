@@ -3,10 +3,10 @@
     import usercowo from '$/lib/assets/user-man.svg'
     import { fade, fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, Alert, FooterBrand } from 'flowbite-svelte';
+	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, } from 'flowbite-svelte';
     import {appstore } from '$/lib/store/appstore'
     import { page } from '$app/state';
-	import { pecahArray } from '$/lib/utils';
+	import { pecahArray, capitalEachWord } from '$/lib/utils';
     import { invalidateAll } from '$app/navigation';
 	import axios from 'axios';
     import { fromZodError } from 'zod-validation-error';
@@ -14,10 +14,12 @@
 	import MyButton from './MyButton.svelte';
 	import MyInput from './MyInput.svelte';
 	import { format } from 'date-fns';
-    import { id } from 'date-fns/locale'
+    import { id } from 'date-fns/locale';
+    import Svelecte from 'svelecte';
 	import MyImage from './MyImage.svelte';
 	import MyAlert from './MyAlert.svelte';
 	import MyClock from './MyClock.svelte';
+	import MyLoading from './MyLoading.svelte';
 	
     let {data} = $props()
     let user = $derived(data.user) 
@@ -39,14 +41,14 @@
         {type:"main", link:"/cuti", title:"Cuti", icon: TicketsPlane},
         {type:"other", title:"Other", separator: true},
         {type:"other", link:"/security", title:"Security", icon: ShieldUser},
-        {type:"other", link:"/Logs", title:"Logs", icon: Logs},
+        {type:"other", link:"/logs", title:"Logs", icon: Logs},
         {type:"admin", title:"Admin", separator: true},
         {type:"admin", link:"/admin", title:"Admin", icon: CircleUserRound},
     ]
     let defaultModal = $state(false)
 
     // User
-    const formUserAnswer = {
+    const formUserAnswer = $state({
         answer:{
             payroll: (()=> user.payroll)(),
             name: (()=> user.name)(),
@@ -55,8 +57,8 @@
             location: (()=> user.location)(),
             phone: (()=> user.phone)(),
             email:  (()=> user.email)(),
-            approver: (()=> user.employee_employee_approverToemployee?.name || "")(),
-            substitute: (()=> user.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.name || "")(),
+            approver: (()=> user.approver || "")(),
+            substitute: (()=> user.substitute || "")(),
             join_date: (()=> format(user.join_date, 'd MMMM yyyy'))(),
             signature: (()=> user.signature)(),
         },
@@ -66,7 +68,7 @@
         loading:false,
         add:false,
         edit:false,
-    }
+    })
     
     let formUserState = $state({...formUserAnswer})
 
@@ -78,7 +80,10 @@
             const valid = UserSchema.pick({
                 phone: true,
                 location: true,
-                signature: true
+                signature: true,
+                approver: true,
+                substitute: true,
+                email: true
             })
 
             const formData = new FormData()
@@ -92,7 +97,7 @@
                 const res = await req.data
                 formUserState.success = res.message
                 setTimeout(async ()=> {
-                    invalidateAll().then(()=> {
+                    await invalidateAll().then(()=> {
                         formUserBatal()
                     })
                 }, 1000)
@@ -142,6 +147,11 @@
             formUserState.loading = false
         }
     }
+
+    const getUser = async (val: string = "") =>{
+        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
+        return await req.json()
+    }
 </script>
 
 {#if $appstore.showSidebar}
@@ -153,6 +163,7 @@
             <div class="flex flex-col">
                 <span class="text-[1.5rem] font-dancing font-[700] tracking-widest">Time</span>
                 <span class="indent-5 mt-[-5px] font-quicksand text-[1.25rem]">Attendance</span>
+                <span class="mt-[-2px] font-quicksand text-[.75rem] font-bold">Versi 1.2 (2025-08-08)</span>
             </div>
         </a>
 
@@ -165,39 +176,38 @@
                             <span class='text-muted font-bold font-quicksand text-[.75rem]'>{title}</span>
                         </div>
                     {:else}
-                        <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[4px] rounded-lg gap-3 shadow-lg`}>
+                        <a aria-label={title} data-balloon-pos="up" href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[4px] rounded-lg gap-3 shadow-lg`}>
                             <Icon size=14/>
-                            <span class={`text-[.75rem] font-bold font-quicksand`}>{title}</span>
+                            <span class={`text-[.7rem] font-bold font-quicksand`}>{title}</span>
                         </a>
-                        <Tooltip class='z-10'>{title}</Tooltip>
                     {/if}
                 {/if}
             {/each}
         </div>
 
-        <div class="relative flex flex-col mb-3 bg-bgside2 pt-5 pb-3 px-3 rounded-xl shadow-xl">
+        <div class="relative flex flex-col mb-3 bg-bgside2 pt-4 pb-2 px-3 rounded-xl shadow-xl">
             <div class="relative flex self-center">
-                <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[7rem] h-[7rem] mb-2"/>
+                <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[6.2rem] h-[6.2rem] mb-2"/>
                 <Tooltip class='z-10'>{user.name}</Tooltip>
                 <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute right-[-15px]' />
                 <Tooltip class='z-10'>Setting</Tooltip>
             </div>
-            <span class="text-[14px] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
+            <span class="text-[.75rem] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
             <Badge class='bg-slate-200 text-slate-800 self-center py-1'>{user.email}</Badge>
             <Tooltip class='z-10'>{user.email}</Tooltip>
-            <Hr hrClass="my-3 text-slate-300 h-[1.2px]"/>
-            <div class='flex flex-col gap-1 px-1 justify-center'>
-                <span class="flex items-center gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
+            <Hr hrClass="my-2 text-slate-300"/>
+            <div class='flex flex-col gap-[2px] px-1 justify-center'>
+                <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
                 <Tooltip class='z-10'>{user.payroll}</Tooltip>
-                <span class="flex items-center gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
+                <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
                 <Tooltip class='z-10'>{user.position}</Tooltip>
-                <span class="flex items-center gap-2 text-[12px] text-textdark text-ellipsis line-clamp-1"><Share2 size={14}/>Profile ({userProfile?.name} - Level {userProfile?.level})</span>
-                <Tooltip class='z-10'>{userProfile.name}</Tooltip>
+                <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><Share2 size={14}/>Profile ({userProfile?.name} - Level {user.level})</span>
+                <Tooltip class='z-10'>{userProfile?.name}</Tooltip>
             </div>
 
             <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-2 font-quicksand text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
 
-            {#if userProfile.user_hrd}
+            {#if user.user_type == 'HR'}
                 <div class="absolute h-[2rem] w-[4rem] flex items-center top-[-1.5rem] right-[0] rounded-t-lg bg-bgside2 px-4">
                     <span class='font-bold text-[.75rem]'>HRD</span>
                 </div>
@@ -224,7 +234,7 @@
             </div>
         </Modal>
 
-        <Modal title={"User "} bind:open={formUserState.modal} size={"lg"}>
+        <Modal title={"User "} bind:open={formUserState.modal} size={"xl"}>
             {#if formUserState.error}
                 {#each formUserState.error.split(';') as v}
                     <MyAlert pesan={v} func={()=> formUserState.error = ""} color='red'/>
@@ -236,11 +246,8 @@
                 <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
                 <div class="grid grid-cols-3 gap-4 p-4 border-[1px] border-slate-300">
                     <MyInput type='text' title='Payroll' disabled name="payroll" bind:value={formUserState.answer.payroll}/>
-                    <MyInput type='text' title='Email' disabled name="email" bind:value={formUserState.answer.email}/>
                     <MyInput type='text' title='Name' disabled name="name" bind:value={formUserState.answer.name}/>
                     <MyInput type='text' title='Position' disabled name="position" bind:value={formUserState.answer.position}/>
-                    <MyInput type='text' title='Approver' disabled name="approver" bind:value={formUserState.answer.approver}/>
-                    <MyInput type='text' title='Substitute' disabled name="substitute" bind:value={formUserState.answer.substitute}/>
                     <MyInput type='text' title='Join Date' disabled name="join_date" bind:value={formUserState.answer.join_date}/>
                 </div>
 
@@ -250,7 +257,25 @@
                     <MyButton onclick={formUserSubmit}><Save size={16}/></MyButton>
                 </div>
                 <div class="grid grid-cols-3 gap-4 p-4 border-[1px] border-slate-300">
-                    <!-- <MyInput type='password' password={true} title='Password' name="password" bind:value={formUserState.answer.password}/> -->
+                    <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
+
+                    {#await getUser('')}
+                        <MyLoading message="Loading user data"/>
+                    {:then val}
+                        <div class="flex flex-col gap-2">
+                            <Label>Approver</Label>
+                            <Svelecte clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formUserState.answer.approver} 
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " | " + capitalEachWord(v.name)}))}
+                            />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <Label>Substitute</Label>
+                            <Svelecte clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formUserState.answer.substitute} 
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " | " + capitalEachWord(v.name)}))}
+                            />
+                        </div>
+                    {/await}
+
                     <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
                     <div class="flex flex-col gap-2">
                         <Label for='location'>Location</Label>

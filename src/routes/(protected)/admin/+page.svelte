@@ -5,7 +5,7 @@
     import MyButton from '$/lib/components/MyButton.svelte'
     import axios from 'axios'
     import {Plus, RefreshCw, Save, Ban, Pencil, Trash, Search, Check, KeyRound } from '@lucide/svelte'
-    import {formatTanggal, getParams, pecahArray} from '$/lib/utils'
+    import {formatTanggal, getParams, pecahArray, capitalEachWord} from '$/lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
     import bgadmin from '$lib/assets/bg-admin.jpg'
@@ -18,6 +18,7 @@
 	import { ProfileSchema, SettingSchema, UserSchema, type TCalendarSchema, type TDeptSchema, type TProfileSchema, type TSettingSchema, type TUserSchema } from '$/lib/type.js';
     import MyPagination from '@/MyPagination.svelte';
     import MyAlert from '@/MyAlert.svelte';
+    import MyDatePicker from '@/MyDatePicker.svelte';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -45,8 +46,6 @@
             profile_id: "id",
             name: "",
             description: "",
-            level: "",
-            user_hrd: false,
             access_sppd: [],
             access_skpd: [],
             access_spl: [],
@@ -163,6 +162,7 @@
             substitute: "",
             join_date: "",
             signature: "",
+            level: 0,
             user_type: "",
             user_hod: false,
             hostname: "",
@@ -607,14 +607,8 @@
                             <div class="flex flex-col md:flex-row gap-4">
                                 <div class="flex flex-col gap-2 flex-1">
                                     <MyInput type='text'  title='Nama' name="name" bind:value={formProfileState.answer.name}/>
-                                    <Checkbox class='' bind:checked={formProfileState.answer.user_hrd as unknown as boolean}>User HRD</Checkbox>
                                 </div>
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
-                            </div>
-                            
-                            <div class="flex flex-col gap-2">
-                                <Label for='level'>Level</Label>
-                                <Select name='level' items={listLevel} bind:value={formProfileState.answer.level} />
                             </div>
                             
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -668,8 +662,8 @@
                                 </div>
 
                                 <div class="flex flex-col gap-2">
-                                    <Label for='level'>Status</Label>
-                                    <Select name='level' items={[
+                                    <Label for='status'>Status</Label>
+                                    <Select name='status' items={[
                                         {value:"Aktif", name:"Aktif"},
                                         {value:"Nonaktif", name:"Nonaktif"},
                                     ]} bind:value={formProfileState.answer.status} />
@@ -694,8 +688,6 @@
                             <TableHead>
                                 <ThSort table={tableProfile} field="name">Nama</ThSort>
                                 <ThSort table={tableProfile} field="description">Deskripsi</ThSort>
-                                <ThSort table={tableProfile} field="user_hrd">User HRD</ThSort>
-                                <ThSort table={tableProfile} field="level">Level</ThSort>
                                 <ThSort table={tableProfile} field="status">Status</ThSort>
                                 <ThSort table={tableProfile} field="">#</ThSort>
                             </TableHead>
@@ -711,15 +703,13 @@
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell>{row.name}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
-                                                <TableBodyCell>{row.user_hrd ? "Yes": "No"}</TableBodyCell>
-                                                <TableBodyCell>{row.level}</TableBodyCell>
                                                 <TableBodyCell>{row.status}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formProfileState.edit}
-                                                        {#if pecahArray(userProfile.access_profile, "U")}
+                                                        {#if pecahArray(userProfile.access_profile, "U") && row.profile_id !== 'DEFAULT'}
                                                             <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
                                                         {/if}
-                                                        {#if pecahArray(userProfile.access_profile, "D") && row.status == "Aktif"}
+                                                        {#if pecahArray(userProfile.access_profile, "D") && row.status == "Aktif" && row.profile_id !== 'DEFAULT'}
                                                             <MyButton onclick={()=> {
                                                                 formProfileState.answer.profile_id = row.profile_id
                                                                 formProfileState.modalDelete = true
@@ -778,7 +768,6 @@
                         <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                             <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
                             <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-300">
-                                <!-- <hr> -->
                                 <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
 
                                 {#await getProfile() then val}
@@ -815,7 +804,11 @@
                                 </div>
 
                                 <MyInput type='text' title='Phone' name="phone" bind:value={formUserState.answer.phone}/>
-                                <MyInput type='date' title='Join Date' name="join_date" bind:value={formUserState.answer.join_date}/>
+
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Join Date</Label>
+                                    <MyDatePicker bind:value={formUserState.answer.join_date}/>
+                                </div>                 
 
                                 <div class="flex flex-col gap-2">
                                     <Label>Signature</Label>
@@ -842,15 +835,20 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border-[1px] border-slate-200">
                                 <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
 
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-end gap-4">
+                                    <div class="flex flex-col flex-1 gap-2">
+                                        <Label for='level'>Level</Label>
+                                        <Select name='level' items={listLevel} bind:value={formUserState.answer.level} />
+                                    </div>
                                     <Checkbox bind:checked={formUserState.answer.overtime}>Overtime</Checkbox>
                                     <Checkbox bind:checked={formUserState.answer.user_hod}>User HOD</Checkbox>
                                 </div>
                                 <div class="flex flex-col gap-2">
                                     <Label for='user_type'>User Tipe</Label>
                                     <Select name='user_type' items={[
-                                        {value:"Security", name:"Security"},
+                                        {value:"HR", name:"HR"},
                                         {value:"OB", name:"OB"},
+                                        {value:"Security", name:"Security"},
                                         {value:"Messenger", name:"Messenger"},
                                         {value:"Other", name:"Other"},
                                     ]} bind:value={formUserState.answer.user_type} />
@@ -869,9 +867,9 @@
                                 </div>
 
                                 <div class="flex flex-col gap-2">
-                                    <Label for='level'>Status</Label>
+                                    <Label for='status'>Status</Label>
                                     <div class="flex flex-col">
-                                        <Select name='level' items={[
+                                        <Select name='status' items={[
                                             {value:"Aktif", name:"Aktif"},
                                             {value:"Nonaktif", name:"Nonaktif"},
                                         ]} bind:value={formUserState.answer.status} />
@@ -897,14 +895,14 @@
                     <Datatable table={tableUser}>
                         <Table>
                             <TableHead>
-                                <ThSort table={tableUser} field="payroll"><TableHeadCell>Payroll</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="name"><TableHeadCell>Nama</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="profile_name"><TableHeadCell>Profil</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="position"><TableHeadCell>Posisi</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="department"><TableHeadCell>Departemen</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="location"><TableHeadCell>Lokasi</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field="email"><TableHeadCell>Email</TableHeadCell></ThSort>
-                                <ThSort table={tableUser} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                                <ThSort table={tableUser} field="payroll">Payroll</ThSort>
+                                <ThSort table={tableUser} field="name">Nama</ThSort>
+                                <ThSort table={tableUser} field="profile_name">Profil</ThSort>
+                                <ThSort table={tableUser} field="position">Posisi</ThSort>
+                                <ThSort table={tableUser} field="department">Departemen</ThSort>
+                                <ThSort table={tableUser} field="location">Lokasi</ThSort>
+                                <ThSort table={tableUser} field="email">Email</ThSort>
+                                <ThSort table={tableUser} field="">#</ThSort>
                             </TableHead>
 
                             {#if tableUser.isLoading}
@@ -917,9 +915,9 @@
                                         {#each tableUser.rows as row}
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell tdClass='break-all'>{row.payroll}</TableBodyCell>
-                                                <TableBodyCell>{row.name}</TableBodyCell>
+                                                <TableBodyCell>{capitalEachWord(row.name)}</TableBodyCell>
                                                 <TableBodyCell>{row.profile_name}</TableBodyCell>
-                                                <TableBodyCell>{row.position}</TableBodyCell>
+                                                <TableBodyCell>{capitalEachWord(row.position)}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all'>{row.dept}</TableBodyCell>
                                                 <TableBodyCell>{row.location}</TableBodyCell>
                                                 <TableBodyCell>{row.email}</TableBodyCell>
@@ -1033,11 +1031,11 @@
                     <Datatable table={tableDept}>
                         <Table>
                             <TableHead>
-                                <ThSort table={tableDept} field="dept_code"><TableHeadCell>Dept Code</TableHeadCell></ThSort>
-                                <ThSort table={tableDept} field="name"><TableHeadCell>Nama</TableHeadCell></ThSort>
-                                <ThSort table={tableDept} field="initial"><TableHeadCell>Inisial</TableHeadCell></ThSort>
-                                <ThSort table={tableDept} field="status"><TableHeadCell>Status</TableHeadCell></ThSort>
-                                <ThSort table={tableDept} field=""><TableHeadCell>#</TableHeadCell></ThSort>
+                                <ThSort table={tableDept} field="dept_code">Dept Code</ThSort>
+                                <ThSort table={tableDept} field="name">Nama</ThSort>
+                                <ThSort table={tableDept} field="initial">Inisial</ThSort>
+                                <ThSort table={tableDept} field="status">Status</ThSort>
+                                <ThSort table={tableDept} field="">#</ThSort>
                             </TableHead>
 
                             {#if tableDept.isLoading}
@@ -1154,7 +1152,10 @@
                         {/if}
                         {#if formCalendar.add || formCalendar.edit}
                             <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
-                                <MyInput type='date' title='Date' name="date" bind:value={formCalendar.answer.date}/>
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Date</Label>
+                                    <MyDatePicker bind:value={formCalendar.answer.date}/>
+                                </div>                 
                                 <div class="flex flex-col gap-2">
                                     <Label>Type</Label>
                                     <select bind:value={formCalendar.answer.type}>

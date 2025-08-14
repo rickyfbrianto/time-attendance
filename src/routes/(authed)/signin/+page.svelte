@@ -37,8 +37,8 @@
         } catch (error: any) {
             formLoginState.error = error.response.data.message
             formLoginState.success = ""
-        } finally {
             formLoginState.loading = false
+        } finally {
         }
     }
 </script>
@@ -66,16 +66,15 @@
             </Alert>
         {/if}
         {#if formLoginState.loading}
-            <MyLoading message="Login verification"/>
+            <MyLoading message="Verifikasi Masuk"/>
         {/if}
         <div class="flex flex-col gap-4">
             <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
             <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
-            <Checkbox bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Remember Me</Checkbox>
+            <Checkbox bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Ingat Login</Checkbox>
+            <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
             {#if formLoginState.loading}
                 <span>Verifikasi data</span>
-            {:else}
-                <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
             {/if}
         </div>
     </form>        

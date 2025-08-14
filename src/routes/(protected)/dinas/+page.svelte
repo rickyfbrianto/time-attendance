@@ -6,8 +6,8 @@
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
-	import { formatTanggal, pecahArray, pecahKataOther, getParams } from '$/lib/utils';
-    import { differenceInDays, format, startOfDay } from "date-fns";
+	import { formatTanggal, pecahArray, pecahKataOther, getParams, capitalEachWord } from '$/lib/utils';
+    import { differenceInDays, format } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
     import { jsPDF } from "jspdf";
@@ -17,13 +17,20 @@
 	import { fromZodError } from 'zod-validation-error';
     import MyPagination from '@/MyPagination.svelte';
     import MyAlert from '@/MyAlert.svelte';
+    import MyDatePicker from '@/MyDatePicker.svelte';
 	import { goto } from '$app/navigation';
+    import { id } from "date-fns/locale";
 
     let {data} = $props()
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     
     const rowsPerPage = 10
+
+    const listApproveSKPD = [
+        {value: '181124', text: "Luviana Riska"},
+        {value: '120301', text: "Agus Saputro"},
+    ]
     
     let tableSPPD = $state(new TableHandler([], {rowsPerPage}))
     let tableSPPDSearch = tableSPPD.createSearch()
@@ -33,15 +40,14 @@
             sppd_id: "id",
             purpose:"",
             location:"",
-            // date: [],
             date: ["", ""],
             duration: 0,
-            dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+            dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
             createdBy: (()=> user?.payroll)(),
             sppd_detail:[{payroll:"", description:""}]
         },
-        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
-        payroll: (()=> userProfile.user_hrd || userProfile.level >= 5 ? "" : user?.payroll)(),
+        dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
+        payroll: (()=> user.user_type == 'HR' || user.level >= 5 ? "" : user?.payroll)(),
         success:"",
         error:"",
         modalDelete:false,
@@ -59,7 +65,7 @@
                 sppd_id: z.string().trim().min(1),
                 purpose: z.string().trim().min(1),
                 location: z.string().trim().min(1),
-                date: z.tuple([z.string(), z.string()], {message: "Date is not valid"}),
+                date: z.tuple([z.string().trim().min(10), z.string().trim().min(10)], {message: "Date is not valid"}),
                 sppd_detail: z.array(z.object({
                     payroll: z.string().trim().min(1),
                     description: z.string().trim().min(10)
@@ -69,10 +75,10 @@
             if(isValid.success){            
                 const req = await axios.post('/api/sppd', formSPPD.answer)
                 const res = await req.data
-                formSPPD.error = ""
-                formSPPD.success = res.message
                 formSPPDBatal()
                 tableSPPD.invalidate()
+                formSPPD.error = ""
+                formSPPD.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
                 formSPPD.success = ""
@@ -94,15 +100,12 @@
             const req = await axios.get(`/api/sppd/${id}`)
             const res = await req.data
             if(res){
-                setTimeout(()=>{
-                    formSPPD.answer = {...res}
-                    formSPPD.answer.date = [formatTanggal(res.start_date, "date"), formatTanggal(res.end_date, "date")]
-                }, 100)
+                formSPPD.edit = true
+                formSPPD.add = false
+                formSPPD.loading = false
+                formSPPD.answer = {...res}
+                formSPPD.answer.date = [formatTanggal(res.start_date, "date"), formatTanggal(res.end_date, "date")]
             }
-            
-            formSPPD.edit = true
-            formSPPD.add = false
-            formSPPD.loading = false
         } catch (error) {
             formSPPD.loading = false
         }
@@ -290,15 +293,17 @@
     
     const formSKPDAnswer = {
         answer:{
-            skpd_id: "id",
-            sppd_id:"",
-            skpd_detail: [{payroll:"", description: ""}],
+            addMode: false,
+            sppd_id: "",
+            skpd_id: "",
+            skpd_detail: [{skpd_id: "", payroll:"", description: ""}],
             date: ["", ""],
+            approve: "",
             status: "",
             createdBy: (()=> user?.payroll)(),
         },
         sppd_id: "",
-        payroll: (()=> userProfile.user_hrd ? "" : user?.payroll)(),
+        payroll: (()=> user.user_type == 'HR' ? "" : user?.payroll)(),
         success:"",
         error:"",
         cetakPDFID:"",
@@ -314,9 +319,13 @@
     const formSKPDSubmit = async () =>{
         try {
             formSKPD.loading = true
+            formSKPD.answer.addMode = formSKPD.add
             const valid = z.object({
                 sppd_id: z.string().trim().min(1),
-                date: z.tuple([z.string().trim().min(1), z.string().trim().min(1)]),
+                skpd_detail: z.array(z.object(
+                    {skpd_id: z.string().trim().min(3), payroll: z.string().trim().min(6), description: z.string().trim().min(1)}
+                )),
+                date: z.tuple([z.string().trim().min(10), z.string().trim().min(10)], {message: "Date is not valid"}),
                 status: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formSKPD.answer)
@@ -351,6 +360,7 @@
                 formSKPD.answer = {...res}
                 setTimeout(()=>{
                     formSKPD.answer.date = [formatTanggal(res.real_start, "date"), formatTanggal(res.real_end, "date")]
+                    formSKPD.answer.skpd_detail = [{skpd_id: res.skpd_id, payroll: res.payroll, description: res.description}]
                 }, 100)
             }
             
@@ -368,7 +378,11 @@
             const req = await axios.delete(`/api/skpd/${id}`)
             const res = await req.data
             tableSKPD.invalidate()
-        } catch (error) {
+            formSKPD.error = ""
+            formSKPD.success = res.message
+        } catch (error: any) {
+            formSKPD.error = error.response.data.message
+            formSKPD.success = ""
         } finally {
             formSKPD.loading = false
         }
@@ -379,12 +393,15 @@
             const req = await axios.get(`/api/skpd/${id}`)
             const res = await req.data
 
+            if (!res.approve_signature) throw new Error (`Approval ${capitalEachWord(res.approve_name)} tidak ada signature`)
+
             const doc = new jsPDF({
                 orientation:"p",
                 unit:"mm",
                 format:"a4"
             })
 
+            const signatureSize = 20
             const rowData = 10
             const colData = [16, 45, 50]
             let rowInc = 0
@@ -400,7 +417,7 @@
             doc.setFontSize(13)
             rowInc += row1
             doc.text("MANUFACTURES OF PRIMARY CEMENTING EQUIPMENT", 43, rowData + rowInc)
-            doc.rect(10, 28, 190, 236)
+            doc.rect(10, 28, 190, 238)
             doc.setFont("Comic", "normal")
             doc.setFontSize(16)
             doc.setTextColor("#000000")
@@ -409,7 +426,7 @@
             rowInc += row2
             doc.line(10, rowData + rowInc, 200, rowData + rowInc)
             
-            rowInc += row3
+            rowInc += row2
             doc.setFont("times", "normal")
             doc.setFontSize(12)
             doc.text("Nomor", colData[0], rowData + rowInc)
@@ -426,7 +443,7 @@
             rowInc += row2
             doc.text("- Nama", colData[0], rowData + rowInc)
             doc.text(":", colData[1], rowData + rowInc)
-            doc.text(res.name, colData[2], rowData + rowInc)
+            doc.text(capitalEachWord(res.name), colData[2], rowData + rowInc)
             doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
             rowInc += row2
             doc.text("- Payroll", colData[0], rowData + rowInc)
@@ -450,7 +467,7 @@
             rowInc += row2
             doc.text("- Tujuan", colData[0], rowData + rowInc)
             doc.text(":", colData[1], rowData + rowInc)
-            doc.text(res.location, colData[2], rowData + rowInc)
+            doc.text(capitalEachWord(res.location), colData[2], rowData + rowInc)
             doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
             rowInc += row2
             doc.text("- Keperluan", colData[0], rowData + rowInc)
@@ -479,12 +496,13 @@
             rowInc += row2
             doc.text("Pimpinan Perusahaan,", colData[0], rowData + rowInc)
             doc.text("Pejabat yang dituju,", colData[0] + 130, rowData + rowInc)
-            rowInc += row3 * 2.2
-            doc.text("Agus Saputro", colData[0], rowData + rowInc)
+            rowInc += row3 * 2.6
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.approve_signature, colData[0], rowData + rowInc - (signatureSize + 4), signatureSize, signatureSize)
+            doc.text(capitalEachWord(res.approve_name), colData[0], rowData + rowInc)
             doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
             rowInc += row1
-            doc.text("Kepala Departemen HR/GA", colData[0], rowData + rowInc)
-            rowInc += row1
+            doc.text(res.approve_position, colData[0], rowData + rowInc)
+            rowInc += row2
             doc.text("Datang tanggal", colData[0] + 90, rowData + rowInc)
             doc.text(":", colData[0] + 120, rowData + rowInc)
             doc.line(colData[0] + 122, rowData + rowInc + 2, 190, rowData + rowInc + 2)
@@ -505,7 +523,7 @@
             rowInc += row2
             doc.text("* Pertinggal", colData[0], rowData + rowInc)
 
-            rowInc += row3
+            rowInc += row1
             doc.setFontSize(8)
             doc.text("Gandaria 8 Office Tower, Lt. 8, Jl. Sultan Iskandar Muda No-10, RT-10/RW-06 Kel. Kebayoran Lama - Jakarta 12770 Tel: (62-21) 7985951 Fax: (62-21) 7986134", 12, rowData + rowInc)
             rowInc += 4
@@ -588,12 +606,13 @@
     })
 
     $effect(()=>{
+        // const selisihDate = formSPPD.answer.date.toString().split(" s/d ")
         const diff = differenceInDays(formSPPD.answer.date[1], formSPPD.answer.date[0]) + 1
         formSPPD.answer.duration = isNaN(diff) ? 0 : diff
     })
     
     setTimeout(()=>{
-        if(userProfile.user_hrd || userProfile.level >= 5){
+        if(user.user_type == 'HR' || user.level >= 5){
             tableSPPD.invalidate()
         }
         tableSKPD.invalidate()
@@ -606,7 +625,7 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        {#if userProfile.user_hrd || userProfile.level >= 5}
+        {#if user.user_type == 'HR' || user.level >= 5}
             <TabItem open title="SPPD">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formSPPD.error}
@@ -617,7 +636,7 @@
                         <MyAlert pesan={formSPPD.success} func={()=> formSPPD.success = ""} color='green'/>
                     {/if}
                     
-                    {#if (userProfile?.user_hrd || userProfile?.level > 1)}
+                    {#if (user.user_type == 'HR' || user.level > 1)}
                         <div class="flex gap-2">
                             {#if formSPPD.add || formSPPD.edit}
                                 {#if pecahArray(userProfile?.access_sppd, "C") || pecahArray(userProfile.access_sppd, "U")}
@@ -637,7 +656,7 @@
                     {/if}
                     {#if formSPPD.add || formSPPD.edit}
                         <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
-                            {#if userProfile.user_hrd}
+                            {#if user.user_type == 'HR'}
                                 {#await getDept() then val}
                                     <div class="flex flex-col gap-2 flex-1">
                                         <Label>Department</Label>
@@ -650,8 +669,13 @@
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <MyInput type='textarea' title={`Purpose`} name="purpose" bind:value={formSPPD.answer.purpose}/>
                                 <MyInput type='text' title={`Location`} name="location" bind:value={formSPPD.answer.location}/>
-                                <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>                            
-                                <MyInput type='daterange' title='Date' name="date" bind:value={formSPPD.answer.date}/>
+                                <input type='hidden' name="sppd_id" disabled={formSPPD.edit} bind:value={formSPPD.answer.sppd_id}/>
+
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Date</Label>
+                                    <MyDatePicker bind:value={formSPPD.answer.date} mode='range'/>
+                                </div>
+                                
                                 <MyInput type='text' title='Duration' disabled bind:value={formSPPD.answer.duration} />
                             </div>
                             
@@ -728,8 +752,7 @@
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>
                                                     <div>
-                                                        <span>{pecahKataOther(row.name, 1)}</span>
-                                                        <Tooltip>{row.name}</Tooltip>
+                                                        <span aria-label={row.name.split(', ').map((v: string) => capitalEachWord(v)).join(', ')} data-balloon-pos="up">{pecahKataOther(row.name, 1)}</span>
                                                     </div>
                                                 </TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date")}</TableBodyCell>
@@ -737,7 +760,7 @@
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formSPPD.edit}
-                                                        {#if (userProfile?.user_hrd || userProfile?.level > 1) && !row.isSKPDFromSPPD}
+                                                        {#if (user.user_type == 'HR' || user.level > 1) && !row.isSKPDFromSPPD}
                                                             {#if pecahArray(userProfile.access_sppd, "U")}
                                                                 <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
                                                             {/if}
@@ -776,7 +799,7 @@
                     <MyAlert pesan={formSKPD.success} func={()=> formSKPD.success = ""} color='green'/>
                 {/if}
         
-                {#if (userProfile?.user_hrd)}
+                {#if (user.user_type == 'HR')}
                     <div class="flex gap-2">
                         {#if formSKPD.add || formSKPD.edit}
                             {#if pecahArray(userProfile?.access_skpd, "C") || pecahArray(userProfile.access_skpd, "U")}
@@ -807,12 +830,22 @@
                                 </div>
                             {/await}
                         {:else}
-                        <MyInput type='text' title='SPPD ID' disabled={formSKPD.edit} bind:value={formSKPD.answer.sppd_id} />
+                            <MyInput type='text' title='SPPD ID' disabled={formSKPD.edit} bind:value={formSKPD.answer.sppd_id} />
                         {/if}
-                
+                        
                         {#if formSKPD.answer.sppd_id}
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <MyInput type='daterange' title='Date' name="date" bind:value={formSKPD.answer.date}/>
+                                
+                                <div class="flex flex-col gap-2 flex-1">
+                                    <Label>Tanggal Dinas</Label>
+                                    <MyDatePicker bind:value={formSKPD.answer.date} mode='range'/>
+                                </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <Label>Approve</Label>
+                                    <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.approve} 
+                                    options={listApproveSKPD.map((v:any) => ({value: v.value, text: v.value + " - " + v.text}))}/>
+                                </div>
 
                                 <div class="flex flex-col gap-2">
                                     <Label>Status</Label>
@@ -823,9 +856,11 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="flex flex-col gap-2">
+                            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
+                                <span class='font-bold text-[1.2rem] font-quicksand'>Daftar Dinas Karyawan</span>
                                 {#each formSKPD.answer.skpd_detail as item, i (item.payroll)}
                                     <div class="flex gap-2">
+                                        <MyInput type='text' title='SKPD ID' disabled={formSKPD.edit} bind:value={item.skpd_id} />
                                         <MyInput type='text' disabled title='Payroll' bind:value={item.payroll} />
                                         <MyInput type='text' disabled title='Description' bind:value={item.description} />
                                     </div>
@@ -854,6 +889,7 @@
                     <Table>
                         <TableHead>
                             <ThSort table={tableSKPD} field="skpd_id">SKPD ID</ThSort>
+                            <ThSort table={tableSKPD} field="sppd_id">SPPD ID</ThSort>
                             <ThSort table={tableSKPD} field="name">Nama</ThSort>
                             <ThSort table={tableSKPD} field="location">Lokasi</ThSort>
                             <ThSort table={tableSKPD} field="description">Deskripsi</ThSort>
@@ -874,19 +910,15 @@
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div>{row.skpd_id.replace(/\_/g,'/')}</div>
-                                                <Tooltip class='z-10'>{row.sppd_id.replace(/\_/g,'/')}</Tooltip>
                                             </TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>
+                                                <div>{row.sppd_id.replace(/\_/g,'/')}</div>
+                                            </TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "date")}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "date")}</TableBodyCell>
-                                            <!-- <TableBodyCell tdClass='break-all font-medium'>
-                                                <div class="flex flex-col items-start gap-2">
-                                                    <span class='flex items-center gap-2'><CalendarArrowDown size={14} /> {formatTanggal(row.real_start, "date")}</span>
-                                                    <span class='flex items-center gap-2'><CalendarArrowUp size={14} /> {formatTanggal(row.real_end, "date")}</span>
-                                                </div>
-                                            </TableBodyCell> -->
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formSKPD.edit}
@@ -932,20 +964,20 @@
 
     <Modal bind:open={formSPPD.modalDelete} autoclose>
         <div class="flex flex-col gap-6">
-            <h3>Delete SPPD ?</h3>
+            <h3>Hapus SPPD ?</h3>
         </div>
         <svelte:fragment slot="footer">
-            <Button color='green' disabled={formSPPD.loading} onclick={() => formSPPDDelete(formSPPD.answer.sppd_id)}>Yes, delete this data</Button>
+            <Button color='green' disabled={formSPPD.loading} onclick={() => formSPPDDelete(formSPPD.answer.sppd_id)}>Ya, hapus SPPD</Button>
             <Button color='red' onclick={() => formSPPD.modalDelete = false}>No</Button>
         </svelte:fragment>
     </Modal>
 
     <Modal bind:open={formSKPD.modalDelete} autoclose>
         <div class="flex flex-col gap-6">
-            <h3>Delete SKPD ?</h3>
+            <h3>Hapus SKPD ?</h3>
         </div>
         <svelte:fragment slot="footer">
-            <Button color='green' disabled={formSKPD.loading} onclick={() => formSKPDDelete(formSKPD.answer.skpd_id)}>Yes, delete this data</Button>
+            <Button color='green' disabled={formSKPD.loading} onclick={() => formSKPDDelete(formSKPD.answer.skpd_id)}>Ya, Hapus SKPD</Button>
             <Button color='red' onclick={() => formSKPD.modalDelete = false}>No</Button>
         </svelte:fragment>
     </Modal>

@@ -19,8 +19,6 @@ export async function GET({ url }) {
                 profile_id: true,
                 name: true,
                 description: true,
-                level: true,
-                user_hrd: true,
                 status: true
             },
             where: {

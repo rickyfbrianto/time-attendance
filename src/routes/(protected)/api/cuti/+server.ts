@@ -52,13 +52,9 @@ export async function POST({ request }) {
             const user = await tx.employee.findUnique({
                 select: {
                     workhour: true,
-                    profile: {
-                        select: {
-                            user_hrd: true
-                        }
-                    }
+                    user_type: true
                 },
-                where: { payroll: data.get('payroll'), status: "Aktif" }
+                where: { payroll: data.get('payroll') as string, status: "Aktif" }
             })
             if (!user) throw new Error(`Karyawan tidak ditemukan atau status nonaktif`)
 
@@ -101,7 +97,7 @@ export async function POST({ request }) {
                         description: data.get('description'),
                         date: formatTanggalISO(date),
                         year: getYear(tanggal[0]),
-                        status: !user?.profile?.user_hrd && data.get('user_hrd') ? "Approved" : "Waiting",
+                        status: user.user_type != 'HR' && data.get('user_hrd') ? "Approved" : "Waiting",
                         approval: data.get('approval'),
                         is_delegate: false,
                         attachment: fileAttachment,
@@ -110,11 +106,11 @@ export async function POST({ request }) {
                 })
 
                 if (insertCuti && attachment) {
-                    const filename = path.resolve(process.env.ATTACH_CUTI) + `/${fileAttachment}`
+                    const filename = path.resolve(process.env.ATTACH_CUTI as string) + `/${fileAttachment}`
                     await writeFile(filename, Buffer.from(await attachment?.arrayBuffer()));
                 }
 
-                return { message: "Cuti successfully saved" }
+                return { message: "Cuti berhasil disimpan" }
             } else {
                 const updateCuti = await tx.$executeRawUnsafe(`
                     UPDATE cuti SET date=?,description=?,type=? WHERE cuti_id=?`,
@@ -122,7 +118,7 @@ export async function POST({ request }) {
 
                 if (!updateCuti) throw new Error("Cuti tidak dapat disimpan, data ada yang berubah")
 
-                return { message: "Cuti successfully updated" }
+                return { message: "Cuti berhasil diubah" }
             }
         })
 

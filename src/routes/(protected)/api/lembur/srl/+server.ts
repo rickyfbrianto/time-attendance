@@ -7,8 +7,8 @@ export async function GET({ url }) {
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
-    const sort = url.searchParams.get('_sort') ?? "srl_id"
-    const order = url.searchParams.get('_order') ?? "asc"
+    const sort = url.searchParams.get('_sort') ?? "real_start"
+    const order = url.searchParams.get('_order') ?? "desc"
     const search = url.searchParams.get('_search') ?? ""
 
     const payroll = url.searchParams.get('payroll') || ""
@@ -81,7 +81,7 @@ export async function POST({ request, }) {
                     }))
                 })
 
-                return { message: "Data successfully saved" }
+                return { message: "SRL Berhasil Disimpan" }
             } else {
                 const updateSRL = await tx.$executeRawUnsafe(`
                     UPDATE SRL SET real_start=?,real_end=?,approval1=?,approval2=? WHERE srl_id=? AND status1 = ? AND status2 = ?`,
@@ -102,7 +102,7 @@ export async function POST({ request, }) {
                     }))
                 })
 
-                return { message: "Data successfully updated" }
+                return { message: "SRL Berhasil Diubah" }
             }
         })
 

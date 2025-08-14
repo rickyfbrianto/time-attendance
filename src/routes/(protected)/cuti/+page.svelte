@@ -7,7 +7,7 @@
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
-	import { formatTanggal, pecahArray, generatePeriode, getParams, dataTahun, dataBulan, namaHari } from '$/lib/utils.js';
+	import { formatTanggal, pecahArray, generatePeriode, getParams, dataTahun, dataBulan, namaHari, capitalEachWord } from '$/lib/utils.js';
 	import { format, getYear, differenceInDays, set, getDay } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
@@ -16,6 +16,7 @@
     import MyPagination from '@/MyPagination.svelte';
     import MyImage from '@/MyImage.svelte';
     import MyAlert from '@/MyAlert.svelte';
+    import MyDatePicker from '@/MyDatePicker.svelte';
     import stm from '$/lib/assets/stm.png'
 	import jsPDF from 'jspdf';
     import { applyPlugin } from 'jspdf-autotable'
@@ -39,15 +40,6 @@
         return temp
     })
 
-    let openRow: string[] = $state([]) 
-    const toggleRow = (i: string) => {
-        if(openRow.includes(i)){
-            openRow = openRow.filter((item) => item !== i)
-        } else {
-            openRow.push(i)
-        }
-    }
-        
     let headerData: {title:string, value:string, icon: any }[] = $state([])
     let modalHeader = $state({
         modal:false,
@@ -61,7 +53,7 @@
         }
     }
 
-    const modeCuti = $state({
+    let modeCuti = $state({
         modalAttachment: false,
         attachment: "",
         periode: {
@@ -78,21 +70,21 @@
     let formCutiAnswer = {
         answer: {
             cuti_id: "id",
-            name: "",
+            payroll: (() => user?.payroll)(),
+            name: (() => user?.name)(),
             type: "",
             description: "",
             date:"",
             status: "Waiting",
             attachment: "",
-            // payroll: (()=> (userProfile.user_hrd || userProfile.level > 1) ? "" : user?.payroll)(),
-            payroll: "111111",
             dept: (()=> user?.department)(),
-            user_hrd: (()=> userProfile?.user_hrd)(),
-            approval: (() => user?.approver || null)(),
-            user_approval: (()=> user?.employee_employee_approverToemployee?.payroll || null)(),
-            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)()
+            user_hrd: (()=> user.user_type == 'HR')(),
+            approval: (() => user?.employee_employee_approverToemployee?.payroll || null)(),
+            user_approval_name: "",
+            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)(),
+            user_delegate_name: ""
         },
-        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
         success:"",
@@ -109,10 +101,15 @@
         try {
             formCuti.loading = true
             const valid = z.object({
-                date: z.union([z.string().trim().min(1), z.tuple([z.string(), z.string()], {message: "Date is not valid"})]),
+                // date: z.union([z.string().trim().min(1), z.tuple([z.string(), z.string()], {message: "Date is not valid"})]),
+                date: z.union([z.string().trim().min(1), 
+                
+                    z.tuple([z.union([z.string(), z.date()]), z.union([z.string(), z.date()])], {message: "Date is not valid"})
+                ]),
                 type: z.string().trim().min(1),
                 description: z.string().trim().min(5),
                 approval: z.string().trim().min(1),
+                user_delegate: z.string().trim().min(1),
             })
 
             const formData = new FormData()
@@ -235,7 +232,7 @@
             formApprovalCuti.answer.status = status
             const req = await axios.post('/api/cuti/approve', formApprovalCuti.answer)
             const res = await req.data
-            if(userProfile.user_hrd) tableListCuti.invalidate()
+            if(user.user_type == 'HR') tableListCuti.invalidate()
             tableApprovalCuti.invalidate()
             formApprovalCuti.error = ""
             formApprovalCuti.success = res.message
@@ -424,10 +421,12 @@
         const res = await req.json()
         if(res){
             formCuti.answer.name = res.name
-            formCuti.answer.name = res.name
-            formCuti.answer.approval = res.employee_employee_approverToemployee.payroll
-            formCuti.answer.user_approval = res.employee_employee_approverToemployee.name
-            formCuti.answer.user_delegate = res.employee_employee_approverToemployee.employee_employee_substituteToemployee.name
+
+            formCuti.answer.approval = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.payroll : ""
+            formCuti.answer.user_approval_name = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.name : ""
+
+            formCuti.answer.user_delegate = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || ""
+            formCuti.answer.user_delegate_name = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.name || ""
         }
         return await res
     }
@@ -435,7 +434,7 @@
     $effect(()=>{
         tableCuti.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/cuti?${getParams(state)}&payroll=${user?.payroll}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
+                const req = await fetch(`/api/cuti?${getParams(state)}&payroll=${user.payroll}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -445,10 +444,10 @@
             }
         })
 
-        if (userProfile.level > 1){
+        if (user.level > 1){
             tableApprovalCuti.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/cuti/approve?${getParams(state)}&payroll=${user?.payroll}&dept=${user?.department}`)
+                    const req = await fetch(`/api/cuti/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -458,7 +457,8 @@
                 }
             })
         }
-        if (userProfile.user_hrd){
+
+        if (user.user_type == 'HR'){
             tableListCuti.load(async (state:State) =>{
                 try {
                     const req = await fetch(`/api/cuti/list?${getParams(state)}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
@@ -481,13 +481,17 @@
             start: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start,
             end: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end,
         }
+
+        if(formCuti.answer.type == 'Cuti Haid'){
+            formCuti.answer.date = [new Date(), new Date()]
+        }
     })
     
     setTimeout(()=>{
         tableCuti.invalidate()
-        if (userProfile.level > 1)
+        if (user.level > 1)
             tableApprovalCuti.invalidate()
-        if (userProfile.user_hrd)
+        if (user.user_type == 'HR')
             tableListCuti.invalidate()
     }, 1000)
 </script>
@@ -588,7 +592,7 @@
     </Modal>
     
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
-        <TabItem open title="My Cuti" onclick={()=> modeCuti.tabNo = 1}>
+        <TabItem open title="Cuti Saya" onclick={()=> modeCuti.tabNo = 1}>
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formCuti.error}
                     {#each formCuti.error.split(';') as v}
@@ -621,7 +625,7 @@
                 {/if}
 
                 {#if formCuti.add || formCuti.edit}
-                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
+                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">                        
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <input type='hidden' name="cuti_id" disabled={formCuti.edit} bind:value={formCuti.answer.cuti_id}/>
 
@@ -631,7 +635,7 @@
                                 {:then val}
                                     <div class="flex flex-col justify-start gap-2">
                                         <Label>Payroll</Label>
-                                        <Svelecte class='border-none' disabled={userProfile.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formCuti.answer.payroll} 
+                                        <Svelecte class='border-none' disabled={user.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formCuti.answer.payroll} 
                                         options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name + (v.user_hrd ? " (HRD)":"")}))}
                                         onChange={(e) => fillCuti(e.value)}/>
                                     </div>
@@ -641,8 +645,8 @@
                             {/if}
                             
                             <MyInput type='text' title='Name' disabled value={formCuti.answer.name}/>
-                            <MyInput type='text' title='Approval' disabled value={formCuti.answer.user_approval}/>
-                            <MyInput type='text' title='Substitute' disabled value={formCuti.answer.user_delegate}/>
+                            <MyInput type='text' title='Approval' disabled value={formCuti.answer.user_approval_name}/>
+                            <MyInput type='text' title='Substitute' disabled value={formCuti.answer.user_delegate_name}/>
                             
                             <div class="flex flex-col gap-2">
                                 <div class="flex flex-col gap-2">
@@ -653,9 +657,16 @@
                                 {#if formCuti.answer.type}
                                     <div in:slide out:slide={{duration:1000}}>
                                         {#if formCuti.add}
-                                            <MyInput type='daterange' title='Date' name="date" bind:value={formCuti.answer.date}/>
+                                            <div class="flex flex-col gap-2 flex-1">
+                                                <Label>Date</Label>
+                                                <MyDatePicker bind:value={formCuti.answer.date} mode={['Cuti Haid'].includes(formCuti.answer.type) ? "single" : "range"}
+                                                disabled={['Cuti Haid'].includes(formCuti.answer.type)}/>
+                                            </div>                     
                                         {:else if formCuti.edit}
-                                            <MyInput type='date' title='Date' disabled={formCuti.answer.type != "Cuti Tahunan"} name="date" bind:value={formCuti.answer.date}/>
+                                            <div class="flex flex-col gap-2 flex-1">
+                                                <Label>Date</Label>
+                                                <MyDatePicker bind:value={formCuti.answer.date} disabled={formCuti.answer.type != "Cuti Tahunan"} />
+                                            </div>                 
                                         {/if}
                                     </div>
                                 {/if}
@@ -689,7 +700,7 @@
                     <select bind:value={formCuti.month} onchange={()=> tableCuti.invalidate()}>
                         {#each dataBulan as {title, value}}
                             <option value={value}>
-                                {title} {value == Number(format(modeCuti.periode.start, "M")) ? "(Select)" : null}
+                                {title} {value == Number(format(modeCuti.periode.end, "M")) - 1 ? "(Select)" : null}
                             </option>
                         {/each}
                     </select>
@@ -736,27 +747,22 @@
                                                 {#if !formCuti.edit}
                                                     {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
-                                                        <Tooltip class='z-10'>Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_cuti, "D") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> {
                                                             formCuti.modalDelete = true
                                                             formCuti.answer.cuti_id = row.cuti_id
                                                         }}><Trash size={12} /></MyButton>
-                                                        <Tooltip class='z-10'>Hapus</Tooltip>
                                                     {/if}
                                                     {#if row.status == "Waiting" && !row.is_delegate}
                                                         <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <Highlighter size={12}/> </MyButton>
-                                                        <Tooltip class='z-10'>Delegate</Tooltip>
                                                     {/if}
                                                 {/if}
                                                 {#if row.status}
                                                     <MyButton onclick={()=> handleCetakCuti(row.cuti_group_id)} color='dark' class='p-2' pill><Printer size={12} /></MyButton>
-                                                    <Tooltip class='z-10'>Print</Tooltip>
                                                 {/if}
                                                 {#if row.attachment}
                                                     <MyButton onclick={()=> showCutiAttachment(row.attachment)} color='dark' class='p-2' pill><Paperclip size={12} /></MyButton>
-                                                    <Tooltip class='z-10'>View Attachment</Tooltip>
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
@@ -773,7 +779,7 @@
                 </Datatable>
             </div>
         </TabItem>
-        {#if userProfile.level > 1}
+        {#if user.level > 1}
             <TabItem title="Approval Cuti" onclick={()=> modeCuti.tabNo = 2}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formApprovalCuti.error}
@@ -836,8 +842,8 @@
                 </div>
             </TabItem>
         {/if}
-        {#if userProfile?.user_hrd}
-            <TabItem title="List Cuti" onclick={()=> modeCuti.tabNo = 3}>
+        {#if user.user_type == 'HR'}
+            <TabItem title="Daftar Cuti" onclick={()=> modeCuti.tabNo = 3}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formListCuti.error}
                         {#each formListCuti.error.split(';') as v}
@@ -867,7 +873,7 @@
                         <select bind:value={formListCuti.month} onchange={()=> tableListCuti.invalidate()}>
                             {#each dataBulan as {title, value}}
                                 <option value={value}>
-                                    {title} {value == Number(format(modeCuti.periode.start, "M")) ? "(Select)" : null}
+                                    {title} {value == Number(format(modeCuti.periode.end, "M")) - 1? "(Select)" : null}
                                 </option>
                             {/each}
                         </select>
@@ -899,10 +905,10 @@
                                         {#each tableListCuti.rows as row}
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
-                                                <TableBodyCell>{row.name}</TableBodyCell>
-                                                <TableBodyCell>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{capitalEachWord(row.name)}</TableBodyCell>
+                                                <TableBodyCell>{namaHari[Number(format(row.date, "c")) - 1] + ", " +formatTanggal(row.date, "date") || ""}</TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
-                                                <TableBodyCell>{row.approval_name}</TableBodyCell>
+                                                <TableBodyCell>{capitalEachWord(row.approval_name)}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>
                                                 <TableBodyCell>{row.status}</TableBodyCell>
                                                 <TableBodyCell>

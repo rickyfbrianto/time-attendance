@@ -31,6 +31,7 @@ export async function GET({ url }) {
             payroll, `%${search}%`, start_date, end_date) as { count: number }[]
         return { items, totalItems: Number(count) }
     })
+
     return json(status)
 }
 
@@ -46,11 +47,7 @@ export async function POST({ request }) {
             const user = await tx.employee.findUnique({
                 select: {
                     workhour: true,
-                    profile: {
-                        select: {
-                            user_hrd: true
-                        }
-                    },
+                    user_type: true,
                 },
                 where: { payroll: data.payroll, status: "Aktif" }
             })
@@ -90,7 +87,7 @@ export async function POST({ request }) {
                         type: data.type,
                         description: data.description,
                         date: formatTanggalISO(date),
-                        status: !user?.profile?.user_hrd && data.status ? "Approved" : "Waiting",
+                        status: user.user_type != 'HR' && data.status ? "Approved" : "Waiting",
                         approval: data.approval,
                         is_delegate: false,
                         createdAt: formatTanggalISO(new Date())

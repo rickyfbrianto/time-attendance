@@ -1,12 +1,11 @@
 <script lang="ts">
-    import { fade, fly, scale, slide } from 'svelte/transition'
+    import { fade, fly } from 'svelte/transition'
     import { Badge, Alert } from 'flowbite-svelte';
-    import { formatTanggal, generatePeriode } from '$/lib/utils.js';
+    import { generatePeriode } from '$/lib/utils.js';
 	import MyCalendar from '@/MyCalendar.svelte';
 	import MyLoading from '@/MyLoading.svelte';
 	import Svelecte from 'svelecte';
 	import MyChart from '@/MyChart.svelte';
-	import MyClock from '@/MyClock.svelte';
 	import { CalendarArrowDown, CalendarArrowUp, CircleUserRound, Bell } from '@lucide/svelte';
 
     let {data} = $props()
@@ -16,7 +15,7 @@
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
 
     const modeView = {
-        dept: (()=> userProfile.user_hrd ? "" : user?.department)(),
+        dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         payroll: (()=> user?.payroll)(),
         name: (()=> user?.name)(),
     }
@@ -124,9 +123,9 @@
                 <Bell size={16}/>
                 <span class='text-[.8rem] italic font-bold'>Notifikasi</span>
             </div>
-            <div class="flex flex-col overflow-auto gap-2 mt-2">
+            <div class="grid grid-cols-2 overflow-auto gap-2 mt-2">
                 {#each Array.from({length: 5}, (_, x) => x) as x}
-                    <Alert color={'blue'} class='flex items-center justify-between'>
+                    <Alert color={'red'} class='flex items-center justify-between'>
                         <span class="italic font-bold">Data {x+1}</span>
                     </Alert>
                 {/each}
@@ -136,7 +135,7 @@
     
     <div transition:fly={{ x: -250, duration: 1500, delay: 1750 }} class="flex flex-1 flex-col gap-5">
         <div class='flex flex-1 justify-between border border-bgside p-4 rounded-lg'>
-            {#if userProfile.user_hrd || userProfile.level > 1}
+            {#if user.user_type == 'HR' || user.level > 1}
                 <div class="flex gap-4">
                     {#await getUser(modeDashboard.dept)}
                         <MyLoading message="Loading user data"/>

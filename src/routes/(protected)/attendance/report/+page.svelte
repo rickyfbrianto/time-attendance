@@ -31,7 +31,7 @@
         start_date:"",
         end_date:"",
         year: new Date().getFullYear().toString(),
-        month: (new Date().getMonth() + 2).toString(),
+        month: (new Date().getMonth() + 1).toString(),
         typeChart: "pie"
     })
     
@@ -75,7 +75,7 @@
 
     let formAttendance = $state({
         year: new Date().getFullYear(),
-        month: new Date().getMonth()
+        month: new Date().getMonth() + 1
     })
     
     $effect(()=> {
@@ -151,7 +151,7 @@
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full w-full">
     <div class="relative flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-3 gap-3">
-        {#if userProfile.user_hrd || userProfile.level > 1}
+        {#if user.user_type == 'HR' || user.level > 1}
             <div class="sticky top-[0] bg-bgdark flex gap-2 border-[var(--color-bgside)] border rounded-lg p-4 z-10 shadow-lg">
                 {#await getDept()}
                     <MyLoading message="Loading data"/>
@@ -171,7 +171,7 @@
                                 {#each dataBulan as {title, value}}
                                 <option value={value}>
                                     {title} {value.toString() == format(modeReport.start_date, "M") ? "(Select)" : null}
-                                    {value.toString() == (new Date().getMonth()).toString() ? "(Now)" : null}
+                                    {value == new Date().getMonth() + 1 ? "(Now)" : null}
                                 </option>
                                 {/each}
                             </select> 

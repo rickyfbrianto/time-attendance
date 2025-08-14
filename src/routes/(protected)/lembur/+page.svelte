@@ -1,4 +1,4 @@
-<script lang="ts">
+ <script lang="ts">
     import {fade} from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Label, Alert, Modal } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
@@ -7,7 +7,7 @@
 	import { Ban, Check, Minus, Pencil, Plus, Printer, RefreshCw, Save, Search, Trash, X, Eye } from '@lucide/svelte';
 	import MyInput from '@/MyInput.svelte';
 	import axios from 'axios';
-	import { pecahArray, formatTanggal, getPeriode, namaHari, generatePeriode, getParams, selisihWaktu, formatDifference, dataTahun, dataBulan } from '$/lib/utils.js';
+	import { pecahArray, formatTanggal, namaHari, generatePeriode, getParams, selisihWaktu, formatDifference, namaBulan, dataTahun, dataBulan, capitalEachWord } from '$/lib/utils.js';
 	import { differenceInHours, format, set, getDay, differenceInMinutes } from 'date-fns';
     import Svelecte from 'svelecte'
     import stm from '$/lib/assets/stm.png'
@@ -17,6 +17,7 @@
     import autoTable, { applyPlugin } from 'jspdf-autotable'
     import MyPagination from '@/MyPagination.svelte';
     import MyAlert from '@/MyAlert.svelte';
+    import MyDatePicker from '@/MyDatePicker.svelte';
 	import { goto } from '$app/navigation';
     
     let {data} = $props()
@@ -29,6 +30,8 @@
         periode: {
             start: (()=> periode.start)(),
             end: (()=> periode.end)(),
+            // start: "",
+            // end: "",
         },
         tabNo: 1
     })
@@ -46,13 +49,12 @@
             est_end:"",            
             approval1:"",
             status1:"",
-            approval2:"",            
-            status2:"",
+            createdBy: (()=> user?.payroll)(),
             dept: (()=> user?.department)(),
             spl_detail:[{payroll:"", name:"", description:""}],
         },
         dept: (()=> user?.department)(),
-        payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
+        payroll: (()=> user.level > 1 ? "": user?.payroll)(),
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
         success:"",
@@ -76,11 +78,11 @@
                 est_start: z.string().trim().min(1),
                 est_end: z.string().trim().min(1),
                 approval1: z.string().trim().min(1),
-                approval2: z.string().trim().min(1),
                 spl_detail: z.array(z.object({
                     payroll: z.string().trim().min(1).max(8),
                     description: z.string().trim().min(1).max(255),
                 })),
+                createdBy: z.string().trim().min(1),
             })
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
@@ -151,8 +153,8 @@
             const req = await axios.get(`/api/lembur/spl/${id}/print`)
             const res = await req.data
             
-            if(!res.employee_spl_approval1Toemployee.signature || !res.employee_spl_approval2Toemployee.signature){
-                throw new Error('There is no signature for this SPL')
+            if(!res.employee_spl_approval1Toemployee.signature){
+                throw new Error('Ada user yang tidak memiliki signature untuk SPL ini')
             }
 
             const doc = new jsPDF({
@@ -252,12 +254,12 @@
             doc.text(`Acknowledged By`, colData[3], rowData + rowInc)
 
             rowInc += row3
-            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
-            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval2Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_createdByToemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
             
             rowInc += signatureSize
-            doc.text(res.employee_spl_approval1Toemployee.name, colData[0], rowData + rowInc)
-            doc.text(res.employee_spl_approval2Toemployee.name, colData[1], rowData + rowInc)
+            doc.text(res.employee_spl_createdByToemployee.name, colData[0], rowData + rowInc)
+            doc.text(res.employee_spl_approval1Toemployee.name, colData[1], rowData + rowInc)
             doc.text("HR", colData[3], rowData + rowInc)
 
             const blob = doc.output('blob')
@@ -294,7 +296,6 @@
             const req = await axios.post('/api/lembur/spl/approve1', formSPLApproval1.answer)
             const res = await req.data
             tableSPLApproval1.invalidate()
-            tableSPLApproval2.invalidate()
             tableSPL.invalidate()
             formSPLApproval1.error = ""
             formSPLApproval1.success = res.message
@@ -303,40 +304,7 @@
             formSPLApproval1.success = ""
         }
     }
-    
-    // SPL approval 2
-    let tableSPLApproval2 = $state(new TableHandler([], {rowsPerPage}))
-    
-    const formSPLApproval2Answer = {
-        answer:{
-            spl_id: "id",
-            status:"",
-        },
-        success:"",
-        error:"",
-        loading:false,
-        add:false,
-        edit:false
-    }
-    
-    let formSPLApproval2 = $state({...formSPLApproval2Answer})
-    
-    const handleApproveSPL2 = async (spl_id: string, val: string) => {
-        try {
-            formSPLApproval2.answer.spl_id = spl_id
-            formSPLApproval2.answer.status = val
-            const req = await axios.post('/api/lembur/spl/approve2', formSPLApproval2.answer)
-            const res = await req.data
-            tableSPLApproval2.invalidate()
-            tableSPL.invalidate()
-            formSPLApproval2.error = ""
-            formSPLApproval2.success = res.message
-        } catch (error: any) {
-            formSPLApproval2.error = error.response.data.message
-            formSPLApproval2.success = ""
-        }
-    }
-    
+                
     const showPreviewSPL = async (value: string) => {
         formSPL.modalPreview = true
 
@@ -368,9 +336,9 @@
             srl_detail:[{description:"", status: ""}],
         },
         createdByName: "",
-        payroll: (()=> userProfile.level > 1 ? "": user?.payroll)(),
+        payroll: (()=> user.level > 1 ? "": user?.payroll)(),
         year: new Date().getFullYear(),
-        month: new Date().getMonth() + 1,
+        month: new Date().getMonth(),
         success:"",
         error:"",
         modalDelete: false,
@@ -454,131 +422,16 @@
             tableSRL.invalidate()
         }
     }
-    
-    // 1 periode
-    // const handleCetakSRL= async (id:string) =>{
-    //     const req = await axios.get(`/api/lembur/srl/${id}/print?payroll=${formSRL.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
-    //     const res = await req.data
-        
-    //     applyPlugin(jsPDF)
-
-    //     const doc = new jsPDF({
-    //         orientation:"l",
-    //         unit:"mm",
-    //         format:"a4"
-    //     })
-
-    //     const signatureSize = 20
-    //     const colData = [10, 120, 220]
-    //     const rowData = 0
-    //     let rowInc = 0
-    //     let row1 = 4
-    //     let row2 = 6
-    //     let row3 = 8
-    //     let row4 = 10
-
-    //     // const spl_detail = res.spl_detail.find(v => v.payroll == user?.payroll)
-
-    //     rowInc += row4
-    //     doc.setFont('times', 'normal', '')
-    //     doc.addImage(stm, colData[0], rowData + rowInc - 5, 20, 20)
-    //     doc.setFontSize(18)
-    //     doc.setTextColor("#174ca3")
-    //     doc.text("PT. SAGATRADE MURNI", colData[0] + 30, rowData + rowInc)
-    //     doc.setTextColor("#000")
-    //     doc.text("MANUFACTURERS OF PRIMARY CEMENTING", colData[0] + 30, rowData + rowInc + row2)
-    //     doc.text("EQUIPMENT", colData[0] + 30, rowData + rowInc + (row2 * 2))
-        
-    //     doc.setFontSize(16)
-    //     const rightAlign = 235
-    //     doc.rect(rightAlign, rowData + rowInc - 5, 50, rowData + rowInc + 6 )
-    //     doc.setFontSize(10)
-    //     doc.text("Form No", rightAlign + 2, rowData + rowInc)
-    //     doc.text(": 11-20", rightAlign + 20, rowData + rowInc)
-    //     rowInc += 4
-    //     doc.text("Rev.", rightAlign + 2, rowData + rowInc)
-    //     doc.text(": 0", rightAlign + 20, rowData + rowInc)
-    //     rowInc += 4
-    //     doc.text("Date", rightAlign + 2, rowData + rowInc)
-    //     doc.text(": Jan 2020", rightAlign + 20, rowData + rowInc)
-        
-    //     rowInc += row4 * 1.6
-    //     doc.setFont('times', 'normal', 'bold')
-    //     doc.setFontSize(14)
-    //     doc.text("Formulir Pelaporan Jam Kerja Lembur Pada hari Minggu/Hari libur resmi & hari kerja biasa", 50, rowData + rowInc)
-    //     doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
-        
-    //     rowInc += row3
-    //     doc.setFontSize(11)
-    //     doc.setFont('times', 'normal', 'bold')
-    //     doc.text("Kepada", colData[0], rowData + rowInc)
-    //     doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
-    //     doc.text(`| Hari Minggu`, colData[0] + 130, rowData + rowInc)
-    //     rowInc += 5
-    //     doc.text("Dept.", colData[0], rowData + rowInc)
-    //     doc.text(`:  ${user.dept.initial}`, colData[0] + 20, rowData + rowInc)
-    //     // doc.text(`:  ${user.}`, colData[0] + 20, rowData + rowInc)
-    //     doc.text(`| Hari Libur Resmi`, colData[0] + 130, rowData + rowInc)
-    //     rowInc += 5
-    //     doc.text("Bulan", colData[0], rowData + rowInc)
-    //     doc.text(`:  ${namaBulan[Number(format(periode.start, "M")) - 1] + " " + format(periode.start, "yyyy") + " - " + 
-    //     namaBulan[Number(format(periode.end, "M")) - 1] + " " + format(periode.end, "yyyy")}`, colData[0] + 20, rowData + rowInc)
-    //     doc.text(`| Hari Kerja Biasa`, colData[0] + 130, rowData + rowInc)
-
-    //     rowInc += row2
-    //     autoTable(doc, {
-    //         startY: rowData + rowInc,
-    //         theme:"grid",
-    //         head: [['No','Name', 'Payroll', 'Tanggal', 'Waktu', 'Description', 'Status']],
-    //         margin: {left: colData[0]},
-    //         // body: res.srl_detail.map((v:any, i: number) => {
-    //         //     const [nama, payroll, tanggal, waktu] = i == 0 
-    //         //     ? [res.employee.name, res.employee.payroll, namaHari[getDay(res.real_start)] + ", " + format(res.real_start, "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5)]
-    //         //     : ["","","",""]
-    //         //     return [i + 1, nama, payroll, tanggal, waktu, v.description, v.status]
-    //         // }),
-    //         body: res.map((v:any, i: number) => {
-    //             const [nama, payroll, tanggal, waktu] = [v.employee.name, v.employee.payroll, namaHari[getDay(v.real_start)] + ", " + format(v.real_start, "dd-MM-yyyy"), formatTanggal(v.real_start,"time").substring(0,5) + " - " + formatTanggal(v.real_end,"time").substring(0,5)]
-    //             return [i + 1, nama, payroll, tanggal, waktu, v.srl_detail.map(item => item.description).join('\n'), v.srl_detail.map(item => item.status).join('\n')]
-    //         }),
-    //         styles: {cellPadding: 1, halign: 'center' },
-    //         headStyles:{ fillColor:"#FFF", textColor:"#000", halign: 'center', lineWidth: 0.2},
-    //         bodyStyles:{fontSize: 9, halign: 'center'},
-    //         columnStyles: {
-    //             0:{cellWidth: 10, valign: 'middle'}, 1:{cellWidth: 55, valign: 'middle'}, 2:{cellWidth: 20, valign: 'middle'}, 
-    //             3:{cellWidth: 35, valign: 'middle'}, 4:{cellWidth: 25, valign: 'middle'}, 5:{cellWidth: 105, halign: 'left', valign: 'middle'}, 6:{cellWidth: 25, valign: 'middle'}
-    //         },
-    //     })
-
-    //     rowInc = doc.lastAutoTable.finalY + row2
-    //     doc.text(`Dibuat Oleh`, colData[0], rowData + rowInc)
-    //     doc.text(`Diperiksa Oleh`, colData[1], rowData + rowInc)
-    //     doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
-
-    //     rowInc += row3
-    //     doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
-    //     doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
-    //     doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res[0].employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
-        
-    //     rowInc += row2 * 3.1
-    //     doc.text(res[0].employee.name, colData[0], rowData + rowInc)
-    //     doc.text(res[0].employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
-    //     doc.text(res[0].employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
-        
-    //     const blob = doc.output('blob')
-    //     const url = URL.createObjectURL(blob);
-
-    //     window.open(url); // buka tab baru
-    //     // doc.save(`${id}.pdf`);
-    // }
 
     const handleCetakSRL= async (id:string) =>{
         try {
             const req = await axios.get(`/api/lembur/srl/${id}/print`)
             const res = await req.data
 
-            if(!res.employee.signature || !res.employee_srl_approval1Toemployee.signature || !res.employee_srl_approval2Toemployee.signature){
-                throw new Error('There is no signature for this SRL')
+            console.log([0, 6].includes(getDay(formatTanggal(res.real_start))) ? "F": null)
+            
+            if(!res.employee_srl_payrollToemployee.signature || !res.employee_srl_approval1Toemployee.signature || !res.employee_srl_approval2Toemployee.signature){
+                throw new Error('Ada user yang tidak memiliki signature untuk SRL ini')
             }            
             
             applyPlugin(jsPDF)
@@ -634,19 +487,29 @@
             doc.line(50 , rowData + rowInc + 1, 250, rowData + rowInc + 1)
 
             rowInc += row3
+            const workhour = res.employee_srl_payrollToemployee.workhour
+            const hariWeekend = workhour == 7 ? [6] : [0, 6]
+            
             doc.setFontSize(11)
             doc.setFont('times', 'normal', 'bold')
             doc.text("Kepada", colData[0], rowData + rowInc)
             doc.text(`:  HRD`, colData[0] + 20, rowData + rowInc)
             doc.text(`| Hari Minggu`, colData[0] + 135, rowData + rowInc)
+            doc.setFillColor(hariWeekend.includes(getDay(formatTanggal(res.real_start))) ? "#000": "#F9F7F3")
+            doc.rect(colData[0] + 175, rowData + rowInc - 3.5 , 4, 4, "FD" )
+            
             rowInc += 5
             doc.text("Dept.", colData[0], rowData + rowInc)
-            doc.text(`:  ${res.employee.dept.initial}`, colData[0] + 20, rowData + rowInc)
+            doc.text(`:  ${res.employee_srl_payrollToemployee.dept.initial}`, colData[0] + 20, rowData + rowInc)
             doc.text(`| Hari Libur Resmi`, colData[0] + 135, rowData + rowInc)
+            doc.setFillColor("#F9F7F3")
+            doc.rect(colData[0] + 175, rowData + rowInc - 3.5 , 4, 4, "FD")
             rowInc += 5
             doc.text("Bulan", colData[0], rowData + rowInc)
-            doc.text(`:  ${format(res.real_start, "MMMM")}`, colData[0] + 20, rowData + rowInc)
+            doc.text(`:  ${namaBulan[Number(format(res.real_start, "M"))- 1]}`, colData[0] + 20, rowData + rowInc)
             doc.text(`| Hari Kerja Biasa`, colData[0] + 135, rowData + rowInc)
+            doc.setFillColor(hariWeekend.includes(getDay(formatTanggal(res.real_start))) ? "#F9F7F3": "#000")
+            doc.rect(colData[0] + 175, rowData + rowInc - 3.5 , 4, 4, "FD")
             
             rowInc += row2
             autoTable(doc, {
@@ -656,7 +519,7 @@
                 margin: {left: colData[0]},
                 body: res.srl_detail.map((v:any, i: number) => {
                     const [nama, payroll, tanggal, waktu, jumlah] = i == 0 
-                        ? [res.employee.name, res.employee.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5), `${hours} Jam ${minutes} menit`]
+                        ? [res.employee_srl_payrollToemployee.name, res.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5), `${hours} Jam ${minutes} menit`]
                         : ["","","","", ""]
                     return [i + 1, nama, payroll, tanggal, waktu, jumlah, v.description, v.status]
                 }),
@@ -681,12 +544,12 @@
             doc.text(`Disetujui Oleh`, colData[2], rowData + rowInc)
 
             rowInc += row3
-            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_payrollToemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
             doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
             doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
             
             rowInc += row2 * 3.1
-            doc.text(res.employee.name, colData[0], rowData + rowInc)
+            doc.text(res.employee_srl_payrollToemployee.name, colData[0], rowData + rowInc)
             doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
             doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
             
@@ -844,17 +707,6 @@
                 console.log(err.message)
             }
         })
-
-        tableSPLApproval2.load(async (state:State) => {
-            try {
-                const req = await fetch(`/api/lembur/spl/approve2?${getParams(state)}&payroll=${user.payroll}`)
-                const {items, totalItems} = await req.json()
-                state.setTotalRows(totalItems)
-                return items
-            } catch (err:any) {
-                console.log(err.message)
-            }
-        })
         
         tableSRL.load(async (state:State) => {
             try {
@@ -904,7 +756,6 @@
     setTimeout(()=>{
         tableSPL.invalidate()
         tableSPLApproval1.invalidate()
-        tableSPLApproval2.invalidate()
         tableSRL.invalidate()
         tableSRLApproval1.invalidate()
         tableSRLApproval2.invalidate()
@@ -938,11 +789,18 @@
 
     <Modal bind:open={formSPL.modalPreview} autoclose>
         <div class="flex flex-col gap-2 max-h-[85vh]">
+            <span class='text-[1.2rem] font-bold'>Preview Approval SPL</span>
             <MyInput type='textarea' disabled title={`Purpose`} name="purpose" bind:value={formSPL.answer.purpose}/>
                                 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">                
-                <MyInput type='text' disabled title='Estimated Start' name="est_start" bind:value={formSPL.answer.est_start}/>
-                <MyInput type='text' disabled title='Estimated End' name="est_end" bind:value={formSPL.answer.est_end}/>
+                <div class="flex flex-col gap-2 flex-1">
+                    <Label>Estimasi Awal</Label>
+                    <MyDatePicker disabled bind:value={formSPL.answer.est_start} />
+                </div>
+                <div class="flex flex-col gap-2 flex-1">
+                    <Label>Estimasi Selesai</Label>
+                    <MyDatePicker disabled bind:value={formSPL.answer.est_end} />
+                </div>
                 {#await getUserByDept() then val}
                     <div class="flex flex-col gap-2 flex-1">
                         <Label>Approval 1</Label>
@@ -950,19 +808,14 @@
                             options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
                         />
                     </div>
-                    <div class="flex flex-col gap-2 flex-1">
-                        <Label>Approval 2</Label>
-                        <Svelecte class='rounded-lg' disabled bind:value={formSPL.answer.approval2} 
-                            options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
-                        />
-                    </div>
                 {/await}
             </div>
 
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-2 p-2 bg-bgdark2">
+                <span class='font-bold text-[1.2rem] font-quicksand'>Daftar Karyawan</span>
                 {#each formSPL.answer.spl_detail as val1, i}
                     <div class="flex flex-col gap-1">
-                        <Badge class='self-start'>{val1.name}</Badge>
+                        <Badge color='green' class='self-start'>{val1.name}</Badge>
                         <div class="flex p-2 px-3 gap-2 border border-bgside rounded-lg flex-wrap">
                             {#each val1.description.split(",").map(v => v.trim()) as val2, i}
                                 <span class='text-wrap break-all'>{(i+1) + ". " + val2}</span>
@@ -1038,7 +891,7 @@
                                     <MyButton disabled={formSPL.loading} onclick={formSPLSubmit}><Save size={16}/></MyButton>
                                 {/if}
                             {:else}
-                                {#if pecahArray(userProfile?.access_spl, "C") && userProfile.level > 1}
+                                {#if pecahArray(userProfile?.access_spl, "C") && user.level > 1}
                                     <MyButton onclick={()=> formSPL.add = true}><Plus size={16}/></MyButton>
                                 {/if}
                             {/if}
@@ -1055,18 +908,18 @@
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     <input type='hidden' name="spl_id" disabled={formSPL.edit} bind:value={formSPL.answer.spl_id}/>
                                     
-                                    <MyInput type='datetime' title='Estimated Start' name="est_start" bind:value={formSPL.answer.est_start}/>
-                                    <MyInput type='datetime' title='Estimated End' name="est_end" bind:value={formSPL.answer.est_end}/>
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Estimated Start</Label>
+                                        <MyDatePicker bind:value={formSPL.answer.est_start} time />
+                                    </div>
+                                    <div class="flex flex-col gap-2 flex-1">
+                                        <Label>Estimated End</Label>
+                                        <MyDatePicker bind:value={formSPL.answer.est_end} time />
+                                    </div>
                                     {#await getUserByDept() then val}
                                         <div class="flex flex-col gap-2 flex-1">
                                             <Label>Approval 1</Label>
                                             <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval1} 
-                                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
-                                            />
-                                        </div>
-                                        <div class="flex flex-col gap-2 flex-1">
-                                            <Label>Approval 2</Label>
-                                            <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval2} 
                                                 options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
                                             />
                                         </div>
@@ -1095,7 +948,7 @@
                                             </div>
                                             <div class="flex flex-1 flex-col">
                                                 <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
-                                                <span class='text-[.8rem] italic'>For several jobs use comas as separator (,)</span>
+                                                <span class='text-[.8rem] italic'>Untuk beberapa pekerjaan pisahkan dengan tandan koma (,)</span>
                                             </div>
                                         </div>
                                     {/each}
@@ -1119,6 +972,7 @@
                                     {/each}
                                 </select>
                                 <select bind:value={formSPL.month} onchange={()=> tableSPL.invalidate()}>
+                                    <option value={''}>Semua</option>
                                     {#each dataBulan as {title, value}}
                                         <option value={value}>
                                             {title} {value == Number(format(modeLembur.periode.end, "M")) - 1 ? "(Select)" : null}
@@ -1141,10 +995,10 @@
                                 <TableHead class="bg-slate-500" >
                                     <ThSort table={tableSPL} field="spl_id">SPL ID</ThSort>
                                     <ThSort table={tableSPL} field="purpose">Deskripsi</ThSort>
+                                    <ThSort table={tableSPL} field="est_start">Hari</ThSort>
                                     <ThSort table={tableSPL} field="est_start">Tanggal Mulai</ThSort>
                                     <ThSort table={tableSPL} field="est_end">Tanggal Selesai</ThSort>
                                     <ThSort table={tableSPL} field="approval1">Approval 1</ThSort>
-                                    <ThSort table={tableSPL} field="approval2">Approval 2</ThSort>
                                     {#if pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")}
                                         <ThSort table={tableSPL} field="">#</ThSort>
                                     {/if}
@@ -1161,29 +1015,21 @@
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.est_start, "c")) - 1]}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start)}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end)}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
-                                                            <Badge color='indigo'>{row.approval1}</Badge>
+                                                            <Badge color='indigo'>{capitalEachWord(row.approval1)}</Badge>
                                                             <Badge color={
                                                                 ['Reject','Cancelled'].includes(row.status1) ? "red" :
                                                                 row.status1 == "Approved" ? "green" : "dark"}>{row.status1}
                                                             </Badge>
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>
-                                                        <div class="flex flex-col items-start gap-2">
-                                                            <Badge color='indigo'>{row.approval2}</Badge>
-                                                            <Badge color={
-                                                                ['Reject','Cancelled'].includes(row.status2) ? "red" :
-                                                                row.status2 == "Approved" ? "green" : "dark"}>{row.status2}
-                                                            </Badge>
-                                                        </div>
-                                                    </TableBodyCell>
                                                     <TableBodyCell>
                                                         {#if !formSPL.edit}
-                                                            {#if (pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting' && userProfile.level > 1}
+                                                            {#if (pecahArray(userProfile.access_spl, "U") || pecahArray(userProfile.access_spl, "D")) && row.status1 == 'Waiting' && user.level > 1}
                                                                 {#if pecahArray(userProfile.access_spl, "U")}<MyButton onclick={()=> formSPLEdit(row.spl_id)}><Pencil size={12} /></MyButton>{/if}
                                                                 {#if pecahArray(userProfile.access_spl, "D")}
                                                                     <MyButton onclick={()=> {
@@ -1192,7 +1038,8 @@
                                                                     }}><Trash size={12} /></MyButton>
                                                                 {/if}
                                                             {/if}
-                                                            {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
+                                                            {#if row.status1 == 'Approved'}
+                                                                <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
                                                                 <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
                                                             {/if}
                                                         {/if}
@@ -1211,8 +1058,8 @@
                         </Datatable>
                     </div>
                 </TabItem>
-                {#if userProfile.level > 1}
-                    <TabItem title="Approval SPL 1">
+                {#if user.level > 1}
+                    <TabItem title="Approve SPL">
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSPLApproval1.error}
                                 {#each formSPLApproval1.error.split(';') as v}
@@ -1232,7 +1079,7 @@
                                         <ThSort table={tableSPLApproval1} field="purpose">Deskripsi</ThSort>
                                         <ThSort table={tableSPLApproval1} field="est_start">Tanggal Mulai</ThSort>
                                         <ThSort table={tableSPLApproval1} field="est_end">Tanggal Selesai</ThSort>
-                                        <ThSort table={tableSPLApproval1} field="approval1">Approval 1</ThSort>
+                                        <ThSort table={tableSPLApproval1} field="approval1">Approval</ThSort>
                                         <ThSort table={tableSPLApproval1} field="">#</ThSort>
                                     </TableHead>
             
@@ -1267,64 +1114,6 @@
                                     {/if}
                                 </Table>
                                 <MyPagination table={tableSPLApproval1}/>
-                            </Datatable>
-                        </div>
-                    </TabItem>
-                    <TabItem title="Approval SPL 2">
-                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
-                            {#if formSPLApproval2.error}
-                                {#each formSPLApproval2.error.split(';') as v}
-                                    <MyAlert pesan={v} func={()=> formSPLApproval2.error = ""} color='red'/>
-                                {/each}
-                            {:else if formSPLApproval2.success}
-                                <MyAlert pesan={formSPLApproval2.success} func={()=> formSPLApproval2.success = ""} color='green'/>
-                            {/if}
-                                    
-                            <div class="flex gap-2">
-                                <MyButton onclick={()=> tableSPLApproval2.invalidate()}><RefreshCw size={16}/></MyButton>
-                            </div>
-                            
-                            <Datatable table={tableSPLApproval2}>
-                                <Table>
-                                    <TableHead>
-                                        <ThSort table={tableSPLApproval2} field="purpose">Deskripsi</ThSort>
-                                        <ThSort table={tableSPLApproval2} field="est_start">Tanggal Mulai</ThSort>
-                                        <ThSort table={tableSPLApproval2} field="est_end">Tanggal Selesai</ThSort>
-                                        <ThSort table={tableSPLApproval2} field="approval2">Approval 2</ThSort>
-                                        <ThSort table={tableSPLApproval2} field="">#</ThSort>
-                                    </TableHead>
-            
-                                    {#if tableSPLApproval2.isLoading}
-                                        <div class="flex p-4 items-center">
-                                            <MyLoading message="Loading data"/>
-                                        </div>
-                                    {:else}
-                                        <TableBody tableBodyClass="divide-y">
-                                            {#if tableSPLApproval2.rows.length > 0}
-                                                {#each tableSPLApproval2.rows as row}
-                                                    <TableBodyRow class='h-10'>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{row.approval2}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>
-                                                            {#if row.status2 == "Waiting"}
-                                                                <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
-                                                                <Button onclick={()=> handleApproveSPL2(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
-                                                                <Button onclick={()=> showPreviewSPL(row.spl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
-                                                            {/if}
-                                                        </TableBodyCell>
-                                                    </TableBodyRow>
-                                                {/each}
-                                            {:else}
-                                                <TableBodyRow class='h-10'>
-                                                    <TableBodyCell colspan={10}><span>No data available</span></TableBodyCell>
-                                                </TableBodyRow>
-                                            {/if}
-                                        </TableBody>
-                                    {/if}
-                                </Table>
-                                <MyPagination table={tableSPLApproval2}/>
                             </Datatable>
                         </div>
                     </TabItem>
@@ -1496,7 +1285,7 @@
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
-                                                            <Badge color='indigo'>{row.approval1}</Badge>
+                                                            <Badge color='indigo'>{capitalEachWord(row.approval1)}</Badge>
                                                             <Badge color={
                                                                 ['Reject','Cancelled'].includes(row.status1) ? "red" :
                                                                 row.status1 == "Approved" ? "green" : "dark"}>{row.status1}
@@ -1505,7 +1294,7 @@
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
-                                                            <Badge color='indigo'>{row.approval2}</Badge>
+                                                            <Badge color='indigo'>{capitalEachWord(row.approval2)}</Badge>
                                                             <Badge color={
                                                                 ['Reject','Cancelled'].includes(row.status2) ? "red" :
                                                                 row.status2 == "Approved" ? "green" : "dark"}>{row.status2}
@@ -1542,8 +1331,8 @@
                         </Datatable>
                     </div>
                 </TabItem>
-                {#if userProfile.level > 1}
-                    <TabItem title="Approval SRL 1">
+                {#if user.level > 1}
+                    <TabItem title="Approve SRL 1">
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSRLApproval1.error}
                                 {#each formSRLApproval1.error.split(';') as v}
@@ -1601,7 +1390,7 @@
                             </Datatable>
                         </div>
                     </TabItem>
-                    <TabItem title="Approval SRL 2">
+                    <TabItem title="Approve SRL 2">
                         <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                             {#if formSRLApproval2.error}
                                 {#each formSRLApproval2.error.split(';') as v}
