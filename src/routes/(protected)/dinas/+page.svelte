@@ -26,11 +26,15 @@
     let userProfile = $derived(data.userProfile)
     
     const rowsPerPage = 10
-
     const listApproveSKPD = [
         {value: '181124', text: "Luviana Riska"},
         {value: '120301', text: "Agus Saputro"},
     ]
+    
+    let modeDinas = $state({
+        payroll: (()=> user?.payroll)(),
+        tabNo: 1
+    })
     
     let tableSPPD = $state(new TableHandler([], {rowsPerPage}))
     let tableSPPDSearch = tableSPPD.createSearch()
@@ -614,6 +618,9 @@
     setTimeout(()=>{
         if(user.user_type == 'HR' || user.level >= 5){
             tableSPPD.invalidate()
+            modeDinas.tabNo = 1
+        } else {
+            modeDinas.tabNo = 2
         }
         tableSKPD.invalidate()
     }, 1000)
@@ -626,7 +633,7 @@
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         {#if user.user_type == 'HR' || user.level >= 5}
-            <TabItem open title="SPPD">
+            <TabItem title="SPPD" open={modeDinas.tabNo == 1} onclick={()=> modeDinas.tabNo = 1}>
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formSPPD.error}
                         {#each formSPPD.error.split(';') as v}
@@ -789,7 +796,7 @@
                 </div>
             </TabItem>
         {/if}
-        <TabItem title="SKPD">
+        <TabItem title="SKPD" open={modeDinas.tabNo == 2} onclick={()=> modeDinas.tabNo = 2}>
             <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}

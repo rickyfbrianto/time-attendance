@@ -1,4 +1,5 @@
 <script lang="ts">
+    import 'balloon-css';
 	import '$/app.css';
 	import '$/style.css';
     import Header from '@/Header.svelte'
@@ -6,7 +7,6 @@
     import {appstore } from '$/lib/store/appstore'
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
-    import 'balloon-css';
 
     let {children, data } :LayoutProps = $props()
     

@@ -23,6 +23,7 @@
     let user = $derived(data.user)
     let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
+    let isUserAllowed = $derived(setting?.approval_lembur_security == user?.payroll)
 
     let plugins = [TimeGrid, dayGridPlugin, listPlugin, interactionPlugin];
 
@@ -34,6 +35,8 @@
             shift: "",
             area: "",
         },
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
         payroll: "",
         add: true, 
         area: "",
@@ -44,6 +47,11 @@
     }
 
     let formSecurity = $state({...formSecurityState})
+
+    const modeSecurity = $state({
+        year: formSecurity.year,
+        month: formSecurity.month
+    })
     
     let calendarEl = $state({
         timeZone: 'UTC',
@@ -52,7 +60,13 @@
         weekNumbers: true,
         weekNumberFormat: { week: 'numeric' },
         nowIndicator: true,
-        eventDurationEditable: formSecurity.loading,
+        editable:false,
+        eventStartEditable:false, 
+        datesSet: function(info) {
+            modeSecurity.month = info.view.currentStart.getMonth() + 1
+            modeSecurity.year = info.view.currentStart.getFullYear()
+            getReportSecurity()
+        },
         headerToolbar:{
             start: 'refresh prev,today,next', center: 'title', end: 'listMonth,dayGridMonth,timeGridWeek,timeGridDay'
         },
@@ -68,6 +82,7 @@
         },
         eventDidMount: ({ event, el }) => {
             el.addEventListener('dblclick', async () => {
+                if(!isUserAllowed) return
                 const req = await axios.get(`/api/security/schedule/${event.id}`)
                 const res = await req.data
                 formSecurity.add = false
@@ -75,11 +90,12 @@
                 formSecurity.answer.area = res.area
                 formSecurity.answer.payroll = res.payroll
                 formSecurity.answer.shift = res.shift
-                formSecurity.answer.date = [formatTanggal(res.date)]
+                formSecurity.answer.date = formatTanggal(res.date)
             });
         },
         eventDrop: async (info) => {
             try{
+                if(!isUserAllowed) return
                 formSecurity.error = ""
                 formSecurity.success = ""
                 formSecurity.answer.id = info.event.id
@@ -115,14 +131,6 @@
         {value:"Narogong", text: "Narogong"},
         {value:"Kemang", text: "Kemang"}
     ]
-    
-    // let calendarState = $derived.by(async ()=> {
-    //     const year = getYear(new Date())
-    //     const month = new Date().getMonth() + 1
-    //     const reqCalendar = await fetch(`/api/data?type=get_calendar&year=${year}&month=${month}`)
-    //     const resCalendar = await reqCalendar.json() as any[]
-    //     return resCalendar.map((v: any) => ({title: v.description, start: v.date, end: v.date, allDay:true, backgroundColor:"#B0413E", type: "calendar"}))
-    // })
     
     const handleCancel = () => {
         formSecurity.answer = {...formSecurityState.answer}
@@ -167,9 +175,7 @@
     }
 
     const getReportSecurity = async () =>{        
-        const year = getYear(new Date())
-        const month = new Date().getMonth() + 1
-        const reqSchedule = await fetch(`/api/security/schedule?payroll=${formSecurity.payroll}&area=${formSecurity.area}&year=${year}&month=${month}`)
+        const reqSchedule = await fetch(`/api/security/schedule?payroll=${formSecurity.payroll}&area=${formSecurity.area}&year=${modeSecurity.year}&month=${modeSecurity.month}`)
         const resSchedule = await reqSchedule.json() as any[]        
         const tempSchedule = resSchedule.map((value: any) => {
             const {name, shift, date, id, payroll, area} = value
@@ -186,6 +192,7 @@
         calendarEl.events = [...tempSchedule.map(v => {
             return {
                 id: v.id, title: `(${v.area[0]}) ${capitalEachWord(v.title)}`, start: v.start, end: v.end, backgroundColor: v.backgroundColor, 
+                editable: false,
                 allDay: v.allDay, startEditable: true, extendedProps: {
                     payroll: v.payroll,
                     shift: v.shift,
@@ -204,11 +211,11 @@
     <title>Security Page</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col gap-4 h-full w-full">
-    {#await getUser('')}
+<main in:fade={{delay:100}} out:fade class="flex flex-col gap-4 h-full w-full">
+    {#await getUser()}
         <MyLoading message="Loading data"/>
     {:then val}
-        <div transition:fly={{y: -250, duration: 1500, delay:1000}} class="flex flex-col px-4 py-5 gap-2 rounded-lg bg-gradient-to-r from-neutral-50 to-zinc-100 dark:from-neutral-600 dark:to-zinc-800 shadow-lg">
+        <div transition:fly={{y: -250, duration: 1500, delay:1000}} class="flex flex-col mx-4 px-4 py-5 gap-2 rounded-lg bg-gradient-to-r from-neutral-50 to-zinc-100 dark:from-neutral-600 dark:to-zinc-800 shadow-lg">
             <span class='text-[1.5rem] font-quicksand'>Security Schedule</span>
 
             <div transition:fly={{ y: -100, duration: 1250, delay: 750 }} class="flex gap-2 pt-3 border-t border-slate-300">
@@ -250,55 +257,57 @@
         
         <div transition:fly={{ y: 100, duration: 1500, delay: 1250 }} class="flex flex-col flex-1 px-4 pb-4 gap-4">        
             <div class="flex gap-4 flex-1">
-                <div class="flex flex-col self-start border border-slate-200 rounded-lg w-[22rem] order-2 shadow-lg">
-                    <div class={`flex ${formSecurity.add ? "bg-bgactive":"bg-bgside"} p-3 rounded-t-lg`}>
-                        <span class='text-[1rem] flex items-center gap-2'><CalendarCheck size={16} />{formSecurity.add ? "Tambah Schedule" : "Ubah schedule"}</span>
-                    </div>
-                    
-                    <form class='flex flex-col p-3 gap-2 font-quicksand'>
-                        <div class="flex flex-col gap-2 flex-1">
-                            <Label>Payroll</Label>
-                            <Svelecte class='border-none' optionClass='p-2' name='payroll' searchable selectOnTab multiple={false} bind:value={formSecurity.answer.payroll} 
-                                onChange={e => formSecurity.answer.payroll = e.value}
-                                options={val.map((v) => ({value: v.payroll, text: capitalEachWord(v.payroll + " - " + v.name)}))}/>
-                        </div>
-
-                        <div class="flex flex-col gap-2 flex-1">
-                            <Label>Date</Label>
-                            <MyDatePicker bind:value={formSecurity.answer.date} mode={`${formSecurity.add ? "multiple" : "single"}`}/>
-                            <!-- <MyDatePicker bind:value={formSecurity.answer.date} mode={`multiple`}/> -->
-                            <!-- <MyDatePicker bind:value={formSecurity.answer.tes} mode='multiple'/> -->
+                {#if isUserAllowed}
+                    <div class="flex flex-col self-start border border-slate-200 rounded-lg w-[22rem] order-2 shadow-lg">
+                        <div class={`flex ${formSecurity.add ? "bg-bgactive":"bg-bgside"} p-3 rounded-t-lg`}>
+                            <span class='text-[1rem] flex items-center gap-2'><CalendarCheck size={16} />{formSecurity.add ? "Tambah Schedule" : "Ubah schedule"}</span>
                         </div>
                         
-                        <div class="flex flex-col gap-2 flex-1">
-                            <Label>Shift</Label>
-                            <Svelecte class='border-none' optionClass='p-2' name='shift' searchable selectOnTab multiple={false} bind:value={formSecurity.answer.shift} 
-                            onChange={({value}: {value: string}) => formSecurity.answer.shift = value}
-                            options={["Pagi","Malam","Off"].map((v) => ({value: v, text: v}))}/>
+                        <form class='flex flex-col p-3 gap-2 font-quicksand'>
+                            <div class="flex flex-col gap-2 flex-1">
+                                <Label>Payroll</Label>
+                                <Svelecte class='border-none' optionClass='p-2' name='payroll' searchable selectOnTab multiple={false} bind:value={formSecurity.answer.payroll} 
+                                    onChange={e => formSecurity.answer.payroll = e.value}
+                                    options={val.map((v) => ({value: v.payroll, text: capitalEachWord(v.payroll + " - " + v.name)}))}/>
+                            </div>
+
+                            <div class="flex flex-col gap-2 flex-1">
+                                <Label>Date</Label>
+                                <MyDatePicker bind:value={formSecurity.answer.date} mode={`${formSecurity.add ? "multiple" : "single"}`}/>
+                                <!-- <MyDatePicker bind:value={formSecurity.answer.date} mode={`multiple`}/> -->
+                                <!-- <MyDatePicker bind:value={formSecurity.answer.tes} mode='multiple'/> -->
+                            </div>
+                            
+                            <div class="flex flex-col gap-2 flex-1">
+                                <Label>Shift</Label>
+                                <Svelecte class='border-none' optionClass='p-2' name='shift' searchable selectOnTab multiple={false} bind:value={formSecurity.answer.shift} 
+                                onChange={({value}: {value: string}) => formSecurity.answer.shift = value}
+                                options={["Pagi","Malam","Off"].map((v) => ({value: v, text: v}))}/>
+                            </div>
+
+                            <div class="flex flex-col gap-2 flex-1">
+                                <Label>Area</Label>
+                                <Svelecte class='border-none' optionClass='p-2' name='area' searchable selectOnTab multiple={false} bind:value={formSecurity.answer.area} 
+                                onChange={({value}: {value: string}) => formSecurity.answer.area = value}
+                                options={["Gandaria","Narogong","Kemang"].map((v) => ({value: v, text: v}))}/>
+                            </div>
+                        </form>
+
+                        <div class="flex flex-col px-3 pb-3">
+                            <span class='italic text-[0.75rem]'>*Double click untuk edit schedule</span>
+                            <span class='italic text-[0.75rem]'>*Tarik dan lepas untuk ganti tanggal dengan cepat</span>
                         </div>
 
-                        <div class="flex flex-col gap-2 flex-1">
-                            <Label>Area</Label>
-                            <Svelecte class='border-none' optionClass='p-2' name='area' searchable selectOnTab multiple={false} bind:value={formSecurity.answer.area} 
-                            onChange={({value}: {value: string}) => formSecurity.answer.area = value}
-                            options={["Gandaria","Narogong","Kemang"].map((v) => ({value: v, text: v}))}/>
+                        <div class={`flex gap-2 p-3 ${formSecurity.add ? "bg-bgactive":"bg-bgside"}`}>
+                            <MyButton type='button' className='flex items-center gap-2 self-start' onclick={handleCancel}>
+                                <Ban size={12}/>
+                            </MyButton>
+                            <MyButton type='submit' className='flex items-center gap-2 self-start' onclick={handleSubmit}>
+                                <Save size={12}/>
+                            </MyButton>
                         </div>
-                    </form>
-
-                    <div class="flex flex-col px-3 pb-3">
-                        <span class='italic text-[0.75rem]'>*Double click untuk edit schedule</span>
-                        <span class='italic text-[0.75rem]'>*Tarik dan lepas untuk ganti tanggal dengan cepat</span>
                     </div>
-
-                    <div class={`flex gap-2 p-3 ${formSecurity.add ? "bg-bgactive":"bg-bgside"}`}>
-                        <MyButton type='button' className='flex items-center gap-2 self-start' onclick={handleCancel}>
-                            <Ban size={12}/>
-                        </MyButton>
-                        <MyButton type='submit' className='flex items-center gap-2 self-start' onclick={handleSubmit}>
-                            <Save size={12}/>
-                        </MyButton>
-                    </div>
-                </div>
+                {/if}
                 <div class="flex flex-col gap-2 w-full min-h-[70vh]">
                     <span class='italic text-[0.75rem]'>G = Gandaria, N = Narogong, K = Kemang</span>
                     <Calendar {plugins} options={calendarEl}/>

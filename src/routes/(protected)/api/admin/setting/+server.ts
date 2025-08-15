@@ -26,7 +26,7 @@ export async function POST({ request, locals }) {
                     data: { ...data },
                 })
 
-                return { message: "Setting successfully saved" }
+                return { message: "Setting Berhasil Disimpan" }
             } else {
                 if (!pecahArray(userProfile.access_setting, "U")) throw new Error("Cant update Setting, because you have no authorization")
                 await prisma.setting.update({
@@ -34,7 +34,7 @@ export async function POST({ request, locals }) {
                     where: { setting_id: getSetting.setting_id }
                 })
 
-                return { message: "Setting successfully updated" }
+                return { message: "Setting Berhasil Diubah" }
             }
         })
 

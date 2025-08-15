@@ -730,7 +730,7 @@
                                 {#if tableCuti.rows.length > 0}
                                     {#each tableCuti.rows as row}
                                         <TableBodyRow class='h-10'>
-                                            <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.type ?? "-"}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
@@ -818,7 +818,7 @@
                                         {#each tableApprovalCuti.rows as row}
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                                 <TableBodyCell>

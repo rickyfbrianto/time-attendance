@@ -6,10 +6,12 @@
     "scripts": {
         "db": "pnpm prisma db pull && pnpm prisma generate",
         "db:dev": "dotenv -e .env.dev pnpm prisma db pull && pnpm prisma generate",
+        "db:trial": "dotenv -e .env.trial pnpm prisma db pull && pnpm prisma generate",
         "dev": "vite dev",
         "dev:dev": "dotenv -e .env.dev -- vite dev --mode dev",
+        "dev:trial": "dotenv -e .env.trial -- vite dev --mode trial",
         "build": "vite build",
-        "build:docker": "dotenv -e .env.docker -- vite build --mode docker",
+        "build:trial": "dotenv -e .env.trial -- vite build --mode trial",
         "test": "vitest",
         "preview": "vite preview",
         "file-server": "cd ./express && npm run start",

@@ -523,7 +523,7 @@
         {#if modeAttendance.payroll}
             <Tabs contentClass='w-full' tabStyle="underline">
                 <!-- Attendance pribadi/orang lain -->
-                <TabItem open={modeAttendance.tabNo == 1} title={user?.payroll == modeAttendance.payroll ? "Attendance Saya": `Attendance ${modeAttendance.name}`} onclick={()=> modeAttendance.tabNo = 1} >
+                <TabItem open={modeAttendance.tabNo == 1} title={user?.payroll == modeAttendance.payroll ? "Attendance Saya": `Attendance ${capitalEachWord(modeAttendance.name)}`} onclick={()=> modeAttendance.tabNo = 1} >
                     <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">

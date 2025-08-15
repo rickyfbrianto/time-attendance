@@ -1,4 +1,4 @@
-import { prisma, formatTanggal, formatTanggalISO, formatDateToSQLString, prismaErrorHandler } from "@lib/utils";
+import { prisma, formatTanggal, formatTanggalISO, capitalEachWord, prismaErrorHandler } from "@lib/utils";
 import { error, json } from "@sveltejs/kit";
 
 export async function POST({ request, locals }) {
@@ -17,7 +17,7 @@ export async function POST({ request, locals }) {
                         date: formatTanggalISO(data.date[0]),
                     }
                 })
-                if (alreadySchedule) throw new Error(`Schedule ${data.name} sudah ada di tanggal ${formatTanggal(formatTanggalISO(data.date), "date")}`)
+                if (alreadySchedule) throw new Error(`Schedule ${capitalEachWord(data.name)} sudah ada di tanggal ${formatTanggal(formatTanggalISO(data.date), "date")}`)
 
                 const query = data.date.map(async (date: string) => {
                     return tx.$executeRawUnsafe(`UPDATE security SET date = Date(?) WHERE id = ?`,

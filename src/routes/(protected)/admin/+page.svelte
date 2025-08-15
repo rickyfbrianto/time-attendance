@@ -349,7 +349,10 @@
             end_periode: 1,
             late_dispen: 0,
             overtime_allow: 30,
-            overtime_round_up: false
+            overtime_round_up: false,
+            approval_dinas: "",
+            approval_lembur_ob: "",
+            approval_lembur_security: "",
         },
         success:"",
         error:"",
@@ -362,18 +365,18 @@
         const req = await fetch('/api/admin/setting')
         const res: TSettingSchema = await req.json()
         if(res){
-            formSettingState.answer.start_periode = res.start_periode
-            formSettingState.answer.end_periode = res.end_periode
-            formSettingState.answer.late_dispen = res.late_dispen
-            formSettingState.answer.overtime_allow = res.overtime_allow
-            formSettingState.answer.overtime_round_up = res.overtime_round_up
+            formSettingState.answer = {...res}
+            // formSettingState.answer.start_periode = res.start_periode
+            // formSettingState.answer.end_periode = res.end_periode
+            // formSettingState.answer.late_dispen = res.late_dispen
+            // formSettingState.answer.overtime_allow = res.overtime_allow
+            // formSettingState.answer.overtime_round_up = res.overtime_round_up
         }
     }
 
     const formSettingSubmit = async () =>{
         try {
             formSettingState.loading = true
-            
             const isValid = SettingSchema.safeParse(formSettingState.answer)
             if(isValid.success){
                 const req = await axios.post('/api/admin/setting', formSettingState.answer)
@@ -575,7 +578,7 @@
             </div>
         </TabItem>
         {#if pecahArray(userProfile?.access_profile, "R")}
-            <TabItem title="Profile">
+            <TabItem title="Profil">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     {#if formProfileState.error}
                         {#each formProfileState.error.split(';') as v}
@@ -877,7 +880,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
                         </form>
                     {/if}
 
@@ -971,7 +973,7 @@
             </TabItem>
         {/if}
         {#if pecahArray(userProfile?.access_dept, "R")}
-            <TabItem title="Department">
+            <TabItem title="Departemen">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     {#if formDeptState.error}
                         {#each formDeptState.error.split(';') as v}
@@ -1074,7 +1076,7 @@
             </TabItem>
         {/if}
         {#if pecahArray(userProfile?.access_setting, "R")}
-            <TabItem title="Setting" open={urlTab == 'setting'}>
+            <TabItem title="Pengaturan" open={urlTab == 'setting'}>
                 <div class="flex flex-col gap-4">
                     {#if formSettingState.error}
                         {#each formSettingState.error.split(';') as v}
@@ -1098,23 +1100,48 @@
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
                                 <div class="flex flex-col">
                                     <div class="flex gap-2">
-                                        <MyInput type='number' title='Start Periode' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
-                                        <MyInput type='number' title='End Periode' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
+                                        <MyInput type='number' title='Periode Awal' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
+                                        <MyInput type='number' title='Periode Akhir' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
                                     </div>
-                                    <span class='text-textdark italic'>Allow you to calculate period on calendar</span>
+                                    <span class='text-textdark italic'>Set untuk periode awal dan periode akhir</span>
                                 </div>
                                 <div class="flex flex-col">
                                     <div class="flex items-center gap-4">
-                                        <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
-                                        <Checkbox bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Overtime Round Up</Checkbox>
+                                        <div class="flex flex-1 flex-col">
+                                            <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
+                                            <span class='text-textdark italic'>Minimum menit untuk dihitung lembur</span>
+                                        </div>
+                                        <div class="flex flex-1 flex-col">
+                                            <MyInput type='number' title='Dispensasi Keterlambatan' name="late_dispen" bind:value={formSettingState.answer.late_dispen}/>
+                                            <span class='text-textdark italic'>Dispensasi untuk keterlambatan</span>
+                                        </div>
+                                        <Checkbox class='flex-1' bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Overtime Round Up</Checkbox>
                                     </div>
-                                    <span class='text-textdark italic'>Minimum minute that allow program to set overtime</span>
                                 </div>
-                                <div class="flex flex-col">
-                                    <div class="flex items-center gap-4">
-                                        <MyInput type='number' title='Late Dispen' name="late_dispen" bind:value={formSettingState.answer.late_dispen}/>
-                                    </div>
-                                    <span class='text-textdark italic'>Dispensation for late</span>
+
+                                <div class="flex items-center gap-4">
+                                    {#await getUser()}
+                                        <MyLoading message="Loading data"/>
+                                    {:then val}
+                                        <div class="flex flex-1 flex-col gap-2">
+                                            <Label>Approve Dinas</Label>
+                                            <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_dinas} 
+                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                            <span class='text-textdark italic'>User default untuk approve dinas</span>
+                                        </div>
+                                        <div class="flex flex-1 flex-col gap-2">
+                                            <Label>Approve Lembur OB</Label>
+                                            <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_lembur_ob} 
+                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                            <span class='text-textdark italic'>User default untuk approve lembur OB</span>
+                                        </div>
+                                        <div class="flex flex-1 flex-col gap-2">
+                                            <Label>Approve Lembur Security</Label>
+                                            <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_lembur_security} 
+                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                            <span class='text-textdark italic'>User default untuk approve lembur Security</span>
+                                        </div>
+                                    {/await}
                                 </div>
                             </form>
                         {/if}
@@ -1123,7 +1150,7 @@
             </TabItem>
         {/if}
         {#if pecahArray(userProfile?.access_calendar, "R")}
-            <TabItem title="Calendar">
+            <TabItem title="Kalender">
                 <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
                     <div class="flex flex-col gap-4">                
                         {#if formCalendar.error}
@@ -1153,18 +1180,18 @@
                         {#if formCalendar.add || formCalendar.edit}
                             <form transition:fade={{duration:500}} class='grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 border border-slate-300 rounded-lg'>
                                 <div class="flex flex-col gap-2 flex-1">
-                                    <Label>Date</Label>
+                                    <Label>Tanggal</Label>
                                     <MyDatePicker bind:value={formCalendar.answer.date}/>
                                 </div>                 
                                 <div class="flex flex-col gap-2">
-                                    <Label>Type</Label>
+                                    <Label>Tipe</Label>
                                     <select bind:value={formCalendar.answer.type}>
                                         {#each ['Hari Libur', 'Cuti Bersama', 'Event Kantor'] as option}
                                         <option value={option}>{option}</option>
                                         {/each}
                                     </select>
                                 </div>
-                                <MyInput type='textarea' title='Description' name="description" bind:value={formCalendar.answer.description}/>
+                                <MyInput type='textarea' title='Deskripsi' name="description" bind:value={formCalendar.answer.description}/>
                             </form>
                         {/if}
                         
@@ -1187,9 +1214,9 @@
                         <Datatable table={tableCalendar}>
                             <Table>
                                 <TableHead>
-                                    <ThSort table={tableCalendar} field="type">Type</ThSort>
-                                    <ThSort table={tableCalendar} field="description">Description</ThSort>
-                                    <ThSort table={tableCalendar} field="date">Date</ThSort>
+                                    <ThSort table={tableCalendar} field="type">Tipe</ThSort>
+                                    <ThSort table={tableCalendar} field="description">Deskripsi</ThSort>
+                                    <ThSort table={tableCalendar} field="date">Tanggal</ThSort>
                                     <ThSort table={tableCalendar} field="calendar_id">#</ThSort>
                                 </TableHead>
 

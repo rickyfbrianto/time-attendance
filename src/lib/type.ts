@@ -67,7 +67,10 @@ export const SettingSchema = z.object({
     end_periode: z.number().gte(1, "Min 1").lte(31, "Max 31"),
     late_dispen: z.number().gte(0, "Min 0").lte(60, "Max 60"),
     overtime_allow: z.number().gte(1, "Min 1").lte(59, "Max 59"),
-    overtime_round_up: z.boolean()
+    overtime_round_up: z.boolean(),
+    approval_dinas: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
+    approval_lembur_ob: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
+    approval_lembur_security: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
 })
 
 export type TSettingSchema = z.infer<typeof SettingSchema>

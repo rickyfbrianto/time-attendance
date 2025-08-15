@@ -1040,7 +1040,6 @@
                                                             {/if}
                                                             {#if row.status1 == 'Approved'}
                                                                 <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
-                                                                <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
                                                             {/if}
                                                         {/if}
                                                     </TableBodyCell>
@@ -1275,7 +1274,7 @@
                                                             {format(formatTanggal(row.real_start), "d MMMM yyyy")}
                                                         </div>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{row.name}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "time")}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "time")}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>

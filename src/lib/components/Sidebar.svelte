@@ -39,9 +39,10 @@
         {type:"main", link:"/dinas", title:"Dinas", icon: Plane},
         {type:"main", link:"/ijin", title:"Ijin", icon: TicketsPlane},
         {type:"main", link:"/cuti", title:"Cuti", icon: TicketsPlane},
-        {type:"other", title:"Other", separator: true},
-        {type:"other", link:"/security", title:"Security", icon: ShieldUser},
-        {type:"other", link:"/logs", title:"Logs", icon: Logs},
+        {type:"main", link:"/security", title:"Security", icon: ShieldUser},
+        // {type:"other", title:"Other", separator: true},
+        // {type:"other", link:"/security", title:"Security", icon: ShieldUser},
+        // {type:"other", link:"/logs", title:"Logs", icon: Logs},
         {type:"admin", title:"Admin", separator: true},
         {type:"admin", link:"/admin", title:"Admin", icon: CircleUserRound},
     ]
@@ -161,9 +162,9 @@
                 <MyClock/>   
             </div>
             <div class="flex flex-col">
-                <span class="text-[1.5rem] font-dancing font-[700] tracking-widest">Time</span>
-                <span class="indent-5 mt-[-5px] font-quicksand text-[1.25rem]">Attendance</span>
-                <span class="mt-[-2px] font-quicksand text-[.75rem] font-bold">Versi 1.2 (2025-08-08)</span>
+                <span class="text-[1.25rem] font-dancing font-[700] tracking-widest">Time</span>
+                <span class="indent-5 mt-[-5px] font-quicksand text-[1.2rem]">Attendance</span>
+                <span class="mt-[-2px] font-quicksand text-[.6rem] font-bold">Versi 1.2 (2025-08-14)</span>
             </div>
         </a>
 
@@ -185,18 +186,18 @@
             {/each}
         </div>
 
-        <div class="relative flex flex-col mb-3 bg-bgside2 pt-4 pb-2 px-3 rounded-xl shadow-xl">
+        <div class="relative flex flex-col mb-3 bg-bgside2 pt-4 pb-3 px-3 rounded-xl shadow-xl">
+            <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute left-[10px] top-[10px] cursor-pointer' />
+            <Tooltip class='z-10'>Setting</Tooltip>
             <div class="relative flex self-center">
-                <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[6.2rem] h-[6.2rem] mb-2"/>
+                <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[5rem] h-[5rem] mb-2"/>
                 <Tooltip class='z-10'>{user.name}</Tooltip>
-                <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute right-[-15px]' />
-                <Tooltip class='z-10'>Setting</Tooltip>
             </div>
             <span class="text-[.75rem] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
             <Badge class='bg-slate-200 text-slate-800 self-center py-1'>{user.email}</Badge>
             <Tooltip class='z-10'>{user.email}</Tooltip>
             <Hr hrClass="my-2 text-slate-300"/>
-            <div class='flex flex-col gap-[2px] px-1 justify-center'>
+            <div class='flex flex-col gap-[1px] px-1 justify-center'>
                 <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
                 <Tooltip class='z-10'>{user.payroll}</Tooltip>
                 <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
@@ -204,8 +205,8 @@
                 <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><Share2 size={14}/>Profile ({userProfile?.name} - Level {user.level})</span>
                 <Tooltip class='z-10'>{userProfile?.name}</Tooltip>
             </div>
-
-            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-2 font-quicksand text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
+            
+            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-1 font-quicksand font-bold text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
 
             {#if user.user_type == 'HR'}
                 <div class="absolute h-[2rem] w-[4rem] flex items-center top-[-1.5rem] right-[0] rounded-t-lg bg-bgside2 px-4">
