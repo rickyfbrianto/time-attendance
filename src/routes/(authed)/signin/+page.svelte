@@ -72,8 +72,9 @@
             <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
             <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
             <Checkbox bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Ingat Login</Checkbox>
-            <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
-            {#if formLoginState.loading}
+            {#if !formLoginState.loading}
+                <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
+            {:else}
                 <span>Verifikasi data</span>
             {/if}
         </div>

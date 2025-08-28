@@ -8,11 +8,9 @@ export const handle: Handle = async ({ event, resolve }) => {
     try {
         const { cookies, url, route } = event
         const rootGroup = route.id?.split('/').filter(v => v)[0]
-        const rootRoute = url.pathname.split('/').filter(v => v)[0]
         const token = cookies.get('token')
         let payroll
 
-        // if (rootGroup == "(protected)" && rootRoute != "api") {
         if (rootGroup == "(protected)") {
             if (!token) {
                 throw new Error(`/signin?redirectTo=${url.pathname}`)
@@ -50,17 +48,19 @@ export const handle: Handle = async ({ event, resolve }) => {
                 substitute: true,
                 signature: true,
                 user_type: true,
+                cuti_kunci: true,
+                cuti_suspen: true,
                 level: true,
                 employee_employee_approverToemployee: {
                     select: {
                         payroll: true,
                         name: true,
-                        employee_employee_substituteToemployee: {
-                            select: {
-                                payroll: true,
-                                name: true
-                            }
-                        }
+                    }
+                },
+                employee_employee_substituteToemployee: {
+                    select: {
+                        payroll: true,
+                        name: true
                     }
                 }
             },
@@ -77,10 +77,9 @@ export const handle: Handle = async ({ event, resolve }) => {
             if (err.code === 'P1003') error(500, 'Database tidak ada')
         }
 
-        if (err.status == 500) {
+        if (err.status == 500)
             error(500, err.body.message)
-        } else {
+        else
             redirect(303, err.message)
-        }
     }
 }

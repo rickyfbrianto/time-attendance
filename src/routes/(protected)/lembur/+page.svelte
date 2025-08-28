@@ -1,6 +1,6 @@
  <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Label, Alert, Modal } from 'flowbite-svelte';
+    import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Tabs, TabItem, Button, Badge, Label, Alert, Tooltip, Modal } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyButton from '@/MyButton.svelte';
@@ -152,8 +152,8 @@
         try {        
             const req = await axios.get(`/api/lembur/spl/${id}/print`)
             const res = await req.data
-            
-            if(!res.employee_spl_approval1Toemployee.signature){
+
+            if(!res.employee_spl_createdByToemployee.signature && !res.employee_spl_approval1Toemployee.signature && !res.employee_spl_acknowledgeByToemployee.signature){
                 throw new Error('Ada user yang tidak memiliki signature untuk SPL ini')
             }
 
@@ -204,7 +204,7 @@
             doc.text(`:  ${res.spl_id.replace(/\_/g, '/')}`, colData[0] + 30, rowData + rowInc)
             rowInc += 5
             doc.text("Date Prepare", colData[0], rowData + rowInc)
-            doc.text(`:  ${format(new Date(), "d MMMM yyyy")}`, colData[0] + 30, rowData + rowInc)
+            doc.text(`:  ${formatTanggal(res.createdAt, "date", "app")}`, colData[0] + 30, rowData + rowInc)
             rowInc += 5
             doc.text("Department", colData[0], rowData + rowInc)
             doc.text(`:  ${res.dept_spl_deptTodept.name}`, colData[0] + 30, rowData + rowInc)
@@ -229,7 +229,7 @@
                 head: [['No','Name', 'Payroll', 'Start', 'Finish', 'Total Hours', 'Description of Work']],
                 margin: {left: colData[0]},
                 body: res.spl_detail.flatMap((v: any, i: number) => {
-                    const [no, nama, payroll, start, finish] = [i + 1, v.employee.name, v.employee.payroll, formatTanggal(res.est_start,"time").substring(0,5), formatTanggal(res.est_end,"time").substring(0,5)]
+                    const [no, nama, payroll, start, finish] = [i + 1, capitalEachWord(v.employee.name), v.employee.payroll, formatTanggal(res.est_start,"time").substring(0,5), formatTanggal(res.est_end,"time").substring(0,5)]
                     const prev = payroll
                     return v.description.split(',').filter((v: string) => v).map((desc: string, index: number) => {
                         const [temp_no, temp_nama, temp_payroll, temp_start, temp_finish, temp_total] = (index > 0 && prev == payroll)
@@ -256,11 +256,12 @@
             rowInc += row3
             doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_createdByToemployee.signature, colData[0], rowData + rowInc - 5, signatureSize, signatureSize)
             doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_approval1Toemployee.signature, colData[1], rowData + rowInc - 5, signatureSize, signatureSize)
+            doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_spl_acknowledgeByToemployee.signature, colData[3], rowData + rowInc - 5, signatureSize, signatureSize)
             
             rowInc += signatureSize
-            doc.text(res.employee_spl_createdByToemployee.name, colData[0], rowData + rowInc)
-            doc.text(res.employee_spl_approval1Toemployee.name, colData[1], rowData + rowInc)
-            doc.text("HR", colData[3], rowData + rowInc)
+            doc.text(capitalEachWord(res.employee_spl_createdByToemployee.name), colData[0], rowData + rowInc)
+            doc.text(capitalEachWord(res.employee_spl_approval1Toemployee.name), colData[1], rowData + rowInc)
+            doc.text(capitalEachWord(res.employee_spl_acknowledgeByToemployee.name), colData[3], rowData + rowInc)
 
             const blob = doc.output('blob')
             const url = URL.createObjectURL(blob);
@@ -269,6 +270,21 @@
             // doc.save(`${id}.pdf`);
         } catch (err) {
             goto(`/api/handleError?msg=${err.message}`)
+        }
+    }
+
+    const handleAcknowledgedSPL = async (id:string) =>{
+        try {
+            const req = await axios.post(`/api/lembur/spl/${id}/acknowledge`, {
+                acknowledgeBy: user.payroll
+            })
+            const res = await req.data
+            tableSPL.invalidate()
+            formSPL.error = ""
+            formSPL.success = res.message
+        } catch (error: any) {
+            formSPL.error = error.response.data.message
+            formSPL.success = ""
         }
     }
 
@@ -312,9 +328,9 @@
         const res = await req.data
         if(res){
             formSPL.answer = {...res,
-                est_start: formatTanggal(res.est_start),
-                est_end: formatTanggal(res.est_end),
-                spl_detail: res.spl_detail.map((val) => ({name: val.employee.name, description: val.description.trim() }))
+                est_start: formatTanggal(res.est_start, "datetime", "app"),
+                est_end: formatTanggal(res.est_end, "datetime", "app"),
+                spl_detail: res.spl_detail.map((val) => ({name: capitalEachWord(val.employee.name), description: val.description.trim() }))
             }
         }
     }
@@ -338,7 +354,7 @@
         createdByName: "",
         payroll: (()=> user.level > 1 ? "": user?.payroll)(),
         year: new Date().getFullYear(),
-        month: new Date().getMonth(),
+        month: new Date().getMonth() + 1,
         success:"",
         error:"",
         modalDelete: false,
@@ -519,7 +535,7 @@
                 margin: {left: colData[0]},
                 body: res.srl_detail.map((v:any, i: number) => {
                     const [nama, payroll, tanggal, waktu, jumlah] = i == 0 
-                        ? [res.employee_srl_payrollToemployee.name, res.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5), `${hours} Jam ${minutes} menit`]
+                        ? [capitalEachWord(res.employee_srl_payrollToemployee.name), res.payroll, namaHari[getDay(formatTanggal(res.real_start, "date"))] + ", " + format(formatTanggal(res.real_start, "date"), "dd-MM-yyyy"), formatTanggal(res.real_start,"time").substring(0,5) + " - " + formatTanggal(res.real_end,"time").substring(0,5), `${hours} Jam ${minutes} menit`]
                         : ["","","","", ""]
                     return [i + 1, nama, payroll, tanggal, waktu, jumlah, v.description, v.status]
                 }),
@@ -549,15 +565,14 @@
             doc.addImage(import.meta.env.VITE_VIEW_SIGNATURE + res.employee_srl_approval2Toemployee.signature, colData[2], rowData + rowInc - 5, signatureSize, signatureSize)
             
             rowInc += row2 * 3.1
-            doc.text(res.employee_srl_payrollToemployee.name, colData[0], rowData + rowInc)
-            doc.text(res.employee_srl_approval1Toemployee.name, colData[1], rowData + rowInc)
-            doc.text(res.employee_srl_approval2Toemployee.name, colData[2], rowData + rowInc)
+            doc.text(capitalEachWord(res.employee_srl_payrollToemployee.name), colData[0], rowData + rowInc)
+            doc.text(capitalEachWord(res.employee_srl_approval1Toemployee.name), colData[1], rowData + rowInc)
+            doc.text(capitalEachWord(res.employee_srl_approval2Toemployee.name), colData[2], rowData + rowInc)
             
             const blob = doc.output('blob')
             const url = URL.createObjectURL(blob);
 
             window.open(url); // buka tab baru
-            // doc.save(`${id}.pdf`);
         } catch (err) {
             goto(`/api/handleError?msg=${err.message}`)
         }
@@ -641,7 +656,7 @@
                 real_end: formatTanggal(res.real_end),
                 overtime: differenceInHours(res.real_end,res.real_start)
             }
-            formSRL.createdByName = res.employee.name
+            formSRL.createdByName = res.employee_srl_payrollToemployee.name
         }
     }
     
@@ -663,6 +678,14 @@
     const getUserByDept = $derived.by(() => {
         return async () =>{
             const req = await fetch(`/api/data?type=user_by_dept&val=${user.department}`)
+            const res = await req.json()
+            return res
+        }
+    })
+
+    const getUserAtasan = $derived.by(() => {
+        return async (val: string) =>{
+            const req = await fetch(`/api/data?type=user_filter_level&val=up&payroll=${val}`)
             const res = await req.json()
             return res
         }
@@ -795,11 +818,11 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">                
                 <div class="flex flex-col gap-2 flex-1">
                     <Label>Estimasi Awal</Label>
-                    <MyDatePicker disabled bind:value={formSPL.answer.est_start} />
+                    <span class='font-bold'>{formSPL.answer.est_start}</span>
                 </div>
                 <div class="flex flex-col gap-2 flex-1">
                     <Label>Estimasi Selesai</Label>
-                    <MyDatePicker disabled bind:value={formSPL.answer.est_end} />
+                    <span class='font-bold'>{formSPL.answer.est_end}</span> 
                 </div>
                 {#await getUserByDept() then val}
                     <div class="flex flex-col gap-2 flex-1">
@@ -842,13 +865,13 @@
                         <div class="flex flex-col gap-2 flex-1">
                             <Label>Approval 1</Label>
                             <Svelecte class='rounded-lg' disabled bind:value={formSRL.answer.approval1} 
-                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+ capitalEachWord(v.name)}))}
                             />
                         </div>
                         <div class="flex flex-col gap-2 flex-1">
                             <Label>Approval 2</Label>
                             <Svelecte class='rounded-lg' disabled bind:value={formSRL.answer.approval2} 
-                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+v.name}))}
+                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll +" - "+ capitalEachWord(v.name)}))}
                             />
                         </div>
                     {/await}
@@ -864,7 +887,7 @@
                     </div>
                 {/each}
             </div>
-            <span class='text-[.8rem]'>createdBy <Badge color='dark'>{formSRL.createdByName}</Badge> </span>
+            <span class='text-[.8rem]'>createdBy <Badge color='dark'>{capitalEachWord(formSRL.createdByName)}</Badge> </span>
         </div>
         <svelte:fragment slot="footer">
             <Button onclick={()=> formSPL.modalPreview = false} class='flex gap-2 px-3 py-2' pill>Close</Button>
@@ -948,12 +971,12 @@
                                             </div>
                                             <div class="flex flex-1 flex-col">
                                                 <MyInput type='textarea' title={`Job List ${i+1}`} name="description" bind:value={list.description}/>
-                                                <span class='text-[.8rem] italic'>Untuk beberapa pekerjaan pisahkan dengan tandan koma (,)</span>
+                                                <span class='text-[.8rem] italic'>Untuk beberapa pekerjaan pisahkan dengan tanda koma (,)</span>
                                             </div>
                                         </div>
                                     {/each}
                                 </div>
-                                <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
+                                <span class='text-[.8rem]'>createdBy <Badge color='dark'>{capitalEachWord(user.name)}</Badge> </span>
                             </form>
                         {/if}
                         
@@ -964,14 +987,14 @@
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
-                                <select bind:value={formSPL.year} onchange={()=> tableSPL.invalidate()}>
+                                <select bind:value={formSPL.year} onchange={()=> tableSPL.setPage(1)}>
                                     {#each dataTahun as {title, value}}
                                         <option value={value}>
                                             {title} {value.toString() == format(modeLembur.periode.start, "yyyy") ? "(Select)" : null}
                                         </option>
                                     {/each}
                                 </select>
-                                <select bind:value={formSPL.month} onchange={()=> tableSPL.invalidate()}>
+                                <select bind:value={formSPL.month} onchange={()=> tableSPL.setPage(1)}>
                                     <option value={''}>Semua</option>
                                     {#each dataBulan as {title, value}}
                                         <option value={value}>
@@ -1016,15 +1039,20 @@
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.spl_id?.replace(/\_/g, '/')}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.est_start, "c")) - 1]}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start)}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end)}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start, "datetime", "app")}</TableBodyCell>
+                                                    <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end, "datetime", "app")}</TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class="flex flex-col items-start gap-2">
                                                             <Badge color='indigo'>{capitalEachWord(row.approval1)}</Badge>
-                                                            <Badge color={
-                                                                ['Reject','Cancelled'].includes(row.status1) ? "red" :
-                                                                row.status1 == "Approved" ? "green" : "dark"}>{row.status1}
-                                                            </Badge>
+                                                            <div class="flex gap-2">
+                                                                <Badge color={
+                                                                    ['Reject','Cancelled'].includes(row.status1) ? "red" :
+                                                                    row.status1 == "Approved" ? "green" : "dark"}>{row.status1}
+                                                                </Badge>
+                                                                {#if row.acknowledgeBy}
+                                                                <Badge color={"green"}>Review HR</Badge>
+                                                                {/if}
+                                                            </div>
                                                         </div>
                                                     </TableBodyCell>
                                                     <TableBodyCell>
@@ -1036,10 +1064,18 @@
                                                                         formSPL.modalDelete = true
                                                                         formSPL.answer.spl_id = row.spl_id
                                                                     }}><Trash size={12} /></MyButton>
+                                                                    <Tooltip>Hapus</Tooltip>
                                                                 {/if}
                                                             {/if}
                                                             {#if row.status1 == 'Approved'}
+                                                                {#if row.acknowledgeBy}
                                                                 <MyButton onclick={()=> handleCetakSPL(row.spl_id)}><Printer size={12} /></MyButton>
+                                                                <Tooltip>Print</Tooltip>
+                                                                {/if}
+                                                                {#if !row.acknowledgeBy && user.user_type == 'HR'}
+                                                                    <MyButton onclick={()=> handleAcknowledgedSPL(row.spl_id)}>Acknowledge</MyButton>
+                                                                    <Tooltip>Acknowledge</Tooltip>
+                                                                {/if}
                                                             {/if}
                                                         {/if}
                                                     </TableBodyCell>
@@ -1092,14 +1128,17 @@
                                                 {#each tableSPLApproval1.rows as row}
                                                     <TableBodyRow class='h-10'>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.purpose}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_start, "datetime", "app") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.est_end, "datetime", "app") || ""}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.approval1}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status1 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Tooltip>Approve SPL</Tooltip>
                                                                 <Button onclick={()=> handleApproveSPL1(row.spl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Tooltip>Reject SPL</Tooltip>
                                                                 <Button onclick={()=> showPreviewSPL(row.spl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
+                                                                <Tooltip>Preview SPL</Tooltip>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>
@@ -1171,7 +1210,7 @@
                                         {/if}
                                         <MyInput type='datetime' disabled title='Real Start' name="real_start" bind:value={formSRL.answer.real_start}/>
                                         <MyInput type='datetime' disabled title='Real End' name="real_end" bind:value={formSRL.answer.real_end}/>
-                                        {#await getUserByDept() then val}
+                                        {#await getUserAtasan(user.payroll) then val}
                                             <div class="flex flex-col gap-2 flex-1">
                                                 <Label>Approval 1</Label>
                                                 <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSRL.answer.approval1} 
@@ -1208,7 +1247,7 @@
                                         {/each}
                                     </div>
                                 {/if}
-                                <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user.name}</Badge> </span>
+                                <span class='text-[.8rem]'>createdBy <Badge color='dark'>{capitalEachWord(user.name)}</Badge> </span>
                             </form>
                         {/if}
                         
@@ -1219,14 +1258,14 @@
                                         <option value={option}>{option}</option>
                                     {/each}
                                 </select>
-                                <select bind:value={formSRL.year} onchange={()=> tableSRL.invalidate()}>
+                                <select bind:value={formSRL.year} onchange={()=> tableSRL.setPage(1)}>
                                     {#each dataTahun as {title, value}}
                                         <option value={value}>
                                             {title} {value.toString() == format(modeLembur.periode.start, "yyyy") ? "(Select)" : null}
                                         </option>
                                     {/each}
                                 </select>
-                                <select bind:value={formSRL.month} onchange={()=> tableSRL.invalidate()}>
+                                <select bind:value={formSRL.month} onchange={()=> tableSRL.setPage(1)}>
                                     {#each dataBulan as {title, value}}
                                         <option value={value}>
                                             {title} {value == Number(format(modeLembur.periode.end, "M")) - 1 ? "(Select)" : null}
@@ -1271,7 +1310,7 @@
                                                     <TableBodyCell tdClass='break-all font-medium'>
                                                         <div class={format(formatTanggal(row.real_start), "EEE") == "Sun" ? "text-red-500":""}>
                                                             {namaHari[Number(format(formatTanggal(row.real_start), "c")) - 1]},  
-                                                            {format(formatTanggal(row.real_start), "d MMMM yyyy")}
+                                                            {formatTanggal(row.real_start, "date","app")}
                                                         </div>
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
@@ -1303,16 +1342,21 @@
                                                     <TableBodyCell>
                                                         {#if !formSRL.edit}
                                                             {#if (pecahArray(userProfile.access_srl, "U") || pecahArray(userProfile.access_srl, "D")) && row.status1 == 'Waiting' && row.status2 == 'Waiting'}
-                                                                {#if pecahArray(userProfile.access_srl, "U")}<MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>{/if}
+                                                                {#if pecahArray(userProfile.access_srl, "U")}
+                                                                    <MyButton onclick={()=> formSRLEdit(row.srl_id)}><Pencil size={12} /></MyButton>
+                                                                    <Tooltip>Edit</Tooltip>
+                                                                {/if}
                                                                 {#if pecahArray(userProfile.access_srl, "D")}
                                                                     <MyButton onclick={()=> {
                                                                         formSRL.modalDelete = true
                                                                         formSRL.answer.srl_id = row.srl_id
                                                                     }}><Trash size={12} /></MyButton>
+                                                                    <Tooltip>Hapus</Tooltip>
                                                                 {/if}
                                                             {/if}
                                                             {#if row.status1 == 'Approved' && row.status2 == 'Approved'}
                                                                 <MyButton onclick={()=> handleCetakSRL(row.srl_id)}><Printer size={12} /></MyButton>
+                                                                <Tooltip>Print</Tooltip>
                                                             {/if}
                                                         {/if}
                                                     </TableBodyCell>
@@ -1365,14 +1409,17 @@
                                                 {#each tableSRLApproval1.rows as row}
                                                     <TableBodyRow class='h-10'>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "datetime", "app") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "datetime", "app") || ""}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.approval1}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status1 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Tooltip>Approve SRL</Tooltip>
                                                                 <Button onclick={()=> handleApproveSRL1(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Tooltip>Reject SRL</Tooltip>
                                                                 <Button onclick={()=> showPreviewSRL(row.srl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
+                                                                <Tooltip>Preview SRL</Tooltip>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>
@@ -1423,14 +1470,17 @@
                                                 {#each tableSRLApproval2.rows as row}
                                                     <TableBodyRow class='h-10'>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "datetime") || ""}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "datetime") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "datetime","app") || ""}</TableBodyCell>
+                                                        <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "datetime", "app") || ""}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.approval2}</TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>
                                                             {#if row.status2 == "Waiting"}
                                                                 <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Approved')} color='green' class='p-2' pill><Check size={14} /></Button>
+                                                                <Tooltip>Approve SRL</Tooltip>
                                                                 <Button onclick={()=> handleApproveSRL2(row.srl_id, 'Reject')} color='red' class='p-2' pill><X size={14} /></Button>
+                                                                <Tooltip>Reject SRL</Tooltip>
                                                                 <Button onclick={()=> showPreviewSRL(row.srl_id)} color='dark' class='p-2' pill><Eye size={14} /></Button>
+                                                                <Tooltip>Preview SRL</Tooltip>
                                                             {/if}
                                                         </TableBodyCell>
                                                     </TableBodyRow>

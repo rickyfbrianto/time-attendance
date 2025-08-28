@@ -5,11 +5,12 @@ import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, s
 import { Prisma, PrismaClient } from '@prisma-app/client';
 import type { State } from "@vincjo/datatables/server";
 import { formatInTimeZone } from 'date-fns-tz';
+import { id } from 'date-fns/locale'
 
 export const prisma = new PrismaClient({
     transactionOptions: {
         maxWait: 5000,
-        timeout: 20000
+        timeout: 60000
     }
 })
 
@@ -44,7 +45,7 @@ export const formatTanggal = (val: string | Date, mode: "date" | "time" | "datet
     if (!val) return ""
     const formatDate = formatTanggal == "system" ? "yyyy-MM-dd" : "d MMMM yyyy"
     const newMode = mode == "datetime" ? `${formatDate} HH:mm:ss` : (mode == "date" ? formatDate : (mode == "time" ? "HH:mm:ss" : ""))
-    return formatInTimeZone(val, 'UTC', newMode)
+    return formatInTimeZone(val, 'UTC', newMode, { locale: id })
 }
 
 // export const formatSQL = (value: string | Date, mode: "date" | "time" | "datetime" = "datetime", formatTanggal: "system" | "app" = "system") => {

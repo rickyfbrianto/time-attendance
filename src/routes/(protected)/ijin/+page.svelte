@@ -8,7 +8,7 @@
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, generatePeriode, pecahArray, getParams, dataTahun, dataBulan, namaHari, capitalEachWord } from '$/lib/utils.js';
-    import { differenceInDays, eachDayOfInterval, format, getDay, getYear, set } from 'date-fns';
+    import { differenceInDays, eachDayOfInterval, format, getDay, getMonth, getYear, set } from 'date-fns';
     import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
 	import { CalendarWeekSolid } from 'flowbite-svelte-icons';
@@ -16,6 +16,8 @@
     import MyPagination from '@/MyPagination.svelte';
     import MyDatePicker from '@/MyDatePicker.svelte';
     import MyAlert from '@/MyAlert.svelte';
+	import { dataStore } from '@lib/store/appstore.js';
+	import { invalidate } from '$app/navigation';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -24,7 +26,6 @@
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
 
-    const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur']
     const typeList = $derived.by(()=> {
         const temp = [
                 {value: 'Pernikahan', hari: 1},
@@ -37,7 +38,7 @@
                 {value: 'Ibadah Haji', hari: 1},
                 {value: 'Other', hari: 1},
             ]
-        return userProfile.user_type == 'HR' ? temp : temp.filter(v => v.value !== 'Other')
+        return user.user_type == 'HR' ? temp : temp.filter(v => v.value !== 'Other')
     })
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
@@ -47,10 +48,8 @@
     })
     
     const handleDetailHeader = (title: string) => {
-        if(eventCuti.includes(title)){
-            modalHeader.modal = true
-            modalHeader.val = title
-        }
+        modalHeader.modal = true
+        modalHeader.val = title
     }
 
     let modeIjin = $state({
@@ -81,12 +80,12 @@
             user_hrd: (()=> user?.user_type == 'HR')(),
             approval: (()=> user?.employee_employee_approverToemployee?.payroll || null)(),
             user_approval_name: "",
-            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)(),
+            user_delegate: (()=> user?.employee_employee_substituteToemployee.payroll || null)(),
             user_delegate_name: ""
         },
         dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         year: new Date().getFullYear(),
-        month: new Date().getMonth(),
+        month: new Date().getMonth() + 1,
         autoWeekend: false,
         success:"",
         error:"",
@@ -245,20 +244,12 @@
 
     let formListIjin = $state({...formListIjinAnswer})
     
-    const getCutiUser = async (payroll: string) =>{
-        const year = getYear(new Date())
-        // const month = getMonth(new Date()) + 1
-        const month = 12
-        const req = await fetch(`/api/data?type=get_cuti_user&val=${payroll}&year=${year}&month=${month}`)
-        const res = await req.json()
-        headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
-    }
+    const getCutiUser = async () => await invalidate(() => true)
     
     const getCutiCalendar = async (v: string) =>{
         const year = getYear(new Date())
-        // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=get_calendar&val=${v}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=get_cuti_dashboard&payroll=${user.payroll}&val=${v}&year=${year}&month=${month}`)
         const res = await req.json()
         return res
     }
@@ -272,13 +263,13 @@
         const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
         const res = await req.json()
         if(res){
-            formIjin.answer.name = res.name
+            formIjin.answer.name = capitalEachWord(res.name)
 
             formIjin.answer.approval = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.payroll : ""
-            formIjin.answer.user_approval_name = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.name : ""
+            formIjin.answer.user_approval_name = res.employee_employee_approverToemployee ? capitalEachWord(res.employee_employee_approverToemployee?.name) : ""
 
-            formIjin.answer.user_delegate = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || ""
-            formIjin.answer.user_delegate_name = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.name || ""
+            formIjin.answer.user_delegate = res.employee_employee_substituteToemployee?.payroll || ""
+            formIjin.answer.user_delegate_name = capitalEachWord(res.employee_employee_substituteToemployee?.name) || ""
         }
     }
     
@@ -361,45 +352,40 @@
     <title>Ijin</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#await getCutiUser(modeIjin.payroll)}
-        <MyLoading message={`Loading users data`}/>
-    {:then}
-        <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark`}>
-            <div class="flex flex-col gap-2 min-w-fit">
-                <div class="flex items-center gap-2">
-                    <Calendar size={18}/>
-                    <div class="flex gap-2">
-                        <span class="font-bold">Hari ini,</span>
-                        <span>{format(new Date(), "dd-MM-yyyy")}</span>
-                    </div>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <span>Periode</span>
-                    <div class="flex flex-col gap-2">
-                        <Badge color='indigo'>{modeIjin.periode.start}</Badge>
-                        <Badge color='indigo'>{modeIjin.periode.end}</Badge>
-                    </div>
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
+    <div class={`flex rounded-lg p-4 gap-4 border-[2px] border-slate-200 text-textdark`}>
+        <div class="flex flex-col gap-2 min-w-fit">
+            <div class="flex items-center gap-2">
+                <Calendar size={18}/>
+                <div class="flex gap-2">
+                    <span class="font-bold">Hari ini,</span>
+                    <span>{format(new Date(), "dd-MM-yyyy")}</span>
                 </div>
             </div>
-
-            <div class="flex flex-col w-full gap-4">
-                <div class="hidden lg:flex flex-wrap items-end w-full items-center gap-4">
-                    {#each headerData as {title, value, icon: Icon}}
-                        <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
-                            onclick={() => handleDetailHeader(title)}>
-                            <span class="text-[.9rem] font-semibold">{title}</span>
-                            <div class="flex justify-between items-center gap-2">
-                                <Icon size={16}/>
-                                <span class='text-[1.1rem] font-bold'>{value}</span>
-                            </div>
-                        </button>
-                    {/each}
+            <div class="flex gap-2 items-center">
+                <span>Periode</span>
+                <div class="flex flex-col items-start gap-2">
+                    <Badge color='indigo'>{formatTanggal(modeIjin.periode.start, "date", "app")}</Badge>
+                    <Badge color='indigo'>{formatTanggal(modeIjin.periode.end, "date", "app")}</Badge>
                 </div>
-                <MyButton className='self-start' onclick={()=> getCutiUser(modeIjin.payroll)}>Refresh</MyButton>
             </div>
+            <MyButton className='' onclick={()=> getCutiUser()}>Refresh</MyButton>
         </div>
-    {/await}
+        
+        <div class="flex flex-wrap w-full items-start gap-4">
+            {#each $dataStore.dashboardIjinCuti as {title, value, icon: Icon}}
+                <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-2 px-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap cursor-pointer`}
+                    onclick={() => {
+                        if(parseInt(value) > 0 && !['Hak Cuti', 'Sisa Cuti'].includes(title) ) handleDetailHeader(title)}}>
+                    <span class="text-[.9rem] font-semibold">{title}</span>
+                    <div class="flex justify-between items-center gap-2">
+                        <Icon size={16}/>
+                        <span class='text-[1.1rem] font-bold'>{value}</span>
+                    </div>
+                </button>
+            {/each}
+        </div>
+    </div>
     
     <Modal title={modalHeader.val} size={'sm'} bind:open={modalHeader.modal}>
         {#await getCutiCalendar(modalHeader.val)}
@@ -407,11 +393,13 @@
         {:then val}
             {#if val.length > 0}
                 <div class="ps-4">
-                    <p class='-ms-3 mb-5'>Ada {val.length} hari pada event '{modalHeader.val}'</p>
+                    <p class='-ms-3 mb-5'>Ada {val.length} hari '{modalHeader.val}'</p>
                     <Timeline order="vertical">
                         {#each val as {description, date}}
                             {#if differenceInDays(date, new Date()) > 0}
-                                <Badge class='ms-2 mb-2'>Yang akan datang</Badge>
+                                <Badge color='green' class='ms-2 mb-2'>Yang akan datang</Badge>
+                            {:else if differenceInDays(date, new Date()) < 0}
+                                <Badge color='red' class='ms-2 mb-2'>Sudah Lewat</Badge>
                             {:else if differenceInDays(date, new Date()) == 0}
                                 <Badge class='ms-2 mb-2' color="green">Hari ini</Badge>
                             {/if}
@@ -512,7 +500,7 @@
                                             <div class="flex flex-col">
                                                 <div class="flex flex-col gap-2 flex-1">
                                                     <Label>Date</Label>
-                                                    <MyDatePicker bind:value={formIjin.answer.date} mode='range'/>
+                                                    <MyDatePicker listHariLibur={["2025-08-25"]} bind:value={formIjin.answer.date} mode='range'/>
                                                 </div>                 
         
                                                 {#if formIjin.answer.askDuration > 0}
@@ -538,27 +526,32 @@
                         </div>
                     </form>
                 {/if}
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-start">
                     <select bind:value={tableIjin.rowsPerPage} onchange={() => tableIjin.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <select bind:value={formIjin.year} onchange={()=> tableIjin.invalidate()}>
+                    <select bind:value={formIjin.year} onchange={()=> tableIjin.setPage(1)}>
                         {#each dataTahun as {title, value}}
                             <option value={value}>
                                 {title} {value.toString() == format(modeIjin.periode.start, "yyyy") ? "(Select)" : null}
                             </option>
                         {/each}
                     </select>
-                    <select bind:value={formIjin.month} onchange={()=> tableIjin.invalidate()}>
+                    <select bind:value={formIjin.month} onchange={()=> tableIjin.setPage(1)}>
                         {#each dataBulan as {title, value}}
                             <option value={value}>
                                 {title} {value == Number(format(modeIjin.periode.end, "M")) - 1? "(Select)" : null}
                             </option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableIjinSearch.value}/>
+                    <div class="flex w-full flex-col">
+                        <MyInput type='text' bind:value={tableIjinSearch.value} onkeydown={e => {
+                            if(e.key.toLowerCase() === 'enter') tableIjinSearch.set()
+                        }}/>
+                        <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
+                    </div>
                     <MyButton onclick={()=>tableIjinSearch.set()}><Search size={16} /></MyButton>
                     <MyButton onclick={()=>tableIjin.invalidate()}><RefreshCw size={16}/></MyButton>
                 </div>
@@ -585,7 +578,7 @@
                                     {#each tableIjin.rows as row:any}
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date")}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app")}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.type}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
@@ -601,15 +594,18 @@
                                                 {#if !formIjin.edit}
                                                     {#if pecahArray(userProfile.access_ijin, "U") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> formIjinEdit(row.ijin_id)}><Pencil size={12} /></MyButton>
+                                                        <Tooltip>Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_ijin, "D") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> {
                                                             formIjin.modalDelete = true
                                                             formIjin.answer.ijin_id = row.ijin_id
                                                         }}><Trash size={12} /></MyButton>
+                                                        <Tooltip>Hapus</Tooltip>
                                                     {/if}
                                                     {#if row.status == "Waiting" && !row.is_delegate}
                                                         <MyButton onclick={()=> handleDelegateIjin(row.ijin_id, row.approval)}> <Highlighter size={12}/> </MyButton>
+                                                        <Tooltip>Delegate</Tooltip>
                                                     {/if}
                                                 {/if}
                                             </TableBodyCell>
@@ -667,7 +663,7 @@
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app") || ""}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if row.status == "Waiting"}
@@ -704,43 +700,33 @@
                     {#if formListIjin.loading}
                         <MyLoading message="Load cuti data"/>
                     {/if}
-
-                    <!-- {#if (user?.user_type == 'HR' || user.level > 1)}
-                        <div class="flex flex-1 gap-2">
-                            {#await getUser(formIjin.dept)}
-                                <MyLoading message="Loading data"/>
-                            {:then val}
-                                <Svelecte class='border-none' optionClass='p-2' name='payroll' searchable selectOnTab multiple={false} bind:value={formListIjin.payroll}
-                                    options={val.map((v:any) => ({value: v.payroll, name: v.name, text:v.payroll + " - " + v.name}))}
-                                    onChange={(e) => {
-                                        modeIjin.name = e.name
-                                        tableListIjin.invalidate()
-                                }}/>
-                            {/await}
-                        </div>
-                    {/if} -->
                     
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-start">
                         <select bind:value={tableListIjin.rowsPerPage} onchange={() => tableListIjin.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
-                        <select bind:value={formListIjin.year} onchange={()=> tableListIjin.invalidate()}>
+                        <select bind:value={formListIjin.year} onchange={()=> tableListIjin.setPage(1)}>
                             {#each dataTahun as {title, value}}
                                 <option value={value}>
                                     {title} {value.toString() == format(modeIjin.periode.start, "yyyy") ? "(Select)" : null}
                                 </option>
                             {/each}
                         </select>
-                        <select bind:value={formListIjin.month} onchange={()=> tableListIjin.invalidate()}>
+                        <select bind:value={formListIjin.month} onchange={()=> tableListIjin.setPage(1)}>
                             {#each dataBulan as {title, value}}
                                 <option value={value}>
                                     {title} {value == Number(format(modeIjin.periode.start, "M")) ? "(Select)" : null}
                                 </option>
                             {/each}
                         </select>
-                        <MyInput type='text' bind:value={tableListIjinSearch.value}/>
+                        <div class="flex w-full flex-col">
+                            <MyInput type='text' bind:value={tableListIjinSearch.value} onkeydown={e => {
+                                if(e.key.toLowerCase() === 'enter') tableListIjinSearch.set()
+                            }}/>
+                            <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
+                        </div>
                         <MyButton onclick={()=>tableListIjinSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableListIjin.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
@@ -768,7 +754,7 @@
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app") || ""}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.approval_name)}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.type + " (" + row.description + ")"}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>

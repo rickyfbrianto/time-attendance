@@ -8,7 +8,7 @@
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray, generatePeriode, getParams, dataTahun, dataBulan, namaHari, capitalEachWord } from '$/lib/utils.js';
-	import { format, getYear, differenceInDays, set, getDay } from 'date-fns';
+	import { format, getYear, getMonth, differenceInDays, set, getDay } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
@@ -20,7 +20,8 @@
     import stm from '$/lib/assets/stm.png'
 	import jsPDF from 'jspdf';
     import { applyPlugin } from 'jspdf-autotable'
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
+	import { dataStore } from '@lib/store/appstore.js';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -29,7 +30,6 @@
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
     
-    const eventCuti = ['Cuti Bersama','Event Kantor','Hari Libur', "Ijin"]
     const typeList = $derived.by(()=> {
         const temp = [
             {value: 'Cuti Tahunan', hari: 1},
@@ -47,10 +47,8 @@
     })
 
     const handleDetailHeader = (title: string) => {
-        if(eventCuti.includes(title)){
-            modalHeader.modal = true
-            modalHeader.val = title
-        }
+        modalHeader.modal = true
+        modalHeader.val = title
     }
 
     let modeCuti = $state({
@@ -81,7 +79,7 @@
             user_hrd: (()=> user.user_type == 'HR')(),
             approval: (() => user?.employee_employee_approverToemployee?.payroll || null)(),
             user_approval_name: "",
-            user_delegate: (()=> user?.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || null)(),
+            user_delegate: (()=> user?.employee_employee_substituteToemployee?.payroll || null)(),
             user_delegate_name: ""
         },
         dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
@@ -393,20 +391,12 @@
 
     let formListCuti = $state({...formListCutiAnswer})
     
-    const getCutiUser = async () =>{
-        const year = getYear(new Date())
-        // const month = getMonth(new Date()) + 1
-        const month = 12
-        const req = await fetch(`/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`)
-        const res = await req.json()
-        headerData = Object.entries(res).map(val => ({title:val[0], value:val[1] as string, icon:Calendar}))
-    }
+    const getCutiUser = async () => await invalidate(() => true)
     
     const getCutiCalendar = async (v: string) =>{
         const year = getYear(new Date())
-        // const month = getMonth(new Date()) + 1
         const month = 12
-        const req = await fetch(`/api/data?type=get_calendar&val=${v}&year=${year}&month=${month}`)
+        const req = await fetch(`/api/data?type=get_cuti_dashboard&payroll=${user.payroll}&val=${v}&year=${year}&month=${month}`)
         const res = await req.json()
         return res
     }
@@ -420,13 +410,13 @@
         const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
         const res = await req.json()
         if(res){
-            formCuti.answer.name = res.name
+            formCuti.answer.name = capitalEachWord(res.name)
 
             formCuti.answer.approval = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.payroll : ""
-            formCuti.answer.user_approval_name = res.employee_employee_approverToemployee ? res.employee_employee_approverToemployee?.name : ""
+            formCuti.answer.user_approval_name = res.employee_employee_approverToemployee ? capitalEachWord(res.employee_employee_approverToemployee?.name) : ""
 
-            formCuti.answer.user_delegate = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.payroll || ""
-            formCuti.answer.user_delegate_name = res.employee_employee_approverToemployee?.employee_employee_substituteToemployee?.name || ""
+            formCuti.answer.user_delegate = res.employee_employee_substituteToemployee?.payroll || ""
+            formCuti.answer.user_delegate_name = capitalEachWord(res.employee_employee_substituteToemployee?.name) || ""
         }
         return await res
     }
@@ -489,10 +479,8 @@
     
     setTimeout(()=>{
         tableCuti.invalidate()
-        if (user.level > 1)
-            tableApprovalCuti.invalidate()
-        if (user.user_type == 'HR')
-            tableListCuti.invalidate()
+        if (user.level > 1) tableApprovalCuti.invalidate()
+        if (user.user_type == 'HR') tableListCuti.invalidate()
     }, 1000)
 </script>
 
@@ -501,44 +489,39 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {#await getCutiUser()}
-        <MyLoading message={`Loading users data`}/>
-    {:then}
-        <div class={`flex rounded-lg p-6 gap-4 border-[2px] border-slate-200 text-textdark`}>
-            <div class="flex flex-col gap-2 min-w-fit">
-                <div class="flex items-center gap-2">
-                    <Calendar size={18}/>
-                    <div class="flex gap-2">
-                        <span class="font-bold">Today,</span>
-                        <span>{format(new Date(), "dd-MM-yyyy")}</span>
-                    </div>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <span>Periode</span>
-                    <div class="flex flex-col gap-2">
-                        <Badge color='indigo'>{modeCuti.periode.start}</Badge>
-                        <Badge color='indigo'>{modeCuti.periode.end}</Badge>
-                    </div>
+    <div class={`flex rounded-lg p-4 gap-4 border-[2px] border-slate-200 text-textdark`}>
+        <div class="flex flex-col gap-2 min-w-fit">
+            <div class="flex items-center gap-2">
+                <Calendar size={18}/>
+                <div class="flex gap-2">
+                    <span class="font-bold">Hari ini,</span>
+                    <span>{format(new Date(), "dd-MM-yyyy")}</span>
                 </div>
             </div>
-
-            <div class="flex flex-col w-full gap-4">
-                <div class="hidden lg:flex flex-wrap items-end w-full items-center gap-4">
-                    {#each headerData as {title, value, icon: Icon}}
-                        <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap ${eventCuti.includes(title) ? "cursor-pointer":""}`}
-                            onclick={() => handleDetailHeader(title)}>
-                            <span class="text-[.9rem] font-semibold">{title}</span>
-                            <div class="flex justify-between items-center gap-2">
-                                <Icon size={16}/>
-                                <span class='text-[1.1rem] font-bold'>{value}</span>
-                            </div>
-                        </button>
-                    {/each}
+            <div class="flex gap-2 items-center">
+                <span>Periode</span>
+                <div class="flex flex-col items-start gap-2">
+                    <Badge color='indigo'>{formatTanggal(modeCuti.periode.start, "date", "app")}</Badge>
+                    <Badge color='indigo'>{formatTanggal(modeCuti.periode.end, "date", "app")}</Badge>
                 </div>
-                <MyButton className='self-start' onclick={getCutiUser}>Refresh</MyButton>
             </div>
+            <MyButton className='' onclick={()=> getCutiUser()}>Refresh</MyButton>
         </div>
-    {/await}
+
+        <div class="flex flex-wrap w-full items-start gap-4">
+            {#each $dataStore.dashboardIjinCuti as {title, value, icon: Icon}}
+                <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-2 px-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap cursor-pointer`}
+                    onclick={() => {
+                        if(parseInt(value) > 0 && !['Hak Cuti', 'Sisa Cuti'].includes(title) ) handleDetailHeader(title)}}>
+                    <span class="text-[.9rem] font-semibold">{title}</span>
+                    <div class="flex justify-between items-center gap-2">
+                        <Icon size={16}/>
+                        <span class='text-[1.1rem] font-bold'>{value}</span>
+                    </div>
+                </button>
+            {/each}
+        </div>
+    </div>
 
     <Modal title={modalHeader.val} size={'sm'} bind:open={modalHeader.modal}>
         {#await getCutiCalendar(modalHeader.val)}
@@ -546,37 +529,38 @@
         {:then val}
             {#if val.length > 0}
                 <div class="ps-4">
-                    <p class='-ms-3 mb-5'>There {val.length} day{val.length > 1 ? "s":""} on '{modalHeader.val}' events</p>
+                    <p class='-ms-3 mb-5'>Ada {val.length} hari '{modalHeader.val}'</p>
                     <Timeline order="vertical">
                         {#each val as {description, date}}
                             {#if differenceInDays(date, new Date()) > 0}
-                                <Badge class='ms-2 mb-2'>Upcoming</Badge>
+                                <Badge color='green' class='ms-2 mb-2'>Yang akan datang</Badge>
+                            {:else if differenceInDays(date, new Date()) < 0}
+                                <Badge color='red' class='ms-2 mb-2'>Sudah Lewat</Badge>
                             {:else if differenceInDays(date, new Date()) == 0}
-                                <Badge class='ms-2 mb-2' color="green">Today</Badge>
+                                <Badge class='ms-2 mb-2' color="green">Hari ini</Badge>
                             {/if}
-                            <TimelineItem  title={formatTanggal(date, "date")} date={namaHari[getDay(date)]}>
+                            <TimelineItem  title={`${namaHari[getDay(date)]}, ${formatTanggal(date, "date")}`} date={description}>
                                 <svelte:fragment slot="icon">
                                     <span class="flex absolute -start-3 justify-center items-center w-6 h-6 bg-primary-200 rounded-full ring-8 ring-white dark:ring-gray-900 dark:bg-primary-900">
                                         <CalendarWeekSolid class="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                     </span>
                                 </svelte:fragment>
-                                <p>{description}</p>
                             </TimelineItem>
                         {/each}
                     </Timeline>
                 </div>
             {:else}
-                <span class='text-center'>There is no events</span>
+                <span class='text-center'>Tidak ada data</span>
             {/if}
         {/await}
     </Modal>
 
     <Modal bind:open={formCuti.modalDelete} autoclose>
         <div class="flex flex-col gap-6">
-            <h3>Delete Cuti ?</h3>
+            <h3>Hapus Cuti ?</h3>
         </div>
         <svelte:fragment slot="footer">
-            <Button color='green' disabled={formCuti.loading} onclick={() => formCutiDelete(formCuti.answer.cuti_id)}>Yes, delete this data</Button>
+            <Button color='green' disabled={formCuti.loading} onclick={() => formCutiDelete(formCuti.answer.cuti_id)}>Ya, hapus cuti ini</Button>
             <Button color='red' onclick={() => formCuti.modalDelete = false}>No</Button>
         </svelte:fragment>
     </Modal>
@@ -680,33 +664,41 @@
                                 <span class='text-[.9rem] italic'>Description min 5 character</span>
                             </div>
                         </div>
-                        <span class='text-[.8rem] italic'>*Cuti dapat diajukan jika tidak ada pengajuan ditanggal yang sama dan statusnya bukan "Waiting" atau "Approved"</span>
+                        <div class="flex flex-col gap-1">
+                            <span class='text-[.7rem] italic'>*Cuti dapat diajukan jika tidak ada pengajuan ditanggal yang sama dan statusnya bukan "Waiting" atau "Approved"</span>
+                            <span class='text-[.7rem] italic'>*Jika pengajuan cuti ditolak, harap hitung sisa cuti anda karena cuti dengan status "Waiting" akan tetap dihitung sampai statusnya menjadi "Reject" atau "declined"</span>
+                        </div>
                     </form>
                 {/if}
                 
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-start">
                     <select bind:value={tableCuti.rowsPerPage} onchange={() => tableCuti.setPage(1)}>
                         {#each [10, 20, 50, 100] as option}
                             <option value={option}>{option}</option>
                         {/each}
                     </select>
-                    <select bind:value={formCuti.year} onchange={()=> tableCuti.invalidate()}>
+                    <select bind:value={formCuti.year} onchange={()=> tableCuti.setPage(1)}>
                         {#each dataTahun as {title, value}}
                             <option value={value}>
                                 {title} {value.toString() == format(modeCuti.periode.start, "yyyy") ? "(Select)" : null}
                             </option>
                         {/each}
                     </select>
-                    <select bind:value={formCuti.month} onchange={()=> tableCuti.invalidate()}>
+                    <select bind:value={formCuti.month} onchange={()=> tableCuti.setPage(1)}>
                         {#each dataBulan as {title, value}}
                             <option value={value}>
                                 {title} {value == Number(format(modeCuti.periode.end, "M")) - 1 ? "(Select)" : null}
                             </option>
                         {/each}
                     </select>
-                    <MyInput type='text' bind:value={tableCutiSearch.value}/>
+                    <div class="flex w-full flex-col">
+                        <MyInput type='text' bind:value={tableCutiSearch.value} onkeydown={e => {
+                            if(e.key.toLowerCase() === 'enter') tableCutiSearch.set()
+                        }}/>
+                        <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
+                    </div>
                     <MyButton onclick={()=>tableCutiSearch.set()}><Search size={16} /></MyButton>
-                    <MyButton onclick={()=>tableCuti.invalidate()}><RefreshCw size={16}/></MyButton>
+                    <MyButton onclick={()=> {tableCuti.invalidate(); getCutiUser()}}><RefreshCw size={16}/></MyButton>
                 </div>
                 
                 <Datatable table={tableCuti}>
@@ -731,38 +723,43 @@
                                     {#each tableCuti.rows as row}
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app") || ""}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.type ?? "-"}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>
                                                 <div class="flex flex-col">
-                                                    {row.approval_name}
                                                     {#if row.is_delegate}
-                                                        <Badge class='self-start' color='indigo'>Delegate</Badge>
+                                                        <Badge class='self-start' color='indigo'>Delegate to</Badge>
                                                     {/if}
+                                                    {row.approval_name}
                                                 </div>
                                             </TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formCuti.edit}
                                                     {#if pecahArray(userProfile.access_cuti, "U") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> formCutiEdit(row.cuti_id)}><Pencil size={12} /></MyButton>
+                                                        <Tooltip type="auto">Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_cuti, "D") && row.status == "Waiting"}
                                                         <MyButton onclick={()=> {
                                                             formCuti.modalDelete = true
                                                             formCuti.answer.cuti_id = row.cuti_id
                                                         }}><Trash size={12} /></MyButton>
+                                                        <Tooltip type="auto">Hapus</Tooltip>
                                                     {/if}
                                                     {#if row.status == "Waiting" && !row.is_delegate}
-                                                        <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}> <Highlighter size={12}/> </MyButton>
+                                                        <MyButton onclick={()=> handleDelegateCuti(row.cuti_id, row.approval)}><Highlighter size={12}/> </MyButton>
+                                                        <Tooltip type="auto">Delegate</Tooltip>
                                                     {/if}
                                                 {/if}
                                                 {#if row.status}
                                                     <MyButton onclick={()=> handleCetakCuti(row.cuti_group_id)} color='dark' class='p-2' pill><Printer size={12} /></MyButton>
+                                                    <Tooltip type="auto">Print</Tooltip>
                                                 {/if}
                                                 {#if row.attachment}
                                                     <MyButton onclick={()=> showCutiAttachment(row.attachment)} color='dark' class='p-2' pill><Paperclip size={12} /></MyButton>
+                                                    <Tooltip type="auto">Attachment</Tooltip>
                                                 {/if}
                                             </TableBodyCell>
                                         </TableBodyRow>
@@ -819,7 +816,7 @@
                                             <TableBodyRow class='h-10'>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app") || ""}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.description ?? "-"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if row.status == "Waiting"}
@@ -857,27 +854,32 @@
                         <MyLoading message="Load cuti data"/>
                     {/if}
 
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 items-start">
                         <select bind:value={tableListCuti.rowsPerPage} onchange={() => tableListCuti.setPage(1)}>
                             {#each [10, 20, 50, 100] as option}
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
-                        <select bind:value={formListCuti.year} onchange={()=> tableListCuti.invalidate()}>
+                        <select bind:value={formListCuti.year} onchange={()=> tableListCuti.setPage(1)}>
                             {#each dataTahun as {title, value}}
                                 <option value={value}>
                                     {title} {value.toString() == format(modeCuti.periode.start, "yyyy") ? "(Select)" : null}
                                 </option>
                             {/each}
                         </select>
-                        <select bind:value={formListCuti.month} onchange={()=> tableListCuti.invalidate()}>
+                        <select bind:value={formListCuti.month} onchange={()=> tableListCuti.setPage(1)}>
                             {#each dataBulan as {title, value}}
                                 <option value={value}>
                                     {title} {value == Number(format(modeCuti.periode.end, "M")) - 1? "(Select)" : null}
                                 </option>
                             {/each}
                         </select>
-                        <MyInput type='text' bind:value={tableListCutiSearch.value}/>
+                        <div class="flex w-full flex-col">
+                            <MyInput type='text' bind:value={tableListCutiSearch.value} onkeydown={e => {
+                                if(e.key.toLowerCase() === 'enter') tableListCutiSearch.set()
+                            }}/>
+                            <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
+                        </div>
                         <MyButton onclick={()=>tableListCutiSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableListCuti.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
@@ -904,9 +906,9 @@
                                     {#if tableListCuti.rows.length > 0}
                                         {#each tableListCuti.rows as row}
                                             <TableBodyRow class='h-10'>
-                                                <TableBodyCell><section class={`${row.payroll == user.payroll ? "underline":""}`}>{row.payroll}</section></TableBodyCell>
+                                                <TableBodyCell>{row.payroll}</TableBodyCell>
                                                 <TableBodyCell>{capitalEachWord(row.name)}</TableBodyCell>
-                                                <TableBodyCell>{namaHari[Number(format(row.date, "c")) - 1] + ", " +formatTanggal(row.date, "date") || ""}</TableBodyCell>
+                                                <TableBodyCell>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app") || ""}</TableBodyCell>
                                                 <TableBodyCell>{row.type}</TableBodyCell>
                                                 <TableBodyCell>{capitalEachWord(row.approval_name)}</TableBodyCell>
                                                 <TableBodyCell>{row.description}</TableBodyCell>

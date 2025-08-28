@@ -34,7 +34,7 @@ export async function DELETE({ params, locals }) {
         const filePath = path.resolve(process.env.ATTACH_ATTANDANCE + `/${id}.jpg`)
         const fileExist = existsSync(filePath)
 
-        if (!pecahArray(userProfile.access_attendance, "D")) throw new Error("Cant delete Attendance, because you have no authorization")
+        if (!pecahArray(userProfile.access_attendance, "D")) throw new Error("Tidak dapat menghapus Attendance, anda tidak memiliki akses")
 
         const deleteAttendance = await prisma.attendance.delete({
             where: { attendance_id: id },

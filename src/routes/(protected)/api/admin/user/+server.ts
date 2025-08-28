@@ -51,7 +51,7 @@ export async function POST({ request, locals }) {
                 if (!pecahArray(userProfile.access_user, "C")) throw new Error("Cant insert User, because you have no authorization")
                 const createUser = await tx.$executeRawUnsafe(`INSERT INTO employee
                     (payroll,profile_id,user_id_machine,name,password,position,department,
-                    location,phone,overtime,workhour,start_work,email,approver, substitute, join_date, signature, level, user_type, user_hod, hostname, status)
+                    location,phone,overtime,workhour,start_work,email,approver, substitute, join_date, signature, level, user_type, user_hod, cuti_kunci, cuti_suspen, hostname, status)
                     VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     data.get('payroll'),
                     data.get('profile_id'),
@@ -73,6 +73,8 @@ export async function POST({ request, locals }) {
                     data.get('level'),
                     data.get('user_type'),
                     data.get('user_hod') == 'true' ? 1 : 0,
+                    data.get('cuti_kunci') == 'true' ? 1 : 0,
+                    data.get('cuti_suspen') == 'true' ? 1 : 0,
                     data.get('hostname'),
                     data.get('status')
                 )
@@ -88,7 +90,8 @@ export async function POST({ request, locals }) {
                 if (!pecahArray(userProfile.access_user, "U")) throw new Error("Cant update User, because you have no authorization")
                 const updateUser = await tx.$executeRawUnsafe(`
                     UPDATE employee SET profile_id=?,user_id_machine=?,name=?,position=?,department=?,location=?,
-                    phone=?,overtime=?,workhour=?,start_work=?,email=?,approver=?,substitute=?,join_date=?,signature=?,level=?,user_type=?,user_hod=?,hostname=?,status=? where payroll=?`,
+                    phone=?,overtime=?,workhour=?,start_work=?,email=?,approver=?,substitute=?,join_date=?,signature=?,
+                    level=?,user_type=?,user_hod=?,cuti_kunci=?,cuti_suspen=?,hostname=?,status=? where payroll=?`,
                     data.get('profile_id'),
                     data.get('user_id_machine'),
                     data.get('name'),
@@ -107,6 +110,8 @@ export async function POST({ request, locals }) {
                     data.get('level'),
                     data.get('user_type'),
                     data.get('user_hod') == 'true' ? 1 : 0,
+                    data.get('cuti_kunci') == 'true' ? 1 : 0,
+                    data.get('cuti_suspen') == 'true' ? 1 : 0,
                     data.get('hostname'),
                     data.get('status'),
                     data.get('payroll')

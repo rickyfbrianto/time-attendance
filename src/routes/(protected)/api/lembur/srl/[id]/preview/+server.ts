@@ -16,7 +16,7 @@ export async function GET({ params }) {
                 approval2: true,
                 status2: true,
                 createdAt: true,
-                employee: {
+                employee_srl_payrollToemployee: {
                     select: {
                         name: true
                     }

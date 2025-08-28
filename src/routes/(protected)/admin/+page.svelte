@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tooltip, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
     import MyInput from '$/lib/components/MyInput.svelte'
     import MyButton from '$/lib/components/MyButton.svelte'
     import axios from 'axios'
@@ -53,6 +53,7 @@
             access_cuti: [],
             access_ijin: [],
             access_attendance: [],
+            access_security: [],
             access_calendar: [],
             access_user: [],
             access_profile: [],
@@ -165,6 +166,8 @@
             level: 0,
             user_type: "",
             user_hod: false,
+            cuti_kunci: false,
+            cuti_suspen: false,
             hostname: "",
             status:"",
         },
@@ -566,7 +569,7 @@
     <title>Admin</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">    
     {#if urlTab}
         <MyAlert pesan={urlMessage} color='red'/>
     {/if}
@@ -644,6 +647,11 @@
                                     <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_attendance} />
                                 </div>
                                 <div class="flex flex-col gap-2">
+                                    <Label>Access Security</Label>
+                                    <MultiSelect size="md" items={ListAccess.filter(v => v.value == "R")} bind:value={formProfileState.answer.access_security} />
+                                    <span class='italic text-[.75rem]'>Khusus security full akses di pengaturan</span>
+                                </div>
+                                <div class="flex flex-col gap-2">
                                     <Label>Access Calendar (Admin)</Label>
                                     <MultiSelect size="md" items={ListAccess} bind:value={formProfileState.answer.access_calendar} />
                                 </div>
@@ -681,7 +689,9 @@
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
-                        <MyInput type='text' bind:value={tableProfileSearch.value}/>
+                        <MyInput type='text' bind:value={tableProfileSearch.value} onkeydown={e => {
+                            if(e.key.toLowerCase() === 'enter') tableProfileSearch.set()
+                        }}/>
                         <MyButton onclick={()=>tableProfileSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableProfile.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
@@ -711,12 +721,14 @@
                                                     {#if !formProfileState.edit}
                                                         {#if pecahArray(userProfile.access_profile, "U") && row.profile_id !== 'DEFAULT'}
                                                             <MyButton onclick={()=> formProfileEdit(row.profile_id)}><Pencil size={12} /></MyButton>
+                                                            <Tooltip>Edit</Tooltip>
                                                         {/if}
                                                         {#if pecahArray(userProfile.access_profile, "D") && row.status == "Aktif" && row.profile_id !== 'DEFAULT'}
                                                             <MyButton onclick={()=> {
                                                                 formProfileState.answer.profile_id = row.profile_id
                                                                 formProfileState.modalDelete = true
                                                             }}><Trash size={12} /></MyButton>
+                                                            <Tooltip>Hapus</Tooltip>
                                                         {/if}
                                                     {/if}
                                                 </TableBodyCell>
@@ -838,13 +850,29 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border-[1px] border-slate-200">
                                 <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
 
-                                <div class="flex items-end gap-4">
-                                    <div class="flex flex-col flex-1 gap-2">
-                                        <Label for='level'>Level</Label>
-                                        <Select name='level' items={listLevel} bind:value={formUserState.answer.level} />
+                                <div class="flex flex-col flex-1 gap-2">
+                                    <Label for='level'>Level</Label>
+                                    <Select name='level' items={listLevel} bind:value={formUserState.answer.level} />
+                                </div>
+                                <div class="flex items-end gap-4 my-2">
+                                    <div class="flex flex-col">
+                                        <Checkbox bind:checked={formUserState.answer.overtime}>Overtime</Checkbox>
+                                        <span class="italic text-[.75rem]">Kehadiran karyawan dianggap lembur jika overtime</span>
                                     </div>
-                                    <Checkbox bind:checked={formUserState.answer.overtime}>Overtime</Checkbox>
-                                    <Checkbox bind:checked={formUserState.answer.user_hod}>User HOD</Checkbox>
+                                    <div class="flex flex-col">
+                                        <Checkbox bind:checked={formUserState.answer.user_hod}>User HOD</Checkbox>
+                                        <span class="italic text-[.75rem]">User tersebut adalah kepala departemen</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-end gap-4 my-2">
+                                    <div class="flex flex-col">
+                                        <Checkbox bind:checked={formUserState.answer.cuti_kunci}>Cuti dikunci</Checkbox>
+                                        <span class="italic text-[.75rem]">Permohonan cuti ditolak jika jatah cuti sudah 0</span>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <Checkbox bind:checked={formUserState.answer.cuti_suspen}>Cuti ditangguhkan</Checkbox>
+                                        <span class="italic text-[.75rem]">Cuti karyawan dapat ditangguhkan</span>
+                                    </div>
                                 </div>
                                 <div class="flex flex-col gap-2">
                                     <Label for='user_type'>User Tipe</Label>
@@ -889,7 +917,9 @@
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
-                        <MyInput type='text' bind:value={tableUserSearch.value}/>
+                        <MyInput type='text' bind:value={tableUserSearch.value} onkeydown={e => {
+                            if(e.key.toLowerCase() === 'enter') tableUserSearch.set()
+                        }}/>
                         <MyButton onclick={()=>tableUserSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableUser.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
@@ -902,7 +932,6 @@
                                 <ThSort table={tableUser} field="profile_name">Profil</ThSort>
                                 <ThSort table={tableUser} field="position">Posisi</ThSort>
                                 <ThSort table={tableUser} field="department">Departemen</ThSort>
-                                <ThSort table={tableUser} field="location">Lokasi</ThSort>
                                 <ThSort table={tableUser} field="email">Email</ThSort>
                                 <ThSort table={tableUser} field="">#</ThSort>
                             </TableHead>
@@ -921,24 +950,26 @@
                                                 <TableBodyCell>{row.profile_name}</TableBodyCell>
                                                 <TableBodyCell>{capitalEachWord(row.position)}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all'>{row.dept}</TableBodyCell>
-                                                <TableBodyCell>{row.location}</TableBodyCell>
                                                 <TableBodyCell>{row.email}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formUserState.edit}
                                                         {#if pecahArray(userProfile.access_user, "U")}
                                                             <MyButton onclick={()=> formUserEdit(row.payroll)}><Pencil size={12} /></MyButton>
+                                                            <Tooltip>Edit</Tooltip>
                                                         {/if}
                                                         {#if pecahArray(userProfile.access_user, "D") && row.status == "Aktif"}
                                                             <MyButton onclick={()=> {
                                                                 formUserState.answer.payroll = row.payroll
                                                                 formUserState.modalDelete = true
                                                             }}><Trash size={12} /></MyButton>
+                                                            <Tooltip>Hapus</Tooltip>
                                                         {/if}
                                                         {#if pecahArray(userProfile.access_user, "U")}
                                                             <MyButton onclick={()=> {
                                                                 formUserState.answer.payroll = row.payroll
                                                                 formUserState.modalChangePassword = true
                                                             }}><KeyRound size={12} /></MyButton>
+                                                            <Tooltip>Ganti Password</Tooltip>
                                                         {/if}
                                                     {/if}
                                                 </TableBodyCell>
@@ -1025,7 +1056,9 @@
                                 <option value={option}>{option}</option>
                             {/each}
                         </select>
-                        <MyInput type='text' bind:value={tableDeptSearch.value}/>
+                        <MyInput type='text' bind:value={tableDeptSearch.value} onkeydown={e => {
+                            if(e.key.toLowerCase() === 'enter') tableDeptSearch.set()
+                        }}/>
                         <MyButton onclick={()=>tableDeptSearch.set()}><Search size={16} /></MyButton>
                         <MyButton onclick={()=>tableDept.invalidate()}><RefreshCw size={16}/></MyButton>
                     </div>
@@ -1057,6 +1090,7 @@
                                                     {#if !formDeptState.edit}
                                                         {#if pecahArray(userProfile?.access_dept, "U")}
                                                             <MyButton onclick={()=> formDeptEdit(row.dept_id)}><Pencil size={12} /></MyButton>
+                                                            <Tooltip>Edit</Tooltip>
                                                         {/if}
                                                     {/if}
                                                 </TableBodyCell>
@@ -1206,7 +1240,9 @@
                                     <option value={option}>{option}</option>
                                 {/each}
                             </select>
-                            <MyInput type='text' bind:value={tableCalendarSearch.value}/>
+                            <MyInput type='text' bind:value={tableCalendarSearch.value} onkeydown={e => {
+                            if(e.key.toLowerCase() === 'enter') tableCalendarSearch.set()
+                        }}/>
                             <MyButton onclick={()=>tableCalendarSearch.set()}><Search size={16} /></MyButton>
                             <MyButton onclick={()=>tableCalendar.invalidate()}><RefreshCw size={16}/></MyButton>
                         </div>
@@ -1231,17 +1267,19 @@
                                                 <TableBodyRow class='h-10'>
                                                     <TableBodyCell>{row.type}</TableBodyCell>
                                                     <TableBodyCell>{row.description}</TableBodyCell>
-                                                    <TableBodyCell>{format(formatTanggal(row.date), "d MMMM yyyy")}</TableBodyCell>
+                                                    <TableBodyCell>{formatTanggal(row.date, "date","app")}</TableBodyCell>
                                                     <TableBodyCell>
                                                         {#if !formCalendar.edit}
                                                             {#if pecahArray(userProfile?.access_calendar, "U")}
                                                                 <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
+                                                                <Tooltip>Edit</Tooltip>
                                                             {/if}
                                                             {#if pecahArray(userProfile?.access_calendar, "D")}
                                                                 <MyButton onclick={()=> {
                                                                     formCalendar.answer.calendar_id = row.calendar_id
                                                                     formCalendar.modalDelete = true
                                                                 }}><Trash size={12} /></MyButton>
+                                                                <Tooltip>Hapus</Tooltip>
                                                             {/if}
                                                         {/if}
                                                         <!-- <MyButton onclick={()=> formCalendarDelete(row.calendar_id)}><Trash size={12} /></MyButton> -->

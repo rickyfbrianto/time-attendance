@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, IdCard, Award, Share2, Settings, Ban, Save, CircleUserRound, Logs } from '@lucide/svelte'
+    import { ShieldUser, Clock8, GalleryHorizontalEnd, TicketsPlane, Hourglass, Plane, LayoutDashboard, IdCard, Award, Share2, Settings, Ban, Save, CircleUserRound, Map } from '@lucide/svelte'
     import usercowo from '$/lib/assets/user-man.svg'
     import { fade, fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
@@ -156,28 +156,34 @@
 </script>
 
 {#if $appstore.showSidebar}
-    <div style="scrollbar-width: none;" transition:fly={{x: "-200px", easing: quadIn}} class="relative flex flex-col bg-bgside px-3 min-w-[16rem] w-[16rem] max-w-[16rem] text-textside overflow-y-scroll">
+    <div style="scrollbar-width: none;" transition:fly={{x: "-200px", easing: quadIn}} class="relative flex flex-col bg-bgside px-3 min-w-[16rem] w-[16rem] max-w-[16rem] text-textside overflow-y-scroll font-quicksand font-black">
         <a class="sticky top-0 bg-bgside z-[10] flex items-center justify-center gap-3 py-[.6rem] text-textdark" href="/">
             <div class="flex h-[4.5rem]">
                 <MyClock/>   
             </div>
             <div class="flex flex-col">
-                <span class="text-[1.25rem] font-dancing font-[700] tracking-widest">Time</span>
-                <span class="indent-5 mt-[-5px] font-quicksand text-[1.2rem]">Attendance</span>
-                <span class="mt-[-2px] font-quicksand text-[.6rem] font-bold">Versi 1.2 (2025-08-14)</span>
+                <div class="flex justify-between">
+                    <span class="text-[1.25rem] font-dancing font-[700] tracking-widest">Time</span>
+                    <Badge color='dark' class='flex items-center gap-1 self-center'>
+                        <Map size={12} />
+                        <span class="font-quicksand text-[.7rem] font-bold">{import.meta.env.VITE_LOCATION}</span>
+                    </Badge>
+                </div>
+                <span class="indent-6 mt-[-5px] font-quicksand text-[1.2rem]">Attendance</span>
+                <span class="mt-[-2px] font-quicksand text-[.6rem] font-bold">{import.meta.env.VITE_VERSION}</span>
             </div>
         </a>
 
         <div class="flex flex-col flex-1 gap-y-[3px]">
             {#each linkSidebar as {link, title, icon: Icon, type, separator}}            
                 {#if type == "admin" && (pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R"))
-                    || ["core", "main", "other"].includes(type) }                
+                    || ["core", "main", "other"].includes(type)}                
                     {#if separator}
                         <div class="flex justify-center bg-bgside2 text-textside px-3 py-[3px] rounded-lg mt-1 shadow-xl">
                             <span class='text-muted font-bold font-quicksand text-[.75rem]'>{title}</span>
                         </div>
                     {:else}
-                        <a aria-label={title} data-balloon-pos="up" href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[4px] rounded-lg gap-3 shadow-lg`}>
+                        <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[4px] rounded-lg gap-3 shadow-lg`}>
                             <Icon size=14/>
                             <span class={`text-[.7rem] font-bold font-quicksand`}>{title}</span>
                         </a>
@@ -187,17 +193,17 @@
         </div>
 
         <div class="relative flex flex-col mb-3 bg-bgside2 pt-4 pb-3 px-3 rounded-xl shadow-xl">
-            <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute left-[10px] top-[10px] cursor-pointer' />
+            <Settings onclick={()=> formUserState.modal=true} size={20} class='absolute left-[15px] top-[15px] cursor-pointer' />
             <Tooltip class='z-10'>Setting</Tooltip>
             <div class="relative flex self-center">
                 <Avatar onclick={()=> defaultModal=true} src={usercowo} border class="ring-slate-600 w-[5rem] h-[5rem] mb-2"/>
                 <Tooltip class='z-10'>{user.name}</Tooltip>
             </div>
-            <span class="text-[.75rem] text-center font-normal text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
+            <span class="text-[.75rem] text-center text-textdark text-ellipsis line-clamp-2" title={user.name}>{user.name}</span>
             <Badge class='bg-slate-200 text-slate-800 self-center py-1'>{user.email}</Badge>
             <Tooltip class='z-10'>{user.email}</Tooltip>
             <Hr hrClass="my-2 text-slate-300"/>
-            <div class='flex flex-col gap-[1px] px-1 justify-center'>
+            <div class='flex flex-col gap-[2px] px-1 justify-center'>
                 <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><IdCard size={14}/>{user.payroll}</span>
                 <Tooltip class='z-10'>{user.payroll}</Tooltip>
                 <span class="flex items-center gap-2 text-[.7rem] text-textdark text-ellipsis line-clamp-1"><Award size={14}/>{user.position}</span>
@@ -206,7 +212,7 @@
                 <Tooltip class='z-10'>{userProfile?.name}</Tooltip>
             </div>
             
-            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-1 font-quicksand font-bold text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
+            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-[.5em] font-quicksand font-bold text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
 
             {#if user.user_type == 'HR'}
                 <div class="absolute h-[2rem] w-[4rem] flex items-center top-[-1.5rem] right-[0] rounded-t-lg bg-bgside2 px-4">

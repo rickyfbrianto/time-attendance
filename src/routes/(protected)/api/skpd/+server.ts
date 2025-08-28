@@ -45,11 +45,12 @@ export async function POST({ request, }) {
             // })
 
             if (data.addMode) {
-                const querySKPD = data.skpd_detail.map(async (v: any) => {
+                const querySKPD = data.skpd_detail.map((v: any) => {
+                    const skpd_id = v.skpd_id.replace(/\//g, '_')
                     return tx.$executeRawUnsafe(`
-                        INSERT INTO SKPD (skpd_id,sppd_id,payroll,real_start,real_end,status,approve,createdBy,createdAt) 
-                        VALUES(?,?,?,?,?,?,?,?,now())`,
-                        v.skpd_id, data.sppd_id, v.payroll, data.date[0], data.date[1], data.status, data.approve, data.createdBy)
+                        INSERT INTO SKPD (skpd_id, sppd_id, payroll, real_start, real_end, status, approve, createdBy, createdAt) 
+                        VALUES(?, ?, ?, ?, ?, ?, ?, ?, now())`,
+                        skpd_id, data.sppd_id, v.payroll, data.date[0], data.date[1], data.status, data.approve, data.createdBy)
                 })
 
                 const queryAttendance = data.skpd_detail.flatMap((v: any) => {
@@ -60,17 +61,15 @@ export async function POST({ request, }) {
                             v.user_id_machine, formatTanggal(format(date, "yyyy-MM-dd"), "date"), formatTanggal(format(date, "yyyy-MM-dd"), "date"), "Dinas", v.description, v.skpd_id)
                     })
                 })
-                await Promise.all([...querySKPD, ...queryAttendance])
 
+                await Promise.all([...querySKPD, ...queryAttendance])
                 return { message: "SKPD Berhasil disimpan" }
             } else {
                 const updateSKPD = tx.$executeRawUnsafe(`
                     UPDATE SKPD SET sppd_id=?,payroll=?,real_start=?,real_end=?,status=?,approve=? WHERE skpd_id=?`,
                     data.sppd_id, data.payroll, data.date[0], data.date[1], data.status, data.approve, data.skpd_id)
 
-                const deleteAttendanceFromSKPD = tx.$executeRawUnsafe(`
-                    DELETE FROM attendance WHERE reference = ?`, data.skpd_id
-                )
+                const deleteAttendanceFromSKPD = tx.$executeRawUnsafe(`DELETE FROM attendance WHERE reference = ?`, data.skpd_id)
 
                 const insertAttendanceFromSKPD = data.skpd_detail.flatMap((v: any) => {
                     return eachDayOfInterval({ start: data.date[0], end: data.date[1] }).map(date => {

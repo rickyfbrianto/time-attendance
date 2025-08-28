@@ -5,9 +5,9 @@
     import dayGridPlugin from '@event-calendar/day-grid';
 	import { getYear } from 'date-fns';
 	import MyLoading from '@/MyLoading.svelte';
-    import {getColorCalendar} from "$/lib/utils";
+    import {capitalEachWord, getColorCalendar} from "$/lib/utils";
     
-    let {payroll} = $props()
+    let {payroll, name} = $props()
     
     let calendarEl = $state()
     
@@ -39,23 +39,20 @@
         const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
         const month = 12
-        const reqCalendar = await fetch(`/api/data?type=get_calendar&year=${year}&month=${month}`)
-        const resCalendar = await reqCalendar.json() as any[]
-        const temp = resCalendar.map((v: any) => ({title: v.description, start: v.date, end: v.date, allDay:true, backgroundColor:"#B0413E"}))
 
         const reqAttendance = await fetch(`/api/data?type=get_attendance_by_payroll&val=${payroll}&year=${year}&month=${month}`)
         const resAttendance = await reqAttendance.json() as any[]
-        const temp2 = resAttendance.map((v: any) => {
+        const temp = resAttendance.map((v: any) => {
             const backgroundColor = getColorCalendar(v.type)
             return {title: v.type, start: v.check_in, end: v.check_in, allDay:true, backgroundColor, startEditable: true}
         })
-
-        opsiCalendar.events = [...temp, ...temp2]
+        
+        opsiCalendar.events = [...temp]
     }
 </script>
 
 <div class="flex flex-col flex-1 gap-2 p-4 border-[var(--color-bgside)] border-[1px] rounded-lg">
-    <span class="text-[1.5rem] font-bold">Calendar {payroll}</span>
+    <span class="text-[1.5rem] font-bold">Kalender {capitalEachWord(name)}</span>
     {#await getCalendar('')}
         <MyLoading message="Loading calendar data"/>
     {:then val}

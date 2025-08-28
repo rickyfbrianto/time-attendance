@@ -1,6 +1,6 @@
 <script lang='ts'>
     import MyButton from '$/lib/components/MyButton.svelte'
-    import {AlignJustify, Check, DoorOpen, Bell, Clock, Sun, Moon, Database } from '@lucide/svelte'
+    import {AlignJustify, Check, DoorOpen, Bell, Map, Clock, Sun, Moon, Database } from '@lucide/svelte'
 	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Dropdown, Badge, DropdownHeader } from 'flowbite-svelte';
     import { appstore } from "$/lib/store/appstore";
 	import { goto } from '$app/navigation';
@@ -10,7 +10,7 @@
 	
     let { notif } = $props()
 
-    const notifMax = 5
+    const notifMax = 10
     const notifLength = notif.length
     const notifLengthMax = notifLength > notifMax ? notifMax : notifLength
     const notifLengthShow = notifLength > notifMax ? notifMax + "+" : notifLength
@@ -80,41 +80,48 @@
     </div>
     
     <div class="flex gap-4 items-center">
-        <Badge class='flex items-center gap-1'><Database size={14} /> {import.meta.env.VITE_INFO_ENV}</Badge>
+        <Badge class='flex items-center gap-1'>
+            <Database size={10} /> 
+            <span class="font-quicksand text-[.65rem] font-bold">{import.meta.env.VITE_INFO_ENV}</span>
+        </Badge>
         <div class="flex items-center rounded-lg">
             <div class="flex">
                 <button class='relative bg-bgside rounded-l-lg text-textdark p-3 '>
                     <Bell size={14} />
                     {#if notifLength > 0}
-                        <span class="flex items-center justify-center font-bold absolute top-[-.75rem] right-[-.75rem] bg-merah text-white min-w-[1.5rem] min-h-[1.5rem] text-[.7rem] rounded-full">{notifLengthShow}</span>
+                        <span class="flex items-center justify-center font-bold absolute top-[-.75rem] left-[-.75rem] bg-merah text-white min-w-[1.5rem] min-h-[1.5rem] text-[.67rem] rounded-full">{notifLengthShow}</span>
                     {/if}
                 </button>
                 <Dropdown class='w-[30rem] border-[1px] border-[var(--color-bgside)] rounded-lg'>
-                    <div in:slide={{duration:250, delay:100}} out:slide={{duration:250, delay:100}} class="flex flex-col">
-                        <DropdownHeader>
-                            <div class="flex items-center py-2 gap-2">
-                                <Bell size={16} />
-                                <span class="block text-bold text-[1.2rem]">Kamu mempunyai {notifLengthShow} pemberitahuan</span>
+                    <div in:slide={{duration:250, delay:100}} out:slide={{duration:250, delay:100}} class="flex flex-col font-quicksand">
+                        {#if notifLengthShow > 0}
+                            <DropdownHeader>
+                                <div class="flex items-center py-2 gap-2">
+                                    <Bell size={16} />
+                                    <span class="block text-bold text-[1rem] font-bold">Kamu mempunyai {notifLengthShow} pemberitahuan</span>
+                                </div>
+                            </DropdownHeader>
+                            <div class="flex flex-col max-h-[25rem] overflow-auto border-y-[1px] border-slate-300">
+                                {#each notif.slice(0, notifLengthMax) as {waktu, link, deskripsi}, i}
+                                    <a href={`/${link}`} class="flex flex-col gap-1 p-4 bg-bgdark hover:bg-bgdark2 border-b border-slate-200">
+                                        <div class="flex items-center gap-2">
+                                            <img class='w-[1.35rem] h-[1.35rem]' src={icon.find(v => v.name == link)?.value} alt="">
+                                            <span class="text-[.9rem] font-bold">{deskripsi}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <Clock size={14} class='w-[1.5rem]'/>
+                                            <span aria-label={formatTanggal(waktu)} data-balloon-pos="up" class="text-[.7rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
+                                        </div>
+                                    </a>
+                                {/each}
                             </div>
-                        </DropdownHeader>
-                        <div class="flex flex-col max-h-[25rem] overflow-auto">
-                            {#each notif.slice(0, notifLengthMax) as {waktu, link, deskripsi}, i}
-                                <a href={`/${link}`} class="flex flex-col gap-2 p-4 bg-bgdark hover:bg-bgdark2 border-b border-slate-200">
-                                    <div class="flex items-center gap-2">
-                                        <img class='w-[1.5rem] h-[1.5rem]' src={icon.find(v => v.name == link)?.value} alt="">
-                                        <span class="text-[1rem] font-bold">{deskripsi}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <Clock size={14} class='w-[1.5rem]'/>
-                                        <span aria-label={formatTanggal(waktu)} data-balloon-pos="up" class="text-[.7rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
-                                    </div>
-                                </a>
-                            {/each}
-                        </div>
-                        {#if page.url.pathname != '/notifikasi'}
-                            <a href="/notifikasi" class='p-3 w-full hover:bg-bgside'>Lihat lebih lanjut</a>
-                        {:else}
+                            {#if page.url.pathname != '/notifikasi'}
+                                <a href="/notifikasi" class='p-3 w-full hover:bg-bgside'>Lihat lebih lanjut</a>
+                            {:else}
                             <span class='p-3 w-full'>Anda berada di halaman notif</span>
+                            {/if}
+                        {:else}
+                            <span class='text-center font-bold text-[1.4em] p-3 w-full'>Tidak ada pemberitahuan untuk saat ini</span>
                         {/if}
                     </div>
                 </Dropdown>
@@ -139,7 +146,7 @@
             </Alert>
         {/if}
         <svelte:fragment slot="footer">
-            <MyButton disabled={logoutState.loading} onclick={() => handleLogout()}>Yes, daddy</MyButton>
+            <MyButton disabled={logoutState.loading} onclick={() => handleLogout()}>Ya</MyButton>
         </svelte:fragment>
     </Modal>
 </div>

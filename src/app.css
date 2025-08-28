@@ -100,4 +100,8 @@ body * {
     @apply transition-colors duration-100;
 }
 
+.tooltip {
+    @apply bg-slate-700 text-white dark:bg-slate-100 dark:text-black text-xs p-2 rounded-md shadow-xl z-1;
+}
+
 @source "../node_modules/flowbite-svelte/dist";

@@ -1,5 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import { prisma } from '$/lib/utils.js'
+import { getMonth, getYear } from 'date-fns';
 
 export async function load({ url, locals, depends, fetch }) {
     depends('app:protected')
@@ -17,14 +18,25 @@ export async function load({ url, locals, depends, fetch }) {
         throw error(500, "Mohon lengkapi data pribadi anda dulu")
     if (url.pathname !== '/dashboard' && !user?.signature)
         throw error(500, "Anda tidak memiliki digital signature, silahkan upload signature dahulu")
+    if (url.pathname == '/security' && userProfile?.access_security != "R")
+        throw error(500, "Anda tidak memiliki akses membuka halaman security")
 
     const reqNotif = await fetch(`/api/data?type=get_notif&payroll=${user?.payroll || ""}`)
     const notif = await reqNotif.json()
+
+    let year = getYear(new Date())
+    let month = getMonth(new Date()) + 1
+    const tempReqCutiUser = await fetch(`/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`)
+    const dashboardIjinCuti = await tempReqCutiUser.json()
+
+    // const tempReqCalendarUser = await fetch(`/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`)
+    // const dashboardIjinCuti = await tempReqCutiUser.json()
 
     return {
         notif,
         user,
         userProfile,
-        periode: getSetting
+        periode: getSetting,
+        dashboardIjinCuti,
     }
 }

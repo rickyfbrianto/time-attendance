@@ -12,7 +12,7 @@ export async function GET({ url }) {
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
     const sort = url.searchParams.get('_sort') || "date"
-    const order = url.searchParams.get('_order') || "asc"
+    const order = url.searchParams.get('_order') || "desc"
     const search = url.searchParams.get('_search') || ""
 
     const payroll = url.searchParams.get('payroll')
@@ -24,15 +24,14 @@ export async function GET({ url }) {
             SELECT c.*, e.name, approve.name as approval_name FROM cuti as c
             LEFT JOIN employee as e ON c.payroll = e.payroll
             LEFT JOIN employee as approve ON c.approval = approve.payroll
-            WHERE e.payroll = ? AND (cuti_id like ?) AND DATE(c.date) BETWEEN ? AND ?
+            WHERE e.payroll = ? AND (cuti_id like ? OR c.date = ?) AND DATE(c.date) BETWEEN ? AND ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            payroll, `%${search}%`, start_date, end_date, limit, offset)
-
+            payroll, `%${search}%`, search, start_date, end_date, limit, offset)
         const [{ count }] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM cuti as c
             LEFT JOIN employee as e ON c.payroll = e.payroll
             LEFT JOIN employee as approve ON c.approval = approve.payroll
-            WHERE e.payroll = ? AND (cuti_id like ?) AND DATE(c.date) BETWEEN ? AND ?`,
-            payroll, `%${search}%`, start_date, end_date) as { count: number }[]
+            WHERE e.payroll = ? AND (cuti_id like ? OR c.date = ?) AND DATE(c.date) BETWEEN ? AND ?`,
+            payroll, `%${search}%`, search, start_date, end_date) as { count: number }[]
         return { items, totalItems: Number(count) }
     })
     return json(status)
@@ -48,48 +47,65 @@ export async function POST({ request }) {
             const getCuti = await tx.cuti.findUnique({
                 where: { cuti_id: data.get('cuti_id') }
             })
+            const year = getYear(new Date())
+            const month = 12
 
-            const user = await tx.employee.findUnique({
-                select: {
-                    workhour: true,
-                    user_type: true
-                },
-                where: { payroll: data.get('payroll') as string, status: "Aktif" }
-            })
+            const [user] = await tx.$queryRawUnsafe(`
+                SELECT workhour, user_type, cuti_kunci, HakCuti - CutiTahunan - CutiBersama as sisa_cuti FROM 
+                    (SELECT e.workhour, e.cuti_kunci, e.user_type, getHakCuti(e.join_date, CONCAT(?, DATE_FORMAT(CURDATE(), '-%m-%d'))) AS HakCuti,
+                    SUM(CASE WHEN c.status IN ('Waiting','Approved') THEN 1 ELSE 0 END) as CutiTahunan, a.CutiBersama
+                    FROM employee e
+                    LEFT JOIN (
+                        SELECT user_id_machine, SUM(CASE WHEN type = 'Cuti Bersama' THEN 1 ELSE 0 END) AS CutiBersama
+                        FROM attendance
+                        WHERE YEAR(check_in) = ?
+                        GROUP BY user_id_machine
+                    ) a ON a.user_id_machine = e.user_id_machine
+                    LEFT JOIN cuti c ON c.payroll = e.payroll AND YEAR(c.date) = ?
+                    WHERE e.payroll = ? AND e.status = 'Aktif'
+                    GROUP BY e.payroll
+                ) temp`,
+                year, year, year, data.get('payroll')) as { workhour: number, cuti_kunci: number, user_type: string, sisa_cuti: number }[]
+
             if (!user) throw new Error(`Karyawan tidak ditemukan atau status nonaktif`)
 
             if (!getCuti) {
                 const cuti_group_id = uuid4()
-                const year = getYear(new Date())
-                const month = 12
                 const tanggal = data.get('date')?.split(',')
 
                 const resCalendar = await tx.$queryRawUnsafe(`SELECT date FROM calendar WHERE YEAR(date) = ? AND month(date) <= ?
                     ORDER BY date asc`, year, month) as { date: string }[]
 
+                // const resCalendarTemp = await tx.$queryRawUnsafe(`SELECT DATE(a.check_in) as date 
+                //     FROM attendance as a 
+                //     LEFT JOIN employee as e ON a.user_id_machine = e.user_id_machine 
+                //     WHERE YEAR(a.check_in) = ? AND month(a.check_in) <= ? AND e.payroll = ? AND a.type IN ('Hari Libur','Event Kantor','Cuti bersama')
+                //     ORDER BY date asc`, year, month, data.get('payroll')) as { date: string }[] //! Perlu di recheck
+
                 const resCuti = await tx.$queryRawUnsafe(`SELECT date FROM cuti WHERE (DATE(date) BETWEEN ? AND ?) AND payroll = ? AND status IN ('Waiting','Approved')`,
                     tanggal[0], tanggal[1], data.get('payroll')) as { date: string }[]
 
                 const daysInRange = eachDayOfInterval({ start: tanggal[0], end: tanggal[1] })
-                const dayFree = user?.workhour == 7 ? [0] : [0, 6]
+                const dayFree = user.workhour == 7 ? [0] : [0, 6]
 
-                const temp = daysInRange.filter(v => {
+                const cutiDuplikat = daysInRange.filter(v =>
+                    resCuti.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date"))
+                ).map(v => format(v, "yyyy-MM-dd"))
+
+                const cutiValid = daysInRange.filter(v => {
                     return !resCalendar.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date"))
                         && !resCuti.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date"))
                         && !dayFree.includes(getDay(v))
                 }).map(v => formatTanggal(format(v, "yyyy-MM-dd"), "date"))
 
-                const cutiDuplikat = daysInRange.filter(v => {
-                    return resCuti.some(cal => formatTanggal(format(v, "yyyy-MM-dd"), "date") == formatTanggal(format(cal.date, "yyyy-MM-dd"), "date"))
-                }).map(v => format(v, "yyyy-MM-dd"))
-
                 if (cutiDuplikat.length > 0) throw new Error(`Cuti tidak dapat disimpan, pengajuan sudah ada sebelumnya ${JSON.stringify(cutiDuplikat)}`)
-                if (temp.length == 0) throw new Error(`Cuti tidak dapat disimpan, cuti tidak dapat dimasukkan pada hari weekend`)
+                if (cutiValid.length == 0) throw new Error(`Cuti tidak dapat disimpan, cuti tidak dapat dimasukkan pada hari weekend`)
+                if (data.get('type') == "Cuti Tahunan" && user.cuti_kunci && cutiValid.length > user.sisa_cuti) throw new Error(`Anda mengajukan Cuti Tahunan ${cutiValid.length} hari dari sisa cuti ${user.sisa_cuti} hari (Periksa apakah ada cuti yang masih "Waiting")`)
 
                 const fileAttachment = isAttachment ? cuti_group_id + extname(attachment?.name || "") : ""
 
                 const insertCuti = await tx.cuti.createMany({
-                    data: [...temp.map((date) => ({
+                    data: [...cutiValid.map((date) => ({
                         cuti_id: uuid4(),
                         cuti_group_id,
                         payroll: data.get('payroll'),
@@ -97,7 +113,7 @@ export async function POST({ request }) {
                         description: data.get('description'),
                         date: formatTanggalISO(date),
                         year: getYear(tanggal[0]),
-                        status: user.user_type != 'HR' && data.get('user_hrd') ? "Approved" : "Waiting",
+                        status: user.user_type != 'HR' && data.get('user_hrd') == "true" ? "Approved" : "Waiting",
                         approval: data.get('approval'),
                         is_delegate: false,
                         attachment: fileAttachment,

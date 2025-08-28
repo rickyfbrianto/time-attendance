@@ -25,6 +25,12 @@ export async function GET({ params }) {
                     signature: true
                 }
             },
+            employee_spl_acknowledgeByToemployee: {
+                select: {
+                    name: true,
+                    signature: true
+                }
+            },
             spl_detail: {
                 select: {
                     description: true,
@@ -39,6 +45,7 @@ export async function GET({ params }) {
                     step: 'asc'
                 }
             },
+            createdAt: true
         },
         where: {
             spl_id: id,

@@ -4,9 +4,10 @@
 	import '$/style.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
-    import {appstore } from '$/lib/store/appstore'
+    import {appstore, dataStore } from '@lib/store/appstore'
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
+    import { Calendar } from '@lucide/svelte'
 
     let {children, data } :LayoutProps = $props()
     
@@ -21,6 +22,10 @@
         } else {
             localStorage.setItem('appstore', JSON.stringify($appstore))
         }
+        
+        dataStore.update(prev => ({...prev, 
+            dashboardIjinCuti: Object.entries(data.dashboardIjinCuti).map(([title, value]) => ({ title, value: value as string, icon: Calendar }))
+        }))
     })
 </script>
 

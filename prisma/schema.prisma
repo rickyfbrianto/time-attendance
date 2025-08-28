@@ -115,6 +115,8 @@ model employee {
   level                                              Int                @db.TinyInt
   user_type                                          employee_user_type @default(Other)
   user_hod                                           Boolean
+  cuti_kunci                                         Boolean            @default(true)
+  cuti_suspen                                        Boolean            @default(false)
   hostname                                           String             @db.VarChar(31)
   status                                             employee_status    @default(Aktif)
   attendance_attendance_createdByToemployee          attendance[]       @relation("attendance_createdByToemployee")
@@ -136,6 +138,7 @@ model employee {
   skpd_skpd_approveToemployee                        skpd[]             @relation("skpd_approveToemployee")
   skpd_skpd_createdByToemployee                      skpd[]             @relation("skpd_createdByToemployee")
   skpd_skpd_payrollToemployee                        skpd[]             @relation("skpd_payrollToemployee")
+  spl_spl_acknowledgeByToemployee                    spl[]              @relation("spl_acknowledgeByToemployee")
   spl_spl_approval1Toemployee                        spl[]              @relation("spl_approval1Toemployee")
   spl_spl_createdByToemployee                        spl[]              @relation("spl_createdByToemployee")
   spl_detail                                         spl_detail[]
@@ -179,6 +182,7 @@ model profile {
   access_sppd       String         @db.VarChar(4)
   access_skpd       String         @db.VarChar(4)
   access_attendance String         @db.VarChar(4)
+  access_security   String         @db.VarChar(4)
   access_spl        String         @db.VarChar(4)
   access_srl        String         @db.VarChar(4)
   access_cuti       String         @db.VarChar(4)
@@ -222,7 +226,7 @@ model setting {
 }
 
 model skpd {
-  skpd_id                           String      @id @default("getNomorSKPD()") @db.VarChar(40)
+  skpd_id                           String      @id @db.VarChar(40)
   sppd_id                           String?     @db.VarChar(40)
   payroll                           String?     @db.VarChar(8)
   real_start                        DateTime    @db.DateTime(0)
@@ -243,26 +247,29 @@ model skpd {
 }
 
 model spl {
-  spl_id                           String       @id @db.VarChar(40)
-  purpose                          String       @db.VarChar(255)
-  dept                             String?      @db.VarChar(6)
-  est_start                        DateTime     @db.DateTime(0)
-  est_end                          DateTime     @db.DateTime(0)
-  status1                          spl_status1  @default(Waiting)
-  approval1                        String?      @db.VarChar(8)
-  createdBy                        String?      @db.VarChar(8)
-  createdAt                        DateTime     @default(now()) @db.DateTime(0)
-  employee_spl_approval1Toemployee employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
-  employee_spl_createdByToemployee employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll])
-  dept_spl_deptTodept              dept?        @relation("spl_deptTodept", fields: [dept], references: [dept_code])
-  spl_detail                       spl_detail[]
-  srl                              srl[]
+  spl_id                               String       @id @db.VarChar(40)
+  purpose                              String       @db.VarChar(255)
+  dept                                 String?      @db.VarChar(6)
+  est_start                            DateTime     @db.DateTime(0)
+  est_end                              DateTime     @db.DateTime(0)
+  status1                              spl_status1  @default(Waiting)
+  approval1                            String?      @db.VarChar(8)
+  acknowledgeBy                        String?      @db.VarChar(8)
+  createdBy                            String?      @db.VarChar(8)
+  createdAt                            DateTime     @default(now()) @db.DateTime(0)
+  employee_spl_acknowledgeByToemployee employee?    @relation("spl_acknowledgeByToemployee", fields: [acknowledgeBy], references: [payroll])
+  employee_spl_approval1Toemployee     employee?    @relation("spl_approval1Toemployee", fields: [approval1], references: [payroll])
+  employee_spl_createdByToemployee     employee?    @relation("spl_createdByToemployee", fields: [createdBy], references: [payroll])
+  dept_spl_deptTodept                  dept?        @relation("spl_deptTodept", fields: [dept], references: [dept_code])
+  spl_detail                           spl_detail[]
+  srl                                  srl[]
 
   @@index([approval1], map: "approval1")
   @@index([dept], map: "dept")
   @@index([est_end], map: "est_end")
   @@index([est_start], map: "est_start")
   @@index([createdBy], map: "createdBy")
+  @@index([acknowledgeBy], map: "acknowledgeBy")
 }
 
 model spl_detail {
@@ -283,8 +290,8 @@ model sppd {
   purpose              String        @db.VarChar(255)
   location             String        @db.VarChar(100)
   dept                 String?       @db.VarChar(6)
-  start_date           DateTime      @db.DateTime(0)
-  end_date             DateTime      @db.DateTime(0)
+  start_date           DateTime      @db.Date
+  end_date             DateTime      @db.Date
   duration             Int           @db.TinyInt
   createdBy            String?       @db.VarChar(8)
   createdAt            DateTime      @db.DateTime(0)
@@ -353,11 +360,6 @@ model temp_check_io {
   machine_no      Int?     @default(6)
 
   @@index([user_id_machine], map: "user_id_mesin")
-}
-
-model acc {
-  acc_no  String  @id @db.VarChar(10)
-  payroll String? @db.VarChar(10)
 }
 
 enum calendar_type {

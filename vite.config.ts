@@ -16,12 +16,11 @@ export default defineConfig({
     server: {
         port: 1100,
         host: "0.0.0.0",
-        // host: true,
-        allowedHosts: ['ricky', "it"],
+        allowedHosts: ['sagaweb', 'ricky', "it", 'time-app'],
     },
     preview: {
         port: 1000,
-        allowedHosts: ['ricky', 'time-app'],
+        allowedHosts: ['sagaweb', 'ricky', "it", 'time-app'],
     },
     resolve: {
         alias: {

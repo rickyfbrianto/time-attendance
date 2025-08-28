@@ -1,12 +1,14 @@
 <script lang='ts'>
+    import '$/flatpickr.css'
     type modeProps = "multiple" | "single"
     import flatpickr from "flatpickr";
     import MyInput from '@/MyInput.svelte';
     import { Indonesian } from 'flatpickr/dist/l10n/id.js'
-	import { formatDateToSQLString } from "@lib/utils";
+	import { formatDateToSQLString, formatTanggal } from "@lib/utils";
+	import { format } from 'date-fns';
         
     let {value = $bindable(), mode = "single", 
-        time = false, disabled = false, 
+        time = false, disabled = false, listHariLibur = [],
         option={}
     } = $props()
     
@@ -17,7 +19,6 @@
     $effect(() => {
         if (!ref) return;
         const a = disabled
-        // console.log(mode)
 		const picker = flatpickr(ref, {
             enableTime: ['range', 'multiple'].includes(mode) ? false : time,
             weekNumbers: true,
@@ -42,6 +43,13 @@
                 ...Indonesian,
                 "firstDayOfWeek": 1, // start week on Monday
                 "rangeSeparator": " s/d "
+            },
+            onDayCreate: function(dObj, dStr, fp, dayElem) {
+                const dateStr = format(dayElem.dateObj, "yyyy-MM-dd")
+                
+                if (listHariLibur.includes(dateStr)) {
+                    dayElem.innerHTML  += "<span class='event'></span>"
+                }
             },
             ...option
 		})

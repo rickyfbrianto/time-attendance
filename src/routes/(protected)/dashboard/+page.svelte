@@ -107,24 +107,9 @@
         </div>
     </div>
 
-    <div class="flex gap-5 min-h-[65vh] h-[65vh]">
-        <div transition:fly={{ y: 50, duration: 1500, delay: 1250 }} class="flex flex-1">
-            <MyCalendar payroll={user?.payroll}/>
-        </div>
-        <!-- <div transition:fly={{ y: 50, duration: 1500, delay: 1500 }} class="flex flex-col w-[24rem] bg-slate-50 dark:bg-neutral-700 p-2 rounded-lg shadow-md">
-            <div class="flex items-center p-2 gap-2">
-                <Bell size={16}/>
-                <span class='text-[.8rem] italic font-bold'>Notifikasi</span>
-            </div>
-            <div class="grid grid-cols-2 overflow-auto gap-2 mt-2">
-                {#each Array.from({length: 5}, (_, x) => x) as x}
-                    <Alert color={'red'} class='flex items-center justify-between'>
-                        <span class="italic font-bold">Data {x+1}</span>
-                    </Alert>
-                {/each}
-            </div>
-        </div> -->
-    </div>   
+    <div transition:fly={{ y: 50, duration: 1500, delay: 1250 }} class="flex flex-1 min-h-[75vh] h-[75vh]">
+        <MyCalendar payroll={user?.payroll} name={user?.name}/>
+    </div>
     
     <div transition:fly={{ x: -250, duration: 1500, delay: 1750 }} class="flex flex-1 flex-col gap-5">
         <div class='flex flex-1 justify-between border border-bgside p-4 rounded-lg'>
@@ -165,8 +150,4 @@
             </div>
         {/await}
     </div>
-    
-    <!-- <div class="flex min-h-[85vh]" id="calendar">
-        <MyCalendar payroll={user?.payroll}/>
-    </div> -->
 </main>

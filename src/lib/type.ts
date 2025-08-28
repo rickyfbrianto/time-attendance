@@ -7,6 +7,7 @@ export const ProfileSchema = z.object({
     access_sppd: z.string().max(4, "Max 4 Character"),
     access_skpd: z.string().max(4, "Max 4 Character"),
     access_attendance: z.string().max(4, "Max 4 Character"),
+    access_security: z.string().max(4, "Max 4 Character"),
     access_spl: z.string().max(4, "Max 4 Character"),
     access_srl: z.string().max(4, "Max 4 Character"),
     access_cuti: z.string().max(4, "Max 4 Character"),
@@ -42,6 +43,8 @@ export const UserSchema = z.object({
     level: z.number(),
     user_type: z.enum(['HR', 'Security', 'OB', 'Messenger', 'Other']),
     user_hod: z.boolean(),
+    cuti_kunci: z.boolean(),
+    cuti_suspen: z.boolean(),
     hostname: z.union([
         z.literal(""),
         z.string().min(6, "Min 6 Character").max(31, "Max 31 Character"),

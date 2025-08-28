@@ -8,7 +8,7 @@ export async function GET({ url }) {
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
     const sort = url.searchParams.get('_sort') ?? "date"
-    const order = url.searchParams.get('_order') ?? "asc"
+    const order = url.searchParams.get('_order') ?? "desc"
     const search = url.searchParams.get('_search') ?? ""
 
     const payroll = url.searchParams.get('payroll')
@@ -20,15 +20,15 @@ export async function GET({ url }) {
             SELECT i.*, e.name, approve.name as approval_name FROM ijin as i
             LEFT JOIN employee as e ON i.payroll = e.payroll
             LEFT JOIN employee as approve ON i.approval = approve.payroll
-            WHERE e.payroll = ? AND (i.ijin_id like ?) AND DATE(i.date) BETWEEN ? AND ?
+            WHERE e.payroll = ? AND (i.ijin_id like ? OR i.date = ?) AND DATE(i.date) BETWEEN ? AND ?
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            payroll, `%${search}%`, start_date, end_date, limit, offset)
+            payroll, `%${search}%`, search, start_date, end_date, limit, offset)
 
         const [{ count }] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM ijin as i
             LEFT JOIN employee as e ON i.payroll = e.payroll
             LEFT JOIN employee as approve ON i.approval = approve.payroll
-            WHERE e.payroll = ? AND (i.ijin_id like ?) AND DATE(i.date) BETWEEN ? AND ?`,
-            payroll, `%${search}%`, start_date, end_date) as { count: number }[]
+            WHERE e.payroll = ? AND (i.ijin_id like ? OR i.date = ?) AND DATE(i.date) BETWEEN ? AND ?`,
+            payroll, `%${search}%`, search, start_date, end_date) as { count: number }[]
         return { items, totalItems: Number(count) }
     })
 
@@ -87,7 +87,7 @@ export async function POST({ request }) {
                         type: data.type,
                         description: data.description,
                         date: formatTanggalISO(date),
-                        status: user.user_type != 'HR' && data.status ? "Approved" : "Waiting",
+                        status: user.user_type != 'HR' && data.user_hrd ? "Approved" : "Waiting",
                         approval: data.approval,
                         is_delegate: false,
                         createdAt: formatTanggalISO(new Date())

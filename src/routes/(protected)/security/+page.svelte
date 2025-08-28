@@ -25,7 +25,10 @@
     let setting = $derived(data.periode)
     let isUserAllowed = $derived(setting?.approval_lembur_security == user?.payroll)
 
-    let plugins = [TimeGrid, dayGridPlugin, listPlugin, interactionPlugin];
+    let plugins = $derived.by(()=> 
+        [TimeGrid, dayGridPlugin, listPlugin, interactionPlugin]
+            .filter(v => isUserAllowed ? v : v != interactionPlugin)
+    )
 
     const formSecurityState = {
         answer: {
@@ -60,8 +63,6 @@
         weekNumbers: true,
         weekNumberFormat: { week: 'numeric' },
         nowIndicator: true,
-        editable:false,
-        eventStartEditable:false, 
         datesSet: function(info) {
             modeSecurity.month = info.view.currentStart.getMonth() + 1
             modeSecurity.year = info.view.currentStart.getFullYear()
@@ -215,21 +216,11 @@
     {#await getUser()}
         <MyLoading message="Loading data"/>
     {:then val}
-        <div transition:fly={{y: -250, duration: 1500, delay:1000}} class="flex flex-col mx-4 px-4 py-5 gap-2 rounded-lg bg-gradient-to-r from-neutral-50 to-zinc-100 dark:from-neutral-600 dark:to-zinc-800 shadow-lg">
-            <span class='text-[1.5rem] font-quicksand'>Security Schedule</span>
+        <div transition:fly={{y: -250, duration: 1500, delay:1000}} class="flex flex-col mx-4 p-4 gap-2 rounded-lg bg-gradient-to-r from-neutral-50 to-zinc-100 dark:from-neutral-600 dark:to-zinc-800 shadow-lg">
+            <span class='text-[1.4rem] font-quicksand'>Security Schedule</span>
 
-            <div transition:fly={{ y: -100, duration: 1250, delay: 750 }} class="flex gap-2 pt-3 border-t border-slate-300">
-                <div class="flex flex-col gap-2">
-                    <Label>Payroll</Label>
-                    <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formSecurity.payroll} 
-                        onChange={e => {
-                            formSecurity.payroll = e.value
-                            getReportSecurity()
-                        }}
-                        options={[{value:"", text: "Semua Security"}, ...val.map((v) => ({value: v.payroll, text:capitalEachWord(v.payroll + " - " + v.name)}))] }/>
-                </div>
-
-                <div class="flex flex-col gap-2">
+            <div transition:fly={{ y: -100, duration: 1250, delay: 750 }} class="flex gap-4 pt-2 border-t border-slate-300">
+                <div class="flex flex-col gap-1">
                     <Label>Area</Label>
                     <select value={formSecurity.area} id="" onchange={e => {
                         formSecurity.area = e.target.value
@@ -240,6 +231,17 @@
                         {/each}
                     </select>
                 </div>
+                
+                <div class="flex flex-col gap-1">
+                    <Label>Payroll</Label>
+                    <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formSecurity.payroll} 
+                        onChange={e => {
+                            formSecurity.payroll = e.value
+                            getReportSecurity()
+                        }}
+                        options={[{value:"", text: "Semua Security"}, ...val.map((v) => ({value: v.payroll, text:capitalEachWord(v.payroll + " - " + v.name)}))] }/>
+                </div>
+                <span class='self-end italic text-[0.75rem]'>G = Gandaria, N = Narogong, K = Kemang</span>
             </div>
         </div>
     
@@ -309,7 +311,6 @@
                     </div>
                 {/if}
                 <div class="flex flex-col gap-2 w-full min-h-[70vh]">
-                    <span class='italic text-[0.75rem]'>G = Gandaria, N = Narogong, K = Kemang</span>
                     <Calendar {plugins} options={calendarEl}/>
                 </div>
             </div>

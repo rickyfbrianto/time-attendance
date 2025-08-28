@@ -118,8 +118,7 @@
     const formSPPDDelete = async (id:string) =>{
         try {
             formSPPD.loading = true
-            const req = await axios.delete(`/api/sppd/${id}`)
-            const res = await req.data
+            await axios.delete(`/api/sppd/${id}`)
             tableSPPD.invalidate()
         } catch (error) {
         } finally {
@@ -242,8 +241,8 @@
                 rowInc += row3
                 doc.setFont('times', 'normal')
                 doc.text("Tanggal", colData[0], rowData + rowInc)
-                doc.text(`: ${format(res.start_date, "dd MMMM yyyy")}`, colData[1], rowData + rowInc)
-                doc.text(`s/d     ${format(res.end_date, "dd MMMM yyyy")}`, colData[1] + 60, rowData + rowInc)
+                doc.text(`: ${formatTanggal(res.start_date, "date", "app")}`, colData[1], rowData + rowInc)
+                doc.text(`s/d     ${formatTanggal(res.end_date, "date", "app")}`, colData[1] + 60, rowData + rowInc)
                 rowInc += row1
                 doc.setFont('times', 'italic')
                 doc.text("Date", colData[0], rowData + rowInc)
@@ -265,7 +264,7 @@
 
                 rowInc += row4
                 doc.setFont('times', 'normal')
-                doc.text(`Jakarta, ${format(new Date(), "dd MMMM yyyy")}`, colData[0], rowData + rowInc)
+                doc.text(`Jakarta, ${formatTanggal(new Date(), "date", "app")}`, colData[0], rowData + rowInc)
                 
                 rowInc += row4 * 3
                 doc.setFont('times', 'underline')
@@ -435,7 +434,7 @@
             doc.setFontSize(12)
             doc.text("Nomor", colData[0], rowData + rowInc)
             doc.text(`:    ${res.skpd_id.replace(/\_/g,'/')}`, 35, rowData + rowInc)
-            doc.text(`Jakarta, ${format(res.createdAt, "d MMMM yyyy")}`, 142, rowData + rowInc)
+            doc.text(`Jakarta, ${formatTanggal(res.createdAt, "date", "app")}`, 142, rowData + rowInc)
             
             rowInc += row3
             doc.text("Dengan Hormat,", colData[0], rowData + rowInc)
@@ -484,8 +483,8 @@
             rowInc += row2
             doc.text("- Tanggal", colData[0], rowData + rowInc)
             doc.text(":", colData[1], rowData + rowInc)
-            doc.text(format(res.real_start, "d MMMM yyyy"), colData[2], rowData + rowInc)
-            doc.text(`s/d    ${format(res.real_end, "d MMMM yyyy")}`, colData[2] + 60, rowData + rowInc)
+            doc.text(formatTanggal(res.real_start, "date","app"), colData[2], rowData + rowInc)
+            doc.text(`s/d    ${formatTanggal(res.real_end, "date", "app")}`, colData[2] + 60, rowData + rowInc)
             doc.line(colData[1] + 2, rowData + rowInc + 2, colData[1] + 145, rowData + rowInc + 2)
             rowInc += row2
             doc.text("- Lamanya", colData[0], rowData + rowInc)
@@ -762,23 +761,26 @@
                                                         <span aria-label={row.name.split(', ').map((v: string) => capitalEachWord(v)).join(', ')} data-balloon-pos="up">{pecahKataOther(row.name, 1)}</span>
                                                     </div>
                                                 </TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date")}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.end_date, "date")}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date", "app")}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.end_date, "date", "app")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formSPPD.edit}
                                                         {#if (user.user_type == 'HR' || user.level > 1) && !row.isSKPDFromSPPD}
                                                             {#if pecahArray(userProfile.access_sppd, "U")}
                                                                 <MyButton onclick={()=> formSPPDEdit(row.sppd_id)}><Pencil size={12} /></MyButton>
+                                                                <Tooltip>Edit</Tooltip>
                                                             {/if}
                                                             {#if pecahArray(userProfile.access_sppd, "D")}
                                                                 <MyButton onclick={()=> {
                                                                     formSPPD.modalDelete = true
                                                                     formSPPD.answer.sppd_id = row.sppd_id
                                                                 }}><Trash size={12} /></MyButton>
+                                                                <Tooltip>Hapus</Tooltip>
                                                             {/if}
                                                         {/if}
                                                         <MyButton onclick={()=> handleCetakSPPD(row.sppd_id)}><Printer size={12} /></MyButton>
+                                                        <Tooltip>Print</Tooltip>
                                                     {/if}
                                                 </TableBodyCell>
                                             </TableBodyRow>
@@ -924,21 +926,24 @@
                                             <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.location}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.description}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "date")}</TableBodyCell>
-                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "date")}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_start, "date","app")}</TableBodyCell>
+                                            <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.real_end, "date", "app")}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.status}</TableBodyCell>
                                             <TableBodyCell>
                                                 {#if !formSKPD.edit}
                                                     {#if pecahArray(userProfile.access_skpd, "U")}
                                                         <MyButton onclick={()=> formSKPDEdit(row.skpd_id)}><Pencil size={12} /></MyButton>
+                                                        <Tooltip>Edit</Tooltip>
                                                     {/if}
                                                     {#if pecahArray(userProfile.access_skpd, "D")}
                                                         <MyButton onclick={()=> {
                                                             formSKPD.modalDelete = true
                                                             formSKPD.answer.skpd_id = row.skpd_id
                                                         }}><Trash size={12} /></MyButton>
+                                                        <Tooltip>Hapus</Tooltip>
                                                     {/if}                                                
                                                     <MyButton onclick={()=> handleCetakSKPD(row.skpd_id)}><Printer size={12} /></MyButton>
+                                                    <Tooltip>Print</Tooltip>
                                                 {/if}                                                
                                             </TableBodyCell>
                                         </TableBodyRow>

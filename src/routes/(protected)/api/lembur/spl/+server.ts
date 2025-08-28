@@ -18,7 +18,7 @@ export async function GET({ url }) {
 
     const status = await prisma.$transaction(async (tx) => {
         const items = await tx.$queryRawUnsafe(`
-            SELECT s.spl_id, s.purpose, s.est_start, s.est_end, approval1.name as approval1, s.status1 FROM SPL as s
+            SELECT s.spl_id, s.purpose, s.est_start, s.est_end, approval1.name as approval1, s.status1, s.acknowledgeBy FROM SPL as s
 			LEFT JOIN spl_detail sd ON sd.spl_id = s.spl_id
             LEFT JOIN employee as approval1 ON approval1.payroll = s.approval1
             WHERE (s.spl_id like ? OR s.purpose like ? OR s.est_start like ?) AND sd.payroll like ? AND DATE(s.est_start) BETWEEN ? AND ?

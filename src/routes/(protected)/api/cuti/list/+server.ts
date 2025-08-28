@@ -17,15 +17,15 @@ export async function GET({ url }) {
             SELECT c.*, e.name, approval.name as approval_name FROM cuti as c
             LEFT JOIN employee as e ON e.payroll = c.payroll
             LEFT JOIN employee as approval ON approval.payroll = c.approval
-            WHERE DATE(c.date) BETWEEN ? AND ? AND (e.payroll like ? OR e.name like ?)
+            WHERE DATE(c.date) BETWEEN ? AND ? AND (e.payroll like ? OR e.name like ? OR c.date = ?)
             ORDER by ${sort} ${order} LIMIT ? OFFSET ?`,
-            start_date, end_date, `%${search}%`, `%${search}%`, limit, offset)
+            start_date, end_date, `%${search}%`, `%${search}%`, search, limit, offset)
 
         const [{ count }] = await tx.$queryRawUnsafe(`SELECT count(*) as count FROM cuti as c
             LEFT JOIN employee as e ON e.payroll = c.payroll
             LEFT JOIN employee as approval ON approval.payroll = c.approval
-            WHERE DATE(c.date) BETWEEN ? AND ? AND (e.payroll like ? OR e.name like ?)`,
-            start_date, end_date, `%${search}%`, `%${search}%`) as { count: number }[]
+            WHERE DATE(c.date) BETWEEN ? AND ? AND (e.payroll like ? OR e.name like ? OR c.date = ?)`,
+            start_date, end_date, `%${search}%`, `%${search}%`, search) as { count: number }[]
         return { items, totalItems: Number(count) }
     })
     return json(status)

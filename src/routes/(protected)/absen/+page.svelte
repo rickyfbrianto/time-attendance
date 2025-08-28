@@ -61,7 +61,7 @@
 
     const handleBackToMyAbsent = () =>{
         formAbsen.payroll = user?.payroll
-        tableAbsen.invalidate()
+        tableAbsen.setPage(1)
     }
 
     // Fetch
@@ -131,7 +131,7 @@
                         {:then val}
                             <Svelecte searchable selectOnTab bind:value={formAbsen.payroll} 
                                 options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + capitalEachWord(v.name)}))}
-                                onChange={() => tableAbsen.invalidate()}/>
+                                onChange={() => tableAbsen.setPage(1)}/>
                             
                             {#if formAbsen.payroll !== user?.payroll}
                                 <Button onclick={handleBackToMyAbsent}>Kembali ke attendance saya</Button>
@@ -183,10 +183,10 @@
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell tdClass='min-w-[50px] w-[250px] max-w-[250px] break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
-                                                <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
+                                                <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</span>
                                             </TableBodyCell>
                                             <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
-                                                <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
+                                                <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                             </TableBodyCell>
                                             <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
                                                 <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
@@ -204,7 +204,7 @@
                                                             {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
                                                         (()=> {
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                            const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                            const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
                                                             return isOvertime
                                                                 ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                 : null
@@ -248,7 +248,7 @@
                             {:then val}
                                 <Svelecte clearable searchable selectOnTab bind:value={formAbsenDept.dept} 
                                     options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
-                                    onChange={() => tableAbsenDept.invalidate()}/>
+                                    onChange={() => tableAbsenDept.setPage(1)}/>
                             {/await}
                         </div>
                     {/if}
@@ -296,10 +296,10 @@
                                     {#each tableAbsenDept.rows as row}
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
-                                                <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</div>
+                                                <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</span>
                                             </TableBodyCell>
                                             <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
-                                                <div class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{format(row.check_in, "d MMMM yyyy")}</div>
+                                                <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                             </TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
@@ -319,7 +319,7 @@
                                                             {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
                                                         (()=> {
                                                             const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                            const isOvertime = (hour > 0) || (hour == 0 && minute >= setting?.overtime_allow) && row.overtime
+                                                            const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
                                                             return isOvertime
                                                                 ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                 : null

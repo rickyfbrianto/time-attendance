@@ -71,9 +71,9 @@ export async function GET({ params }) {
             select: {
                 srl_id: true,
                 spl_id: true,
+                payroll: true,
                 employee_srl_payrollToemployee: {
                     select: {
-                        payroll: true,
                         name: true,
                         signature: true,
                         workhour: true,
@@ -84,18 +84,6 @@ export async function GET({ params }) {
                         }
                     }
                 },
-                // employee:{
-                //     select:{
-                //         payroll:true,
-                //         name:true,
-                //         signature:true,
-                //         dept:{
-                //             select:{
-                //                 initial: true
-                //             }
-                //         }
-                //     }
-                // },
                 real_start: true,
                 real_end: true,
                 employee_srl_approval1Toemployee: {

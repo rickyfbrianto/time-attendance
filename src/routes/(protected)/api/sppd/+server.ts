@@ -80,7 +80,7 @@ export async function POST({ request, }) {
                 const lastID = Number(id) + 1
                 newID = `${lastID}-SPPD${separator}${dept?.initial}${separator}STM${separator}${format(new Date(), "MM-yyyy")}`
 
-                await tx.$queryRawUnsafe(`
+                await tx.$executeRawUnsafe(`
                     INSERT INTO sppd (sppd_id,purpose,location,dept,start_date,end_date,duration,createdBy,createdAt) 
                     VALUES(?,?,?,?,?,?,?,?,now())`,
                     newID, data.purpose, data.location, data.dept, data.date[0], data.date[1], data.duration, data.createdBy)
@@ -95,7 +95,7 @@ export async function POST({ request, }) {
 
                 return { message: "Data successfully saved" }
             } else {
-                await tx.$queryRawUnsafe(`
+                await tx.$executeRawUnsafe(`
                     UPDATE sppd SET purpose=?,location=?,dept=?,start_date=?,end_date=?,duration=? WHERE sppd_id=?`,
                     data.purpose, data.location, data.dept, data.date[0], data.date[1], data.duration, data.sppd_id)
 

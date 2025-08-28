@@ -1,12 +1,10 @@
 {
-    "name": "time-attendance",
+    "name": "time-attendance-jkt",
     "private": true,
     "version": "0.0.1",
     "type": "module",
     "scripts": {
         "db": "pnpm prisma db pull && pnpm prisma generate",
-        "db:dev": "dotenv -e .env.dev pnpm prisma db pull && pnpm prisma generate",
-        "db:trial": "dotenv -e .env.trial pnpm prisma db pull && pnpm prisma generate",
         "dev": "vite dev",
         "dev:dev": "dotenv -e .env.dev -- vite dev --mode dev",
         "dev:trial": "dotenv -e .env.trial -- vite dev --mode trial",
