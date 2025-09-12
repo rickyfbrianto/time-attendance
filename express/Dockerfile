@@ -1,10 +1,10 @@
 FROM node:24-alpine
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 WORKDIR /app
 
-RUN apk update && apk add nano && npm i -g pnpm 
-
-COPY package.json .
+COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm install
 

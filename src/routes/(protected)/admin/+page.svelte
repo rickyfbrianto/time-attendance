@@ -613,9 +613,18 @@
                             <div class="flex flex-col md:flex-row gap-4">
                                 <div class="flex flex-col gap-2 flex-1">
                                     <MyInput type='text'  title='Nama' name="name" bind:value={formProfileState.answer.name}/>
+                                    <div class="flex flex-col gap-2">
+                                        <Label for='status'>Status</Label>
+                                        <Select name='status' items={[
+                                            {value:"Aktif", name:"Aktif"},
+                                            {value:"Nonaktif", name:"Nonaktif"},
+                                        ]} bind:value={formProfileState.answer.status} />
+                                    </div>
                                 </div>
                                 <MyInput type='textarea' title='Description' rows={4} name="description" bind:value={formProfileState.answer.description}/>
                             </div>
+
+                            <hr class='text-slate-300'>
                             
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div class="flex flex-col gap-2">
@@ -672,13 +681,6 @@
                                     <MultiSelect items={ListAccess} bind:value={formProfileState.answer.access_setting} />
                                 </div>
 
-                                <div class="flex flex-col gap-2">
-                                    <Label for='status'>Status</Label>
-                                    <Select name='status' items={[
-                                        {value:"Aktif", name:"Aktif"},
-                                        {value:"Nonaktif", name:"Nonaktif"},
-                                    ]} bind:value={formProfileState.answer.status} />
-                                </div>
                             </div>
                         </form>
                     {/if}
@@ -1142,14 +1144,14 @@
                                 <div class="flex flex-col">
                                     <div class="flex items-center gap-4">
                                         <div class="flex flex-1 flex-col">
-                                            <MyInput type='number' title='Overtime Allow' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
-                                            <span class='text-textdark italic'>Minimum menit untuk dihitung lembur</span>
-                                        </div>
-                                        <div class="flex flex-1 flex-col">
                                             <MyInput type='number' title='Dispensasi Keterlambatan' name="late_dispen" bind:value={formSettingState.answer.late_dispen}/>
                                             <span class='text-textdark italic'>Dispensasi untuk keterlambatan</span>
                                         </div>
-                                        <Checkbox class='flex-1' bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Overtime Round Up</Checkbox>
+                                        <div class="flex flex-1 flex-col">
+                                            <MyInput type='number' title='Minimal Overtime (Menit)' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
+                                            <span class='text-textdark italic'>Minimum menit untuk dihitung lembur</span>
+                                        </div>
+                                        <Checkbox class='flex-1' bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Pembulatan Overtime Keatas</Checkbox>
                                     </div>
                                 </div>
 

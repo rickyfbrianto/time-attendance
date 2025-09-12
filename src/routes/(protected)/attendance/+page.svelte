@@ -6,8 +6,8 @@
 	import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
 	import TableAttendanceDifference from '$/lib/components/TableAttendanceDifference.svelte';
-	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, isLate, hitungDifference, formatDifference, hitungLate, formatLate, dataTahun, dataBulan, capitalEachWord } from '$/lib/utils';
-    import { format, set } from "date-fns";
+	import { formatTanggal, pecahArray, generatePeriode, namaHari, getParams, hitungDifference, formatDifference, formatLate, dataTahun, dataBulan, capitalEachWord, hitungJamMenit } from '$/lib/utils';
+    import { format, getDay, set } from "date-fns";
 	import axios from 'axios';
 	import Svelecte from 'svelecte';
 	import { z } from 'zod';
@@ -92,7 +92,8 @@
     let formAttendance = $state({...formAttendanceAnswer})
 
     let modeAttendance = $state({
-        payroll: (()=> user?.payroll)(),
+        // payroll: (()=> user?.payroll)(),
+        payroll: "120625",
         name: "",
         periode: {
             start: "",
@@ -572,30 +573,30 @@
                                     <TableBody>
                                         {#if tableAttendance.rows.length > 0}
                                             {#each tableAttendance.rows as row}
-                                                <TableBodyRow class='h-10'>
+                                                <TableBodyRow class={`h-10 ${getDay(formatTanggal(row.check_in, "date")) == 0 || ["Hari Libur","Event Kantor"].includes(row.type) ? "!bg-red-100":""}`} >
                                                     <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
-                                                        <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</span>
+                                                        <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{namaHari[getDay(formatTanggal(row.check_in, "date"))]}</span>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
-                                                        <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
+                                                    <TableBodyCell tdClass='min-w-[150px] w-[150px] max-w-[150px] break-all font-medium'>
+                                                        <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                         <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] break-all font-medium'>
                                                         {#if row.type}<MyBadge bold border>{row.type}</MyBadge>{/if}
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='font-medium'>
                                                         <div class="flex gap-1 flex-wrap">
                                                             {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
-                                                                    {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
+                                                                (row.late_in_minute > 0 && !row.isWeekend) ? 
+                                                                    {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
@@ -717,25 +718,25 @@
                                             <MyLoading message="Loading data"/>
                                         </div>
                                     {:else}
-                                        <TableBody tableBodyClass="divide-y">
+                                        <TableBody>
                                             {#if tableAttendanceDept.rows.length > 0}
                                                 {#each tableAttendanceDept.rows as row}
-                                                    <TableBodyRow class='h-10'>
+                                                    <TableBodyRow class={`h-10 ${getDay(formatTanggal(row.check_in, "date")) == 0 || ["Hari Libur","Event Kantor"].includes(row.type) ? "!bg-red-100":""}`} >
                                                         <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
-                                                            <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</span>
+                                                            <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{namaHari[getDay(formatTanggal(row.check_in, "date"))]}</span>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
-                                                            <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
+                                                        <TableBodyCell tdClass='min-w-[150px] w-[150px] max-w-[150px] break-all font-medium'>
+                                                            <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[180px] break-all font-medium'>
                                                             <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[180px] break-all font-medium'>
                                                             <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[160px] w-[180px] break-all font-medium'>
                                                             <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
@@ -744,8 +745,8 @@
                                                         <TableBodyCell tdClass='font-medium'>
                                                             <div class="flex gap-1 flex-wrap">
                                                                 {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
-                                                                        {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
+                                                                    (row.late_in_minute > 0 && !row.isWeekend) ? 
+                                                                        {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                     (()=> {
                                                                         const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                         const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
@@ -854,32 +855,32 @@
                                             <MyLoading message="Loading data"/>
                                         </div>
                                     {:else}
-                                        <TableBody tableBodyClass="divide-y">
+                                        <TableBody>
                                             {#if tableListAttendance.rows.length > 0}
                                                 {#each tableListAttendance.rows as row}
-                                                    <TableBodyRow class='h-10'>
+                                                    <TableBodyRow class={`h-10 ${getDay(formatTanggal(row.check_in, "date")) == 0 || ["Hari Libur","Event Kantor"].includes(row.type) ? "!bg-red-100":""}`} >
                                                         <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
-                                                            <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</span>
+                                                            <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{namaHari[getDay(formatTanggal(row.check_in, "date"))]}</span>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
-                                                            <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
+                                                        <TableBodyCell tdClass='min-w-[150px] w-[150px] break-all font-medium'>
+                                                            <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                        <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
+                                                        <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                             <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                             <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                         </TableBodyCell>
-                                                        <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                        <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                             {#if row.type}<MyBadge bold border>{row.type}</MyBadge>{/if}
                                                         </TableBodyCell>
                                                         <TableBodyCell tdClass='font-medium'>
                                                             <div class="flex gap-1 flex-wrap">
                                                                 {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                    (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
-                                                                        {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
+                                                                    (row.late_in_minute > 0 && !row.isWeekend) ? 
+                                                                        {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                     (()=> {
                                                                         const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                         const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
@@ -999,25 +1000,25 @@
                                         <MyLoading message="Loading data"/>
                                     </div>
                                 {:else}
-                                    <TableBody tableBodyClass="divide-y">
+                                    <TableBody>
                                         {#if tableLogAttendance.rows.length > 0}
                                             {#each tableLogAttendance.rows as row}
-                                                <TableBodyRow class='h-10'>
+                                                <TableBodyRow class={`h-10 ${getDay(formatTanggal(row.check_in, "date")) == 0 || ["Hari Libur","Event Kantor"].includes(row.type) ? "!bg-red-100":""}`} >
                                                     <TableBodyCell tdClass='min-w-[50px] w-[50px] max-w-[50px] break-all font-medium'>
-                                                        <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{namaHari[Number(format(row.check_in, "c")) - 1]}</span>
+                                                        <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{namaHari[getDay(formatTanggal(row.check_in, "date"))]}</span>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[130px] w-[130px] max-w-[130px] break-all font-medium'>
-                                                        <span class={format(row.check_in, "EEE") == "Sun" ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
+                                                    <TableBodyCell tdClass='min-w-[150px] w-[150px] break-all font-medium'>
+                                                        <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='break-all font-medium'>{row.payroll}</TableBodyCell>
-                                                    <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                         <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                         <TableAttendanceClockOut check_out={row.check_out} check_out2={row.check_out2} check_in={row.check_in}/>
                                                     </TableBodyCell>
-                                                    <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
+                                                    <TableBodyCell tdClass='min-w-[180px] w-[180px] break-all font-medium'>
                                                         <TableAttendanceDifference check_in={row.lembur_start} check_out={row.check_out} check_in2={row.check_in2} check_out2={row.check_out2} overtime={setting.overtime_allow}/>
                                                     </TableBodyCell>
                                                     <TableBodyCell tdClass='min-w-[160px] w-[160px] max-w-[160px] break-all font-medium'>
@@ -1026,8 +1027,8 @@
                                                     <TableBodyCell tdClass='font-medium'>
                                                         <div class="flex gap-1 flex-wrap">
                                                             {#each [...row.description.split(",").filter((v: string) => row.ijin_info ? null : v.trim()).map((v: string) => ({type:"kerja", value: v})), 
-                                                                (isLate(formatTanggal(row.start_work), formatTanggal(row.check_in), setting?.late_dispen) && !row.isWeekend) ? 
-                                                                    {type:"late", value:"Late " + formatLate(hitungLate(row.check_in, row.start_work, setting?.late_dispen))} : null,
+                                                                (row.late_in_minute > 0 && !row.isWeekend) ? 
+                                                                    {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
                                                                     const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime

@@ -13,14 +13,17 @@ export default defineConfig({
         tailwindcss(),
         sveltekit(),
     ],
+    build: {
+        sourcemap: true
+    },
     server: {
         port: 1100,
         host: "0.0.0.0",
-        allowedHosts: ['sagaweb', 'ricky', "it", 'time-app'],
+        allowedHosts: ['sagaweb', 'ricky', 'time-app'], // ? time-app adalah instance docker
     },
     preview: {
         port: 1000,
-        allowedHosts: ['sagaweb', 'ricky', "it", 'time-app'],
+        allowedHosts: ['sagaweb', 'ricky', 'time-app'], // ? time-app adalah instance docker
     },
     resolve: {
         alias: {

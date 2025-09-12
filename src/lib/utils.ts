@@ -1,4 +1,3 @@
-import { DateTime } from "luxon";
 import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
 import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set, differenceInMinutes, parse, differenceInDays, differenceInHours } from "date-fns";
@@ -48,12 +47,6 @@ export const formatTanggal = (val: string | Date, mode: "date" | "time" | "datet
     return formatInTimeZone(val, 'UTC', newMode, { locale: id })
 }
 
-// export const formatSQL = (value: string | Date, mode: "date" | "time" | "datetime" = "datetime", formatTanggal: "system" | "app" = "system") => {
-//     const formatDate = formatTanggal == "system" ? "yyyy-MM-dd" : "dd-MM-yyyy"
-//     const newMode = mode == "datetime" ? `${formatDate} HH:mm:ss` : (mode == "date" ? formatDate : (mode == "time" ? "HH:mm:ss" : ""))
-//     return format(value, newMode)
-// }
-
 export function capitalEachWord(text: string) {
     return text
         .toLowerCase()
@@ -88,18 +81,6 @@ export function handleLoginRedirect(e: RequestEvent, pesan: string = "You need t
     const redirectTo = pathname + search
     return '/login?redirectTo=' + encodeURIComponent(redirectTo) + "&pesan=" + encodeURIComponent(pesan)
 }
-
-// export function isEmpty(obj: any): boolean {
-//     for (let key in obj) {
-//         if (obj[key] instanceof Object === true) {
-//             if (isEmpty(obj[key]) === false) return false;
-//         }
-//         else {
-//             if (obj[key].length !== 0) return false;
-//         }
-//     }
-//     return true;
-// }
 
 export function encryptDynamic(value: string, secretKey: string): EncryptedData {
     const iv = CryptoJS.lib.WordArray.random(128 / 8); //iv untuk generate acak setiap value meskipun nilainya sama
@@ -220,27 +201,6 @@ export function pecahKataOther(val: string, potong: number = 1) {
     return newTemp
 }
 
-export const isLate = (w1: string, w2: string, dispen: number = 0) => {
-    const temp1 = w1.split(' ').map((v: string) => v)[1]
-    const temp2 = w2.split(' ').map((v: string) => v)[1]
-
-    const [hours1, , ,] = temp1.split(":").map((v: string) => v)
-    const [hours2, minutes2, seconds2] = temp2.split(":").map((v: string) => v)
-
-    const new1 = set(new Date(), {
-        hours: Number(hours1),
-        minutes: 0 + dispen,
-        seconds: 0
-    })
-
-    const new2 = set(new Date(), {
-        hours: Number(hours2),
-        minutes: Number(minutes2),
-        seconds: Number(seconds2)
-    })
-    return isBefore(new1, new2)
-}
-
 export function getRandomHexColor() {
     const randomColor = Math.floor(Math.random() * 0xffffff);
     return `#${randomColor.toString(16).padStart(6, '0')}`;
@@ -272,14 +232,16 @@ export const getParams = (state: State) => {
     return params;
 };
 
+export const hitungJamMenit = (menit: number) => {
+    const hour = Math.floor(menit / 60);
+    const minute = menit % 60;
+    return { hour, minute }
+}
+
 export const selisihWaktu = (val1: string | Date, val2: string | Date) => {
     const start = new Date(val1)
     const end = new Date(val2)
-    const totalMinutes = differenceInMinutes(start, end)
-
-    const hour = Math.floor(totalMinutes / 60);
-    const minute = totalMinutes % 60;
-    return { hour, minute }
+    return hitungJamMenit(differenceInMinutes(start, end))
 }
 
 export const selisihWaktuHari = (start: Date | string, end: Date | string) => {
@@ -292,23 +254,6 @@ export const selisihWaktuHari = (start: Date | string, end: Date | string) => {
 export const formatWaktuHari = ({ day, hour, minute }: { day: number, hour: number, minute: number }) => {
     const temp = `${day > 0 ? day + " Hari" : ""} ${hour > 0 ? hour + " Jam" : ""} ${minute > 0 ? minute + " Menit" : ""}`
     return temp
-}
-
-export const hitungLate = (check_in: number | string | Date, start_work: number | string | Date, late_minute_dispen: number, late_dispen_check: boolean = true) => {
-    const tempCheckin = new Date(check_in)
-    const tempStart = new Date(start_work)
-
-    const newCheckin = set(tempCheckin, {
-        hours: tempCheckin.getUTCHours(),
-        minutes: tempCheckin.getUTCMinutes(),
-        seconds: tempCheckin.getUTCSeconds()
-    })
-    const newStart = set(tempCheckin, {
-        hours: tempStart.getUTCHours(),
-        minutes: tempStart.getUTCMinutes() + (late_dispen_check ? late_minute_dispen : 0),
-        seconds: tempStart.getUTCSeconds()
-    })
-    return selisihWaktu(newCheckin, newStart)
 }
 
 export const formatLate = ({ hour, minute }: { hour: number, minute: number }) => {
@@ -328,13 +273,7 @@ export const hitungDifference = (check_in, check_out, check_in2, check_out2) => 
         totalMinutes = (hoursB * 60 + minutesB);
     }
 
-    const resultHours = Math.floor(totalMinutes / 60);
-    const resultMinutes = totalMinutes % 60;
-
-    return {
-        hour: resultHours,
-        minute: resultMinutes
-    }
+    return hitungJamMenit(totalMinutes)
 }
 
 export const formatDifference = ({ hour, minute, overtime, round_up = false }: { hour: number, minute: number, overtime: number, round_up: boolean }) => {

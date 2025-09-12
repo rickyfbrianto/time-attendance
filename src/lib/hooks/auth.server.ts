@@ -69,6 +69,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
         event.locals.user = data
         event.locals.userProfile = data?.profile || null
+
         return await resolve(event)
     } catch (err: any) {
         if (err instanceof Prisma.PrismaClientKnownRequestError) {

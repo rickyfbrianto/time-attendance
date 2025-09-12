@@ -29,7 +29,8 @@ export async function GET({ url }) {
                 getSPL(user.payroll, att.check_in) as is_spl_exist,
                 getUserWeekend(att.check_in, user.workhour) as isWeekend,
                 getStartOvertime(att.attendance_id, user.workhour, user.start_work) AS lembur_start,
-                roundCheckOut( att.check_in, att.check_out) as lembur_end
+                roundCheckOut( att.check_in, att.check_out) as lembur_end,
+                getLateInMinutes(att.attendance_id, user.workhour, user.start_work) as late_in_minute
                 FROM
                     attendance AS att
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine

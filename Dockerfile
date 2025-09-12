@@ -1,38 +1,44 @@
 # Stage 1: Build
 FROM node:24-alpine AS builder
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 WORKDIR /app
 
-RUN apk update && npm i -g pnpm
-
-COPY package.json ./
+COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm install
 
 COPY . .
 
-RUN pnpx prisma generate
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
+RUN echo "🔎 Debug DATABASE_URL=$DATABASE_URL"
+
+RUN pnpm prisma generate
+# RUN pnpm db
+
+# === Production Stage ===
+FROM node:24-alpine AS run
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+
+# ? Folder
+COPY --from=builder /app/.svelte-kit ./.svelte-kit
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/static ./static
+
+# File
+COPY --from=builder /app/.npmrc ./.npmrc
+COPY --from=builder /app/svelte.config.js ./svelte.config.js
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/vite.config.ts ./vite.config.ts
 
 EXPOSE 1000
 
-CMD ["pnpm","preview"]
-
-# === Production Stage ===
-# FROM node:20-alpine
-# WORKDIR /app
-
-# COPY package*.json ./
-# RUN npm ci --omit=dev
-
-# COPY --from=builder /app/build ./build
-# # COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-# # COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-# COPY --from=builder /app/node_modules/@prisma-app/client ./node_modules/@prisma-app/client
-# COPY --from=builder /app/prisma ./prisma
-
-# ENV NODE_ENV=production
-
-# EXPOSE 1000
-
-# # Jalankan aplikasi Node dari adapter-node
-# CMD ["node", "build"]
+CMD ["npm", "run", "preview"]

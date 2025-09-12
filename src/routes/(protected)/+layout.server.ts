@@ -12,12 +12,12 @@ export async function load({ url, locals, depends, fetch }) {
         redirect(303, `/admin?tab=setting&message=Admin needs to adjust setting`);
     }
 
-    if (!userProfile) throw error(500, "User has no Profile ID")
     if (!user?.department) throw error(500, "User has no department")
-    if (url.pathname !== '/dashboard' && (!user.location || !user.email || !user.phone || !user.approver || !user.substitute))
-        throw error(500, "Mohon lengkapi data pribadi anda dulu")
-    if (url.pathname !== '/dashboard' && !user?.signature)
-        throw error(500, "Anda tidak memiliki digital signature, silahkan upload signature dahulu")
+    if (url.pathname !== '/dashboard') {
+        if (!userProfile) throw error(500, "User has no Profile ID")
+        if (!user.location || !user.email || !user.phone || !user.approver || !user.substitute) throw error(500, "Mohon lengkapi data pribadi anda dulu")
+        if (!user?.signature) throw error(500, "Anda tidak memiliki digital signature, silahkan upload signature dahulu")
+    }
     if (url.pathname == '/security' && userProfile?.access_security != "R")
         throw error(500, "Anda tidak memiliki akses membuka halaman security")
 
