@@ -13,3 +13,11 @@ interface DataStoreProps {
 export const dataStore = writable<DataStoreProps>({
     dashboardIjinCuti: []
 })
+
+interface ReportAttendanceProps {
+    dept: string;
+    year: string;
+    month: string
+}
+
+export const reportAttendance = writable<ReportAttendanceProps | null>(null);

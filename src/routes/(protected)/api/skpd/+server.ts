@@ -14,7 +14,7 @@ export async function GET({ url }) {
 
     const status = await prisma.$transaction(async (tx) => {
         const items = await tx.$queryRawUnsafe(`
-            SELECT skpd_id, s.sppd_id, sppd.location, sd.description, e.name, e.payroll, real_start, real_end, s.status FROM SKPD as s
+            SELECT skpd_id, s.sppd_id, sppd.location, sd.description, e.name, e.payroll, real_start, real_end, s.status, s.approve as approve_ttd FROM SKPD as s
             LEFT JOIN employee as e ON e.payroll = s.payroll
             LEFT JOIN sppd ON sppd.sppd_id = s.sppd_id
             LEFT JOIN sppd_detail as sd ON s.payroll = sd.payroll AND s.sppd_id = sd.sppd_id
@@ -48,17 +48,18 @@ export async function POST({ request, }) {
                 const querySKPD = data.skpd_detail.map((v: any) => {
                     const skpd_id = v.skpd_id.replace(/\//g, '_')
                     return tx.$executeRawUnsafe(`
-                        INSERT INTO SKPD (skpd_id, sppd_id, payroll, real_start, real_end, status, approve, createdBy, createdAt) 
-                        VALUES(?, ?, ?, ?, ?, ?, ?, ?, now())`,
-                        skpd_id, data.sppd_id, v.payroll, data.date[0], data.date[1], data.status, data.approve, data.createdBy)
+                        INSERT INTO SKPD (skpd_id, sppd_id, payroll, real_start, real_end, status, level, approve, approve_name, createdBy, createdAt) 
+                        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())`,
+                        skpd_id, data.sppd_id, v.payroll, data.date[0], data.date[1], 'OPEN', v.level, data.approve, data.approve_name, data.createdBy)
                 })
 
                 const queryAttendance = data.skpd_detail.flatMap((v: any) => {
+                    const skpd_id = v.skpd_id.replace(/\//g, '_')
                     return eachDayOfInterval({ start: data.date[0], end: data.date[1] }).map(date => {
                         return tx.$executeRawUnsafe(`
                             INSERT INTO attendance(attendance_id,user_id_machine,check_in,check_out,type,description,reference) 
                             VALUES(UUID(), ?, ?, ?, ?, ?, ?)`,
-                            v.user_id_machine, formatTanggal(format(date, "yyyy-MM-dd"), "date"), formatTanggal(format(date, "yyyy-MM-dd"), "date"), "Dinas", v.description, v.skpd_id)
+                            v.user_id_machine, formatTanggal(format(date, "yyyy-MM-dd"), "date"), formatTanggal(format(date, "yyyy-MM-dd"), "date"), "Dinas", v.description, skpd_id)
                     })
                 })
 
@@ -66,8 +67,8 @@ export async function POST({ request, }) {
                 return { message: "SKPD Berhasil disimpan" }
             } else {
                 const updateSKPD = tx.$executeRawUnsafe(`
-                    UPDATE SKPD SET sppd_id=?,payroll=?,real_start=?,real_end=?,status=?,approve=? WHERE skpd_id=?`,
-                    data.sppd_id, data.payroll, data.date[0], data.date[1], data.status, data.approve, data.skpd_id)
+                    UPDATE SKPD SET sppd_id=?,payroll=?,real_start=?,real_end=?,approve=?,approve_name=?,level=? WHERE skpd_id=?`,
+                    data.sppd_id, data.payroll, data.date[0], data.date[1], data.approve, data.approve_name, data.skpd_detail[0].level, data.skpd_id)
 
                 const deleteAttendanceFromSKPD = tx.$executeRawUnsafe(`DELETE FROM attendance WHERE reference = ?`, data.skpd_id)
 

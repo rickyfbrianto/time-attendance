@@ -1,15 +1,12 @@
 import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
-import path from "node:path";
-import { enhancedImages } from '@sveltejs/enhanced-img';
 
 export default defineConfig({
     optimizeDeps: {
         exclude: ['@prisma-app/client/runtime']
     },
     plugins: [
-        enhancedImages(),
         tailwindcss(),
         sveltekit(),
     ],

@@ -16,6 +16,7 @@
     import { invalidateAll } from '$app/navigation';
 	import MyPagination from '@/MyPagination.svelte';
 	import MyBadge from '@/MyBadge.svelte';
+	import { useDept, useUserByDept } from '@lib/fetch.js';
     
     const rowsPerPage = 30
     let {data} = $props()
@@ -65,16 +66,9 @@
     }
 
     // Fetch
-    const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
-        return await req.json()
-    }
+    const getUserByDept = useUserByDept(formAbsen.dept)
 
-    const getDept = async (val:string = '')=>{
-        const req = await fetch(`/api/data?type=dept&val=${val}`)
-        const res = await req.json()
-        return res
-    }
+    const getDept = useDept()
 
     $effect(()=>{
         if(!formAbsen.payroll) formAbsen.payroll = user.payroll
@@ -113,6 +107,7 @@
         if (user.level > 1){
             tableAbsenDept.invalidate()
         }
+        // getUserByDept.refetch()
     }, 1000)
 </script>
 
@@ -123,20 +118,21 @@
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full border-slate-300">        
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Absen">
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
+            <div class="flex flex-col gap-4 pt-4">
                 {#if user.level > 1}
                     <div class="flex flex-1 gap-2">
-                        {#await getUser(formAbsen.dept)}
+                        {#if getUserByDept.isFetching || getUserByDept.isPending}
                             <MyLoading message="Loading data"/>
-                        {:then val}
+                        {/if}
+                        {#if getUserByDept.data}
                             <Svelecte searchable selectOnTab bind:value={formAbsen.payroll} 
-                                options={val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + capitalEachWord(v.name)}))}
+                                options={getUserByDept.data.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + capitalEachWord(v.name)}))}
                                 onChange={() => tableAbsen.setPage(1)}/>
                             
                             {#if formAbsen.payroll !== user?.payroll}
                                 <Button onclick={handleBackToMyAbsent}>Kembali ke attendance saya</Button>
                             {/if}
-                        {/await}
+                        {/if}
                     </div>
                 {/if}
                 
@@ -241,16 +237,17 @@
         </TabItem>
         {#if user.level > 1}
             <TabItem title="Departemen">
-                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
-                    {#if userProfile.user_type == 'HR'}
+                <div class="flex flex-col gap-4 pt-4">
+                    {#if user.user_type == 'HR'}
                         <div class="flex flex-1 gap-2">
-                            {#await getDept()}
+                            {#if getDept.isPending || getDept.isFetching}
                                 <MyLoading message="Loading data"/>
-                            {:then val}
+                            {/if}
+                            {#if getDept.data}
                                 <Svelecte clearable searchable selectOnTab bind:value={formAbsenDept.dept} 
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
+                                    options={getDept.data.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
                                     onChange={() => tableAbsenDept.setPage(1)}/>
-                            {/await}
+                            {/if}
                         </div>
                     {/if}
 

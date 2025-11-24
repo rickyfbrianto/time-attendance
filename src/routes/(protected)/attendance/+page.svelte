@@ -22,6 +22,7 @@
     import MyButton from '@/MyButton.svelte';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
+	import { useDept, useUserByDept } from '@lib/fetch.js';
         
     const rowsPerPage = 30
     let {data} = $props()
@@ -53,7 +54,7 @@
         // return temp.filter(v => v.value != (formAttendance.add ? "Mangkir" : "Sakit"))
         return temp.filter(v => formAttendance.add ? !["Mangkir","Off"].includes(v.value) : !["Sakit"].includes(v.value))
     })
-        
+
     let tableAttendance = $state(new TableHandler([], {rowsPerPage}))
     let tableAttendanceSearch = tableAttendance.createSearch()
     
@@ -92,8 +93,7 @@
     let formAttendance = $state({...formAttendanceAnswer})
 
     let modeAttendance = $state({
-        // payroll: (()=> user?.payroll)(),
-        payroll: "120625",
+        payroll: (()=> user?.payroll)(),
         name: "",
         periode: {
             start: "",
@@ -307,18 +307,6 @@
         }
     }
     
-    // Fetch
-    const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
-        return await req.json()
-    }
-
-    const getDept = async (val:string = '')=>{
-        const req = await fetch(`/api/data?type=dept&val=${val}`)
-        const res = await req.json()
-        return res
-    }
-
     const getAttendance = async ({val, year, month, start_date, end_date}: {val:string, year: number, month: number, start_date: string, end_date: string}) =>{
         // const year = getYear(new Date())
         // const month = getMonth(new Date()) + 1
@@ -337,13 +325,11 @@
         }, 100)
     }
 
-    const getUserByDept = $derived.by(() => {
-        return async () =>{
-            const req = await fetch(`/api/data?type=user_by_dept&val=${formSPL.dept}`)
-            const res = await req.json()
-            return res
-        }
-    })
+    const getDept = useDept()
+    
+    const getUser = useUserByDept((() => formAttendance.dept)())
+
+    const getUserByDept = useUserByDept((() => formSPL.dept)())
 
     $effect(()=>{
         tableAttendance.load(async(state: State) => {
@@ -401,10 +387,7 @@
 
     $effect(()=> {
         const temp = modeAttendance.tabNo == 4 ? set(new Date(), {year: formLogAttendance.year, month: formLogAttendance.month, date: setting?.end_periode}) : new Date()
-        modeAttendance.periode = {
-            start: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start,
-            end: generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end,
-        }
+        modeAttendance.periode = generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode))
     })
     
     setTimeout(()=>{
@@ -484,7 +467,7 @@
         {/if}
     {/if}
     
-    <div class="flex flex-col gap-3 px-4 py-4 border-slate-300 border rounded-lg">
+    <div class="flex flex-col gap-3 pb-4">
         {#if !formAttendance.modal}
             {#if formAttendance.error}
                 {#each formAttendance.error.split(';') as v}
@@ -502,11 +485,12 @@
                     <MyButton onclick={formAttendanceAdd}><Plus size={16}/></MyButton>
                 {/if}
                 <div class="flex flex-1 gap-2">
-                    {#await getUser(formAttendance.dept)}
+                    {#if getUser.isFetching || getUser.isPending}
                         <MyLoading message="Loading data"/>
-                    {:then val}
+                    {/if}
+                    {#if getUser.data}
                         <Svelecte class='border-none' optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={modeAttendance.payroll} 
-                            options={val.map((v:any) => ({value: v.payroll, text: capitalEachWord(v.payroll + " - " + v.name)}))}
+                            options={getUser.data.map((v:any) => ({value: v.payroll, text: capitalEachWord(v.payroll + " - " + v.name)}))}
                             onChange={() => {
                                 tableAttendance.setPage(1)
                                 tableListAttendance.setPage(1)
@@ -515,7 +499,7 @@
                         {#if modeAttendance.payroll !== user?.payroll}
                             <Button onclick={handleBackToMyAttendance}>Kembali ke attendance saya</Button>
                         {/if}
-                    {/await}
+                    {/if}
                 </div>
             </div>
         {/if}
@@ -524,7 +508,7 @@
             <Tabs contentClass='w-full' tabStyle="underline">
                 <!-- Attendance pribadi/orang lain -->
                 <TabItem open={modeAttendance.tabNo == 1} title={user?.payroll == modeAttendance.payroll ? "Attendance Saya": `Attendance ${capitalEachWord(modeAttendance.name)}`} onclick={()=> modeAttendance.tabNo = 1} >
-                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                    <div class="flex flex-col gap-4">
                         <div class="flex gap-2 items-start">
                             <select bind:value={tableAttendance.rowsPerPage} onchange={() => tableAttendance.setPage(1)}>
                                 {#each [30, 60, 90, 120] as option}
@@ -656,7 +640,8 @@
                 <!-- Attendance department -->
                 {#if user.level > 1 || user.user_type == 'HR'}
                     <TabItem open={modeAttendance.tabNo == 2} title="Attendance Departemen" onclick={()=> modeAttendance.tabNo = 2} >
-                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
+                        <!-- <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                 -->
+                        <div class="flex flex-col gap-4">
                             <div class="flex flex-col gap-4">
                                 <div class="flex gap-2 items-start">
                                     <select bind:value={tableAttendanceDept.rowsPerPage} onchange={() => tableAttendanceDept.setPage(1)}>
@@ -686,13 +671,14 @@
                                 {#if user.user_type == 'HR'}
                                     <div class="flex gap-4 items-center">
                                         <Building size={14} />
-                                        {#await getDept()}
+                                        {#if getDept.isPending || getDept.isFetching}
                                             <MyLoading message="Loading data"/>
-                                        {:then val}
+                                        {/if}
+                                        {#if getDept.data}
                                             <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendanceDept.dept} 
-                                                options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
+                                                options={getDept.data.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
                                                 onChange={() => tableAttendanceDept.setPage(1)}/>
-                                        {/await}
+                                        {/if}
                                     </div>
                                 {/if}
                             </div>
@@ -806,7 +792,7 @@
                 <!-- Attendance Duplikat -->
                 {#if user.user_type == 'HR'}
                     <TabItem open={modeAttendance.tabNo == 3} title="Attendance Duplikat" onclick={()=> modeAttendance.tabNo = 3}>
-                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
+                        <div class="flex flex-col gap-4">
                             <div class="flex flex-col gap-4">
                                 <div class="flex gap-2 items-start">
                                     <select bind:value={tableListAttendance.rowsPerPage} onchange={() => tableListAttendance.setPage(1)}>
@@ -931,7 +917,7 @@
                 {/if}
                 <!-- Attendance Log -->
                 <TabItem open={modeAttendance.tabNo == 4} title="Attendance Log" onclick={()=> modeAttendance.tabNo = 4}>
-                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                
+                    <div class="flex flex-col gap-4">
                         <div class="flex flex-col gap-4">
                             <div class="flex gap-2 items-start">
                                 <select bind:value={tableLogAttendance.rowsPerPage} onchange={() => tableLogAttendance.setPage(1)}>
@@ -1097,14 +1083,14 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">                    
                     <MyInput type='datetime' disabled title='Time Start' name="est_start" bind:value={formSPL.answer.est_start}/>
                     <MyInput type='datetime' disabled title='Time End' name="est_end" bind:value={formSPL.answer.est_end}/>
-                    {#await getUserByDept() then val}
+                    {#if getUserByDept.data}
                         <div class="flex flex-col gap-2 flex-1">
                             <Label>Approval 1</Label>
                             <Svelecte class='rounded-lg' clearable searchable selectOnTab multiple={false} bind:value={formSPL.answer.approval1} 
-                                options={val.map((v:any) => ({value: v.payroll, text: capitalEachWord(v.payroll +" - "+v.name)}))}
+                                options={getUserByDept.data.map((v:any) => ({value: v.payroll, text: capitalEachWord(v.payroll +" - "+v.name)}))}
                             />
                         </div>
-                    {/await}
+                    {/if}
                 </div>
 
                 <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg border border-slate-300">
@@ -1183,16 +1169,17 @@
             {#if formAttendance.add || formAttendance.edit}
                 <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {#await getUser(formAttendance.dept)}
+                        {#if getUser.isFetching || getUser.isPending}
                             <MyLoading message="Loading user data"/>
-                        {:then val}
+                        {/if}
+                        {#if getUser.data}
                             <div class="flex flex-col gap-2">
                                 <Label>User Id Machine</Label>
                                 <Svelecte disabled={formAttendance.edit} clearable searchable selectOnTab multiple={false} optionClass='' bind:value={formAttendance.answer.user_id_machine} 
-                                    options={val.map((v:any) => ({value: v.user_id_machine, text:v.payroll + " | " + v.user_id_machine + " | " + capitalEachWord(v.name)}))}
+                                    options={getUser.data.map((v:any) => ({value: v.user_id_machine, text:v.payroll + " | " + v.user_id_machine + " | " + capitalEachWord(v.name)}))}
                                 />
                             </div>
-                        {/await}
+                        {/if}
                         
                         {#if formAttendance.answer.user_id_machine}
                             {#if formAttendance.edit && formAttendance.answer.temp_type}

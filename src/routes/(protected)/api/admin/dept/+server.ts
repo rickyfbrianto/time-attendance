@@ -57,6 +57,7 @@ export async function POST({ request, locals }) {
                 await tx.dept.update({
                     data: {
                         dept_code: data.dept_code,
+                        divisi: data.divisi,
                         initial: data.initial,
                         name: data.name,
                         status: data.status

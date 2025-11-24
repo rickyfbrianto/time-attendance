@@ -183,3 +183,7 @@ tr:hover {
     padding: 4px;
     font-size: 18px;
 }
+
+div[role="tabpanel"] {
+    padding: 0 !important;
+}

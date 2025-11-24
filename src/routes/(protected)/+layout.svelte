@@ -8,8 +8,21 @@
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
     import { Calendar } from '@lucide/svelte'
+    import { QueryClientProvider, QueryClient } from '@tanstack/svelte-query'
+	import { browser } from '$app/environment';
 
     let {children, data } :LayoutProps = $props()
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries:{
+                enabled: browser,
+                refetchOnWindowFocus: false,
+                // refetchOnMount: false,
+                // refetchOnReconnect: false,
+                // refetchInterval: 10000
+            }
+        }
+    })
     
     $effect(()=>{
         if(localStorage.getItem('appstore')){
@@ -31,18 +44,20 @@
 
 <svelte:window bind:innerWidth={$appstore.appWidth}/>
 
-<div class="relative flex h-screen bg-bgdark">
-    <Sidebar {data}/>
-    <div class="flex flex-col flex-1">
-        <Header {data} notif={data.notif}/>
-        <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll bg-bgdark text-textdark">
-            <div style="scrollbar-width: none;" class="overflow-scroll h-full">
-                {@render children()}
+<QueryClientProvider client={queryClient}>
+    <div class="relative flex h-screen bg-bgdark">
+        <Sidebar {data}/>
+        <div class="flex flex-col flex-1">
+            <Header {data} notif={data.notif}/>
+            <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll bg-bgdark text-textdark">
+                <div style="scrollbar-width: none;" class="overflow-scroll h-full">
+                    {@render children()}
+                </div>
             </div>
+            <!-- <Footer/> -->
         </div>
-        <!-- <Footer/> -->
     </div>
-</div>
+</QueryClientProvider>
 
 <!-- <style>
     :global(p, span, a, input, button, label){

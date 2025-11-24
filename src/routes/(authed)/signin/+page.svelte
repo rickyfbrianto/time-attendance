@@ -38,7 +38,6 @@
             formLoginState.error = error.response.data.message
             formLoginState.success = ""
             formLoginState.loading = false
-        } finally {
         }
     }
 </script>
@@ -65,9 +64,6 @@
                 {formLoginState.success}
             </Alert>
         {/if}
-        {#if formLoginState.loading}
-            <MyLoading message="Verifikasi Masuk"/>
-        {/if}
         <div class="flex flex-col gap-4">
             <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
             <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
@@ -75,7 +71,7 @@
             {#if !formLoginState.loading}
                 <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
             {:else}
-                <span>Verifikasi data</span>
+            <MyLoading message="Verifikasi Masuk"/>
             {/if}
         </div>
     </form>        

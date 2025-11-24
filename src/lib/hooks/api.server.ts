@@ -10,10 +10,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 
         if (rootGroup == "(protected)" && rootRoute == "api") {
             if (!token) {
-                throw new Error('API is protected by Valid Token')
+                throw new Error('API diproteksi oleh Token')
             } else if (token) {
                 jwt.verify(token, process.env.JWT_SECRET!, (err: any) => {
-                    if (err) throw new Error('Invalid Token, please login to get valid token')
+                    if (err) throw new Error('Token tidak valid, silahkan login ulang untuk mendapatkan token yang valid')
                 })
             }
         }

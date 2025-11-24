@@ -18,7 +18,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 // jwt.verify(token, import.meta.env.VITE_JWT_SECRET, (err:any, decoded: any) => {
                 jwt.verify(token, process.env.JWT_SECRET!, (err: any, decoded: any) => {
                     if (err) {
-                        throw new Error(`/signin?redirectTo=${url.pathname}&message=Session expired, please login again`)
+                        throw new Error(`/signin?redirectTo=${url.pathname}&message=Sessi berakhir, silahkan masuk kembali`)
                     } else if (decoded) {
                         payroll = decoded?.payroll
                     }
@@ -37,7 +37,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                 dept: {
                     select: {
                         dept_code: true,
-                        initial: true
+                        initial: true,
+                        divisi: true
                     }
                 },
                 location: true,
@@ -48,6 +49,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                 substitute: true,
                 signature: true,
                 user_type: true,
+                user_dept: true,
+                user_divisi: true,
                 cuti_kunci: true,
                 cuti_suspen: true,
                 level: true,
@@ -61,8 +64,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                     select: {
                         payroll: true,
                         name: true
-                    }
-                }
+                    },
+                },
             },
             where: { payroll },
         })

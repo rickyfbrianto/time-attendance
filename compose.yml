@@ -10,8 +10,8 @@ services:
   time-app:
     build:
       context: .
-      args:
-          DATABASE_URL: ${DATABASE_URL}
+      # args:
+      #     DATABASE_URL: ${DATABASE_URL}
     container_name: time-app
     ports:
       - 1000:1000
@@ -19,8 +19,6 @@ services:
       - saga-net
     env_file:
       - .env.docker
-    volumes:
-      - /d/time-attendance/media:/app/src/lib/assets/media
   time-fs:
     build:
       context: ./express

@@ -7,16 +7,11 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-
-RUN echo "🔎 Debug DATABASE_URL=$DATABASE_URL"
-
-RUN pnpm prisma generate
+RUN pnpm prisma generate && pnpm build:docker
 # RUN pnpm db
 
 # === Production Stage ===

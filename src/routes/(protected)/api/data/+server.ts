@@ -6,12 +6,14 @@ export async function GET({ url }) {
         const type = url.searchParams.get('type')
         const val = url.searchParams.get('val') || ""
         const date = url.searchParams.get('date')
-        const month = url.searchParams.get('month')
+        const month = url.searchParams.get('month') || ""
         const year = url.searchParams.get('year')
         const payroll = url.searchParams.get('payroll') || ""
         const dept = url.searchParams.get('dept') || ""
         const start_date = url.searchParams.get('start_date') || ""
         const end_date = url.searchParams.get('end_date') || ""
+
+        const tanggal = `${year}-${month.toString().padStart(2, "0")}-01`
 
         if (type == "user") {
             const req = await prisma.$queryRawUnsafe(`SELECT payroll, name, user_id_machine, department FROM employee where payroll like ?`,
@@ -49,7 +51,8 @@ export async function GET({ url }) {
             let req = await prisma.$queryRawUnsafe(`
                 SELECT e.payroll, e.name, e.user_id_machine, e.department, e.user_type
                 FROM employee e JOIN employee u ON u.payroll = ?
-                WHERE e.department = u.department AND e.level ${(val == "up") ? ">" : (val == "down" ? "<" : "=")} u.level`, payroll)
+                WHERE e.department = ? AND e.level ${(val == "up") ? ">" : (val == "down" ? "<" : "=")} u.level`,
+                payroll, dept)
             return json(req)
         } else if (type == "user_by_dept") {
             const req = await prisma.$queryRawUnsafe(`
@@ -69,6 +72,10 @@ export async function GET({ url }) {
             return json(req)
         } else if (type == 'dept') {
             const req = await prisma.$queryRawUnsafe(`SELECT * FROM DEPT WHERE dept_code LIKE ? AND status = 'Aktif'
+                ORDER BY dept_code`, `%${val}%`)
+            return json(req)
+        } else if (type == 'dept_by_divisi') {
+            const req = await prisma.$queryRawUnsafe(`SELECT * FROM DEPT WHERE divisi LIKE ? AND status = 'Aktif'
                 ORDER BY dept_code`, `%${val}%`)
             return json(req)
         } else if (type == "setting") {
@@ -232,9 +239,9 @@ export async function GET({ url }) {
             return json(req)
         } else if (type == "get_report_attendance_dept") {
             const req = await prisma.$transaction(async tx => {
-                const result = await prisma.$queryRawUnsafe(`
+                const result = await tx.$queryRawUnsafe(`
                     SELECT e.name, 
-                        getWorkday(e.user_id_machine, ?, ?) as 'Workday',
+                        getWorkday(e.user_id_machine, ?, LAST_DAY(?)) as 'Workday',
                         SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
                         SUM(CASE WHEN a.type = 'Hari Libur' THEN 1 ELSE 0 END) as 'Libur',
                         SUM(CASE WHEN a.type = 'Cuti Bersama' THEN 1 ELSE 0 END) as 'Cuti Bersama',
@@ -246,40 +253,39 @@ export async function GET({ url }) {
 
                         FROM attendance as a
                         LEFT JOIN employee as e ON a.user_id_machine = e.user_id_machine
-                        WHERE (DATE(a.check_in) BETWEEN ? AND ?) AND e.department = ?
+                        WHERE (DATE(a.check_in) BETWEEN ? AND LAST_DAY(?)) AND e.department = ?
                         GROUP BY a.user_id_machine
                         ORDER BY e.name  ASC;`,
-                    start_date, end_date, start_date, end_date, dept) as {}[]
+                    tanggal, tanggal, tanggal, tanggal, dept) as {}[]
                 return result
             })
             return json(req)
         } else if (type == "get_report_disiplin_dept") {
             const req = await prisma.$transaction(async tx => {
-                const result = await prisma.$queryRawUnsafe(`
+                const result = await tx.$queryRawUnsafe(`
                     select e.name, 
-                    getWorkday(e.user_id_machine, ?, ?) as 'Workday',
+                    getWorkday(e.user_id_machine, ?, LAST_DAY(?)) as 'Workday',
                     SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
                     SUM(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN 1 ELSE 0 END) as 'Late',
                     IFNULL(ROUND(AVG(CASE WHEN getLate(a.check_in, e.start_work) = true AND getUserWeekend(a.check_in, e.workhour) = false AND a.ijin_info = "" THEN TIMESTAMPDIFF(MINUTE, TIME('08:00:00'), TIME(a.check_in)) END)), 0) AS 'Avg Telat (Menit)',
                     SUM(CASE WHEN a.type IN ("HKM") THEN 1 ELSE 0 END) as 'Lupa Kartu',
                     SUM(CASE WHEN TIME(a.check_in) <> '00:00:00' AND TIME(a.check_out) = '00:00:00' THEN 1 ELSE 0 END) AS 'Check In No Out',
                     SUM(CASE WHEN TIME(a.check_in) = '00:00:00' AND TIME(a.check_out) <> '00:00:00' THEN 1 ELSE 0 END) AS 'Check Out No In',
-                    SUM(CASE WHEN a.type IN ("Mangkir") THEN 1 ELSE 0 END) as 'Not Absen',
-                    SUM(CASE WHEN a.type = "" THEN 1 ELSE 0 END) as 'Never Absen'
+                    IF(SUM(CASE WHEN a.type = "" THEN 1 ELSE 0 END) >= getWorkday(e.user_id_machine, ?, LAST_DAY(?)), 1, '') as 'Never Absen'
                     FROM attendance a 
                     LEFT JOIN employee e ON a.user_id_machine = e.user_id_machine
-                    WHERE (DATE(a.check_in) BETWEEN ? AND ?) AND e.department = ?
+                    WHERE (DATE(a.check_in) BETWEEN ? AND LAST_DAY(?)) AND e.department = ?
                     GROUP BY a.user_id_machine
                     ORDER BY e.name ASC`,
-                    start_date, end_date, start_date, end_date, dept) as {}[]
+                    tanggal, tanggal, tanggal, tanggal, tanggal, tanggal, dept) as {}[]
                 return result
             })
             return json(req)
         } else if (type == "get_report_lembur_dept") {
             const req = await prisma.$transaction(async tx => {
-                const result = await prisma.$queryRawUnsafe(`
+                const result = await tx.$queryRawUnsafe(`
                     select e.name, 
-                    getWorkday(e.user_id_machine, ?, ?) as 'Workday',
+                    getWorkday(e.user_id_machine, ?, LAST_DAY(?)) as 'Workday',
                     SUM(CASE WHEN a.type IN ("HKC","HKM") THEN 1 ELSE 0 END) as 'Attendance',
                     SUM(CASE WHEN getSPL(e.payroll, a.check_in) = true THEN 1 ELSE 0 END) as Lembur,
                     SUM(CASE WHEN getSPL(e.payroll, a.check_in) = true THEN 
@@ -287,16 +293,16 @@ export async function GET({ url }) {
                     ELSE 0 END) as 'Jam Lembur'
                     FROM attendance as a
                     LEFT JOIN employee e ON a.user_id_machine = e.user_id_machine
-                    WHERE (DATE(a.check_in) BETWEEN ? AND ?) AND e.department = ? AND e.overtime = true
+                    WHERE (DATE(a.check_in) BETWEEN ? AND LAST_DAY(?)) AND e.department = ? AND e.overtime = true
                     GROUP BY a.user_id_machine
                     ORDER BY e.name ASC`,
-                    start_date, end_date, start_date, end_date, dept) as {}[]
+                    tanggal, tanggal, tanggal, tanggal, dept) as {}[]
                 return result
             })
             return json(req)
         } else if (type == "get_notif") {
             const req = await prisma.$transaction(async tx => {
-                const hasil = await prisma.$queryRawUnsafe(`
+                const hasil = await tx.$queryRawUnsafe(`
                     SELECT c.createdAt AS waktu, 'cuti' AS link, CONCAT(e.name, " Mengajukan Cuti untuk ", c.description) as deskripsi
                     FROM cuti AS c
                     LEFT JOIN employee AS e ON e.payroll = c.payroll
@@ -311,7 +317,7 @@ export async function GET({ url }) {
                     
                     UNION ALL
                     
-                    SELECT s.createdAt AS waktu, 'lembur' AS link, CONCAT(e.name, " Mengajukan SPL untuk ",s.purpose) as deskripsi
+                    SELECT s.createdAt AS waktu, 'spl' AS link, CONCAT(e.name, " Mengajukan SPL untuk ",s.purpose) as deskripsi
                     FROM SPL AS s
                     LEFT JOIN spl_detail AS sd ON s.spl_id = sd.spl_id
                     LEFT JOIN employee AS e ON e.payroll = sd.payroll
@@ -319,7 +325,7 @@ export async function GET({ url }) {
 
                     UNION ALL
 
-                    SELECT s.createdAt AS waktu, 'lembur' AS link, CONCAT(e.name, " Mengajukan SRL Level 1 untuk ", spl.purpose) as deskripsi 
+                    SELECT s.createdAt AS waktu, 'srl' AS link, CONCAT(e.name, " Mengajukan SRL Level 1 untuk ", spl.purpose) as deskripsi 
                     FROM SRL AS s
                     LEFT JOIN spl ON spl.spl_id = s.spl_id
                     LEFT JOIN employee AS e ON e.payroll = s.payroll
@@ -327,14 +333,149 @@ export async function GET({ url }) {
 
                     UNION ALL
 
-                    SELECT s.createdAt AS waktu, 'lembur' AS link, CONCAT(e.name, " Mengajukan SRL Level 2 untuk ", spl.purpose) as deskripsi 
+                    SELECT s.createdAt AS waktu, 'srl' AS link, CONCAT(e.name, " Mengajukan SRL Level 2 untuk ", spl.purpose) as deskripsi 
                     FROM SRL AS s
                     LEFT JOIN spl ON spl.spl_id = s.spl_id
                     LEFT JOIN employee AS e ON e.payroll = s.payroll
                     WHERE s.status1 = 'Approved' AND s.status2 = 'Waiting' AND s.approval2 = ?
 
+                    UNION ALL
+
+                    SELECT s.createdAt AS waktu, 'skpd' AS link, CONCAT("SKPD ", REPLACE(s.skpd_id, "_","/"), " atas nama ", CONCAT(UPPER(LEFT(e.name, 1)),LOWER(SUBSTRING(e.name, 2))), " perlu approve dari anda") as deskripsi 
+                    FROM SKPD AS s
+                    LEFT JOIN employee AS e ON e.payroll = s.payroll
+                    WHERE s.status = 'OPEN' AND s.approve = ?
+
                     ORDER BY waktu DESC`,
-                    payroll, payroll, payroll, payroll, payroll) as {}[]
+                    payroll, payroll, payroll, payroll, payroll, payroll) as {}[]
+                return hasil
+            })
+            return json(req)
+        } else if (type == "get_report_summary") {
+            const temp = val.split(',').map(Number)
+            const req = await prisma.$queryRawUnsafe(`select dept_name, dept_code,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[0]} AND tmp.cout_ada >= ${temp[0]} and bulan = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[0]} AND tmp.cout_ada < ${temp[0]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 1 THEN 1 ELSE 0 END)) as CHAR) jan,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[1]} AND tmp.cout_ada >= ${temp[1]} and bulan = 2 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 2 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[1]} AND tmp.cout_ada < ${temp[1]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 2 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 2 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 2 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 2 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 2 THEN 1 ELSE 0 END)) as CHAR) feb,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[2]} AND tmp.cout_ada >= ${temp[2]} and bulan = 3 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 3 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[2]} AND tmp.cout_ada < ${temp[2]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 3 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 3 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 3 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 3 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 3 THEN 1 ELSE 0 END)) as CHAR) mar,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[3]} AND tmp.cout_ada >= ${temp[3]} and bulan = 4 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 4 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[3]} AND tmp.cout_ada < ${temp[3]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 4 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 4 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 4 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 4 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 4 THEN 1 ELSE 0 END)) as CHAR) apr,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[4]} AND tmp.cout_ada >= ${temp[4]} and bulan = 5 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 5 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[4]} AND tmp.cout_ada < ${temp[4]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 5 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 5 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 5 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 5 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 5 THEN 1 ELSE 0 END)) as CHAR) mei,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[5]} AND tmp.cout_ada >= ${temp[5]} and bulan = 6 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 6 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[5]} AND tmp.cout_ada < ${temp[5]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 6 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 6 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 6 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 6 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 6 THEN 1 ELSE 0 END)) as CHAR) jun,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[6]} AND tmp.cout_ada >= ${temp[6]} and bulan = 7 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 7 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[6]} AND tmp.cout_ada < ${temp[6]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 7 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 7 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 7 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 7 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 7 THEN 1 ELSE 0 END)) as CHAR) jul,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[7]} AND tmp.cout_ada >= ${temp[7]} and bulan = 8 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 8 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[7]} AND tmp.cout_ada < ${temp[7]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 8 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 8 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 8 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 8 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 8 THEN 1 ELSE 0 END)) as CHAR) agu,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[8]} AND tmp.cout_ada >= ${temp[8]} and bulan = 9 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 9 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[8]} AND tmp.cout_ada < ${temp[8]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 9 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 9 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 9 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 9 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 9 THEN 1 ELSE 0 END)) as CHAR) sep,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[9]} AND tmp.cout_ada >= ${temp[9]} and bulan = 10 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 10 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[9]} AND tmp.cout_ada < ${temp[9]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 10 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 10 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 10 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 10 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 10 THEN 1 ELSE 0 END)) as CHAR) okt,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[10]} AND tmp.cout_ada >= ${temp[10]} and bulan = 11 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 11 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[10]} AND tmp.cout_ada < ${temp[10]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 11 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 11 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 11 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 11 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 11 THEN 1 ELSE 0 END)) as CHAR) nov,
+                cast(CONCAT_WS(',' ,
+                    SUM(CASE WHEN tmp.cin_ada >= ${temp[11]} AND tmp.cout_ada >= ${temp[11]} and bulan = 12 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada = 0 and bulan = 12 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN (tmp.cin_ada < ${temp[11]} AND tmp.cout_ada < ${temp[11]}) AND (tmp.cin_ada > 0 AND tmp.cout_ada > 0) AND (tmp.cin_ada = tmp.cout_ada) and bulan = 12 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada < tmp.cout_ada and bulan = 12 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada = 0 AND tmp.cout_ada > 0 and bulan = 12 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > tmp.cout_ada and bulan = 12 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN tmp.cin_ada > 0 AND tmp.cout_ada = 0 and bulan = 12 THEN 1 ELSE 0 END)) as CHAR) des
+                FROM (
+                    SELECT 'dept' as type,e.department as dept_code, d.name AS dept_name, MONTH(a.check_in) as bulan,
+                    SUM(CASE WHEN TIME(a.check_in) != '00:00:00' THEN 1 ELSE 0 END) AS cin_ada,
+                    SUM(CASE WHEN TIME(a.check_out) != '00:00:00' THEN 1 ELSE 0 END) AS cout_ada
+                    FROM attendance a
+                    JOIN employee e ON e.user_id_machine = a.user_id_machine
+                    JOIN dept d ON d.dept_code = e.department
+                    WHERE YEAR(a.check_in) = ? AND DAYOFWEEK(a.check_in) NOT IN (1,7) AND a.type NOT IN ('Cuti Bersama', 'Hari Libur', 'Event Kantor')
+                    GROUP BY e.department, e.user_id_machine, MONTH(a.check_in)
+                ) as tmp
+                GROUP BY dept_code
+                order by dept_code`, year)
+            return json(req)
+        } else if (type == "get_report_detail_summary") {
+            const req = await prisma.$transaction(async tx => {
+                const hasil = await tx.$queryRawUnsafe(`
+                    SELECT d.name as dept_name, e.name AS employee_name,
+                        SUM(CASE WHEN TIME(a.check_in) != '00:00:00' THEN 1 ELSE 0 END) AS cin_ada,
+                        SUM(CASE WHEN TIME(a.check_out) != '00:00:00' THEN 1 ELSE 0 END) AS cout_ada
+                    FROM attendance a
+                    JOIN employee e ON e.user_id_machine = a.user_id_machine
+                    JOIN dept d ON d.dept_code = e.department
+                    WHERE YEAR(a.check_in) = ? AND MONTH(a.check_in) = ? AND DAYOFWEEK(a.check_in) NOT IN (1,7) AND e.department = ?
+                    GROUP BY e.department, e.user_id_machine
+                    ORDER BY d.name, e.name`,
+                    year, month, dept)
                 return hasil
             })
             return json(req)

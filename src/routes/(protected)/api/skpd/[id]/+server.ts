@@ -5,9 +5,11 @@ export async function GET({ params }) {
     const { id } = params
     const req = await prisma.$queryRawUnsafe(`
         SELECT skpd.*, e.name, e.user_id_machine, e.position, e.location, sd.description, d.name as dept, 
-        a.payroll as approve, a.name as approve_name, a.position as approve_position, a.signature as approve_signature FROM skpd
+        an.name as a_name, an.position as a_position, a.signature as a_signature 
+        FROM skpd
         LEFT JOIN employee e ON e.payroll = skpd.payroll
         LEFT JOIN employee a ON a.payroll = skpd.approve
+        LEFT JOIN employee an ON an.payroll = skpd.approve_name
         LEFT JOIN sppd ON sppd.sppd_id = skpd.sppd_id
         LEFT JOIN sppd_detail sd ON sd.sppd_id = skpd.sppd_id AND sd.payroll = skpd.payroll
         LEFT JOIN dept d ON d.dept_code = e.department
@@ -28,7 +30,7 @@ export async function DELETE({ params }) {
                 DELETE FROM attendance WHERE reference = ?`, id
             )
 
-            const tempHasil = await Promise.all([deleteSKPD, deleteAttendanceFromSKPD])
+            await Promise.all([deleteSKPD, deleteAttendanceFromSKPD])
 
             return { message: "Data successfully deleted" }
         })

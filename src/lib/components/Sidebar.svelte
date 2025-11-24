@@ -3,7 +3,7 @@
     import usercowo from '$/lib/assets/user-man.svg'
     import { fade, fly } from 'svelte/transition'
 	import { quadIn } from 'svelte/easing';
-	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, } from 'flowbite-svelte';
+	import { Avatar, Modal, Timeline, TimelineItem, Tooltip, Hr, Badge, Label, Select, Accordion, AccordionItem } from 'flowbite-svelte';
     import {appstore } from '$/lib/store/appstore'
     import { page } from '$app/state';
 	import { pecahArray, capitalEachWord } from '$/lib/utils';
@@ -212,7 +212,7 @@
                 <Tooltip class='z-10'>{userProfile?.name}</Tooltip>
             </div>
             
-            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-[.5em] font-quicksand font-bold text-textdark text-center text-[.7rem] mt-2'>© {new Date().getFullYear()} All Rights Reserved</span>
+            <span class='bg-bgside mx-[-.75rem] mb-[-.8rem] py-[.75em] font-quicksand font-bold text-textdark text-center text-[.7rem] mt-2 rounded-b-xl'>© {new Date().getFullYear()} All Rights Reserved</span>
 
             {#if user.user_type == 'HR'}
                 <div class="absolute h-[2rem] w-[4rem] flex items-center top-[-1.5rem] right-[0] rounded-t-lg bg-bgside2 px-4">
@@ -221,13 +221,13 @@
             {/if}
         </div>
 
-        <Modal title={"My Account"} bind:open={defaultModal} autoclose>
+        <Modal title={"Akun saya"} bind:open={defaultModal} autoclose>
             <div class="relative grid grid-cols-2 gap-3 items-center justify-center">
                 <div class="flex flex-col gap-2 items-center justify-center">
-                    <Avatar src={usercowo} border class="self-center ring-slate-600 w-[10rem] h-[10rem]"/>
-                    <span class='italic'>{user.name}</span>
-                    <MyImage src={import.meta.env.VITE_VIEW_SIGNATURE+user.signature} className="mt-4 border border-slate-300 rounded-xl w-[10rem] h-[10rem]" title={`Signature ${user.name}`}/>
-                    <span class='italic'>Signature</span>
+                    <Avatar src={usercowo} border class="self-center ring-slate-600 w-[8rem] h-[8rem]"/>
+                    <span class='italic text-[.9rem]'>{user.name}</span>
+                    <MyImage src={import.meta.env.VITE_VIEW_SIGNATURE+user.signature} className="mt-4 border border-slate-300 rounded-xl w-[8rem] h-[8rem]" title={`Signature ${user.name}`}/>
+                    <span class='italic text-[.9rem]'>Signature</span>
                 </div>
                 <div class="flex flex-col">
                     <Timeline >

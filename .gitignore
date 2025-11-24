@@ -1,5 +1,5 @@
 /express/node_modules
-/express/storage/*
+/express/storage/media/*
 
 /node_modules
 
@@ -25,4 +25,4 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-/src/lib/assets/media
+/src/lib/assets/media/*

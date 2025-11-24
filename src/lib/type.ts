@@ -42,7 +42,8 @@ export const UserSchema = z.object({
     signature: z.union([z.string().max(250, "Max 250 Character"), z.object({})]),
     level: z.number(),
     user_type: z.enum(['HR', 'Security', 'OB', 'Messenger', 'Other']),
-    user_hod: z.boolean(),
+    user_dept: z.boolean(),
+    user_divisi: z.boolean(),
     cuti_kunci: z.boolean(),
     cuti_suspen: z.boolean(),
     hostname: z.union([
@@ -57,7 +58,8 @@ export type TUserSchema = z.infer<typeof UserSchema>
 export const DeptSchema = z.object({
     dept_id: z.string(),
     dept_code: z.number().min(4, "Min 4 Character").max(6, "Max 6 Character"),
-    initial: z.string().min(2, "Min 2 Character").max(15, "Max 15 Character"),
+    divisi: z.string().min(2, "Min 2 Character").max(15, "Max 15 Character"),
+    initial: z.string().min(2, "Min 2 Character").max(50, "Max 50 Character"),
     name: z.string().min(3, "Min 3 Character").max(100, "Max 100 Character"),
     status: z.string().trim().min(1),
 })
@@ -74,6 +76,7 @@ export const SettingSchema = z.object({
     approval_dinas: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
     approval_lembur_ob: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
     approval_lembur_security: z.string().min(6, "Min 6 Character").max(8, "Max 8 Character"),
+    absensi_full: z.number().gte(1, "Min 1").lte(30, "Max 30"),
 })
 
 export type TSettingSchema = z.infer<typeof SettingSchema>

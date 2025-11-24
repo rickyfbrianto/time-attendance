@@ -894,11 +894,11 @@
         </svelte:fragment>
     </Modal>
     
-    <Tabs contentClass='bg-bgdark' tabStyle="underline">
+    <Tabs contentClass='bg-bgdark' tabStyle="pill">
         <TabItem open title="Surat Perintah Lembur" onclick={()=> modeLembur.tabNo = 1}>
-            <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
+            <Tabs contentClass='bg-bgdark' tabStyle="underline">
                 <TabItem open title="List">
-                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">                
+                    <div class="flex flex-col gap-4 pt-4">
                         {#if formSPL.error}
                             {#each formSPL.error.split(';') as v}
                                 <MyAlert pesan={v} func={()=> formSPL.error = ""} color='red'/>
@@ -1095,7 +1095,7 @@
                 </TabItem>
                 {#if user.level > 1}
                     <TabItem title="Approve SPL">
-                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                        <div class="flex flex-col gap-4 pt-4">
                             {#if formSPLApproval1.error}
                                 {#each formSPLApproval1.error.split(';') as v}
                                     <MyAlert pesan={v} func={()=> formSPLApproval1.error = ""} color='red'/>
@@ -1160,9 +1160,9 @@
         </TabItem>
         
         <TabItem title="Surat Realisasi Lembur" onclick={()=> modeLembur.tabNo = 2}>
-            <Tabs contentClass='bg-bgdark pt-4' tabStyle="pill">
+            <Tabs contentClass='bg-bgdark' tabStyle="underline">
                 <TabItem open title="List">
-                    <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg ">
+                    <div class="flex flex-col gap-4 pt-4">
                         {#if formSRL.error}
                             {#each formSRL.error.split(';') as v}
                                 <MyAlert pesan={v} func={()=> formSRL.error = ""} color='red'/>
@@ -1376,7 +1376,7 @@
                 </TabItem>
                 {#if user.level > 1}
                     <TabItem title="Approve SRL 1">
-                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                        <div class="flex flex-col gap-4 pt-4">
                             {#if formSRLApproval1.error}
                                 {#each formSRLApproval1.error.split(';') as v}
                                     <MyAlert pesan={v} func={()=> formSRLApproval1.error = ""} color='red'/>
@@ -1437,7 +1437,7 @@
                         </div>
                     </TabItem>
                     <TabItem title="Approve SRL 2">
-                        <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                        <div class="flex flex-col gap-4 pt-4">
                             {#if formSRLApproval2.error}
                                 {#each formSRLApproval2.error.split(';') as v}
                                     <MyAlert pesan={v} func={()=> formSRLApproval2.error = ""} color='red'/>

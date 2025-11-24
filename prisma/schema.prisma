@@ -83,6 +83,7 @@ model cuti {
 model dept {
   dept_id              String      @id @db.VarChar(40)
   dept_code            String      @unique(map: "dept_code") @db.VarChar(6)
+  divisi               String      @db.VarChar(50)
   initial              String      @db.VarChar(15)
   name                 String      @db.VarChar(100)
   status               dept_status
@@ -114,7 +115,8 @@ model employee {
   signature                                          String             @db.VarChar(250)
   level                                              Int                @db.TinyInt
   user_type                                          employee_user_type @default(Other)
-  user_hod                                           Boolean
+  user_dept                                          Boolean
+  user_divisi                                        Boolean
   cuti_kunci                                         Boolean            @default(true)
   cuti_suspen                                        Boolean            @default(false)
   hostname                                           String             @db.VarChar(31)
@@ -136,6 +138,7 @@ model employee {
   setting_setting_approval_lembur_obToemployee       setting[]          @relation("setting_approval_lembur_obToemployee")
   setting_setting_approval_lembur_securityToemployee setting[]          @relation("setting_approval_lembur_securityToemployee")
   skpd_skpd_approveToemployee                        skpd[]             @relation("skpd_approveToemployee")
+  skpd_skpd_approve_nameToemployee                   skpd[]             @relation("skpd_approve_nameToemployee")
   skpd_skpd_createdByToemployee                      skpd[]             @relation("skpd_createdByToemployee")
   skpd_skpd_payrollToemployee                        skpd[]             @relation("skpd_payrollToemployee")
   spl_spl_acknowledgeByToemployee                    spl[]              @relation("spl_acknowledgeByToemployee")
@@ -196,16 +199,6 @@ model profile {
   employee          employee[]
 }
 
-model security {
-  id      String   @id @db.VarChar(40)
-  payroll String   @db.VarChar(8)
-  date    DateTime @db.DateTime(0)
-  shift   String   @db.VarChar(10)
-  area    String   @db.VarChar(50)
-
-  @@index([payroll], map: "payroll")
-}
-
 model setting {
   setting_id                                          String    @id @db.VarChar(40)
   start_periode                                       Int       @default(17) @db.TinyInt
@@ -216,6 +209,7 @@ model setting {
   approval_dinas                                      String?   @db.VarChar(8)
   approval_lembur_ob                                  String?   @db.VarChar(8)
   approval_lembur_security                            String?   @db.VarChar(8)
+  absensi_full                                        Int       @db.TinyInt
   employee_setting_approval_dinasToemployee           employee? @relation("setting_approval_dinasToemployee", fields: [approval_dinas], references: [payroll], map: "setting_dinas_fkey")
   employee_setting_approval_lembur_obToemployee       employee? @relation("setting_approval_lembur_obToemployee", fields: [approval_lembur_ob], references: [payroll], map: "setting_ob_fkey")
   employee_setting_approval_lembur_securityToemployee employee? @relation("setting_approval_lembur_securityToemployee", fields: [approval_lembur_security], references: [payroll], map: "setting_security_fkey")
@@ -226,24 +220,28 @@ model setting {
 }
 
 model skpd {
-  skpd_id                           String      @id @db.VarChar(40)
-  sppd_id                           String?     @db.VarChar(40)
-  payroll                           String?     @db.VarChar(8)
-  real_start                        DateTime    @db.DateTime(0)
-  real_end                          DateTime    @db.DateTime(0)
-  status                            skpd_status
-  approve                           String?     @db.VarChar(8)
-  createdBy                         String?     @db.VarChar(8)
-  createdAt                         DateTime    @db.DateTime(0)
-  employee_skpd_approveToemployee   employee?   @relation("skpd_approveToemployee", fields: [approve], references: [payroll], map: "skpd_approve _fkey")
-  employee_skpd_createdByToemployee employee?   @relation("skpd_createdByToemployee", fields: [createdBy], references: [payroll])
-  employee_skpd_payrollToemployee   employee?   @relation("skpd_payrollToemployee", fields: [payroll], references: [payroll], onDelete: Cascade)
-  sppd                              sppd?       @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
+  skpd_id                              String      @id @default("getNomorSKPD()") @db.VarChar(40)
+  sppd_id                              String?     @db.VarChar(40)
+  payroll                              String?     @db.VarChar(8)
+  real_start                           DateTime    @db.DateTime(0)
+  real_end                             DateTime    @db.DateTime(0)
+  level                                String      @db.VarChar(20)
+  status                               skpd_status
+  approve                              String?     @db.VarChar(8)
+  approve_name                         String?     @db.VarChar(8)
+  createdBy                            String?     @db.VarChar(8)
+  createdAt                            DateTime    @db.DateTime(0)
+  employee_skpd_approveToemployee      employee?   @relation("skpd_approveToemployee", fields: [approve], references: [payroll], map: "skpd_approve _fkey")
+  employee_skpd_approve_nameToemployee employee?   @relation("skpd_approve_nameToemployee", fields: [approve_name], references: [payroll], map: "skpd_approve_name _fkey")
+  employee_skpd_createdByToemployee    employee?   @relation("skpd_createdByToemployee", fields: [createdBy], references: [payroll])
+  employee_skpd_payrollToemployee      employee?   @relation("skpd_payrollToemployee", fields: [payroll], references: [payroll], onDelete: Cascade)
+  sppd                                 sppd?       @relation(fields: [sppd_id], references: [sppd_id], onDelete: Cascade)
 
   @@index([createdBy], map: "createdBy")
   @@index([payroll], map: "payroll")
   @@index([sppd_id], map: "sppd_id")
   @@index([approve], map: "approve")
+  @@index([approve_name], map: "approve_name")
 }
 
 model spl {
@@ -268,8 +266,8 @@ model spl {
   @@index([dept], map: "dept")
   @@index([est_end], map: "est_end")
   @@index([est_start], map: "est_start")
-  @@index([createdBy], map: "createdBy")
   @@index([acknowledgeBy], map: "acknowledgeBy")
+  @@index([createdBy], map: "createdBy")
 }
 
 model spl_detail {
@@ -290,8 +288,8 @@ model sppd {
   purpose              String        @db.VarChar(255)
   location             String        @db.VarChar(100)
   dept                 String?       @db.VarChar(6)
-  start_date           DateTime      @db.Date
-  end_date             DateTime      @db.Date
+  start_date           DateTime      @db.DateTime(0)
+  end_date             DateTime      @db.DateTime(0)
   duration             Int           @db.TinyInt
   createdBy            String?       @db.VarChar(8)
   createdAt            DateTime      @db.DateTime(0)
@@ -362,6 +360,21 @@ model temp_check_io {
   @@index([user_id_machine], map: "user_id_mesin")
 }
 
+model acc {
+  acc_no  String  @id @db.VarChar(10)
+  payroll String? @db.VarChar(10)
+}
+
+model security {
+  id      String   @id @db.VarChar(40)
+  payroll String   @db.VarChar(8)
+  date    DateTime @db.DateTime(0)
+  shift   String   @db.VarChar(10)
+  area    String   @db.VarChar(50)
+
+  @@index([payroll], map: "payroll")
+}
+
 enum calendar_type {
   Hari_Libur   @map("Hari Libur")
   Cuti_Bersama @map("Cuti Bersama")
@@ -371,11 +384,6 @@ enum calendar_type {
 enum dept_status {
   Aktif
   Nonaktif
-}
-
-enum skpd_status {
-  OPEN
-  CLOSE
 }
 
 enum spl_status1 {
@@ -418,15 +426,21 @@ enum profile_status {
   Nonaktif
 }
 
+enum employee_status {
+  Aktif
+  Nonaktif
+}
+
+enum skpd_status {
+  OPEN
+  APPROVED
+  CLOSE
+}
+
 enum employee_user_type {
   HR
   OB
   Security
   Messenger
   Other
-}
-
-enum employee_status {
-  Aktif
-  Nonaktif
 }

@@ -93,7 +93,7 @@ export async function POST({ request, }) {
                     }))
                 })
 
-                return { message: "Data successfully saved" }
+                return { message: "Data berhasil disimpan" }
             } else {
                 await tx.$executeRawUnsafe(`
                     UPDATE sppd SET purpose=?,location=?,dept=?,start_date=?,end_date=?,duration=? WHERE sppd_id=?`,
@@ -111,7 +111,7 @@ export async function POST({ request, }) {
                     }))
                 })
 
-                return { message: "Data successfully updated" }
+                return { message: "Data berhasil diperbarui" }
             }
         })
 

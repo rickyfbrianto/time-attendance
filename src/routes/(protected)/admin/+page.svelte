@@ -1,6 +1,6 @@
 <script lang="ts">
     import {fade} from 'svelte/transition'
-    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tooltip, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button } from 'flowbite-svelte';
+    import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, TableHeadCell, Tooltip, Label, MultiSelect, Select, Checkbox, Badge, Alert, Modal, Button, Timeline, TimelineItem } from 'flowbite-svelte';
     import MyInput from '$/lib/components/MyInput.svelte'
     import MyButton from '$/lib/components/MyButton.svelte'
     import axios from 'axios'
@@ -19,6 +19,7 @@
     import MyPagination from '@/MyPagination.svelte';
     import MyAlert from '@/MyAlert.svelte';
     import MyDatePicker from '@/MyDatePicker.svelte';
+	import { useDept, useProfile, useUserByDept } from '@lib/fetch.js';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -108,6 +109,7 @@
                 await invalidateAll()
                 formProfileBatal()
                 tableProfile.invalidate()
+                getProfile.refetch()
                 formProfileState.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
@@ -165,7 +167,8 @@
             signature: "",
             level: 0,
             user_type: "",
-            user_hod: false,
+            user_dept: false,
+            user_divisi: false,
             cuti_kunci: false,
             cuti_suspen: false,
             hostname: "",
@@ -223,6 +226,7 @@
                 await invalidateAll()
                 formUserBatal()
                 tableUser.invalidate()
+                getUserByDept.refetch()
                 formUserState.success = res.message
             }else{
                 const err = fromZodError(isValid.error)
@@ -284,6 +288,7 @@
         answer:{
             dept_id:"id",
             dept_code:"",
+            divisi:"",
             name:"",
             initial:"",
             status:"",
@@ -328,6 +333,7 @@
                 const res = await req.data
                 formDeptBatal()
                 tableDept.invalidate()
+                getDept.refetch()
                 formDeptState.success = res.message
             } else {
                 const err = fromZodError(isValid.error)
@@ -356,6 +362,7 @@
             approval_dinas: "",
             approval_lembur_ob: "",
             approval_lembur_security: "",
+            absensi_full: 1
         },
         success:"",
         error:"",
@@ -379,6 +386,7 @@
 
     const formSettingSubmit = async () =>{
         try {
+            formSettingState.success = ""
             formSettingState.loading = true
             const isValid = SettingSchema.safeParse(formSettingState.answer)
             if(isValid.success){
@@ -424,6 +432,7 @@
     
     const formCalendarSubmit = async () =>{
         try {
+            formCalendar.success = ""
             formCalendar.loading = true
             const valid = z.object({               
                 description: z.string().trim().min(1).max(255),
@@ -490,22 +499,11 @@
     
     const formCalendarBatal = () => formCalendar = {...formCalendarAnswer}
 
-    const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
-        return await req.json()
-    }
+    const getUserByDept = useUserByDept()
     
-    const getDept = async () =>{
-        const req = await fetch('/api/data?type=dept')
-        const res = await req.json()
-        return res
-    }
+    const getDept = useDept()
 
-    const getProfile = async () =>{
-        const req = await fetch('/api/data?type=profile')
-        const res = await req.json()
-        return res
-    }
+    const getProfile = useProfile()
     
     $effect(()=>{
         tableProfile.load(async(state: State) => {
@@ -783,17 +781,17 @@
                     {/if}
                     {#if formUserState.add || formUserState.edit}
                         <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg' enctype="multipart/form-data">
-                            <span class="border-b-[1px] border-slate-300 pb-2">Basic</span>
+                            <span class="border-b-[1px] border-slate-300 pb-2 font-bold text-[1.2rem]">Basic</span>
                             <div class="grid grid-cols-2 gap-4 p-4 border-[1px] border-slate-300">
                                 <MyInput type='text' title='Payroll' disabled={formUserState.edit} name="payroll" bind:value={formUserState.answer.payroll}/>
 
-                                {#await getProfile() then val}
+                                {#if getProfile.data}
                                     <div class="flex flex-col gap-2">
                                         <Label>Profile ID</Label>
                                         <Svelecte class='border-none' optionClass='p-2' name='profile_id' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.profile_id} 
-                                            options={val.map((v:any) => ({value: v.profile_id, text:v.name }))}/>
+                                            options={getProfile.data.map((v:any) => ({value: v.profile_id, text:v.name }))}/>
                                     </div>
-                                {/await}
+                                {/if}
                                 <MyInput type='text' title='Name' name="name" bind:value={formUserState.answer.name}/>
 
                                 {#if formUserState.add}
@@ -803,13 +801,16 @@
                                 <MyInput type='text' title='Email' name="email" bind:value={formUserState.answer.email}/>
                                 <MyInput type='text' title='Position' name="position" bind:value={formUserState.answer.position}/>
 
-                                {#await getDept() then val}
+                                {#if getDept.isPending || getDept.isFetching}
+                                    <MyLoading message="Loading data"/>
+                                {/if}
+                                {#if getDept.data}
                                     <div class="flex flex-col gap-2">
                                         <Label>Department</Label>
                                         <Svelecte class='border-none' optionClass='p-2' name='department' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.department} 
-                                        options={val.map((v:any) => ({value: v.dept_code, text: v.dept_code + " - " + v.name }))}/>
+                                        options={getDept.data.map((v:any) => ({value: v.dept_code, text: v.dept_code + " - " + v.name }))}/>
                                     </div>
-                                {/await}
+                                {/if}
                                 
                                 <div class="flex flex-col gap-2">
                                     <Label for='location'>Location</Label>
@@ -832,48 +833,53 @@
                                     <input class="rounded-lg border border-slate-300" type="file" accept=".jpg" onchange={e => formUserState.answer.signature = e.target.files[0]}/>
                                 </div>
 
-                                {#await getUser()}
+                                {#if getUserByDept.isPending || getUserByDept.isFetching}
                                     <MyLoading message="Loading data"/>
-                                {:then val}
+                                {/if}
+                                {#if getUserByDept.data}
                                     <div class="flex flex-1 flex-col gap-2">
                                         <Label>Approver</Label>
                                         <Svelecte class='border-none' optionClass='p-2' name='approver' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.approver} 
-                                        options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                        options={getUserByDept.data.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
                                     </div>
                                     <div class="flex flex-1 flex-col gap-2">
                                         <Label>Substitute</Label>
                                         <Svelecte class='border-none' optionClass='p-2' name='substitute' required searchable selectOnTab multiple={false} bind:value={formUserState.answer.substitute} 
-                                        options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                        options={getUserByDept.data.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
                                     </div>
-                                {/await}
+                                {/if}
                             </div>
 
-                            <span class="border-b-[1px] border-slate-300 pb-2">Attendance</span>
+                            <span class="border-b-[1px] border-slate-300 pb-2 font-bold text-[1.2rem]">Attendance</span>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border-[1px] border-slate-200">
                                 <MyInput type='time' title='Start Work' name="start_work" bind:value={formUserState.answer.start_work}/>
 
                                 <div class="flex flex-col flex-1 gap-2">
                                     <Label for='level'>Level</Label>
-                                    <Select name='level' items={listLevel} bind:value={formUserState.answer.level} />
+                                    <Select name='level' items={Array.from({length: 11}, (_, v) => ({value: v, name: v}))} bind:value={formUserState.answer.level} />
                                 </div>
-                                <div class="flex items-end gap-4 my-2">
-                                    <div class="flex flex-col">
-                                        <Checkbox bind:checked={formUserState.answer.overtime}>Overtime</Checkbox>
-                                        <span class="italic text-[.75rem]">Kehadiran karyawan dianggap lembur jika overtime</span>
+                                <div class="flex items-start gap-4 my-2">
+                                    <div class="flex flex-col flex-1">
+                                        <Checkbox bind:checked={formUserState.answer.user_dept}>User Dept</Checkbox>
+                                        <span class="italic text-[.75rem]">User adalah user kepala departemen</span>
                                     </div>
-                                    <div class="flex flex-col">
-                                        <Checkbox bind:checked={formUserState.answer.user_hod}>User HOD</Checkbox>
-                                        <span class="italic text-[.75rem]">User tersebut adalah kepala departemen</span>
+                                    <div class="flex flex-col flex-1">
+                                        <Checkbox bind:checked={formUserState.answer.user_divisi}>User Divisi</Checkbox>
+                                        <span class="italic text-[.75rem]">User adalah kepala divisi</span>
                                     </div>
                                 </div>
-                                <div class="flex items-end gap-4 my-2">
-                                    <div class="flex flex-col">
+                                <div class="flex items-start gap-4 my-2">
+                                    <div class="flex flex-col flex-1">
                                         <Checkbox bind:checked={formUserState.answer.cuti_kunci}>Cuti dikunci</Checkbox>
                                         <span class="italic text-[.75rem]">Permohonan cuti ditolak jika jatah cuti sudah 0</span>
                                     </div>
-                                    <div class="flex flex-col">
+                                    <div class="flex flex-col flex-1">
                                         <Checkbox bind:checked={formUserState.answer.cuti_suspen}>Cuti ditangguhkan</Checkbox>
                                         <span class="italic text-[.75rem]">Cuti karyawan dapat ditangguhkan</span>
+                                    </div>
+                                    <div class="flex flex-col flex-1">
+                                        <Checkbox bind:checked={formUserState.answer.overtime}>Overtime</Checkbox>
+                                        <span class="italic text-[.75rem]">Kehadiran karyawan dianggap lembur jika overtime</span>
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-2">
@@ -1037,6 +1043,7 @@
                             <input type='hidden' name="Dept ID" disabled={formDeptState.edit} bind:value={formDeptState.answer.dept_id}/>
                             <MyInput type='text' title='Dept Code' name="dept_code" bind:value={formDeptState.answer.dept_code}/>
                             <MyInput type='text' title='Name' name="name" bind:value={formDeptState.answer.name}/>
+                            <MyInput type='text' title='Divisi' name="divisi" bind:value={formDeptState.answer.divisi}/>
                             <div class="flex flex-col">
                                 <MyInput type='text' title='Initial' name="initial" bind:value={formDeptState.answer.initial}/>
                                 <span class="italic text-[.8rem]">For document purpose</span>
@@ -1134,51 +1141,65 @@
                             </div>
 
                             <form transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border-[2px] border-slate-300 rounded-lg'>
-                                <div class="flex flex-col">
-                                    <div class="flex gap-2">
-                                        <MyInput type='number' title='Periode Awal' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
-                                        <MyInput type='number' title='Periode Akhir' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
-                                    </div>
-                                    <span class='text-textdark italic'>Set untuk periode awal dan periode akhir</span>
-                                </div>
-                                <div class="flex flex-col">
-                                    <div class="flex items-center gap-4">
+                                <Timeline>
+                                    <TimelineItem title='Absensi' classLi='mb-2'>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex flex-col">
+                                                <div class="flex gap-2">
+                                                    <MyInput type='number' title='Periode Awal' name="start_periode" bind:value={formSettingState.answer.start_periode}/>
+                                                    <MyInput type='number' title='Periode Akhir' name="end_periode" bind:value={formSettingState.answer.end_periode}/>
+                                                </div>
+                                                <span class='text-textdark italic'>Set untuk periode awal dan periode akhir</span>
+                                            </div>
+                                            <div class="flex flex-1 flex-col">
+                                                <MyInput type='number' title='Dispensasi Keterlambatan' name="late_dispen" bind:value={formSettingState.answer.late_dispen}/>
+                                                <span class='text-textdark italic'>Dispensasi untuk keterlambatan</span>
+                                            </div>
+                                        </div>
+                                    </TimelineItem>
+                                    <TimelineItem title='Overtime' classLi='mb-2'>
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex flex-1 flex-col">
+                                                <MyInput type='number' title='Minimal Overtime (Menit)' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
+                                                <span class='text-textdark italic'>Minimum menit untuk dihitung lembur</span>
+                                            </div>
+                                            <Checkbox class='flex-1' bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Pembulatan Overtime Keatas</Checkbox>
+                                        </div>
+                                    </TimelineItem>
+                                    <TimelineItem title='Approve' classLi='mb-2'>
+                                        <div class="flex items-center gap-4">
+                                            {#if getUserByDept.isPending || getUserByDept.isFetching}
+                                                <MyLoading message="Loading data"/>
+                                            {/if}
+                                            {#if getUserByDept.data}
+                                                <div class="flex flex-1 flex-col gap-2">
+                                                    <Label>Approve Dinas</Label>
+                                                    <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_dinas} 
+                                                    options={getUserByDept.data.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                                    <span class='text-textdark italic'>User default untuk approve dinas</span>
+                                                </div>
+                                                <div class="flex flex-1 flex-col gap-2">
+                                                    <Label>Approve Lembur OB</Label>
+                                                    <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_lembur_ob} 
+                                                    options={getUserByDept.data.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                                    <span class='text-textdark italic'>User default untuk approve lembur OB</span>
+                                                </div>
+                                                <div class="flex flex-1 flex-col gap-2">
+                                                    <Label>Approve Lembur Security</Label>
+                                                    <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_lembur_security} 
+                                                    options={getUserByDept.data.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
+                                                    <span class='text-textdark italic'>User default untuk approve lembur Security</span>
+                                                </div>
+                                            {/if}
+                                        </div>
+                                    </TimelineItem>
+                                    <TimelineItem title='Report' classLi='mb-2'>
                                         <div class="flex flex-1 flex-col">
-                                            <MyInput type='number' title='Dispensasi Keterlambatan' name="late_dispen" bind:value={formSettingState.answer.late_dispen}/>
-                                            <span class='text-textdark italic'>Dispensasi untuk keterlambatan</span>
+                                            <MyInput type='number' title='Absensi Full' name="absensi_full" bind:value={formSettingState.answer.absensi_full}/>
+                                            <span class='text-textdark italic'>Minimum hari untuk dihitung Absensi Full (OK)</span>
                                         </div>
-                                        <div class="flex flex-1 flex-col">
-                                            <MyInput type='number' title='Minimal Overtime (Menit)' name="overtime_allow" bind:value={formSettingState.answer.overtime_allow}/>
-                                            <span class='text-textdark italic'>Minimum menit untuk dihitung lembur</span>
-                                        </div>
-                                        <Checkbox class='flex-1' bind:checked={formSettingState.answer.overtime_round_up as unknown as boolean}>Pembulatan Overtime Keatas</Checkbox>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-4">
-                                    {#await getUser()}
-                                        <MyLoading message="Loading data"/>
-                                    {:then val}
-                                        <div class="flex flex-1 flex-col gap-2">
-                                            <Label>Approve Dinas</Label>
-                                            <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_dinas} 
-                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                            <span class='text-textdark italic'>User default untuk approve dinas</span>
-                                        </div>
-                                        <div class="flex flex-1 flex-col gap-2">
-                                            <Label>Approve Lembur OB</Label>
-                                            <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_lembur_ob} 
-                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                            <span class='text-textdark italic'>User default untuk approve lembur OB</span>
-                                        </div>
-                                        <div class="flex flex-1 flex-col gap-2">
-                                            <Label>Approve Lembur Security</Label>
-                                            <Svelecte class='border-none' optionClass='p-2' searchable selectOnTab multiple={false} bind:value={formSettingState.answer.approval_lembur_security} 
-                                            options={val.map((v:any) => ({value: v.payroll, text: v.payroll + " - " + v.name }))}/>
-                                            <span class='text-textdark italic'>User default untuk approve lembur Security</span>
-                                        </div>
-                                    {/await}
-                                </div>
+                                    </TimelineItem>
+                                </Timeline>
                             </form>
                         {/if}
                     {/await}

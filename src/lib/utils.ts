@@ -82,6 +82,15 @@ export function handleLoginRedirect(e: RequestEvent, pesan: string = "You need t
     return '/login?redirectTo=' + encodeURIComponent(redirectTo) + "&pesan=" + encodeURIComponent(pesan)
 }
 
+export async function isUrlActive(url: string) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response;
+    } catch (error) {
+        return false;
+    }
+}
+
 export function encryptDynamic(value: string, secretKey: string): EncryptedData {
     const iv = CryptoJS.lib.WordArray.random(128 / 8); //iv untuk generate acak setiap value meskipun nilainya sama
 
@@ -124,9 +133,9 @@ export function prismaErrorHandler(error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         switch (error.code) {
             case 'P2002':
-                return "Data is already exist (duplicate)"
+                return "Data sudah ada sebelumnya (duplikat)"
             case 'P2025':
-                return "No data found, please refresh data"
+                return "Data tidak ada atau data mungkin telah diperbarui"
             case 'P2003':
                 return "Foreign key not valid"
             default:
@@ -154,6 +163,7 @@ export function generatePeriode(date: string, start: number, end: number) {
     let temp2 = new Date(Number(format(sekarang, "yyyy")), Number(format(sekarang, "MM")) - 1, end)
     const periode1 = isBefore(sekarang, temp1) ? format(subMonths(temp1, 1), "yyyy-MM-dd") : format(temp1, "yyyy-MM-dd")
     const periode2 = isBefore(sekarang, temp1) ? format(temp2, "yyyy-MM-dd") : format(addMonths(temp2, 1), "yyyy-MM-dd")
+    console.log(periode1, " | ",periode2,  " | ", sekarang)
     return { start: periode1, end: periode2 }
 }
 
