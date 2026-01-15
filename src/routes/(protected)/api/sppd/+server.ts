@@ -26,7 +26,7 @@ export async function GET({ url }) {
         //     `%${dept}%`, `%${payroll}%`, `%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`, limit, offset)
         const items = await tx.$queryRawUnsafe(`
             SELECT s.sppd_id, purpose, s.location, start_date, end_date, duration, GROUP_CONCAT(e.name SEPARATOR ', ') as name, d.name as dept_name,
-            s.createdAt, isSKPDFromSPPD(s.sppd_id) as isSKPDFromSPPD
+            isSKPDFromSPPD(s.sppd_id) as isSKPDFromSPPD
             FROM sppd_detail as sd 
 			LEFT JOIN SPPD as s ON s.sppd_id = sd.sppd_id
             LEFT JOIN dept as d ON d.dept_code = s.dept

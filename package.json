@@ -8,7 +8,6 @@
         "db:dev": "dotenv -e .env.dev pnpm prisma db pull && pnpm prisma generate",
         "db:docker": "dotenv -e .env.docker pnpm prisma generate",
         "dev": "dotenv -e .env.dev -- vite dev --mode dev",
-        "dev:prod": "dotenv -e .env -- vite dev",
         "dev:docker": "dotenv -e .env.docker -- vite dev --mode docker",
         "build": "dotenv -e .env -- vite build",
         "build:dev": "dotenv -e .env.dev -- vite build --mode dev",

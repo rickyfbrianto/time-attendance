@@ -38,7 +38,7 @@
     
     let modeDinas = $state({
         payroll: (()=> user?.payroll)(),
-        tabNo: 2
+        tabNo: 1
     })
     
     let tableSPPD = $state(new TableHandler([], {rowsPerPage}))
@@ -604,12 +604,9 @@
         }       
     })
     
-    let test = $state([])
-    
     const getSPPD = async () =>{
         const req = await fetch(`/api/data?type=sppd_not_in_skpd`)
         const res = await req.json()
-        test = res
         return res
     }
 
@@ -655,10 +652,6 @@
         const diff = differenceInDays(formSPPD.answer.date[1], formSPPD.answer.date[0]) + 1
         formSPPD.answer.duration = isNaN(diff) ? 0 : diff
     })
-
-    $effect(()=> {
-        getSPPD()
-    })
     
     setTimeout(()=>{
         if((user.user_dept || user.user_divisi) && user.level > 1){
@@ -676,11 +669,10 @@
 </svelte:head>
 
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full">
-    {JSON.stringify(test)}
-    <Tabs contentClass='bg-bgdark' tabStyle="underline" >
+    <Tabs contentClass='bg-bgdark' tabStyle="underline">
         {#if (user.user_dept || user.user_divisi) && user.level > 1}
             <TabItem title="SPPD" open={modeDinas.tabNo == 1} onclick={()=> modeDinas.tabNo = 1}>
-                <div class="flex flex-col p-4 gap-4 border border-stone-300 rounded-lg">
+                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                     {#if formSPPD.error}
                         {#each formSPPD.error.split(';') as v}
                             <MyAlert pesan={v} func={()=> formSPPD.error = ""} color='red'/>
@@ -706,7 +698,7 @@
                         <MyLoading message="Load SPPD data"/>
                     {/if}
                     {#if formSPPD.add || formSPPD.edit}
-                        <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-stone-300 rounded-lg'>
+                        <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                             {#if user.user_divisi}
                                 {#await getDept()}
                                     <MyLoading/>
@@ -789,7 +781,6 @@
                                 <ThSort table={tableSPPD} field="name">Nama</ThSort>
                                 <ThSort table={tableSPPD} field="start_date">Tanggal Mulai</ThSort>
                                 <ThSort table={tableSPPD} field="end_date">Tanggal Selesai</ThSort>
-                                <ThSort table={tableSPPD} field="createdAt">Tanggal Dibuat</ThSort>
                                 <ThSort table={tableSPPD} field="duration">Durasi</ThSort>
                                 <ThSort table={tableSPPD} field="">#</ThSort>
                             </TableHead>
@@ -813,7 +804,6 @@
                                                 </TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date", "app")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.end_date, "date", "app")}</TableBodyCell>
-                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.createdAt, "date", "app")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formSPPD.edit}
@@ -849,18 +839,8 @@
                 </div>
             </TabItem>
         {/if}
-        <TabItem title="SKPD" open={modeDinas.tabNo == 2} divClass="flex flex-col gap-4" onclick={()=> modeDinas.tabNo = 2}>
-            <div class="flex p-4 border border-stone-300 rounded-lg">
-                <div class="flex flex-col gap-2">
-                    {#await getSPPD() then val}
-                        {#each val as v}
-                            <span>{v.sppd_id}</span>
-                        {/each}
-                        <span class='font-bold text-[1.2rem]'>{val.length} SPPD belum jadi SKPD</span>
-                    {/await}
-                </div>
-            </div>
-            <div class="flex flex-col p-4 gap-4 border border-stone-300 rounded-lg">
+        <TabItem title="SKPD" open={modeDinas.tabNo == 2} onclick={()=> modeDinas.tabNo = 2}>
+            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
                         <MyAlert pesan={v} func={()=> formSKPD.error = ""} color='red'/>
@@ -888,7 +868,7 @@
                     <MyLoading message="Load SKPD data"/>
                 {/if}
                 {#if formSKPD.add || formSKPD.edit}
-                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-stone-300 rounded-lg'>
+                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
                         {#if formSKPD.add}
                             {#await getSPPD() then val}
                                 <div class="flex flex-col gap-2 flex-1">

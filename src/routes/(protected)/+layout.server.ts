@@ -31,7 +31,7 @@ export async function load({ url, locals, depends, fetch }) {
 
     const imageUrl = import.meta.env.VITE_VIEW_SIGNATURE
     const isValid = await isUrlActive(imageUrl)
-    if (!isValid) throw error(500, `Service file mati, hubungi team IT untuk menyalakan service File`)
+    if (!isValid) throw error (500, `Service masih mati, silahkan dinyalakan`)
 
     return {
         user,

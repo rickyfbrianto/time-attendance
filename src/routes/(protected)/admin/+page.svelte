@@ -362,7 +362,7 @@
             approval_dinas: "",
             approval_lembur_ob: "",
             approval_lembur_security: "",
-            absensi_full: 0
+            absensi_full: 1
         },
         success:"",
         error:"",
