@@ -47,7 +47,7 @@
 <QueryClientProvider client={queryClient}>
     <div class="relative flex h-screen bg-bgdark">
         <Sidebar {data}/>
-        <div class="flex flex-col flex-1">
+        <div class="flex flex-col w-full">
             <Header {data} notif={data.notif}/>
             <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll bg-bgdark text-textdark">
                 <div style="scrollbar-width: none;" class="overflow-scroll h-full">

@@ -406,9 +406,9 @@
     <title>Attendance {(modeAttendance.payroll !== user?.payroll ? "View | " : "") + capitalEachWord(modeAttendance.name)}</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full w-full">
+<main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full w-full">    
     {#if modeAttendance.tabNo == 2}
-        <MyAlert color='red' pesan={'Cant display dashboard on Department mode'} close={false}/>
+        <MyAlert color='red' pesan={'Tidak dapat menampilkan dasbor pada tampilan departemen'} close={false}/>
     {:else}
         {#if modeAttendance.payroll }
             {#await getAttendance({val: modeAttendance.payroll,year:formLogAttendance.year, month: formLogAttendance.month, start_date: modeAttendance.periode.start, end_date: modeAttendance.periode.end})}
@@ -583,7 +583,7 @@
                                                                     {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                                    const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
+                                                                    const isOvertime = ((hour > 0) || (hour == 0 && minute >= 55)) && row.overtime
                                                                     return isOvertime
                                                                         ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                         : null
@@ -735,7 +735,7 @@
                                                                         {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                     (()=> {
                                                                         const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                                        const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
+                                                                        const isOvertime = ((hour > 0) || (hour == 0 && minute >= 55)) && row.overtime
                                                                         return isOvertime
                                                                             ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                             : null
@@ -869,7 +869,7 @@
                                                                         {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                     (()=> {
                                                                         const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                                        const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
+                                                                        const isOvertime = ((hour > 0) || (hour == 0 && minute >= 55)) && row.overtime
                                                                         return isOvertime
                                                                             ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                             : null
@@ -1017,7 +1017,7 @@
                                                                     {type:"late", value:"Late " + formatLate(hitungJamMenit(row.late_in_minute))} : null,
                                                                 (()=> {
                                                                     const {hour, minute} = hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2)
-                                                                    const isOvertime = (hour > 0) || (hour == 0 && minute >= 55) && row.overtime
+                                                                    const isOvertime = ((hour > 0) || (hour == 0 && minute >= 55)) && row.overtime
                                                                     return isOvertime
                                                                         ? {type:"lembur", value:`Overtime ${formatDifference({ round_up: setting?.overtime_round_up, overtime: setting?.overtime_allow, ...hitungDifference(row.lembur_start, row.check_out, row.check_in2, row.check_out2), })}`}
                                                                         : null

@@ -340,7 +340,16 @@ export async function GET({ url }) {
                     WHERE s.status1 = 'Approved' AND s.status2 = 'Waiting' AND s.approval2 = ?
 
                     UNION ALL
-
+                    
+                    SELECT s.createdAt AS waktu, 'sppd' as link, CONCAT(REPLACE(s.sppd_id, "_","/"), " baru dibuat") as deskripsi
+                    FROM sppd as s
+                    LEFT JOIN sppd_detail as sd ON s.sppd_id = sd.sppd_id
+                    LEFT JOIN employee as e ON e.payroll = sd.payroll
+                    LEFT JOIN skpd ON s.sppd_id = skpd.sppd_id
+                    WHERE skpd.sppd_id IS NULL
+                    
+                    UNION ALL
+                    
                     SELECT s.createdAt AS waktu, 'skpd' AS link, CONCAT("SKPD ", REPLACE(s.skpd_id, "_","/"), " atas nama ", CONCAT(UPPER(LEFT(e.name, 1)),LOWER(SUBSTRING(e.name, 2))), " perlu approve dari anda") as deskripsi 
                     FROM SKPD AS s
                     LEFT JOIN employee AS e ON e.payroll = s.payroll

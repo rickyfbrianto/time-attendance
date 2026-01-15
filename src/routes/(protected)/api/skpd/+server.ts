@@ -45,6 +45,7 @@ export async function POST({ request, }) {
             // })
 
             if (data.addMode) {
+                console.log('insert')
                 const querySKPD = data.skpd_detail.map((v: any) => {
                     const skpd_id = v.skpd_id.replace(/\//g, '_')
                     return tx.$executeRawUnsafe(`
@@ -66,9 +67,10 @@ export async function POST({ request, }) {
                 await Promise.all([...querySKPD, ...queryAttendance])
                 return { message: "SKPD Berhasil disimpan" }
             } else {
+
                 const updateSKPD = tx.$executeRawUnsafe(`
-                    UPDATE SKPD SET sppd_id=?,payroll=?,real_start=?,real_end=?,approve=?,approve_name=?,level=? WHERE skpd_id=?`,
-                    data.sppd_id, data.payroll, data.date[0], data.date[1], data.approve, data.approve_name, data.skpd_detail[0].level, data.skpd_id)
+                    UPDATE SKPD SET payroll=?,real_start=?,real_end=?,approve=?,approve_name=?,level=? WHERE skpd_id=?`,
+                    data.payroll, data.date[0], data.date[1], data.approve, data.approve_name, data.skpd_detail[0].level, data.skpd_id)
 
                 const deleteAttendanceFromSKPD = tx.$executeRawUnsafe(`DELETE FROM attendance WHERE reference = ?`, data.skpd_id)
 
