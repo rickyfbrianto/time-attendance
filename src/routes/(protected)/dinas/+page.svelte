@@ -2,7 +2,7 @@
     import {fade} from 'svelte/transition'
     import { Tabs, TabItem, Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Button, Modal, Alert, Badge, Tooltip } from 'flowbite-svelte';
     import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
-    import { Ban, Search, RefreshCw, Pencil, Trash, Plus, Save, Minus, Printer } from '@lucide/svelte'
+    import { TextAlignCenter, Ban, Search, RefreshCw, Pencil, Trash, Plus, Save, Minus, Printer, QrCode } from '@lucide/svelte'
     import MyButton from '$/lib/components/MyButton.svelte';
 	import MyLoading from '$/lib/components/MyLoading.svelte';
 	import MyInput from '$/lib/components/MyInput.svelte';
@@ -12,6 +12,7 @@
 	import Svelecte from 'svelecte';
     import { jsPDF } from "jspdf";
     import stm from '$/lib/assets/stm.png'
+    import stempel from '$/lib/assets/stempel.png'
     import "$/lib/assets/font/Comic-normal.js"
 	import { z } from 'zod';
 	import { fromZodError } from 'zod-validation-error';
@@ -319,6 +320,7 @@
         error:"",
         cetakPDFID:"",
         cetakPDF:false,
+        modalPreview: false,
         modalApproveSKPD: false,
         modalDelete:false,
         loading:false,
@@ -370,7 +372,7 @@
             const res = await req.data
             if(res){
                 formSKPD.answer = {...res}
-                formSKPD.answer.sppd_id  = res.sppd_id.replace(/\_/g,'/')
+                formSKPD.answer.sppd_id  = res.sppd_id
                 setTimeout(()=>{
                     formSKPD.answer.date = [formatTanggal(res.real_start, "date"), formatTanggal(res.real_end, "date")]
                     formSKPD.answer.skpd_detail = [{skpd_id: res.skpd_id.replace(/\_/g,'/'), payroll: res.payroll, level: res.level, description: res.description}]
@@ -421,8 +423,8 @@
             const res = await req.data
 
             const imageUrl = import.meta.env.VITE_VIEW_SIGNATURE
-            const isValid = await isUrlActive(imageUrl)
-            if (!isValid) throw new Error (`Service masih mati, silahkan dinyalakan`)
+            // const isValid = await isUrlActive(imageUrl)
+            // if (!isValid) throw new Error (`Service masih mati, silahkan dinyalakan`)
             
             if (!res.a_signature) throw new Error (`Approval ${capitalEachWord(res.a_name)} tidak ada signature`)
 
@@ -534,6 +536,7 @@
             if(!listApproveSKPDNama.some(item => item.value === res.approve)){
                 doc.text("for", colData[0] - 3, rowData + rowInc + row1)
             }
+            doc.addImage(stempel, colData[0] + 10, rowData + rowInc, signatureSize, signatureSize)
             rowInc += row3 * 2.6
             doc.addImage(imageUrl + res.a_signature, colData[0] + 3, rowData + rowInc - (signatureSize + 4), signatureSize, signatureSize)
             doc.text(capitalEachWord(res.a_name), colData[0], rowData + rowInc)
@@ -588,6 +591,21 @@
             // doc.save(`${res.skpd_id}.pdf`);
         } catch (err) {
             goto(`/api/handleError?msg=${err.message}`)
+        }
+    }
+    
+    const showPreviewSKPD = async (value: string) => {
+        formSKPD.modalPreview = true
+
+        const req = await axios.get(`/api/skpd/${value}`)
+        const res = await req.data
+        if(res){
+            formSKPD.answer = {...res}
+            formSKPD.answer.sppd_id  = res.sppd_id
+            setTimeout(()=>{
+                formSKPD.answer.date = [formatTanggal(res.real_start, "date"), formatTanggal(res.real_end, "date")]
+                formSKPD.answer.skpd_detail = [{skpd_id: res.skpd_id.replace(/\_/g,'/'), payroll: res.payroll, level: res.level, description: res.description}]
+            }, 100)
         }
     }
     
@@ -652,6 +670,10 @@
         const diff = differenceInDays(formSPPD.answer.date[1], formSPPD.answer.date[0]) + 1
         formSPPD.answer.duration = isNaN(diff) ? 0 : diff
     })
+
+    $effect(()=> {
+        getSPPD()
+    })
     
     setTimeout(()=>{
         if((user.user_dept || user.user_divisi) && user.level > 1){
@@ -661,6 +683,7 @@
             modeDinas.tabNo = 2
         }
         tableSKPD.invalidate()
+        modeDinas.tabNo = 2
     }, 1000)
 </script>
 
@@ -672,7 +695,7 @@
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         {#if (user.user_dept || user.user_divisi) && user.level > 1}
             <TabItem title="SPPD" open={modeDinas.tabNo == 1} onclick={()=> modeDinas.tabNo = 1}>
-                <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+                <div class="flex flex-col p-4 gap-4 border border-stone-300 rounded-lg">
                     {#if formSPPD.error}
                         {#each formSPPD.error.split(';') as v}
                             <MyAlert pesan={v} func={()=> formSPPD.error = ""} color='red'/>
@@ -698,7 +721,7 @@
                         <MyLoading message="Load SPPD data"/>
                     {/if}
                     {#if formSPPD.add || formSPPD.edit}
-                        <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                        <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-stone-300 rounded-lg'>
                             {#if user.user_divisi}
                                 {#await getDept()}
                                     <MyLoading/>
@@ -839,8 +862,20 @@
                 </div>
             </TabItem>
         {/if}
-        <TabItem title="SKPD" open={modeDinas.tabNo == 2} onclick={()=> modeDinas.tabNo = 2}>
-            <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">
+        <TabItem title="SKPD" open={modeDinas.tabNo == 2} divClass="flex flex-col gap-4" onclick={()=> modeDinas.tabNo = 2}>
+            <div class="flex flex-col gap-2 p-4 border border-stone-300 rounded-lg shadow-lg">
+                {#await getSPPD()}
+                    <span>Loading</span>
+                {:then val}
+                    <span class="text-[1.2rem] font-bold">{val.length} SPPD belum jadi SKPD</span>
+                    {#each val as v}
+                    <div class="flex gap-2 divide-x">
+                        <span class='flex items-center gap-2'><QrCode size={12} />{v.sppd_id} {v.purpose}</span>
+                    </div>
+                    {/each}
+                {/await}
+            </div>
+            <div class="flex flex-col p-4 gap-4 border border-stone-300 rounded-lg">
                 {#if formSKPD.error}
                     {#each formSKPD.error.split(';') as v}
                         <MyAlert pesan={v} func={()=> formSKPD.error = ""} color='red'/>
@@ -868,7 +903,7 @@
                     <MyLoading message="Load SKPD data"/>
                 {/if}
                 {#if formSKPD.add || formSKPD.edit}
-                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-slate-300 rounded-lg'>
+                    <form method="POST" transition:fade={{duration:500}} class='flex flex-col gap-4 p-4 border border-stone-300 rounded-lg'>
                         {#if formSKPD.add}
                             {#await getSPPD() then val}
                                 <div class="flex flex-col gap-2 flex-1">
@@ -901,6 +936,12 @@
                                     <Label>Menyetujui (pada) Nama</Label>
                                     <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.approve_name} 
                                     options={listApproveSKPDNama.map((v:any) => ({value: v.value, text: v.value + " - " + v.text}))}/>
+                                </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <Label>Status</Label>
+                                    <!-- <Svelecte class='rounded-lg bg-bgdark' clearable searchable selectOnTab multiple={false} bind:value={formSKPD.answer.approve_name} 
+                                    options={listApproveSKPDNama.map((v:any) => ({value: v.value, text: v.value + " - " + v.text}))}/> -->
                                 </div>
                             </div>
                             <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
@@ -976,9 +1017,11 @@
                                                         <MyButton className='text-[.8rem]' onclick={()=> {
                                                             formSKPD.modalApproveSKPD = true
                                                             formSKPD.answer.skpd_id = row.skpd_id
-                                                        }}>Approve</MyButton>
+                                                        }} size={"sm"}>Approve</MyButton>
                                                         <Tooltip>Approve</Tooltip>
                                                     {/if}
+                                                    <MyButton className='text-[.8rem]' onclick={() => showPreviewSKPD(row.skpd_id)} size={"sm"}>Preview</MyButton>
+                                                    <Tooltip>Preview</Tooltip>
                                                 </div>
                                             </TableBodyCell>
                                             <TableBodyCell>
@@ -1016,21 +1059,50 @@
                     <MyPagination table={tableSKPD}/>
                 </Datatable>
             </div>
-
-            <Modal title="Terms of Service" bind:open={formSKPD.cetakPDF} size={'xl'} autoclose>
-                <div class="flex flex-col py-1" id="cetakPDF">
-                    <span>hello world</span>
-                    <div class="flex w-full ">
-                    <span class="">Hallo</span>
-                    </div>
-                    <div class="flex w-full ">
-                        <span>Surat Keterangan Perjalanan Dinas</span>
-                    </div>
-                </div>
-            </Modal>
         </TabItem>
     </Tabs>
 
+    <Modal bind:open={formSKPD.modalPreview} size={'xl'} autoclose>
+        <div class='flex flex-col gap-4 p-4 border border-stone-300 rounded-lg'>
+            <MyInput type='text' title='SPPD ID' disabled bind:value={formSKPD.answer.sppd_id} />
+        
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-2">
+                    <Label>Menyetujui (pada) TTD</Label>
+                    <Svelecte class='rounded-lg bg-bgdark' clearable disabled searchable selectOnTab multiple={false} bind:value={formSKPD.answer.approve} 
+                    options={listApproveSKPDTTD.map((v:any) => ({value: v.value, text: v.value + " - " + v.text}))}/>
+                    <span class='italic text-[.75rem]'>Selain Pak Agus dan Pak Gati ada tambahan keterangan "for" disamping tanda tangan</span>
+                </div>
+
+                <div class="flex flex-col gap-2 flex-1">
+                    <Label>Tanggal Dinas</Label>
+                    <MyDatePicker disabled bind:value={formSKPD.answer.date} mode='range'/>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <Label>Menyetujui (pada) Nama</Label>
+                    <Svelecte class='rounded-lg bg-bgdark' clearable disabled searchable selectOnTab multiple={false} bind:value={formSKPD.answer.approve_name} 
+                    options={listApproveSKPDNama.map((v:any) => ({value: v.value, text: v.value + " - " + v.text}))}/>
+                </div>
+            </div>
+            <div class="flex flex-col gap-3 bg-bgdark2 p-4 rounded-lg">
+                <span class='font-bold text-[1.2rem] font-quicksand'>Daftar Dinas Karyawan</span>
+                {#each formSKPD.answer.skpd_detail as item, i (item.payroll)}
+                    <div class="flex gap-2">
+                        <MyInput type='text' disabled title='SKPD ID' bind:value={item.skpd_id} />
+                        <MyInput type='text' disabled title='Payroll' bind:value={item.payroll} />
+                        <MyInput type='text' disabled title='Level' bind:value={item.level} />
+                        <MyInput type='text' disabled title='Description' bind:value={item.description} />
+                    </div>
+                {/each}
+            </div>                    
+            <span class='text-[.8rem]'>createdBy <Badge color='dark'>{user?.name}</Badge> </span>
+        </div>
+        <svelte:fragment slot="footer">
+            <Button onclick={()=> formSKPD.modalPreview = false} class='flex gap-2 px-3 py-2' pill>Close</Button>
+        </svelte:fragment>
+    </Modal>
+    
     <Modal bind:open={formSPPD.modalDelete} autoclose>
         <div class="flex flex-col gap-6">
             <h3>Hapus SPPD ?</h3>

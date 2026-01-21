@@ -443,8 +443,6 @@
         try {
             const req = await axios.get(`/api/lembur/srl/${id}/print`)
             const res = await req.data
-
-            console.log([0, 6].includes(getDay(formatTanggal(res.real_start))) ? "F": null)
             
             if(!res.employee_srl_payrollToemployee.signature || !res.employee_srl_approval1Toemployee.signature || !res.employee_srl_approval2Toemployee.signature){
                 throw new Error('Ada user yang tidak memiliki signature untuk SRL ini')

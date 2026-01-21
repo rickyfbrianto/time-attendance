@@ -1,18 +1,19 @@
 <script lang='ts'>
-    import { Table, TableBody, TableHeadCell, TableBodyCell, TableBodyRow, TableHead, Badge, Timeline, TimelineItem, Card, Modal, Checkbox } from 'flowbite-svelte';
-	import { dataBulan, dataTahun, generatePeriode, namaBulan } from '@lib/utils';
+    import { Table, TableBody, TableHeadCell, TableBodyCell, TableBodyRow, TableHead, Timeline, TimelineItem, Button, Modal, Checkbox } from 'flowbite-svelte';
+	import { dataBulan, dataTahun, namaBulan } from '@lib/utils';
 	import Svelecte from 'svelecte';
     import { fade, fly } from 'svelte/transition'
-	import { format, set } from 'date-fns';
+	import { endOfDay, endOfMonth, format, set, startOfDay, startOfMonth } from 'date-fns';
 	import MyLoading from '@/MyLoading.svelte';
 	import MyChart from '@/MyChart.svelte';
-	import { Box, Boxes, CalendarClock, CalendarDays, CalendarRange, Minus, Sheet } from '@lucide/svelte';
+	import { Box, Boxes, CalendarClock, CalendarDays, CalendarRange, Sheet } from '@lucide/svelte';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import MyEmpty from '@/MyEmpty.svelte';
 	import MyInput from '@/MyInput.svelte';
 	import MyButton from '@/MyButton.svelte';
     import * as xlsx from 'xlsx'
 	import { useDept } from '@lib/fetch.js';
+	import { goto } from '$app/navigation';
 
     let { data } = $props()
     let user = $derived(data.user)
@@ -81,7 +82,7 @@
     const useReportAttendance = createQuery(()=> ({
         queryKey: ['getReportAttendance'],
         queryFn: async () => {
-            return await fetch(`/api/data?type=get_report_attendance_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month}`)
+            return await fetch(`/api/data?type=get_report_attendance_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
             .then(r => r.json())
         },
     }))
@@ -89,7 +90,7 @@
     const useReportDisiplin = createQuery(()=> ({
         queryKey: ['getReportDisiplin'],
         queryFn: async () => {
-            return await fetch(`/api/data?type=get_report_disiplin_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month}`)
+            return await fetch(`/api/data?type=get_report_disiplin_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
             .then(r => r.json())
         },
     }))
@@ -97,7 +98,7 @@
     const useReportLembur = createQuery(()=> ({
         queryKey: ['getReportLembur'],
         queryFn: async () => {
-            return await fetch(`/api/data?type=get_report_lembur_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month}`)
+            return await fetch(`/api/data?type=get_report_lembur_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
             .then(r => r.json())
         },
     }))
@@ -207,20 +208,22 @@
 
     const onChangeYear = async () => {
         if ([1,2,3, 4].includes(formAttendance.tabNo)) {
-            useReportAttendance.refetch()
-            useReportDisiplin.refetch()
-            useReportLembur.refetch()
-            useReportSummary.refetch()
+            if (formAttendance.tabNo == 1) useReportAttendance.refetch()
+            if (formAttendance.tabNo == 2) useReportDisiplin.refetch()
+            if (formAttendance.tabNo == 3) useReportLembur.refetch()
+            if (formAttendance.tabNo == 4) useReportSummary.refetch()
         }
     }
 
     const onChangeMonth = async () => {
         if ([1,2,3,4].includes(formAttendance.tabNo)) {
-            useReportAttendance.refetch()
-            useReportDisiplin.refetch()
-            useReportLembur.refetch()
+            if (formAttendance.tabNo == 1) useReportAttendance.refetch()
+            if (formAttendance.tabNo == 2) useReportDisiplin.refetch()
+            if (formAttendance.tabNo == 3) useReportLembur.refetch()
         }
     }
+
+    const onClickBack = () => goto('/attendance')
 
     let dataSummary = $derived.by(() => {
         if(useReportSummary?.data){
@@ -353,12 +356,6 @@
         xlsx.writeFile(workbook, `Summary Report ${formAttendance.year}.xlsx`)
     }
 
-    $effect(()=> {
-        const temp = set(new Date(), {year: formAttendance.year, month: formAttendance.month, date: setting?.end_periode})
-        modeReport.start_date = generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).start
-        modeReport.end_date = generatePeriode(temp.toString(), Number(setting?.start_periode), Number(setting?.end_periode)).end
-    })
-
     const getDept = useDept()
 </script>
 
@@ -367,115 +364,60 @@
 </svelte:head>
 
 <main in:fade={{delay:500 }} out:fade class="flex flex-col p-4 gap-4 h-full w-full">
-    <div class="relative flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-3 gap-3">
-        {#if user.level > 1}
-            <div class={`${[1,2,3].includes(formAttendance.tabNo) ? "h-[8rem]":"h-[5rem]"} sticky top-[0] bg-bgdark flex items-center gap-2 border-[var(--color-bgside)] border rounded-lg px-4 z-10 shadow-lg`}>
-                <!-- {#await getDept()}
-                    <MyLoading message="Loading data"/>
-                {:then val}
-                    <div class="flex items-center gap-2">
-                        <CalendarRange class='self-center' size={16} />
-                        <div class="flex flex-col gap-2">
-                            <select bind:value={formAttendance.year} onchange={onChangeYear}>
-                                {#each dataTahun as {title, value}}
-                                    <option value={value}>
-                                        {title} {value.toString() == format(modeReport.start_date, "yyyy") ? "(Select)" : null}
-                                    </option>
-                                {/each}
-                            </select>
-                            {#if [1,2,3].includes(formAttendance.tabNo)}
-                                <select transition:fade bind:value={formAttendance.month} onchange={onChangeMonth}>
-                                    {#each dataBulan as {title, value}}
-                                        <option value={value}>
-                                            {title} {value.toString() == format(modeReport.start_date, "M") ? "(Select)" : null}
-                                        </option>
-                                    {/each}
-                                </select> 
-                            {/if}
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-2 w-full justify-center">
-                        {#if [1,2,3].includes(formAttendance.tabNo)}
-                            <div transition:fade class="flex flex-1">
-                                <div class="flex items-center gap-2 p-2">
-                                    <CalendarClock size={16} />
-                                    <Badge>{modeReport.start_date}</Badge>
-                                    <Minus size={16} />
-                                    <Badge>{modeReport.end_date}</Badge>
-                                </div>
-                                <div class="flex flex-1 items-center gap-2 p-2 ">
-                                    <Box size={16} />
-                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} onChange={onChangeMonth}
-                                    options={val.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
-                                    />
-                                </div>
-                            </div>
-                        {/if}
-                        <div class="flex gap-1">
-                            {#each ["Attendance","Kedisiplinan Department","Lembur Department", "Summary"] as item, i}
-                                <button class={`p-2 px-4 rounded-t-[12px] text-black ${(formAttendance.tabNo == (i + 1)) ? "bg-bgside/[.75] shadow-xl border-b-[4px]":"bg-bgside"}`} onclick={()=> formAttendance.tabNo = i + 1}>{item}</button>
+    <div class="relative flex flex-1 flex-col border-[var(--color-bgside)] border-[2px] rounded-lg p-3 gap-3">        
+        <Button class='self-start' onclick={onClickBack}>Back to attendance</Button>
+        
+        <div class={`${[1,2,3].includes(formAttendance.tabNo) ? "h-[8rem]":"h-[5rem]"} sticky top-[0] bg-bgdark flex items-center gap-2 border-[var(--color-bgside)] border rounded-lg px-4 z-10 shadow-lg`}>
+            {#if getDept.isPending || getDept.isFetching}
+                <MyLoading message="Loading data"/>
+            {/if}
+            {#if getDept.data}
+                <div class="flex items-center gap-2">
+                    <CalendarRange class='self-center' size={16} />
+                    <div class="flex flex-col gap-2">
+                        <select bind:value={formAttendance.year} onchange={onChangeYear}>
+                            {#each dataTahun as {title, value}}
+                                <option value={value}>
+                                    {title}
+                                </option>
                             {/each}
-                        </div>
-                    </div>
-                {/await} -->
-                {#if getDept.isPending || getDept.isFetching}
-                    <MyLoading message="Loading data"/>
-                {/if}
-                {#if getDept.data}
-                    <div class="flex items-center gap-2">
-                        <CalendarRange class='self-center' size={16} />
-                        <div class="flex flex-col gap-2">
-                            <select bind:value={formAttendance.year} onchange={onChangeYear}>
-                                {#each dataTahun as {title, value}}
+                        </select>
+                        {#if [1,2,3].includes(formAttendance.tabNo)}
+                            <select transition:fade bind:value={formAttendance.month} onchange={onChangeMonth}>
+                                {#each dataBulan as {title, value}}
                                     <option value={value}>
                                         {title}
-                                        <!-- {title} {value.toString() == format(modeReport.start_date, "yyyy") ? "(Select)" : null} -->
                                     </option>
                                 {/each}
-                            </select>
-                            {#if [1,2,3].includes(formAttendance.tabNo)}
-                                <select transition:fade bind:value={formAttendance.month} onchange={onChangeMonth}>
-                                    {#each dataBulan as {title, value}}
-                                        <option value={value}>
-                                            {title} 
-                                            <!-- {value.toString() == format(modeReport.start_date, "M") ? "(Select)" : null} -->
-                                        </option>
-                                    {/each}
-                                </select> 
-                            {/if}
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col gap-2 w-full justify-center">
-                        {#if [1,2,3].includes(formAttendance.tabNo)}
-                            <div transition:fade class="flex flex-1">
-                                <div class="flex items-center gap-2 p-2">
-                                    <CalendarClock size={16} />
-                                    <Badge>{modeReport.start_date}</Badge>
-                                    <Minus size={16} />
-                                    <Badge>{modeReport.end_date}</Badge>
-                                </div>
-                                <div class="flex flex-1 items-center gap-2 p-2 ">
-                                    <Box size={16} />
-                                    <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} onChange={onChangeMonth}
-                                    options={getDept.data.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
-                                    />
-                                </div>
-                            </div>
+                            </select> 
                         {/if}
-                        <div class="flex gap-1">
-                            {#each ["Attendance","Kedisiplinan Department","Lembur Department", "Summary"] as item, i}
-                                <button class={`p-2 px-4 rounded-t-[12px] text-black ${(formAttendance.tabNo == (i + 1)) ? "bg-bgside/[.75] shadow-xl border-b-[4px]":"bg-bgside"}`} onclick={()=> formAttendance.tabNo = i + 1}>{item}</button>
-                            {/each}
-                        </div>
                     </div>
-                {/if}
-            </div>
-        {/if}
+                </div>
 
+                <div class="flex flex-col gap-2 w-full justify-center">
+                    {#if [1,2,3].includes(formAttendance.tabNo)}
+                        <div transition:fade class="flex flex-1">
+                            <div class="flex flex-1 items-center gap-2 p-2 ">
+                                <Box size={16} />
+                                <Svelecte clearable searchable selectOnTab multiple={false} bind:value={formAttendance.dept} onChange={onChangeMonth}
+                                options={getDept.data.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
+                                />
+                            </div>
+                        </div>
+                    {/if}
+                    <div class="flex gap-1">
+                        {#each ["Attendance","Kedisiplinan Department","Lembur Department", "Summary"] as item, i}
+                            <button class={`p-2 px-4 rounded-t-[12px] text-black ${(formAttendance.tabNo == (i + 1)) ? "bg-bgside/[.75] shadow-xl border-b-[4px]":"bg-bgside"}`} onclick={()=> formAttendance.tabNo = i + 1}>{item}</button>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
+        </div>
+        
         {#if formAttendance.tabNo == 1}
-            {#if !useReportAttendance.isLoading && !useReportAttendance.isFetching}
+            {#if useReportAttendance.isFetching}
+                <MyLoading message={"Mengambil data..."}/>
+            {:else}
                 <div in:fly={{delay:600, x: -500}} out:fly={{x:500, duration: 500}}>
                     {#if useReportAttendance.data?.length > 0}
                         <div class="flex flex-col gap-4 mt-2">
@@ -508,13 +450,13 @@
                         <MyEmpty/>
                     {/if}
                 </div>
-            {:else}
-                <MyLoading message={"Mengambil data..."}/>
             {/if}
         {/if}
 
         {#if formAttendance.tabNo == 2}
-            {#if !useReportDisiplin.isLoading && !useReportDisiplin.isFetching}
+            {#if useReportDisiplin.isFetching}
+                <MyLoading message={"Mengambil data..."}/>
+            {:else}
                 <div in:fly={{delay:600, x: -500}} out:fly={{x:500, duration: 500}}>
                     {#if useReportDisiplin.data?.length > 0}
                         <div class="flex flex-col gap-4 mt-2">
@@ -547,13 +489,13 @@
                         <MyEmpty/>
                     {/if}
                 </div>
-            {:else}
-                <MyLoading message={"Mengambil data..."}/>
             {/if}
         {/if}
         
         {#if formAttendance.tabNo == 3}
-            {#if !useReportLembur.isLoading && !useReportLembur.isFetching}
+            {#if useReportLembur.isFetching}
+                <MyLoading message={"Mengambil data..."}/>
+            {:else}
                 <div in:fly={{delay:600, x: -500}} out:fly={{x:500, duration: 500}}>
                     {#if useReportLembur.data?.length > 0}
                         <div class="flex flex-col gap-4">
@@ -586,14 +528,14 @@
                         <MyEmpty/>
                     {/if}
                 </div>
-            {:else}
-                <MyLoading message={"Mengambil data..."}/>
             {/if}
         {/if}
         
         {#if formAttendance.tabNo == 4}
             <div class="flex flex-col gap-4">
-                {#if !useReportSummary.isLoading && !useReportSummary.isFetching}
+                {#if useReportSummary.isFetching}
+                    <MyLoading message={"Mengambil data summary"}/>
+                {:else}
                     {#if dataSummary?.allDept && dataSummary?.detailDept}
                         <div class="flex flex-col bg-white border-[2px] border-bgside rounded-lg p-4 gap-2">
                             <span class="font-bold text-[1.6rem] italic">Filter absen full/bulan</span>
@@ -758,8 +700,6 @@
                     {:else}
                         <MyEmpty/>
                     {/if}
-                {:else}
-                    <MyLoading message={"Mengambil data summary"}/>
                 {/if}
             </div>
         {/if}

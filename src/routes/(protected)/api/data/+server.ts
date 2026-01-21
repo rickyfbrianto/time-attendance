@@ -253,9 +253,9 @@ export async function GET({ url }) {
 
                         FROM attendance as a
                         LEFT JOIN employee as e ON a.user_id_machine = e.user_id_machine
-                        WHERE (DATE(a.check_in) BETWEEN ? AND LAST_DAY(?)) AND e.department = ?
+                        WHERE (YEAR(a.check_in) = YEAR(?) AND MONTH(a.check_in) = MONTH(?)) AND e.department = ?
                         GROUP BY a.user_id_machine
-                        ORDER BY e.name  ASC;`,
+                        ORDER BY e.name ASC;`,
                     tanggal, tanggal, tanggal, tanggal, dept) as {}[]
                 return result
             })
@@ -274,7 +274,7 @@ export async function GET({ url }) {
                     IF(SUM(CASE WHEN a.type = "" THEN 1 ELSE 0 END) >= getWorkday(e.user_id_machine, ?, LAST_DAY(?)), 1, '') as 'Never Absen'
                     FROM attendance a 
                     LEFT JOIN employee e ON a.user_id_machine = e.user_id_machine
-                    WHERE (DATE(a.check_in) BETWEEN ? AND LAST_DAY(?)) AND e.department = ?
+                    WHERE (YEAR(a.check_in) = YEAR(?) AND MONTH(a.check_in) = MONTH(?)) AND e.department = ?
                     GROUP BY a.user_id_machine
                     ORDER BY e.name ASC`,
                     tanggal, tanggal, tanggal, tanggal, tanggal, tanggal, dept) as {}[]
@@ -293,7 +293,7 @@ export async function GET({ url }) {
                     ELSE 0 END) as 'Jam Lembur'
                     FROM attendance as a
                     LEFT JOIN employee e ON a.user_id_machine = e.user_id_machine
-                    WHERE (DATE(a.check_in) BETWEEN ? AND LAST_DAY(?)) AND e.department = ? AND e.overtime = true
+                    WHERE (YEAR(a.check_in) = YEAR(?) AND MONTH(a.check_in) = MONTH(?)) AND e.department = ? AND e.overtime = true
                     GROUP BY a.user_id_machine
                     ORDER BY e.name ASC`,
                     tanggal, tanggal, tanggal, tanggal, dept) as {}[]

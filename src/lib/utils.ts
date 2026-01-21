@@ -24,6 +24,7 @@ for (let a = 2020; a <= new Date().getFullYear() + 1; a++) {
     dataTahun.push({ value: a, title: a.toString() })
 }
 for (let a = 0; a < 12; a++) {
+    // dataBulan.push({ value: Number(a), title: namaBulan[a] })
     dataBulan.push({ value: Number(a), title: namaBulan[a] })
 }
 
@@ -48,7 +49,7 @@ export const formatTanggal = (val: string | Date, mode: "date" | "time" | "datet
 }
 
 export function capitalEachWord(text: string) {
-    return text
+    return text.toString()
         .toLowerCase()
         .replace(/\b\w/g, char => char.toUpperCase());
 }
@@ -163,7 +164,6 @@ export function generatePeriode(date: string, start: number, end: number) {
     let temp2 = new Date(Number(format(sekarang, "yyyy")), Number(format(sekarang, "MM")) - 1, end)
     const periode1 = isBefore(sekarang, temp1) ? format(subMonths(temp1, 1), "yyyy-MM-dd") : format(temp1, "yyyy-MM-dd")
     const periode2 = isBefore(sekarang, temp1) ? format(temp2, "yyyy-MM-dd") : format(addMonths(temp2, 1), "yyyy-MM-dd")
-    console.log(periode1, " | ",periode2,  " | ", sekarang)
     return { start: periode1, end: periode2 }
 }
 

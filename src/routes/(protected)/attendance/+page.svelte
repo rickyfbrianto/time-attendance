@@ -1,7 +1,7 @@
 <script lang="ts">
     import { fade } from 'svelte/transition'
     import { Table, TableBody, TableBodyCell, TableBodyRow, TableHead, Label, Tabs, TabItem, Badge, Select, Radio, Modal, Button, Alert, Tooltip } from 'flowbite-svelte';
-    import {Calendar, Ban, Search, RefreshCw, Building, Pencil, Trash, Plus, Save, Paperclip, IdCard, CalendarClock, BookOpen, CalendarCheck2 } from '@lucide/svelte'
+    import {Calendar, Ban, Search, RefreshCw, Building, Pencil, Trash, Plus, Save, Paperclip, IdCard, CalendarClock, BookOpen, CalendarCheck2, Sheet } from '@lucide/svelte'
 	import { Datatable, TableHandler, ThSort, type State } from '@vincjo/datatables/server';
 	import TableAttendanceClockIn from '$/lib/components/TableAttendanceClockIn.svelte';
 	import TableAttendanceClockOut from '$/lib/components/TableAttendanceClockOut.svelte';
@@ -23,6 +23,7 @@
 	import MyLoading from '@/MyLoading.svelte';
 	import MyInput from '@/MyInput.svelte';
 	import { useDept, useUserByDept } from '@lib/fetch.js';
+    import * as xlsx from 'xlsx'
         
     const rowsPerPage = 30
     let {data} = $props()
@@ -40,6 +41,7 @@
         {value:"Cuti Tahunan", title: "Cuti Tahunan"},
         {value:"Dinas", title: "Dinas"},
         {value:"Sakit", title: "Sakit"},
+        {value:"00:00:00", title: "Check In 00:00:00"},
     ]
 
     let headerData: {title:string, value:string, icon: any }[] = $state([])
@@ -216,7 +218,29 @@
     let formAttendanceDept = $state({
         dept: (()=> user.user_type == 'HR' ? "" : user?.department)(),
         type:"",
+        filterAbsen: "Semua"
     })
+
+    const onExportExcel = async () => {
+        const workbook = xlsx.utils.book_new()
+        if (formAttendanceDept.dept) {
+            const req = await fetch(`/api/attendance/excel?dept=${formAttendanceDept.dept || ""}&filterAbsen=${formAttendanceDept.filterAbsen}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
+            if(!req.ok) throw new Error('Gagal mengambil data')
+            const res = await req.json()
+
+            const dataAllDept = res?.map((item, iItem) => {
+                return {
+                    No: iItem + 1, 
+                    Payroll: item.payroll,
+                    Nama: item.name,
+                    CheckIn: item.check_in,
+                }
+            })
+
+            xlsx.utils.book_append_sheet(workbook, xlsx.utils.json_to_sheet(dataAllDept), `Summary ${formAttendanceDept.filterAbsen} Karyawan`)
+            xlsx.writeFile(workbook, `Attendance ${formAttendanceDept.filterAbsen} Karyawan Department ${formAttendanceDept.dept}.xlsx`)
+        }
+    }
 
     // Attendance List for HRD
     let tableListAttendance = $state(new TableHandler([], {rowsPerPage}))
@@ -308,9 +332,6 @@
     }
     
     const getAttendance = async ({val, year, month, start_date, end_date}: {val:string, year: number, month: number, start_date: string, end_date: string}) =>{
-        // const year = getYear(new Date())
-        // const month = getMonth(new Date()) + 1
-        // const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${formLogAttendance.year}&month=${formLogAttendance.month}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
         const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}&start_date=${start_date}&end_date=${end_date}`)
         const res = await req.json()
         setTimeout(()=> {
@@ -347,7 +368,7 @@
         if (user.level > 1 || user.user_type == 'HR') {
             tableAttendanceDept.load(async (state: any) => {
                 try {
-                    const req = await fetch(`/api/attendance?${getParams(state)}&dept=${formAttendanceDept.dept || ""}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
+                    const req = await fetch(`/api/attendance?${getParams(state)}&filterAbsen=${formAttendanceDept.filterAbsen}&dept=${formAttendanceDept.dept || ""}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -400,6 +421,12 @@
         formLogAttendance.month = Number(format(modeAttendance.periode.start, "M"))
         tableLogAttendance.invalidate()
     }, 1000)
+
+    const ListFilter = [
+        {label: "Semua", value:"Semua"},
+        {label: "Masuk", value:"Masuk"},
+        {label: "Tidak Masuk", value:"Tidak Masuk"},
+    ]
 </script>
 
 <svelte:head>
@@ -640,7 +667,6 @@
                 <!-- Attendance department -->
                 {#if user.level > 1 || user.user_type == 'HR'}
                     <TabItem open={modeAttendance.tabNo == 2} title="Attendance Departemen" onclick={()=> modeAttendance.tabNo = 2} >
-                        <!-- <div class="flex flex-col p-4 gap-4 border border-slate-400 rounded-lg">                 -->
                         <div class="flex flex-col gap-4">
                             <div class="flex flex-col gap-4">
                                 <div class="flex gap-2 items-start">
@@ -679,6 +705,18 @@
                                                 options={getDept.data.map((v:any) => ({value: v.dept_code, text:v.dept_code + " - " + v.name}))}
                                                 onChange={() => tableAttendanceDept.setPage(1)}/>
                                         {/if}
+                                        <div class="flex items-center flex-1 gap-2">
+                                            <span class='font-bold italic'>Status Kehadiran</span>
+                                            <Svelecte clearable selectOnTab multiple={false} bind:value={formAttendanceDept.filterAbsen} 
+                                                options={ListFilter.map((v:any) => ({value: v.value, text:v.label}))}
+                                                onChange={() => tableAttendanceDept.setPage(1)}/>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class='font-bold italic'>Export</span>
+                                            <button onclick={onExportExcel} class='flex items-center justify-center border-slate-200 border rounded-lg w-[2rem] h-[2rem]'>
+                                                <Sheet size={14} color='green'/>
+                                            </button>
+                                        </div>
                                     </div>
                                 {/if}
                             </div>

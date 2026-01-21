@@ -16,6 +16,7 @@ export async function GET({ url }) {
         const order = url.searchParams.get('_order') || "desc"
         const search = url.searchParams.get('_search') || ""
 
+        const filterAbsen = url.searchParams.get('filterAbsen') || ""
         const dept = url.searchParams.get('dept') || ""
         const payroll = url.searchParams.get('payroll') || ""
         const type = url.searchParams.get('type') || ""
@@ -23,6 +24,8 @@ export async function GET({ url }) {
         const end_date = url.searchParams.get('end_date') || ""
 
         const status = await prisma.$transaction(async (tx) => {
+            const sqlFilterAbsen = filterAbsen == "Masuk" ? "AND (TIME(check_in) <> '00:00:00' OR TIME(check_out) <> '00:00:00')" : filterAbsen == "Tidak Masuk" ? "AND (TIME(check_in) = '00:00:00' AND TIME(check_out) = '00:00:00')" : ""
+
             const items = await tx.$queryRawUnsafe(`SELECT att.attendance_id, att.user_id_machine, user.name, user.payroll, user.department as dept,
                 att.check_in AS check_in, att.check_out AS check_out, att.check_in2, att.check_out2, 
                 att.description, att.type, att.ijin_info, att.attachment, user.start_work, user.overtime, user.level, user.user_type,
@@ -36,7 +39,7 @@ export async function GET({ url }) {
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
                     LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                     WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
-                    AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ?
+                    AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ? ${sqlFilterAbsen}
                     ORDER by ${sort} ${order}
                     LIMIT ${limit} OFFSET ${offset}`,
                 `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, `%${type}%`, start_date, end_date)
@@ -47,7 +50,7 @@ export async function GET({ url }) {
                     LEFT JOIN employee as user on user.user_id_machine = att.user_id_machine
                     LEFT JOIN profile as profile on user.profile_id = profile.profile_id
                     WHERE (att.check_in like ? OR user.name like ? OR user.payroll like ?) 
-                    AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ?
+                    AND user.department like ? AND user.payroll like ? AND att.type like ? AND DATE(check_in) BETWEEN ? AND ? ${sqlFilterAbsen}
                     ) as tmp`,
                 `%${search}%`, `%${search}%`, `%${search}%`, `%${dept}%`, `%${payroll}%`, `%${type}%`, start_date, end_date) as { count: number }[]
             const totalItems = Number(count)
