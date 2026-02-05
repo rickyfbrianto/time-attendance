@@ -5,6 +5,9 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 const config = {
     preprocess: vitePreprocess(),
     kit: {
+        // paths:{
+        //     base:"/time"
+        // },
         adapter: adapter(),
         alias: {
             "@/*": "./src/lib/components/",

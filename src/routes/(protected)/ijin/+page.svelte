@@ -18,6 +18,7 @@
     import MyAlert from '@/MyAlert.svelte';
 	import { dataStore } from '@lib/store/appstore.js';
 	import { invalidate } from '$app/navigation';
+	import { base } from '$app/paths';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -109,7 +110,7 @@
             })
             const isValid = valid.safeParse(formIjin.answer)
             if(isValid.success){
-                const req = await axios.post('/api/ijin', formIjin.answer)
+                const req = await axios.post(`${base}/api/ijin`, formIjin.answer)
                 const res = await req.data
                 formIjinBatal()
                 tableIjin.invalidate()
@@ -135,7 +136,7 @@
             formIjin.loading = true
             formIjin.success = ""
             formIjin.error = ""
-            const req = await axios.get(`/api/ijin/${id}/edit`)
+            const req = await axios.get(`${base}/api/ijin/${id}/edit`)
             const res = await req.data
             
             if(res){
@@ -160,7 +161,7 @@
     const formIjinDelete = async (id:string) =>{
         try {
             formIjin.loading = true
-            const req = await axios.delete(`/api/ijin/${id}/delete`)
+            const req = await axios.delete(`${base}/api/ijin/${id}/delete`)
             const res = await req.data
             formIjin.error = ""
             formIjin.success = res.message
@@ -177,7 +178,7 @@
         try {
             formIjin.answer.ijin_id = ijin_id
             formIjin.answer.approval = approval
-            const req = await axios.post('/api/ijin/delegate', formIjin.answer)
+            const req = await axios.post(`${base}/api/ijin/delegate`, formIjin.answer)
             const res = await req.data
             formIjinBatal()
             tableIjin.invalidate()
@@ -212,7 +213,7 @@
             formApprovalIjin.answer.ijin_id = cuti_id
             formApprovalIjin.answer.approval = approval
             formApprovalIjin.answer.status = status
-            const req = await axios.post('/api/ijin/approve', formApprovalIjin.answer)
+            const req = await axios.post(`${base}/api/ijin/approve`, formApprovalIjin.answer)
             const res = await req.data
             if(user.user_type == 'HR') tableListIjin.invalidate()
             tableApprovalIjin.invalidate()
@@ -249,18 +250,18 @@
     const getCutiCalendar = async (v: string) =>{
         const year = getYear(new Date())
         const month = 12
-        const req = await fetch(`/api/data?type=get_cuti_dashboard&payroll=${user.payroll}&val=${v}&year=${year}&month=${month}`)
+        const req = await fetch(`${base}/api/data?type=get_cuti_dashboard&payroll=${user.payroll}&val=${v}&year=${year}&month=${month}`)
         const res = await req.json()
         return res
     }
     
     const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
+        const req = await fetch(`${base}/api/data?type=user_by_dept&val=${val || ""}`)
         return await req.json()
     }
 
     const fillIjin = async (val: string) => {
-        const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
+        const req = await fetch(`${base}/api/data?type=user_for_ijin&val=${val || ""}`)
         const res = await req.json()
         if(res){
             formIjin.answer.name = capitalEachWord(res.name)
@@ -290,7 +291,7 @@
     $effect(()=>{
         tableIjin.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/ijin?${getParams(state)}&payroll=${user.payroll}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
+                const req = await fetch(`${base}/api/ijin?${getParams(state)}&payroll=${user.payroll}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -303,7 +304,7 @@
         if (user.level > 1){
             tableApprovalIjin.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/ijin/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
+                    const req = await fetch(`${base}/api/ijin/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -317,7 +318,7 @@
         if (user.user_type == 'HR'){
             tableListIjin.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/ijin/list?${getParams(state)}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
+                    const req = await fetch(`${base}/api/ijin/list?${getParams(state)}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)

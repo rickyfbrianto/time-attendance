@@ -1,9 +1,8 @@
 <script lang="ts">
 	import MyInput from '@/MyInput.svelte';
-	import MyButton from '@/MyButton.svelte';
     import {fade} from 'svelte/transition'
 	import axios from 'axios';
-	import { Alert, Checkbox } from 'flowbite-svelte';
+	import { Alert, Button, Checkbox } from 'flowbite-svelte';
     import {CircleAlert, Check} from '@lucide/svelte'
     import { goto } from '$app/navigation';
     import { page } from '$app/stores'
@@ -46,33 +45,39 @@
     <title>Signin</title>
 </svelte:head>
 
-<main in:fade={{delay:500}} out:fade class="flex flex-col bg-bgdark text-textdark rounded-lg container border-[2px] border-slate-200 overflow-hidden">
-    <div class="flex p-6 bg-bgdark2 rounded-t-lg">
-        <span class='text-[1.4rem]'>Login</span>
-    </div>
-    
-    <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col mx-auto p-6 self-start gap-2 min-w-[30rem]'>
-        {#if formLoginState.error}
-            <Alert border color="red" class='flex gap-2 items-center'>
-                <CircleAlert size={16}/>
-                {formLoginState.error}
-            </Alert>
-        {/if}
-        {#if formLoginState.success}
-            <Alert border color="green" class='flex gap-2 items-center'>
-                <Check size={16}/>
-                {formLoginState.success}
-            </Alert>
-        {/if}
-        <div class="flex flex-col gap-4">
-            <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
-            <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
-            <Checkbox bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Ingat Login</Checkbox>
-            {#if !formLoginState.loading}
-                <MyButton disabled={formLoginState.loading} className='font-poppins self-start' type={'submit'}>Signin</MyButton>
-            {:else}
-            <MyLoading message="Verifikasi Masuk"/>
-            {/if}
+<div class="flex items-center h-screen w-screen bg-bgside2">
+    <div in:fade={{delay:500}} out:fade class="container mx-auto grid md:grid-cols-[20rem_1fr] lg:grid-cols-[26rem_1fr] items-center bg-stone-100 dark:bg-bgside/[.7] text-textdark rounded-xl divide-y md:divide-y-0 md:divide-x divide-zinc-200 dark:divide-x-0">
+        <form method="POST" onsubmit={formLoginSubmit} class='flex flex-col justify-center h-full p-10 gap-2 font-quicksand'>
+            <span class='text-[2.2rem] font-bold'>Hello Guest,</span>
+            <span class='text-[1.2rem] font-bold'>Welcome to Time Attendance </span>
+            <hr class="border-zinc-200 my-4">
+            <div class="flex flex-col gap-4">
+                <MyInput type='text' title="Payroll" name='payroll' bind:value={formLoginState.answer.payroll}></MyInput>
+                <MyInput type='password' title="Password" name='password' password={true} bind:value={formLoginState.answer.password}></MyInput>
+                <Checkbox class='text-textdark' bind:checked={formLoginState.answer.remember_me as unknown as boolean}>Ingat Login</Checkbox>
+                {#if !formLoginState.loading}
+                    <Button disabled={formLoginState.loading} class="self-start" type={"submit"}>Ya</Button>
+                {:else}
+                <MyLoading message="Verifikasi Masuk"/>
+                {/if}
+                {#if formLoginState.error}
+                    <Alert border color="red" class='flex gap-2 items-center text-[1.2rem] font-bold'>
+                        <CircleAlert size={16}/>
+                        {formLoginState.error}
+                    </Alert>
+                {/if}
+                {#if formLoginState.success}
+                    <Alert border color="green" class='flex gap-2 items-center text-[1.2rem] font-bold'>
+                        <Check size={16}/>
+                        {formLoginState.success}
+                    </Alert>
+                {/if}
+            </div>
+        </form>
+        <div class="flex">
+            <img src="/login.svg" class="w-[75vw] h-[75vh] object-contain" alt="">
         </div>
-    </form>        
-</main>
+    </div>
+    <!-- <div class="container mx-auto">
+    </div> -->
+</div>

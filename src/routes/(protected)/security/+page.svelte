@@ -18,6 +18,7 @@
 	import { fromZodError } from 'zod-validation-error';
 	import { getYear, addHours, addDays } from 'date-fns';
 	import { formatDateToSQLString, formatTanggal, getColorCalendar, capitalEachWord } from '@lib/utils';
+	import { base } from '$app/paths';
 
     let {data} = $props()
     let user = $derived(data.user)
@@ -84,7 +85,7 @@
         eventDidMount: ({ event, el }) => {
             el.addEventListener('dblclick', async () => {
                 if(!isUserAllowed) return
-                const req = await axios.get(`/api/security/schedule/${event.id}`)
+                const req = await axios.get(`${base}/api/security/schedule/${event.id}`)
                 const res = await req.data
                 formSecurity.add = false
                 formSecurity.answer.id = res.id
@@ -102,7 +103,7 @@
                 formSecurity.answer.id = info.event.id
                 formSecurity.loading = true
                 formSecurity.answer.date = [formatDateToSQLString(info.event.start)]
-                const req = await axios.post('/api/security/schedule/updatedate', {
+                const req = await axios.post(`${base}/api/security/schedule/updatedate`, {
                     id: formSecurity.answer.id,
                     date: formSecurity.answer.date,
                     payroll: info.event.extendedProps.payroll,
@@ -151,7 +152,7 @@
 
             const isValid = valid.safeParse(formSecurity.answer)
             if(isValid.success){
-                const req = await axios.post('/api/security/schedule', formSecurity.answer)
+                const req = await axios.post(`${base}/api/security/schedule`, formSecurity.answer)
                 const res = await req.data
                 handleCancel()
                 getReportSecurity()
@@ -171,12 +172,12 @@
     }
 
     const getUser = async () =>{
-        const req = await fetch(`/api/data?type=user_by_user_type&val=security`)
+        const req = await fetch(`${base}/api/data?type=user_by_user_type&val=security`)
         return await req.json()
     }
 
     const getReportSecurity = async () =>{        
-        const reqSchedule = await fetch(`/api/security/schedule?payroll=${formSecurity.payroll}&area=${formSecurity.area}&year=${modeSecurity.year}&month=${modeSecurity.month}`)
+        const reqSchedule = await fetch(`${base}/api/security/schedule?payroll=${formSecurity.payroll}&area=${formSecurity.area}&year=${modeSecurity.year}&month=${modeSecurity.month}`)
         const resSchedule = await reqSchedule.json() as any[]        
         const tempSchedule = resSchedule.map((value: any) => {
             const {name, shift, date, id, payroll, area} = value

@@ -22,6 +22,7 @@
 	import { goto } from '$app/navigation';
 	import MyBadge from '@/MyBadge.svelte';
 	import { useQueryClient } from '@tanstack/svelte-query';
+	import { base } from '$app/paths';
 
     let {data} = $props()
     let user = $derived(data.user)
@@ -83,7 +84,7 @@
             })
             const isValid = valid.safeParse(formSPPD.answer)
             if(isValid.success){            
-                const req = await axios.post('/api/sppd', formSPPD.answer)
+                const req = await axios.post(`${base}/api/sppd`, formSPPD.answer)
                 const res = await req.data
                 formSPPDBatal()
                 tableSPPD.invalidate()
@@ -107,7 +108,7 @@
     const formSPPDEdit = async (id:string) =>{
         try {
             formSPPD.loading = true            
-            const req = await axios.get(`/api/sppd/${id}`)
+            const req = await axios.get(`${base}/api/sppd/${id}`)
             const res = await req.data
             if(res){
                 formSPPD.edit = true
@@ -124,7 +125,7 @@
     const formSPPDDelete = async (id:string) =>{
         try {
             formSPPD.loading = true
-            await axios.delete(`/api/sppd/${id}`)
+            await axios.delete(`${base}/api/sppd/${id}`)
             tableSPPD.invalidate()
         } catch (error) {
         } finally {
@@ -134,7 +135,7 @@
 
     const handleCetakSPPD= async (id:string) =>{
         try {
-            const req = await axios.get(`/api/sppd/${id}`)
+            const req = await axios.get(`${base}/api/sppd/${id}`)
             const res = await req.data
 
             const doc = new jsPDF({
@@ -295,7 +296,7 @@
 
             window.open(url); // buka tab baru
         } catch (err) {
-            goto(`/api/handleError?msg=${err.message}`)
+            goto(`${base}/api/handleError?msg=${err.message}`)
         }
     }
     
@@ -344,7 +345,7 @@
             
             const isValid = valid.safeParse(formSKPD.answer)
             if(isValid.success){
-                const req = await axios.post('/api/skpd', formSKPD.answer)
+                const req = await axios.post(`${base}/api/skpd`, formSKPD.answer)
                 const res = await req.data
                 formSKPDBatal()
                 tableSKPD.invalidate()
@@ -368,7 +369,7 @@
     const formSKPDEdit = async (id:string) =>{
         try {
             formSKPD.loading = true
-            const req = await axios.get(`/api/skpd/${id}`)
+            const req = await axios.get(`${base}/api/skpd/${id}`)
             const res = await req.data
             if(res){
                 formSKPD.answer = {...res}
@@ -390,7 +391,7 @@
     const formSKPDDelete = async (id:string) =>{
         try {
             formSKPD.loading = true
-            const req = await axios.delete(`/api/skpd/${id}`)
+            const req = await axios.delete(`${base}/api/skpd/${id}`)
             const res = await req.data
             tableSKPD.invalidate()
             formSKPDBatal()
@@ -405,7 +406,7 @@
 
     const handleApproveSKPD = async (id: string) => {
         try {
-            const req = await axios.post(`/api/skpd/${id}/approve_skpd`)
+            const req = await axios.post(`${base}/api/skpd/${id}/approve_skpd`)
             const res = await req.data
             tableSKPD.invalidate()
             formSKPDBatal()
@@ -419,7 +420,7 @@
     
     const handleCetakSKPD= async (id:string) =>{
         try {        
-            const req = await axios.get(`/api/skpd/${id}`)
+            const req = await axios.get(`${base}/api/skpd/${id}`)
             const res = await req.data
 
             const imageUrl = import.meta.env.VITE_VIEW_SIGNATURE
@@ -590,14 +591,14 @@
             window.open(url); // buka tab baru
             // doc.save(`${res.skpd_id}.pdf`);
         } catch (err) {
-            goto(`/api/handleError?msg=${err.message}`)
+            goto(`${base}/api/handleError?msg=${err.message}`)
         }
     }
     
     const showPreviewSKPD = async (value: string) => {
         formSKPD.modalPreview = true
 
-        const req = await axios.get(`/api/skpd/${value}`)
+        const req = await axios.get(`${base}/api/skpd/${value}`)
         const res = await req.data
         if(res){
             formSKPD.answer = {...res}
@@ -610,26 +611,26 @@
     }
     
     const getDept = async () =>{
-        const req = await fetch(`/api/data?type=dept_by_divisi&val=${user.dept.divisi}`)
+        const req = await fetch(`${base}/api/data?type=dept_by_divisi&val=${user.dept.divisi}`)
         return await req.json()
     }
     
     const getUserByDept = $derived.by(() => {
         return async (val: string) =>{
-            const req = await fetch(`/api/data?type=user_filter_level&val=down&payroll=${user.payroll}&dept=${val}`)
+            const req = await fetch(`${base}/api/data?type=user_filter_level&val=down&payroll=${user.payroll}&dept=${val}`)
             const res = await req.json()
             return res
         }       
     })
     
     const getSPPD = async () =>{
-        const req = await fetch(`/api/data?type=sppd_not_in_skpd`)
+        const req = await fetch(`${base}/api/data?type=sppd_not_in_skpd`)
         const res = await req.json()
         return res
     }
 
     const getSPPDDetail = async (id: string) =>{
-        const req = await fetch(`/api/data?type=get_sppd_by_id&val=${id}`)
+        const req = await fetch(`${base}/api/data?type=get_sppd_by_id&val=${id}`)
         const res = await req.json()
 
         setTimeout(()=>{
@@ -644,7 +645,7 @@
     $effect(()=>{
         tableSPPD.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/sppd?${getParams(state)}&payroll=${formSPPD.payroll || ""}&dept=${formSPPD.dept || ""}`)
+                const req = await fetch(`${base}/api/sppd?${getParams(state)}&payroll=${formSPPD.payroll || ""}&dept=${formSPPD.dept || ""}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items
@@ -655,7 +656,7 @@
 
         tableSKPD.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/skpd?${getParams(state)}&payroll=${formSKPD.payroll}`)
+                const req = await fetch(`${base}/api/skpd?${getParams(state)}&payroll=${formSKPD.payroll}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items

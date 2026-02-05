@@ -19,6 +19,7 @@
     import MyAlert from '@/MyAlert.svelte';
     import MyDatePicker from '@/MyDatePicker.svelte';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
     
     let {data} = $props()
     let user = $derived(data.user) 
@@ -86,7 +87,7 @@
             })
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
-                const req = await axios.post('/api/lembur/spl', formSPL.answer)
+                const req = await axios.post(`${base}/api/lembur/spl`, formSPL.answer)
                 const res = await req.data                
                 formSPLBatal()
                 tableSPL.invalidate()
@@ -111,7 +112,7 @@
             formSPL.loading = true
             formSPL.error = ""
             formSPL.success = ""
-            const req = await axios.get(`/api/lembur/spl/${id}/edit`)
+            const req = await axios.get(`${base}/api/lembur/spl/${id}/edit`)
             const res = await req.data
             if(res){
                 formSPL.answer = {...res,
@@ -135,7 +136,7 @@
     const formSPLDelete = async (id:string) =>{
         try {
             formSPL.loading = true
-            const req = await axios.delete(`/api/lembur/spl/${id}/delete`)
+            const req = await axios.delete(`${base}/api/lembur/spl/${id}/delete`)
             const res = await req.data
             formSPL.error = ""
             formSPL.success = res.message
@@ -150,7 +151,7 @@
 
     const handleCetakSPL = async (id:string) =>{
         try {        
-            const req = await axios.get(`/api/lembur/spl/${id}/print`)
+            const req = await axios.get(`${base}/api/lembur/spl/${id}/print`)
             const res = await req.data
 
             if(!res.employee_spl_createdByToemployee.signature && !res.employee_spl_approval1Toemployee.signature && !res.employee_spl_acknowledgeByToemployee.signature){
@@ -269,13 +270,13 @@
             window.open(url); // buka tab baru
             // doc.save(`${id}.pdf`);
         } catch (err) {
-            goto(`/api/handleError?msg=${err.message}`)
+            goto(`${base}/api/handleError?msg=${err.message}`)
         }
     }
 
     const handleAcknowledgedSPL = async (id:string) =>{
         try {
-            const req = await axios.post(`/api/lembur/spl/${id}/acknowledge`, {
+            const req = await axios.post(`${base}/api/lembur/spl/${id}/acknowledge`, {
                 acknowledgeBy: user.payroll
             })
             const res = await req.data
@@ -309,7 +310,7 @@
         try {
             formSPLApproval1.answer.spl_id = spl_id
             formSPLApproval1.answer.status = val
-            const req = await axios.post('/api/lembur/spl/approve1', formSPLApproval1.answer)
+            const req = await axios.post(`${base}/api/lembur/spl/approve1`, formSPLApproval1.answer)
             const res = await req.data
             tableSPLApproval1.invalidate()
             tableSPL.invalidate()
@@ -324,7 +325,7 @@
     const showPreviewSPL = async (value: string) => {
         formSPL.modalPreview = true
 
-        const req = await axios.get(`/api/lembur/spl/${value}/preview`)
+        const req = await axios.get(`${base}/api/lembur/spl/${value}/preview`)
         const res = await req.data
         if(res){
             formSPL.answer = {...res,
@@ -380,7 +381,7 @@
             })
             const isValid = valid.safeParse(formSRL.answer)
             if(isValid.success){
-                const req = await axios.post('/api/lembur/srl', formSRL.answer)
+                const req = await axios.post(`${base}/api/lembur/srl`, formSRL.answer)
                 const res = await req.data
                 formSRLBatal()
                 tableSRL.invalidate()
@@ -403,7 +404,7 @@
     const formSRLEdit = async (id:string) =>{
         try {
             formSRL.loading = true
-            const req = await axios.get(`/api/lembur/srl/${id}/edit`)
+            const req = await axios.get(`${base}/api/lembur/srl/${id}/edit`)
             const res = await req.data
             if(res){
                 formSRL.answer = {...res,
@@ -426,7 +427,7 @@
     const formSRLDelete = async (id:string) => {
         try {
             formSRL.loading = true
-            const req = await axios.delete(`/api/lembur/srl/${id}/delete`)
+            const req = await axios.delete(`${base}/api/lembur/srl/${id}/delete`)
             const res = await req.data
             formSRL.error = ""
             formSRL.success = res.message
@@ -441,7 +442,7 @@
 
     const handleCetakSRL= async (id:string) =>{
         try {
-            const req = await axios.get(`/api/lembur/srl/${id}/print`)
+            const req = await axios.get(`${base}/api/lembur/srl/${id}/print`)
             const res = await req.data
             
             if(!res.employee_srl_payrollToemployee.signature || !res.employee_srl_approval1Toemployee.signature || !res.employee_srl_approval2Toemployee.signature){
@@ -572,7 +573,7 @@
 
             window.open(url); // buka tab baru
         } catch (err) {
-            goto(`/api/handleError?msg=${err.message}`)
+            goto(`${base}/api/handleError?msg=${err.message}`)
         }
     }
 
@@ -597,7 +598,7 @@
         try {
             formSRLApproval1.answer.srl_id = srl_id
             formSRLApproval1.answer.status = val
-            const req = await axios.post('/api/lembur/srl/approve1', formSRLApproval1.answer)
+            const req = await axios.post(`${base}/api/lembur/srl/approve1`, formSRLApproval1.answer)
             const res = await req.data
             tableSRLApproval1.invalidate()
             tableSRLApproval2.invalidate()
@@ -631,7 +632,7 @@
         try {
             formSRLApproval2.answer.srl_id = srl_id
             formSRLApproval2.answer.status = val
-            const req = await axios.post('/api/lembur/srl/approve2', formSRLApproval2.answer)
+            const req = await axios.post(`${base}/api/lembur/srl/approve2`, formSRLApproval2.answer)
             const res = await req.data
             tableSRLApproval2.invalidate()
             tableSRL.invalidate()
@@ -646,7 +647,7 @@
     const showPreviewSRL = async (value: string) => {
         formSRL.modalPreview = true
 
-        const req = await axios.get(`/api/lembur/srl/${value}/preview`)
+        const req = await axios.get(`${base}/api/lembur/srl/${value}/preview`)
         const res = await req.data
         if(res){
             formSRL.answer = {...res,
@@ -659,7 +660,7 @@
     }
     
     const getSPL = async () =>{
-        const req = await fetch(`/api/data?type=spl_by_status&val=${user.payroll}`)
+        const req = await fetch(`${base}/api/data?type=spl_by_status&val=${user.payroll}`)
         const res = await req.json()
         type Props = {
             est_start: string,
@@ -675,7 +676,7 @@
 
     const getUserByDept = $derived.by(() => {
         return async () =>{
-            const req = await fetch(`/api/data?type=user_by_dept&val=${user.department}`)
+            const req = await fetch(`${base}/api/data?type=user_by_dept&val=${user.department}`)
             const res = await req.json()
             return res
         }
@@ -683,7 +684,7 @@
 
     const getUserAtasan = $derived.by(() => {
         return async (val: string) =>{
-            const req = await fetch(`/api/data?type=user_filter_level&val=up&payroll=${val}`)
+            const req = await fetch(`${base}/api/data?type=user_filter_level&val=up&payroll=${val}`)
             const res = await req.json()
             return res
         }
@@ -691,7 +692,7 @@
 
     const getUserForLembur = $derived.by(() => {
         return async () =>{
-            const req = await fetch(`/api/data?type=user_for_lembur&val=${user.department}`)
+            const req = await fetch(`${base}/api/data?type=user_for_lembur&val=${user.department}`)
             const res = await req.json()
             return res
         }
@@ -708,7 +709,7 @@
     $effect(()=>{
         tableSPL.load(async (state:State) => {
             try {           
-                const req = await fetch(`/api/lembur/spl?${getParams(state)}&dept=${formSPL.dept}&payroll=${formSPL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
+                const req = await fetch(`${base}/api/lembur/spl?${getParams(state)}&dept=${formSPL.dept}&payroll=${formSPL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -720,7 +721,7 @@
 
         tableSPLApproval1.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/spl/approve1?${getParams(state)}&payroll=${user.payroll}`)
+                const req = await fetch(`${base}/api/lembur/spl/approve1?${getParams(state)}&payroll=${user.payroll}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items
@@ -731,7 +732,7 @@
         
         tableSRL.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/srl?${getParams(state)}&payroll=${formSRL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
+                const req = await fetch(`${base}/api/lembur/srl?${getParams(state)}&payroll=${formSRL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -743,7 +744,7 @@
 
         tableSRLApproval1.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/srl/approve1?${getParams(state)}&payroll=${user.payroll}`)
+                const req = await fetch(`${base}/api/lembur/srl/approve1?${getParams(state)}&payroll=${user.payroll}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items
@@ -754,7 +755,7 @@
 
         tableSRLApproval2.load(async (state:State) => {
             try {
-                const req = await fetch(`/api/lembur/srl/approve2?${getParams(state)}&payroll=${user.payroll}`)
+                const req = await fetch(`${base}/api/lembur/srl/approve2?${getParams(state)}&payroll=${user.payroll}`)
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
                 return items

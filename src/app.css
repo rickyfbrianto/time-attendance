@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'flatpickr/dist/flatpickr.min.css';
+@import "tailwindcss";
+@import "flatpickr/dist/flatpickr.min.css";
 @plugin '@tailwindcss/typography';
 @plugin '@tailwindcss/forms';
 @plugin 'flowbite/plugin';
@@ -7,101 +7,102 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @font-face {
-    font-family: 'Quicksand';
-    src: url('/fonts/Quicksand-Regular.ttf');
+	font-family: "Quicksand";
+	src: url("/fonts/Quicksand-Regular.ttf");
 }
 
 @font-face {
-    font-family: 'Dancing Script';
-    src: url('/fonts/DancingScript-Regular.ttf');
+	font-family: "Dancing Script";
+	src: url("/fonts/DancingScript-Regular.ttf");
 }
 
 @theme {
-    --color-primary-50: #fff5f2;
-    --color-primary-100: #fff1ee;
-    --color-primary-200: #ffe4de;
-    --color-primary-300: #ffd5cc;
-    --color-primary-400: #ffbcad;
-    --color-primary-500: #fe795d;
-    --color-primary-600: #ef562f;
-    --color-primary-700: #eb4f27;
-    --color-primary-800: #cc4522;
-    --color-primary-900: #a5371b;
+	--color-primary-50: #fff5f2;
+	--color-primary-100: #fff1ee;
+	--color-primary-200: #ffe4de;
+	--color-primary-300: #ffd5cc;
+	--color-primary-400: #ffbcad;
+	--color-primary-500: #fe795d;
+	--color-primary-600: #ef562f;
+	--color-primary-700: #eb4f27;
+	--color-primary-800: #cc4522;
+	--color-primary-900: #a5371b;
 
-    --color-bgactive: #E7ECEF;
-    --color-bgdark: #FFF;
-    --color-bgdark2: #F7F9F9;
-    --color-textdark: var(--color-slate-800);
-    --color-textdark2: #0E273C;
-    --color-bgside: var(--warna-base);
-    --color-bgside2: #FFF;
-    --color-textside: var(--color-slate-700);
+	--color-bgactive: #e7ecef;
+	--color-bgdark: #fff;
+	--color-bgdark2: #f7f9f9;
+	--color-textdark: var(--color-slate-800);
+	--color-textdark2: #0e273c;
+	--color-bgside: var(--warna-base);
+	--color-bgside2: #fff;
+	--color-textside: var(--color-slate-700);
 
-    --color-kuning: #F9DB6D;
-    --color-hijau: #337357;
-    --color-merah: #922D50;
-    --color-biru: #2374AB;
-    --color-black: #00272B;
+	--color-kuning: #f9db6d;
+	--color-hijau: #337357;
+	--color-merah: #922d50;
+	--color-biru: #2374ab;
+	--color-black: #00272b;
 
-    --font-quicksand: Quicksand;
-    --font-dancing: "Dancing Script";
+	--font-quicksand: Quicksand;
+	--font-dancing: "Dancing Script";
 }
 
 .dark {
-    --color-bgactive: #656565;
-    --color-bgdark: #1F2421;
-    --color-bgdark2: #353531;
-    --color-textdark: #FFF;
-    --color-textdark2: #F0E7D8;
-    --color-bgside: #191919;
-    --color-bgside2: #353531;
-    --color-textside: var(--color-slate-300);
+	--color-bgactive: #656565;
+	--color-bgdark: #1f2421;
+	--color-bgdark2: #353531;
+	--color-textdark: #fff;
+	--color-textdark2: #f0e7d8;
+	--color-bgside: #191919;
+	--color-bgside2: #353531;
+	--color-textside: var(--color-slate-300);
+	--color-merah: #df1b1b;
 }
 
 :root {
-    --ukuran1: 2rem;
-    --ukuran2: 2.5rem;
-    --ukuran3: 3rem;
-    --ukuran4: 3.5rem;
-    --ukuran5: 4rem;
-    --ukuran6: 4.5rem;
-    --ukuran7: 5rem;
-    --ukuran8: 5.5rem;
-    --ukuran9: 6rem;
-    --ukuran10: 6.5rem;
-    --ukuran11: 7rem;
-    --ukuran12: 7.5rem;
-    --ukuran13: 8rem;
-    --ukuran14: 8.5rem;
-    --ukuran15: 9rem;
-    --ukuran16: 9.5rem;
-    --ukuran17: 10rem;
-    --ukuran18: 10.5rem;
-    --ukuran19: 11rem;
-    --ukuran20: 11.5rem;
-    --ukuran21: 12rem;
-    --ukuran22: 12.5rem;
-    --ukuran23: 13rem;
-    --ukuran24: 13.5rem;
-    --ukuran25: 14rem;
-    --ukuran26: 14.5rem;
-    --ukuran27: 15rem;
-    --ukuran28: 15.5rem;
-    --ukuran29: 16rem;
-    --ukuran30: 16.5rem;
+	--ukuran1: 2rem;
+	--ukuran2: 2.5rem;
+	--ukuran3: 3rem;
+	--ukuran4: 3.5rem;
+	--ukuran5: 4rem;
+	--ukuran6: 4.5rem;
+	--ukuran7: 5rem;
+	--ukuran8: 5.5rem;
+	--ukuran9: 6rem;
+	--ukuran10: 6.5rem;
+	--ukuran11: 7rem;
+	--ukuran12: 7.5rem;
+	--ukuran13: 8rem;
+	--ukuran14: 8.5rem;
+	--ukuran15: 9rem;
+	--ukuran16: 9.5rem;
+	--ukuran17: 10rem;
+	--ukuran18: 10.5rem;
+	--ukuran19: 11rem;
+	--ukuran20: 11.5rem;
+	--ukuran21: 12rem;
+	--ukuran22: 12.5rem;
+	--ukuran23: 13rem;
+	--ukuran24: 13.5rem;
+	--ukuran25: 14rem;
+	--ukuran26: 14.5rem;
+	--ukuran27: 15rem;
+	--ukuran28: 15.5rem;
+	--ukuran29: 16rem;
+	--ukuran30: 16.5rem;
 
-    --warna-base: #F0EBD8;
-    --warna-base2: #add;
+	--warna-base: #f0ebd8;
+	--warna-base2: #add;
 
-    --balloon-color: blue;
+	--balloon-color: blue;
 }
 
 body * {
-    @apply transition-colors duration-100;
+	@apply transition-colors duration-100;
 }
 
 .tooltip {
-    @apply bg-slate-700 text-white dark:bg-slate-100 dark:text-black text-xs p-2 rounded-md shadow-xl z-1;
+	@apply bg-slate-700 text-white dark:bg-slate-100 dark:text-black text-xs p-2 rounded-md shadow-xl z-1;
 }
 
 @source "../node_modules/flowbite-svelte/dist";

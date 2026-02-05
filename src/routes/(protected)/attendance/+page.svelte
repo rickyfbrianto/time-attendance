@@ -24,6 +24,7 @@
 	import MyInput from '@/MyInput.svelte';
 	import { useDept, useUserByDept } from '@lib/fetch.js';
     import * as xlsx from 'xlsx'
+	import { base } from '$app/paths';
         
     const rowsPerPage = 30
     let {data} = $props()
@@ -123,7 +124,7 @@
 
             const isValid = valid.safeParse(formAttendance.answer)
             if(isValid.success){
-                const req = await axios.post('/api/attendance', formData)
+                const req = await axios.post(`${base}/api/attendance`, formData)
                 const res = await req.data
                 formAttendanceBatal()
                 tableAttendance.invalidate()
@@ -159,7 +160,7 @@
             formAttendance.error = ""
             formAttendance.modal = true
             formAttendance.loading = true
-            const req = await axios.get(`/api/attendance/${id}`)
+            const req = await axios.get(`${base}/api/attendance/${id}`)
             const res = await req.data
             
             formAttendance.answer = {...res}
@@ -182,7 +183,7 @@
     const formAttendanceDelete = async (id:string) =>{
         try {
             formAttendance.loading = true
-            const req = await axios.delete(`/api/attendance/${id}`)
+            const req = await axios.delete(`${base}/api/attendance/${id}`)
             const res = await req.data
             tableAttendance.invalidate()
             tableAttendanceDept.invalidate()
@@ -224,7 +225,7 @@
     const onExportExcel = async () => {
         const workbook = xlsx.utils.book_new()
         if (formAttendanceDept.dept) {
-            const req = await fetch(`/api/attendance/excel?dept=${formAttendanceDept.dept || ""}&filterAbsen=${formAttendanceDept.filterAbsen}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
+            const req = await fetch(`${base}/api/attendance/excel?dept=${formAttendanceDept.dept || ""}&filterAbsen=${formAttendanceDept.filterAbsen}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
             if(!req.ok) throw new Error('Gagal mengambil data')
             const res = await req.json()
 
@@ -311,7 +312,7 @@
             })
             const isValid = valid.safeParse(formSPL.answer)
             if(isValid.success){
-                const req = await axios.post('/api/lembur/spl', formSPL.answer)
+                const req = await axios.post(`${base}/api/lembur/spl`, formSPL.answer)
                 const res = await req.data
                 formSPL.success = res.message
                 setTimeout(()=> {
@@ -332,7 +333,7 @@
     }
     
     const getAttendance = async ({val, year, month, start_date, end_date}: {val:string, year: number, month: number, start_date: string, end_date: string}) =>{
-        const req = await fetch(`/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}&start_date=${start_date}&end_date=${end_date}`)
+        const req = await fetch(`${base}/api/data?type=sum_attendance_by_payroll&val=${val}&year=${year}&month=${month}&start_date=${start_date}&end_date=${end_date}`)
         const res = await req.json()
         setTimeout(()=> {
             modeAttendance.name = res.Name
@@ -355,7 +356,7 @@
     $effect(()=>{
         tableAttendance.load(async(state: State) => {
             try {
-                const req = await fetch(`/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
+                const req = await fetch(`${base}/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -368,7 +369,7 @@
         if (user.level > 1 || user.user_type == 'HR') {
             tableAttendanceDept.load(async (state: any) => {
                 try {
-                    const req = await fetch(`/api/attendance?${getParams(state)}&filterAbsen=${formAttendanceDept.filterAbsen}&dept=${formAttendanceDept.dept || ""}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
+                    const req = await fetch(`${base}/api/attendance?${getParams(state)}&filterAbsen=${formAttendanceDept.filterAbsen}&dept=${formAttendanceDept.dept || ""}&type=${formAttendanceDept.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -382,7 +383,7 @@
         if(user.user_type == 'HR'){
             tableListAttendance.load(async (state: any) => {
                 try {
-                    const req = await fetch(`/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formListAttendance.type}`)
+                    const req = await fetch(`${base}/api/attendance/list?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formListAttendance.type}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -395,7 +396,7 @@
 
         tableLogAttendance.load(async (state: any) => {
             try {
-                const req = await fetch(`/api/attendance/log?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formLogAttendance.type}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
+                const req = await fetch(`${base}/api/attendance/log?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formLogAttendance.type}&year=${formLogAttendance.year}&month=${formLogAttendance.month}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -441,7 +442,7 @@
             {#await getAttendance({val: modeAttendance.payroll,year:formLogAttendance.year, month: formLogAttendance.month, start_date: modeAttendance.periode.start, end_date: modeAttendance.periode.end})}
                 <MyLoading message={`Loading data user`}/>
             {:then}
-                <div class={`flex rounded-lg p-4 gap-4 border-[2px] border-slate-200 text-textdark ${modeAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2 shadow-lg"}`}>
+                <div class={`flex rounded-lg p-4 gap-4 border border-zinc-200 text-textdark ${modeAttendance.payroll == user.payroll ? "bg-bgdark":"bg-bgdark2 shadow-lg"}`}>
                     <div class="flex flex-col gap-2 min-w-fit">
                         <div class="flex flex-col">
                             <span class="font-bold text-[1rem]">{modeAttendance.name}</span>
@@ -464,9 +465,9 @@
                     </div>
                     
                     <div class="flex flex-col w-full gap-4">
-                        <div class="hidden lg:flex flex-wrap items-end w-full items-center gap-4">
+                        <div class="hidden lg:flex flex-wrap w-full items-center gap-4">
                             {#each headerData as {title, value, icon: Icon}}
-                                <div class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
+                                <div class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-zinc-200 p-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap`}>
                                     <span class="text-[.85rem] font-semibold">{title}</span>
                                     <div class="flex justify-between items-center gap-2">
                                         <Icon size={15}/>
@@ -713,7 +714,7 @@
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <span class='font-bold italic'>Export</span>
-                                            <button onclick={onExportExcel} class='flex items-center justify-center border-slate-200 border rounded-lg w-[2rem] h-[2rem]'>
+                                            <button onclick={onExportExcel} class='flex items-center justify-center border-zinc-200 border rounded-lg w-[2rem] h-[2rem]'>
                                                 <Sheet size={14} color='green'/>
                                             </button>
                                         </div>
@@ -1258,7 +1259,7 @@
 
                             <div class="flex flex-col gap-2">
                                 <Label>Information</Label>
-                                <div class="flex gap-4 border-[2px] border-slate-200 p-2 rounded-lg">
+                                <div class="flex gap-4 border-[2px] border-zinc-200 p-2 rounded-lg">
                                     <Radio value="" bind:group={formAttendance.answer.ijin_info}>None</Radio>
                                     <Radio value="Permit" bind:group={formAttendance.answer.ijin_info}>Ijin</Radio>
                                     <Radio value="Sick" bind:group={formAttendance.answer.ijin_info}>Sakit</Radio>

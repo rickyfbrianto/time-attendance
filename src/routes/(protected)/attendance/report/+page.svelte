@@ -82,7 +82,7 @@
     const useReportAttendance = createQuery(()=> ({
         queryKey: ['getReportAttendance'],
         queryFn: async () => {
-            return await fetch(`/api/data?type=get_report_attendance_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
+            return await fetch(`${base}/api/data?type=get_report_attendance_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
             .then(r => r.json())
         },
     }))
@@ -90,7 +90,7 @@
     const useReportDisiplin = createQuery(()=> ({
         queryKey: ['getReportDisiplin'],
         queryFn: async () => {
-            return await fetch(`/api/data?type=get_report_disiplin_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
+            return await fetch(`${base}/api/data?type=get_report_disiplin_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
             .then(r => r.json())
         },
     }))
@@ -98,7 +98,7 @@
     const useReportLembur = createQuery(()=> ({
         queryKey: ['getReportLembur'],
         queryFn: async () => {
-            return await fetch(`/api/data?type=get_report_lembur_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
+            return await fetch(`${base}/api/data?type=get_report_lembur_dept&dept=${formAttendance.dept}&year=${formAttendance.year}&month=${formAttendance.month + 1}`)
             .then(r => r.json())
         },
     }))
@@ -106,7 +106,7 @@
     const useReportSummary = createQuery(()=> ({
         queryKey: ['getReportSummary', formAttendance.year, formAttendance.summary.absen_full.join(',')],
         queryFn: async () => {
-            const temp = await fetch(`/api/data?type=get_report_summary&year=${formAttendance.year}&val=${formAttendance.summary.absen_full.join(',')}`)
+            const temp = await fetch(`${base}/api/data?type=get_report_summary&year=${formAttendance.year}&val=${formAttendance.summary.absen_full.join(',')}`)
             .then(r => r.json())
             return temp
         },
@@ -115,7 +115,7 @@
     const useReportDetailSummary = createQuery(()=> ({
         queryKey: ['getReportDetailSummary', formAttendance.detailSummary.dept_code, formAttendance.detailSummary.year, formAttendance.detailSummary.month],
         queryFn: async() => {
-            const req = await fetch(`/api/data?type=get_report_detail_summary&dept=${formAttendance.detailSummary.dept_code}&year=${formAttendance.detailSummary.year}&month=${formAttendance.detailSummary.month + 1}`)
+            const req = await fetch(`${base}/api/data?type=get_report_detail_summary&dept=${formAttendance.detailSummary.dept_code}&year=${formAttendance.detailSummary.year}&month=${formAttendance.detailSummary.month + 1}`)
             const res = await req.json()
             
             const temp = res.map(val => {

@@ -174,22 +174,29 @@
             </div>
         </a>
 
-        <div class="flex flex-col flex-1 gap-y-[3px]">
-            {#each linkSidebar as {link, title, icon: Icon, type, separator}}            
-                {#if type == "admin" && (pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R"))
-                    || ["core", "main", "other"].includes(type)}                
-                    {#if separator}
-                        <div class="flex justify-center bg-bgside2 text-textside px-3 py-[3px] rounded-lg mt-1 shadow-xl">
-                            <span class='text-muted font-bold font-quicksand text-[.75rem]'>{title}</span>
-                        </div>
-                    {:else}
-                        <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-slate-800 to-gray-200 text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[4px] rounded-lg gap-3 shadow-lg`}>
-                            <Icon size=14/>
-                            <span class={`text-[.7rem] font-bold font-quicksand`}>{title}</span>
-                        </a>
+        <!-- <div class="flex flex-col flex-1 gap-y-[3px]"> -->
+        <div class="flex-1 mt-2">
+            <div class="flex flex-col bg-bgside2 text-textside rounded-xl duration-500 transition-all">
+                {#each linkSidebar as {link, title, icon: Icon, type, separator}}            
+                    {#if type == "admin" && (pecahArray(userProfile?.access_profile, "R") || pecahArray(userProfile?.access_user, "R") || pecahArray(userProfile?.access_setting, "R") || pecahArray(userProfile?.access_calendar, "R") || pecahArray(userProfile?.access_dept, "R"))
+                        || ["core", "main", "other"].includes(type)}                
+                            {#if separator}
+                                <div class="flex justify-center py-[.4rem] shadow-xl border-b border-stone-300">
+                                    <span class='text-muted font-bold font-quicksand text-[.75rem]'>{title}</span>
+                                </div>
+                            {:else}
+                                <!-- <a href={link} class={`relative flex items-center ${link == "/"+pathname[0] ? "bg-gradient-to-r from-stone-500 to-transparent  text-white":"bg-bgside2 text-textside"} hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-[.4rem] rounded-lg gap-2 shadow-lg`}>
+                                    <Icon size=14/>
+                                    <span class={`text-[.68rem] font-bold font-quicksand`}>{title}</span>
+                                </a> -->
+                                <a href={link} class={`relative flex items-center px-3 py-[.4rem] gap-2 border-b border-stone-200 hover:bg-gradient-to-r dark:hover:from-zinc-500 hover:from-zinc-200 hover:to-transparent hover:text-textside ${link == "/"+pathname[0] ? "bg-gradient-to-r from-zinc-200 dark:from-zinc-500 to-transparent  text-textside shadow-lg":"bg-bgside2 text-textside"}`}>
+                                    <Icon size=14/>
+                                    <span class={`text-[.68rem] font-bold font-quicksand`}>{title}</span>
+                                </a>
+                            {/if}
                     {/if}
-                {/if}
-            {/each}
+                {/each}
+            </div>
         </div>
 
         <div class="relative flex flex-col mb-3 bg-bgside2 pt-4 pb-3 px-3 rounded-xl shadow-xl">

@@ -17,6 +17,7 @@
 	import MyPagination from '@/MyPagination.svelte';
 	import MyBadge from '@/MyBadge.svelte';
 	import { useDept, useUserByDept } from '@lib/fetch.js';
+	import { base } from '$app/paths';
     
     const rowsPerPage = 30
     let {data} = $props()
@@ -77,7 +78,7 @@
     $effect(()=>{
         tableAbsen.load(async (state: State) => {
             try {
-                const req = await fetch(`/api/absen?${getParams(state)}&payroll=${formAbsen.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
+                const req = await fetch(`${base}/api/absen?${getParams(state)}&payroll=${formAbsen.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
                 if (!req.ok) throw new Error('Gagal mengambil data');
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -90,7 +91,7 @@
         if (user.level > 1){
             tableAbsenDept.load(async (state: State) => {
                 try {
-                    const req = await fetch(`/api/absen?${getParams(state)}&dept=${formAbsenDept.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
+                    const req = await fetch(`${base}/api/absen?${getParams(state)}&dept=${formAbsenDept.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
                     if (!req.ok) throw new Error('Gagal mengambil data');
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)

@@ -1,13 +1,13 @@
 <script lang='ts'>
-    import MyButton from '$/lib/components/MyButton.svelte'
     import {AlignJustify, Check, DoorOpen, Bell, Clock, Sun, Moon, Database } from '@lucide/svelte'
-	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Dropdown, Badge, DropdownHeader } from 'flowbite-svelte';
+	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Dropdown, Badge, DropdownHeader, Button } from 'flowbite-svelte';
     import { appstore } from "$/lib/store/appstore";
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { slide } from 'svelte/transition';
 	import { formatTanggalISO, formatWaktuHari, selisihWaktuHari, formatTanggal } from '@lib/utils';
-	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { base } from '$app/paths';
 	
     let { data } = $props()
     const queryClient = useQueryClient()
@@ -38,13 +38,18 @@
         loading:false
     })
 
-    const handleLogout = async () => {
-        logoutState.loading = true
-        const req = await fetch('/signout', {method:"POST"})
-        const res = await req.json()
-        logoutState.message = res.message
-        setTimeout(()=> goto('/signin'), 1000)
-    }
+    const handleLogout = createMutation(()=> ({
+        mutationFn: async () => {
+            logoutState.loading = true
+            const req = await fetch('/signout', {method:"POST"})
+            const res = await req.json()
+            return res
+        },
+        onSuccess: (res) => {
+            logoutState.message = res.message
+            goto(`${base}/signin`)
+        }
+    }))
 
     const handleShowSidebar = () =>{
         const temp = JSON.parse(localStorage.getItem('appstore') || "")
@@ -90,11 +95,11 @@
     })
     
     afterNavigate(() => {
-        queryClient.invalidateQueries({queryKey: ['getNotif', data.user.payroll]})
+        queryClient.invalidateQueries({queryKey: ['getNotif', data.user?.payroll]})
     });
 </script>
 
-<div class="flex justify-between items-center min-h-[var(--ukuran6)] w-full border-b-[2px] border-b-bgside px-4 gap-4 bg-bgdark2 text-textdark">
+<div class="flex justify-between items-center min-h-[var(--ukuran6)] w-full border-b-[2px] border-b-bgside px-4 gap-4 bg-bgdark text-textdark">
     <div in:slide={{delay:500}} out:slide={{delay:500}} class="flex items-center gap-x-4">
         <Breadcrumb aria-label="Solid background breadcrumb example" solid class='text-textdark'>
             <button class='text-textdark' onclick={handleShowSidebar}>
@@ -173,7 +178,7 @@
                 <span class="font-medium">{logoutState.message}</span>
             </Alert>
         {:else}
-            <MyButton className='px-6' disabled={logoutState.loading} onclick={() => handleLogout()}>Ya</MyButton>
+            <Button disabled={logoutState.loading} onclick={() => handleLogout.mutate()}>Ya</Button>
         {/if}
     </Modal>
 </div>

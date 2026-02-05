@@ -13,16 +13,6 @@
 
     let {children, data } :LayoutProps = $props()
     const queryClient = new QueryClient({
-        // defaultOptions: {
-        //     queries:{
-        //         enabled: browser,
-        //         refetchOnWindowFocus: false,
-        //         // refetchOnMount: false,
-        //         // refetchOnReconnect: false,
-        //         // refetchInterval: 10000
-        //     }
-        // }
-
         defaultOptions: {
             queries: {
                 enabled: browser,

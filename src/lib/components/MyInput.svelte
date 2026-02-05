@@ -11,7 +11,7 @@
         startDate = "", endDate = "", 
         formatDate="yyyy-mm-dd", formatTime="hh:ii:ss",
         formatDateTime="yyyy-mm-dd hh:ii:ss", displayFormatDate="dd MM yyyy"} = $props()
-    const myClass = classNames(`flex rounded-lg outline-none gap-2 border-[1px] border-slate-300 bg-bgdark`, className)
+    const myClass = classNames(`flex rounded-lg outline-none gap-2 border border-zinc-200 bg-bgdark`, className)
 
     let showText = $state(false)
     const sizeIcon = 18
@@ -36,7 +36,7 @@
             <SveltyPicker bind:value={value} {disabled} {startDate} {endDate} mode={'datetime'} inputClasses={`w-full rounded-lg border-0 ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark`} format={formatDateTime} displayFormat={"yyyy-mm-dd hh:ii:ss"}/>
         {:else}
             <input bind:this={ref} class={`w-full rounded-lg border-0 outline-none ring-0 ps-3 ${disabled ? "bg-bgdark2":"bg-bgdark"} text-textdark text-[.9rem]`} id={name} {name} {disabled} {required}  {placeholder}
-            bind:value={value} onkeydown={(e) => onkeydown(e)} onkeypress={e => onkeypress(e)}
+            bind:value={value} onkeydown={(e) => onkeydown(e)} onkeypress={e => onkeypress(e)} autocomplete=""
             type={password && type === "password" && showText ? "text" : (type ?? "text")}/>
         {/if}
         {#if password}

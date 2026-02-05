@@ -22,6 +22,7 @@
     import { applyPlugin } from 'jspdf-autotable'
 	import { goto, invalidate } from '$app/navigation';
 	import { dataStore } from '@lib/store/appstore.js';
+	import { base } from '$app/paths';
 
     const rowsPerPage = 10
     let {data} = $props()
@@ -117,7 +118,7 @@
             
             const isValid = valid.safeParse(formCuti.answer)
             if(isValid.success){
-                const req = await axios.post('/api/cuti', formData)
+                const req = await axios.post(`${base}/api/cuti`, formData)
                 const res = await req.data
                 formCutiBatal()
                 tableCuti.invalidate()
@@ -142,7 +143,7 @@
             formCuti.success = ""
             formCuti.error = ""
             formCuti.loading = true
-            const req = await axios.get(`/api/cuti/${id}/edit`)
+            const req = await axios.get(`${base}/api/cuti/${id}/edit`)
             const res = await req.data
             
             if(res){
@@ -171,7 +172,7 @@
     const formCutiDelete = async (id:string) =>{
         try {
             formCuti.loading = true
-            const req = await axios.delete(`/api/cuti/${id}/delete`)
+            const req = await axios.delete(`${base}/api/cuti/${id}/delete`)
             const res = await req.data
             formCuti.error = ""
             formCuti.success = res.message
@@ -188,7 +189,7 @@
         try {
             formCuti.answer.cuti_id = cuti_id
             formCuti.answer.approval = approval
-            const req = await axios.post('/api/cuti/delegate', formCuti.answer)
+            const req = await axios.post(`${base}/api/cuti/delegate`, formCuti.answer)
             const res = await req.data
             formCutiBatal()
             tableCuti.invalidate()
@@ -228,7 +229,7 @@
             formApprovalCuti.answer.cuti_id = cuti_id
             formApprovalCuti.answer.approval = approval
             formApprovalCuti.answer.status = status
-            const req = await axios.post('/api/cuti/approve', formApprovalCuti.answer)
+            const req = await axios.post(`${base}/api/cuti/approve`, formApprovalCuti.answer)
             const res = await req.data
             if(user.user_type == 'HR') tableListCuti.invalidate()
             tableApprovalCuti.invalidate()
@@ -244,7 +245,7 @@
         try {
             applyPlugin(jsPDF)
 
-            const req = await axios.get(`/api/cuti/${id}/print`)
+            const req = await axios.get(`${base}/cuti/${id}/print`)
             const res = await req.data[0]
 
             if(!res.cuti_signature) throw new Error('There is no signature for Applicant')
@@ -367,7 +368,7 @@
 
             window.open(url); // buka tab baru
         } catch (err) {
-            goto(`/api/handleError?msg=${err.message}`)
+            goto(`${base}/api/handleError?msg=${err.message}`)
         }
     }
     
@@ -396,18 +397,18 @@
     const getCutiCalendar = async (v: string) =>{
         const year = getYear(new Date())
         const month = 12
-        const req = await fetch(`/api/data?type=get_cuti_dashboard&payroll=${user.payroll}&val=${v}&year=${year}&month=${month}`)
+        const req = await fetch(`${base}/api/data?type=get_cuti_dashboard&payroll=${user.payroll}&val=${v}&year=${year}&month=${month}`)
         const res = await req.json()
         return res
     }
 
     const getUser = async (val: string = "") =>{
-        const req = await fetch(`/api/data?type=user_by_dept&val=${val || ""}`)
+        const req = await fetch(`${base}/api/data?type=user_by_dept&val=${val || ""}`)
         return await req.json()
     }
 
     const fillCuti = async (val: string) => {
-        const req = await fetch(`/api/data?type=user_for_ijin&val=${val || ""}`)
+        const req = await fetch(`${base}/api/data?type=user_for_ijin&val=${val || ""}`)
         const res = await req.json()
         if(res){
             formCuti.answer.name = capitalEachWord(res.name)
@@ -424,7 +425,7 @@
     $effect(()=>{
         tableCuti.load(async (state:State) =>{
             try {
-                const req = await fetch(`/api/cuti?${getParams(state)}&payroll=${user.payroll}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
+                const req = await fetch(`${base}/api/cuti?${getParams(state)}&payroll=${user.payroll}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -437,7 +438,7 @@
         if (user.level > 1){
             tableApprovalCuti.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/cuti/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
+                    const req = await fetch(`${base}/api/cuti/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)
@@ -451,7 +452,7 @@
         if (user.user_type == 'HR'){
             tableListCuti.load(async (state:State) =>{
                 try {
-                    const req = await fetch(`/api/cuti/list?${getParams(state)}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
+                    const req = await fetch(`${base}/api/cuti/list?${getParams(state)}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
                     const {items, totalItems} = await req.json()
                     state.setTotalRows(totalItems)

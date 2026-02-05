@@ -8,9 +8,8 @@
     import {formatTanggal, getParams, pecahArray, capitalEachWord} from '$/lib/utils'
 	import MyLoading from '@/MyLoading.svelte';
 	import { Datatable, TableHandler, type State, ThSort } from '@vincjo/datatables/server';
-    import bgadmin from '$lib/assets/bg-admin.jpg'
     import { page } from '$app/stores';
-	import { format, getYear } from 'date-fns';
+	import { getYear } from 'date-fns';
 	import { z } from 'zod';
     import Svelecte from 'svelecte';
 	import { fromZodError } from 'zod-validation-error';
@@ -20,6 +19,8 @@
     import MyAlert from '@/MyAlert.svelte';
     import MyDatePicker from '@/MyDatePicker.svelte';
 	import { useDept, useProfile, useUserByDept } from '@lib/fetch.js';
+	import { createMutation } from '@tanstack/svelte-query';
+	import { base } from '$app/paths';
     
     let {data} = $props()
     let user = $derived(data.user)
@@ -78,7 +79,7 @@
             formProfileState.edit = true
             formProfileState.success = ""
             formProfileState.error = ""
-            const req = await axios.get(`/api/admin/profile/${id}`)
+            const req = await axios.get(`${base}/api/admin/profile/${id}`)
             const res = await req.data
             formProfileState.answer = {...res}
             Object.entries(res).map(([key, value]) => {
@@ -102,7 +103,7 @@
             const isValid = ProfileSchema.safeParse(formProfileState.answer)
             if(isValid.success){
                 formProfileState.loading = true
-                const req = await axios.post('/api/admin/profile', formProfileState.answer, {
+                const req = await axios.post(`${base}/api/admin/profile`, formProfileState.answer, {
                     withCredentials: true
                 })
                 const res = await req.data
@@ -129,7 +130,7 @@
     const formProfileDelete = async (id: string) =>{
         try {
             formProfileState.loading = true
-            const req = await axios.delete(`/api/admin/profile/${id}`)
+            const req = await axios.delete(`${base}/api/admin/profile/${id}`)
             const res = await req.data
             formProfileBatal()
             tableProfile.invalidate()
@@ -190,7 +191,7 @@
             formUserState.loading = true
             formUserState.success = ""
             formUserState.error = ""
-            const req = await axios.get(`/api/admin/user/${id}`)
+            const req = await axios.get(`${base}/api/admin/user/${id}`)
             formUserState.answer = {...await req.data}
             setTimeout(()=>{
                 formUserState.answer.start_work = formatTanggal(req.data.start_work, "time")
@@ -221,7 +222,7 @@
             
             const isValid = valid.safeParse(formUserState.answer)
             if(isValid.success){
-                const req = await axios.post('/api/admin/user', formData)
+                const req = await axios.post(`${base}/api/admin/user`, formData)
                 const res = await req.data
                 await invalidateAll()
                 formUserBatal()
@@ -247,7 +248,7 @@
         try {
             formUserState.error = ""
             formUserState.loading = true
-            const req = await axios.delete(`/api/admin/user/${id}`)
+            const req = await axios.delete(`${base}/api/admin/user/${id}`)
             const res = await req.data
             formUserBatal()
             tableUser.invalidate()
@@ -264,7 +265,7 @@
         try {
             formUserState.error = ""
             formUserState.loading = true
-            const req = await axios.post(`/api/admin/user/${id}/password`, {
+            const req = await axios.post(`${base}/api/admin/user/${id}/password`, {
                 payroll: formUserState.answer.payroll,
                 password: formUserState.answer.password,
             })
@@ -307,7 +308,7 @@
             formDeptState.loading = true
             formDeptState.success = ""
             formDeptState.error = ""
-            const req = await axios.get(`/api/admin/dept/${id}`)
+            const req = await axios.get(`${base}/api/admin/dept/${id}`)
             formDeptState.answer = {...await req.data}
             formDeptState.edit = true
             formDeptState.add = false
@@ -329,7 +330,7 @@
             
             const isValid = valid.safeParse(formDeptState.answer)
             if(isValid.success){
-                const req = await axios.post('/api/admin/dept', formDeptState.answer)
+                const req = await axios.post(`${base}/api/admin/dept`, formDeptState.answer)
                 const res = await req.data
                 formDeptBatal()
                 tableDept.invalidate()
@@ -372,7 +373,7 @@
     })
 
     const getSetting = async () =>{
-        const req = await fetch('/api/admin/setting')
+        const req = await fetch(`${base}/api/admin/setting`)
         const res: TSettingSchema = await req.json()
         if(res){
             formSettingState.answer = {...res}
@@ -390,7 +391,7 @@
             formSettingState.loading = true
             const isValid = SettingSchema.safeParse(formSettingState.answer)
             if(isValid.success){
-                const req = await axios.post('/api/admin/setting', formSettingState.answer)
+                const req = await axios.post(`${base}/api/admin/setting`, formSettingState.answer)
                 const res = await req.data
                 formSettingState.error = ""
                 formSettingState.success = res.message
@@ -441,7 +442,7 @@
             })
             const isValid = valid.safeParse(formCalendar.answer)
             if(isValid.success){
-                const req = await axios.post('/api/admin/calendar', formCalendar.answer)
+                const req = await axios.post(`${base}/api/admin/calendar`, formCalendar.answer)
                 const res = await req.data
                 formCalendarBatal()
                 tableCalendar.invalidate()
@@ -459,32 +460,32 @@
         }
     }
 
-    const formCalendarEdit = async (id:string) =>{
-        try {
+    const onCalendarEdit = createMutation(()=> ({
+        mutationFn: async (id: string) => {
             formCalendar.loading = true
             formCalendar.success = ""
             formCalendar.error = ""
-            const req = await fetch(`/api/admin/calendar/${id}`)
+            const req = await fetch(`${base}/api/admin/calendar/${id}`)
             const res = await req.json()
+            return res
+        }, onSuccess: (res) => {
             formCalendar.answer = {...res}
-
             formCalendar.answer.type = res.type.replace('_',' ')
             setTimeout(()=>{
                 formCalendar.answer.date = formatTanggal(res.date, "date")
             }, 100)
             formCalendar.edit = true
             formCalendar.add = false
-            formCalendar.loading = false
-        } catch (error) {
+        }, onSettled: () => {
             formCalendar.loading = false 
         }
-    }
+    }))
 
     const formCalendarDelete = async (id: string) => {
         try {
             formCalendar.error = ""
             formCalendar.loading = true
-            const req = await axios.delete(`/api/admin/calendar/${id}`)
+            const req = await axios.delete(`${base}/api/admin/calendar/${id}`)
             const res = await req.data
             formCalendarBatal()
             tableCalendar.invalidate()
@@ -508,7 +509,7 @@
     $effect(()=>{
         tableProfile.load(async(state: State) => {
             try {
-                const req = await fetch(`/api/admin/profile?${getParams(state)}`);
+                const req = await fetch(`${base}/api/admin/profile?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -520,7 +521,7 @@
     
         tableUser.load(async(state: State) => {
             try {
-                const req = await fetch(`/api/admin/user?${getParams(state)}`);
+                const req = await fetch(`${base}/api/admin/user?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -532,7 +533,7 @@
 
         tableDept.load(async(state: State) => {
             try {
-                const req = await fetch(`/api/admin/dept?${getParams(state)}`);
+                const req = await fetch(`${base}/api/admin/dept?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -544,7 +545,7 @@
 
         tableCalendar.load(async(state: State) => {
             try {
-                const req = await fetch(`/api/admin/calendar?${getParams(state)}&year=${formCalendar.year}`);
+                const req = await fetch(`${base}/api/admin/calendar?${getParams(state)}&year=${formCalendar.year}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
                 const {items, totalItems} = await req.json()
                 state.setTotalRows(totalItems)
@@ -574,8 +575,9 @@
 
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Dashboard">
-            <div class="relative flex items-center justify-center min-h-[80vh]" style={`background-image: url(${bgadmin}); background-size: cover; background-position:bottom`}>
-                <span class='text-white bg-slate-600 p-3 rounded-lg'>Hallo admin</span>
+            <div class="relative flex items-center justify-center min-h-[80vh] gap-20">
+                <span class="font-bold text-[2.2rem] font-quicksand">Welcome admin</span>
+                <img src="/admin.svg" alt="Admin" class="max-h-[80vh] object-cover"/>
             </div>
         </TabItem>
         {#if pecahArray(userProfile?.access_profile, "R")}
@@ -702,7 +704,7 @@
                                 <ThSort table={tableProfile} field="name">Nama</ThSort>
                                 <ThSort table={tableProfile} field="description">Deskripsi</ThSort>
                                 <ThSort table={tableProfile} field="status">Status</ThSort>
-                                <ThSort table={tableProfile} field="">#</ThSort>
+                                <ThSort table={tableProfile} field="profile_id">#</ThSort>
                             </TableHead>
 
                             {#if tableProfile.isLoading}
@@ -1294,7 +1296,7 @@
                                                     <TableBodyCell>
                                                         {#if !formCalendar.edit}
                                                             {#if pecahArray(userProfile?.access_calendar, "U")}
-                                                                <MyButton onclick={()=> formCalendarEdit(row.calendar_id)}><Pencil size={12} /></MyButton>
+                                                                <MyButton onclick={()=> onCalendarEdit.mutate(row.calendar_id)}><Pencil size={12} /></MyButton>
                                                                 <Tooltip>Edit</Tooltip>
                                                             {/if}
                                                             {#if pecahArray(userProfile?.access_calendar, "D")}

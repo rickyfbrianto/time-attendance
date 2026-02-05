@@ -1,12 +1,22 @@
 <script lang="ts">
-    import bglogin from '$lib/assets/bg-login.jpg'
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import '../../app.css';
+    import { browser } from '$app/environment';
+    
     let {children} = $props()
+
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                enabled: browser,
+                refetchOnWindowFocus: false,
+                refetchOnMount: false,
+                retry: false
+            }
+        }
+    })
 </script>
 
-<main style={`background-image: url(${bglogin}); background-position:center; background-size: cover;`} 
-    class='flex items-center justify-center h-screen w-screen'>
-    <div>
-        {@render children()}
-    </div>
-</main>
+<QueryClientProvider client={queryClient}>
+    {@render children()}
+</QueryClientProvider>
