@@ -1,8 +1,8 @@
 import { pecahArray, prisma, prismaErrorHandler } from '@lib/utils'
-import { error, json } from '@sveltejs/kit'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 
-export async function GET({ params }) {
-    const id = params.id
+export const GET: RequestHandler<{ id: string }> = async ({ params }) => {
+    const {id} = params
     const req = await prisma.calendar.findUnique({
         where: {
             calendar_id: id
@@ -11,12 +11,12 @@ export async function GET({ params }) {
     return json(req)
 }
 
-export async function DELETE({ params, locals }) {
+export const DELETE: RequestHandler<{ id: string }> = async ({ params, locals }) => {
     try {
-        const id = params.id
+        const {id} = params
         const { userProfile } = locals
         if (!pecahArray(userProfile.access_calendar, "D")) throw new Error("Cant delete Calendar, because you have no authorization")
-        const req = await prisma.calendar.delete({
+        await prisma.calendar.delete({
             where: {
                 calendar_id: id
             }

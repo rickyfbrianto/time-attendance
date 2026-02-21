@@ -16,7 +16,6 @@
     import MyPagination from '@/MyPagination.svelte';
     import MyDatePicker from '@/MyDatePicker.svelte';
     import MyAlert from '@/MyAlert.svelte';
-	import { dataStore } from '@lib/store/appstore.js';
 	import { invalidate } from '$app/navigation';
 	import { base } from '$app/paths';
 
@@ -289,7 +288,7 @@
     })
     
     $effect(()=>{
-        tableIjin.load(async (state:State) =>{
+        tableIjin.load(async (state) =>{
             try {
                 const req = await fetch(`${base}/api/ijin?${getParams(state)}&payroll=${user.payroll}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -302,7 +301,7 @@
         })
 
         if (user.level > 1){
-            tableApprovalIjin.load(async (state:State) =>{
+            tableApprovalIjin.load(async (state) =>{
                 try {
                     const req = await fetch(`${base}/api/ijin/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
@@ -316,7 +315,7 @@
         }
 
         if (user.user_type == 'HR'){
-            tableListIjin.load(async (state:State) =>{
+            tableListIjin.load(async (state) =>{
                 try {
                     const req = await fetch(`${base}/api/ijin/list?${getParams(state)}&start_date=${modeIjin.periode.start}&end_date=${modeIjin.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
@@ -374,13 +373,13 @@
         </div>
         
         <div class="flex flex-wrap w-full items-start gap-4">
-            {#each $dataStore.dashboardIjinCuti as {title, value, icon: Icon}}
+            {#each data.user_cuti as {title, value}}
                 <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-2 px-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap cursor-pointer`}
                     onclick={() => {
                         if(parseInt(value) > 0 && !['Hak Cuti', 'Sisa Cuti'].includes(title) ) handleDetailHeader(title)}}>
                     <span class="text-[.9rem] font-semibold">{title}</span>
                     <div class="flex justify-between items-center gap-2">
-                        <Icon size={16}/>
+                        <Calendar size={16}/>
                         <span class='text-[1.1rem] font-bold'>{value}</span>
                     </div>
                 </button>
@@ -478,7 +477,7 @@
                                         <Label>Payroll</Label>
                                         <Svelecte class='border-none' disabled={user.level == 1} optionClass='p-2' name='payroll' required searchable selectOnTab multiple={false} bind:value={formIjin.answer.payroll} 
                                         options={[...val.map((v:any) => ({value: v.payroll, text:v.payroll + " - " + v.name}))]}
-                                        onChange={(e) => fillIjin(e.value)}/>
+                                        onChange={(e ) => fillIjin(e.value)}/>
                                     </div>
                                 {/await}
                             {:else if formIjin.edit}
@@ -548,7 +547,7 @@
                         {/each}
                     </select>
                     <div class="flex w-full flex-col">
-                        <MyInput type='text' bind:value={tableIjinSearch.value} onkeydown={e => {
+                        <MyInput type='text' bind:value={tableIjinSearch.value} onkeydown={(e: KeyboardEvent) => {
                             if(e.key.toLowerCase() === 'enter') tableIjinSearch.set()
                         }}/>
                         <span class="italic text-[.8rem]">Pencarian tanggal mengikuti format "2025-12-30"</span>
@@ -576,7 +575,7 @@
                         {:else}
                             <TableBody tableBodyClass="divide-y">
                                 {#if tableIjin.rows.length > 0}
-                                    {#each tableIjin.rows as row:any}
+                                    {#each tableIjin.rows as row}
                                         <TableBodyRow class='h-10'>
                                             <TableBodyCell tdClass='break-all font-medium'>{capitalEachWord(row.name)}</TableBodyCell>
                                             <TableBodyCell tdClass='break-all font-medium'>{namaHari[Number(format(row.date, "c")) - 1] + ", " + formatTanggal(row.date, "date", "app")}</TableBodyCell>

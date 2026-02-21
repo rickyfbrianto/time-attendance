@@ -539,7 +539,7 @@
             }
             doc.addImage(stempel, colData[0] + 10, rowData + rowInc, signatureSize, signatureSize)
             rowInc += row3 * 2.6
-            doc.addImage(imageUrl + res.a_signature, colData[0] + 3, rowData + rowInc - (signatureSize + 4), signatureSize, signatureSize)
+            doc.addImage(`${imageUrl}${res.a_signature}`, colData[0] + 3, rowData + rowInc - (signatureSize + 4), signatureSize, signatureSize)
             doc.text(capitalEachWord(res.a_name), colData[0], rowData + rowInc)
             doc.line(colData[0] + 124, rowData + rowInc + 2, 186, rowData + rowInc + 2)
             rowInc += row1
@@ -643,7 +643,7 @@
     }
     
     $effect(()=>{
-        tableSPPD.load(async (state:State) => {
+        tableSPPD.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/sppd?${getParams(state)}&payroll=${formSPPD.payroll || ""}&dept=${formSPPD.dept || ""}`)
                 const {items, totalItems} = await req.json()
@@ -654,7 +654,7 @@
             }
         })
 
-        tableSKPD.load(async (state:State) => {
+        tableSKPD.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/skpd?${getParams(state)}&payroll=${formSKPD.payroll}`)
                 const {items, totalItems} = await req.json()
@@ -805,6 +805,7 @@
                                 <ThSort table={tableSPPD} field="name">Nama</ThSort>
                                 <ThSort table={tableSPPD} field="start_date">Tanggal Mulai</ThSort>
                                 <ThSort table={tableSPPD} field="end_date">Tanggal Selesai</ThSort>
+                                <ThSort table={tableSPPD} field="createdAt">Tanggal Dibuat</ThSort>
                                 <ThSort table={tableSPPD} field="duration">Durasi</ThSort>
                                 <ThSort table={tableSPPD} field="">#</ThSort>
                             </TableHead>
@@ -828,6 +829,7 @@
                                                 </TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.start_date, "date", "app")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.end_date, "date", "app")}</TableBodyCell>
+                                                <TableBodyCell tdClass='break-all font-medium'>{formatTanggal(row.createdAt, "date", "app")}</TableBodyCell>
                                                 <TableBodyCell tdClass='break-all font-medium'>{row.duration + " Days"}</TableBodyCell>
                                                 <TableBodyCell>
                                                     {#if !formSPPD.edit}

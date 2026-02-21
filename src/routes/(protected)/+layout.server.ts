@@ -1,9 +1,8 @@
 import { error, redirect } from "@sveltejs/kit";
 import { isUrlActive, prisma } from "$/lib/utils.js";
-import { getMonth, getYear } from "date-fns";
-import { base } from "$app/paths";
+import type { LayoutServerLoad } from "./$types";
 
-export async function load({ url, locals, depends, fetch }) {
+export const load: LayoutServerLoad = async ({ url, locals, depends }) => {
 	depends("app:protected");
 	if (url.pathname == "/") throw redirect(307, `/dashboard`);
 
@@ -21,11 +20,6 @@ export async function load({ url, locals, depends, fetch }) {
 	}
 	if (url.pathname == "/security" && userProfile?.access_security != "R") throw error(500, "Anda tidak memiliki akses membuka halaman security");
 
-	let year = getYear(new Date());
-	let month = getMonth(new Date()) + 1;
-	const tempReqCutiUser = await fetch(`${base}/api/data?type=get_cuti_user&val=${user.payroll}&year=${year}&month=${month}`);
-	const dashboardIjinCuti = await tempReqCutiUser.json();
-
 	const imageUrl = import.meta.env.VITE_VIEW_SIGNATURE;
 	const isValid = await isUrlActive(imageUrl);
 	if (!isValid) throw error(500, `Service masih mati, silahkan dinyalakan`);
@@ -34,6 +28,5 @@ export async function load({ url, locals, depends, fetch }) {
 		user,
 		userProfile,
 		periode: getSetting,
-		dashboardIjinCuti,
 	};
 }

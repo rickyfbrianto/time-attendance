@@ -4,10 +4,9 @@
 	import '$/style.css';
     import Header from '@/Header.svelte'
     import Sidebar from '@/Sidebar.svelte'
-    import {appstore, dataStore } from '@lib/store/appstore'
+    import {appstore } from '@lib/store/appstore'
 	import type { LayoutProps } from './$types';
     import '@event-calendar/core/index.css';
-    import { Calendar } from '@lucide/svelte'
     import { QueryClientProvider, QueryClient } from '@tanstack/svelte-query'
 	import { browser } from '$app/environment';
 
@@ -34,10 +33,6 @@
         } else {
             localStorage.setItem('appstore', JSON.stringify($appstore))
         }
-        
-        dataStore.update(prev => ({...prev, 
-            dashboardIjinCuti: Object.entries(data.dashboardIjinCuti).map(([title, value]) => ({ title, value: value as string, icon: Calendar }))
-        }))
     })
 </script>
 
@@ -47,7 +42,8 @@
     <div class="relative flex h-screen bg-bgdark">
         <Sidebar {data}/>
         <div class="flex flex-col flex-1">
-            <Header {data} notif={data.notif}/>
+            <!-- <Header {data} notif={data.notif}/> -->
+            <Header {data}/>
             <div style="scrollbar-width: none;" class="relative flex flex-col flex-1 overflow-scroll bg-bgdark text-textdark">
                 <div style="scrollbar-width: none;" class="overflow-scroll h-full">
                     {@render children()}

@@ -3,10 +3,9 @@
 	import { dataBulan, dataTahun, namaBulan } from '@lib/utils';
 	import Svelecte from 'svelecte';
     import { fade, fly } from 'svelte/transition'
-	import { endOfDay, endOfMonth, format, set, startOfDay, startOfMonth } from 'date-fns';
-	import MyLoading from '@/MyLoading.svelte';
+		import MyLoading from '@/MyLoading.svelte';
 	import MyChart from '@/MyChart.svelte';
-	import { Box, Boxes, CalendarClock, CalendarDays, CalendarRange, Sheet } from '@lucide/svelte';
+	import { Box, Boxes, CalendarDays, CalendarRange, Sheet } from '@lucide/svelte';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import MyEmpty from '@/MyEmpty.svelte';
 	import MyInput from '@/MyInput.svelte';
@@ -14,10 +13,11 @@
     import * as xlsx from 'xlsx'
 	import { useDept } from '@lib/fetch.js';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
     let { data } = $props()
     let user = $derived(data.user)
-    let setting = $derived(data.periode)
+    let setting = $derived(data?.periode)
     const queryClient = useQueryClient()
     
     let modeReport = $state({
@@ -170,7 +170,7 @@
                         anchor: 'end',
                         align: 'start',
                         color: '#FFF',
-                        formatter: (value: number | string) => (value > 0) ? value : null
+                        formatter: (value: number) => (value > 0) ? value : null
                     },
                     title: {
                         display: true,

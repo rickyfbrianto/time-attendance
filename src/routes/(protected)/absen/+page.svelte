@@ -22,18 +22,8 @@
     const rowsPerPage = 30
     let {data} = $props()
     let user = $derived(data.user)
-    let userProfile = $derived(data.userProfile)
     let setting = $derived(data.periode)
     let periode = $derived(generatePeriode(new Date().toString(), Number(setting?.start_periode), Number(setting?.end_periode)))
-    
-    let openRow: number[] = $state([]) 
-    const toggleRow = (i: number) => {
-        if(openRow.includes(i)){
-            openRow = openRow.filter((item) => item !== i)
-        } else {
-            openRow.push(i)
-        }
-    }
 
     let tableAbsen = new TableHandler([], {rowsPerPage})
     let tableAbsenSearch = tableAbsen.createSearch()
@@ -76,7 +66,7 @@
     })
     
     $effect(()=>{
-        tableAbsen.load(async (state: State) => {
+        tableAbsen.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/absen?${getParams(state)}&payroll=${formAbsen.payroll}&start_date=${periode.start}&end_date=${periode.end}`)
                 if (!req.ok) throw new Error('Gagal mengambil data');
@@ -89,7 +79,7 @@
         })
 
         if (user.level > 1){
-            tableAbsenDept.load(async (state: State) => {
+            tableAbsenDept.load(async (state) => {
                 try {
                     const req = await fetch(`${base}/api/absen?${getParams(state)}&dept=${formAbsenDept.dept || ""}&start_date=${periode.start}&end_date=${periode.end}`)
                     if (!req.ok) throw new Error('Gagal mengambil data');
@@ -119,7 +109,7 @@
 <main in:fade={{delay:500}} out:fade class="flex flex-col p-4 gap-4 h-full border-slate-300">        
     <Tabs contentClass='bg-bgdark' tabStyle="underline">
         <TabItem open title="Absen">
-            <div class="flex flex-col gap-4 pt-4">
+            <div class="flex flex-col gap-4">
                 {#if user.level > 1}
                     <div class="flex flex-1 gap-2">
                         {#if getUserByDept.isFetching || getUserByDept.isPending}
@@ -185,7 +175,6 @@
                                             <TableBodyCell tdClass='w-[150px] max-w-[150px] break-all font-medium'>
                                                 <span class={getDay(formatTanggal(row.check_in, "date")) == 0 ? "text-red-500":""}>{formatTanggal(row.check_in, "date", "app")}</span>
                                             </TableBodyCell>
-
                                             <TableBodyCell tdClass='w-[180px] max-w-[180px] break-all font-medium'>
                                                 <TableAttendanceClockIn check_in={row.check_in} check_in2={row.check_in2}/>
                                             </TableBodyCell>
@@ -238,7 +227,7 @@
         </TabItem>
         {#if user.level > 1}
             <TabItem title="Departemen">
-                <div class="flex flex-col gap-4 pt-4">
+                <div class="flex flex-col gap-4">
                     {#if user.user_type == 'HR'}
                         <div class="flex flex-1 gap-2">
                             {#if getDept.isPending || getDept.isFetching}

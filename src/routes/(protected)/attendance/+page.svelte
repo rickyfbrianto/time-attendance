@@ -354,7 +354,7 @@
     const getUserByDept = useUserByDept((() => formSPL.dept)())
 
     $effect(()=>{
-        tableAttendance.load(async(state: State) => {
+        tableAttendance.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/attendance?${getParams(state)}&payroll=${modeAttendance.payroll}&type=${formAttendance.type}&start_date=${modeAttendance.periode.start}&end_date=${modeAttendance.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')

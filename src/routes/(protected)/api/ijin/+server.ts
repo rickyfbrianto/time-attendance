@@ -2,8 +2,9 @@ import { error, json } from "@sveltejs/kit";
 import { prisma, formatTanggal, formatTanggalISO, prismaErrorHandler } from "$/lib/utils";
 import { eachDayOfInterval, format, getDay, getYear } from "date-fns";
 import { v4 as uuid4 } from "uuid";
+import type { LayoutServerLoad } from "../../$types";
 
-export async function GET({ url }) {
+export const GET: LayoutServerLoad = async ({ url }) => {
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page

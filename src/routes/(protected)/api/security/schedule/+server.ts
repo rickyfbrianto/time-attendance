@@ -1,29 +1,22 @@
 import { prisma, formatTanggal, formatTanggalISO, pecahArray, prismaErrorHandler } from "@lib/utils";
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { v4 as uuid4 } from "uuid";
 
-export async function GET({ url }) {
-    try {
-        const dept = url.searchParams.get('dept') || ""
-        const type = url.searchParams.get('type') || ""
-        const payroll = url.searchParams.get('payroll') || ""
-        const area = url.searchParams.get('area') || ""
-        const year = url.searchParams.get('year') || ""
-        const month = url.searchParams.get('month') || ""
+export const GET: RequestHandler = async ({ url }) => {
+    const payroll = url.searchParams.get('payroll') || ""
+    const area = url.searchParams.get('area') || ""
+    const year = url.searchParams.get('year') || ""
+    const month = url.searchParams.get('month') || ""
 
-        const req = await prisma.$queryRawUnsafe(`
-            SELECT s.id, s.date, e.payroll, e.name, s.shift, s.area FROM security as s
-            LEFT JOIN employee as e ON e.payroll = s.payroll
-            WHERE s.payroll like ? AND s.area like ? AND YEAR(s.date) = ? AND month(s.date) = ?`,
-            `%${payroll}%`, `%${area}%`, year, month)
-        return json(req)
-    } catch (error) {
-        console.log("err catch", error);
-        return { error }
-    }
+    const req = await prisma.$queryRawUnsafe(`
+        SELECT s.id, s.date, e.payroll, e.name, s.shift, s.area FROM security as s
+        LEFT JOIN employee as e ON e.payroll = s.payroll
+        WHERE s.payroll like ? AND s.area like ? AND YEAR(s.date) = ? AND month(s.date) = ?`,
+        `%${payroll}%`, `%${area}%`, year, month)
+    return json(req)
 }
 
-export async function POST({ request, locals }) {
+export const POST: RequestHandler = async ({ request, locals }) => {
     try {
         const data = await request.json()
         const { userProfile } = locals

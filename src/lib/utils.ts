@@ -2,7 +2,7 @@ import type { RequestEvent } from "@sveltejs/kit";
 import CryptoJS from "crypto-js";
 import { addDays, addMonths, format, isBefore, setDate, startOfDay, subMonths, set, differenceInMinutes, parse, differenceInDays, differenceInHours } from "date-fns";
 import { Prisma, PrismaClient } from '@prisma-app/client';
-import type { State } from "@vincjo/datatables/server";
+import type { Row, State } from "@vincjo/datatables/server";
 import { formatInTimeZone } from 'date-fns-tz';
 import { id } from 'date-fns/locale'
 
@@ -216,31 +216,58 @@ export function getRandomHexColor() {
     return `#${randomColor.toString(16).padStart(6, '0')}`;
 }
 
-export const getParams = (state: State) => {
-    const { rowsPerPage, sort, filters, search, offset, currentPage } = state;
+// export const getParams = <T extends Row>(state: State<T>) => {
+//     const { rowsPerPage, sort, filters, search, offset, currentPage } = state;
 
-    let params = ""
+//     let params = ""
 
-    if (currentPage) {
-        params = `_page=${currentPage}`;
-    }
-    if (rowsPerPage) {
-        params += `&_limit=${rowsPerPage}`;
-    }
-    if (offset) {
-        params += `&_offset=${offset}`;
-    }
+//     if (currentPage) {
+//         params = `_page=${currentPage}`;
+//     }
+//     if (rowsPerPage) {
+//         params += `&_limit=${rowsPerPage}`;
+//     }
+//     if (offset) {
+//         params += `&_offset=${offset}`;
+//     }
+//     if (sort) {
+//         params += `&_sort=${String(sort.field)}&_order=${sort.direction}`;
+//     }
+//     if (filters) {
+//         params += filters.map(({ filterBy, value }) => `&${filterBy}=${value}`).join();
+//     }
+//     if (search) {
+//         params += `&_search=${search}`;
+//     }
+//     return params;
+// };
+
+export const getParams = <T extends Row>(state: State<T>) => {
+    const { rowsPerPage, sort, filters, search, offset, currentPage } = state
+
+    const params = new URLSearchParams()
+
+    if (currentPage) params.set('_page', String(currentPage))
+    if (rowsPerPage) params.set('_limit', String(rowsPerPage))
+    if (offset) params.set('_offset', String(offset))
+
     if (sort) {
-        params += `&_sort=${String(sort.field)}&_order=${sort.direction}`;
+        params.set('_sort', String(sort.field))
+        params.set('_order', sort.direction)
     }
+
     if (filters) {
-        params += filters.map(({ filterBy, value }) => `&${filterBy}=${value}`).join();
+        filters.forEach((filter) => {
+            params.append(String(filter.field), String(filter.value))
+        })
     }
+
     if (search) {
-        params += `&_search=${search}`;
+        params.set('_search', search)
     }
-    return params;
-};
+
+    return params.toString()
+}
 
 export const hitungJamMenit = (menit: number) => {
     const hour = Math.floor(menit / 60);

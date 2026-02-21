@@ -1,7 +1,7 @@
 import {prisma} from '@lib/utils'
-import { error, json } from '@sveltejs/kit'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 
-export async function GET({params}){
+export const GET: RequestHandler<{ id: string }> = async ({ params }) => {
     try {
         const {id} = params       
         const req = await prisma.srl.findUnique({

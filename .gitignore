@@ -1,7 +1,6 @@
-/express/node_modules
-/express/storage/media/*
-
 /node_modules
+/src/lib/assets/media/*
+/test
 
 # Output
 .output
@@ -10,6 +9,7 @@
 .wrangler
 /.svelte-kit
 /build
+
 
 # OS
 .DS_Store
@@ -24,5 +24,3 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-
-/src/lib/assets/media/*

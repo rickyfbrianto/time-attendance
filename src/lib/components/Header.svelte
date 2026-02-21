@@ -1,5 +1,5 @@
 <script lang='ts'>
-    import {AlignJustify, Check, DoorOpen, Bell, Clock, Sun, Moon, Database } from '@lucide/svelte'
+    import { Check, DoorOpen, Bell, Clock, Sun, Moon, Database, Plane, PlaneTakeoff, ListTodo, Hourglass, TentTree, TreePalm, Menu } from '@lucide/svelte'
 	import { Alert, Modal, Breadcrumb, BreadcrumbItem, Dropdown, Badge, DropdownHeader, Button } from 'flowbite-svelte';
     import { appstore } from "$/lib/store/appstore";
 	import { afterNavigate, goto } from '$app/navigation';
@@ -11,14 +11,14 @@
 	
     let { data } = $props()
     const queryClient = useQueryClient()
-
-    const icon = [
-        {name:"sppd", value: 'dinas.png', link: "dinas"},
-        {name:"skpd", value: 'dinas.png', link: "dinas"},
-        {name:"spl", value: 'lembur.png', link: "lembur"},
-        {name:"srl", value: 'lembur.png', link: "lembur"},
-        {name:"cuti", value: 'cuti.png', link: "cuti"},
-        {name:"ijin", value: 'ijin.png', link: "ijin"},
+    
+    const icons = [
+        {name:"sppd", value: Plane, link: "dinas"},
+        {name:"skpd", value: PlaneTakeoff, link: "dinas"},
+        {name:"spl", value: Hourglass, link: "lembur"},
+        {name:"srl", value: ListTodo, link: "lembur"},
+        {name:"cuti", value: TentTree, link: "cuti"},
+        {name:"ijin", value: TreePalm, link: "ijin"},
     ]
     
     let pathname:{url: string, title:string}[] = $derived.by(()=> {
@@ -103,7 +103,7 @@
     <div in:slide={{delay:500}} out:slide={{delay:500}} class="flex items-center gap-x-4">
         <Breadcrumb aria-label="Solid background breadcrumb example" solid class='text-textdark'>
             <button class='text-textdark' onclick={handleShowSidebar}>
-                <AlignJustify class='cursor-pointer'/>
+                <Menu class='cursor-pointer'/>
             </button>
             <BreadcrumbItem href="/dashboard" home homeClass='flex items-center text-textdark ms-2 '><span class="text-textdark text-sm">Dashboard</span></BreadcrumbItem>
             {#each pathname as {url, title}}
@@ -135,15 +135,18 @@
                                 </div>
                             </DropdownHeader>
                             <div class="flex flex-col max-h-[25rem] overflow-auto border-y-[1px] border-slate-300">
-                                {#each useNotif.data.slice(0, useNotifControl?.notifLengthMax) as {waktu, link, deskripsi}, i}
-                                    <a href={`/${icon.find(v => v.name == link)?.link}`} class="flex flex-col gap-2 px-6 py-4 bg-bgdark hover:bg-bgdark2 border-b border-slate-200">
+                                {#each useNotif.data.slice(0, useNotifControl?.notifLengthMax) as {waktu, link, deskripsi}}
+                                    {@const Icon = icons.find(v => v.name == link)?.value}
+                                    <a href={`/${icons.find(v => v.name == link)?.link}`} class="flex flex-col gap-2 px-6 py-4 bg-bgdark hover:bg-bgdark2 border-b border-slate-200">
                                         <div class="flex items-center gap-4">
-                                            <img class='w-[1.25rem] h-[1.25rem]' src={icon.find(v => v.name == link)?.value} alt="">
-                                            <span class="text-[.85rem] font-bold">{deskripsi}</span>
-                                        </div>
-                                        <div class="flex items-center gap-4">
-                                            <Clock size={14} class='w-[1.25rem]'/>
-                                            <span aria-label={formatTanggal(waktu)} data-balloon-pos="up" class="text-[.7rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
+                                            <Icon size={18}/>
+                                            <div class="flex flex-col gap-2">
+                                                <span class="text-[.85rem] font-bold">{deskripsi}</span>
+                                                <div class="flex items-center gap-1">
+                                                    <Clock size={14} class='w-[1rem]'/>
+                                                    <span aria-label={formatTanggal(waktu)} data-balloon-pos="up" class="text-[.7rem] italic">{formatWaktuHari(selisihWaktuHari(waktu, formatTanggalISO(new Date())))} yang lalu</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </a>
                                 {/each}

@@ -1,7 +1,7 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function POST({ params, locals }) {
+export const POST: RequestHandler<{ id: string }> = async ({ params, locals }) => {
     try {
         const { id } = params
         const { payroll } = locals.user

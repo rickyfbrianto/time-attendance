@@ -6,14 +6,6 @@ export const appstore = writable({
     darkMode: false,
 });
 
-interface DataStoreProps {
-    dashboardIjinCuti: any[];
-}
-
-export const dataStore = writable<DataStoreProps>({
-    dashboardIjinCuti: []
-})
-
 interface ReportAttendanceProps {
     dept: string;
     year: string;

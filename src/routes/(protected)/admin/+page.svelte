@@ -507,7 +507,7 @@
     const getProfile = useProfile()
     
     $effect(()=>{
-        tableProfile.load(async(state: State) => {
+        tableProfile.load(async(state) => {
             try {
                 const req = await fetch(`${base}/api/admin/profile?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
@@ -519,7 +519,7 @@
             }
         })
     
-        tableUser.load(async(state: State) => {
+        tableUser.load(async(state) => {
             try {
                 const req = await fetch(`${base}/api/admin/user?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
@@ -531,7 +531,7 @@
             }
         })
 
-        tableDept.load(async(state: State) => {
+        tableDept.load(async(state) => {
             try {
                 const req = await fetch(`${base}/api/admin/dept?${getParams(state)}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');
@@ -543,7 +543,7 @@
             }
         })
 
-        tableCalendar.load(async(state: State) => {
+        tableCalendar.load(async(state) => {
             try {
                 const req = await fetch(`${base}/api/admin/calendar?${getParams(state)}&year=${formCalendar.year}`);
                 if (!req.ok) throw new Error('Gagal mengambil data');

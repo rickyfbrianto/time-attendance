@@ -1,9 +1,9 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { v4 as uuid4 } from "uuid";
 import { prisma, prismaErrorHandler } from '@lib/utils.js'
 import { format } from "date-fns";
 
-export async function GET({ url }) {
+export const GET: RequestHandler<{ id: string }> = async ({ url }) => {
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -38,7 +38,7 @@ export async function GET({ url }) {
     return json(status)
 }
 
-export async function POST({ request, }) {
+export const POST: RequestHandler = async ({ request }) => {
     try {
         const data = await request.json();
 

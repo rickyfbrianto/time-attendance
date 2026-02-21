@@ -213,11 +213,11 @@
     <title>Security Page</title>
 </svelte:head>
 
-<main in:fade={{delay:100}} out:fade class="flex flex-col gap-4 h-full w-full">
+<main in:fade={{delay:100}} out:fade class="flex flex-col gap-4 p-4 h-full w-full">
     {#await getUser()}
         <MyLoading message="Loading data"/>
     {:then val}
-        <div transition:fly={{y: -250, duration: 1500, delay:1000}} class="flex flex-col mx-4 p-4 gap-2 rounded-lg bg-gradient-to-r from-neutral-50 to-zinc-100 dark:from-neutral-600 dark:to-zinc-800 shadow-lg">
+        <div transition:fly={{y: -250, duration: 1500, delay:1000}} class="flex flex-col p-4 gap-2 rounded-lg bg-gradient-to-r from-neutral-50 to-zinc-100 dark:from-neutral-600 dark:to-zinc-800">
             <span class='text-[1.4rem] font-quicksand'>Security Schedule</span>
 
             <div transition:fly={{ y: -100, duration: 1250, delay: 750 }} class="flex gap-4 pt-2 border-t border-slate-300">
@@ -258,7 +258,7 @@
             </div>
         {/if}
         
-        <div transition:fly={{ y: 100, duration: 1500, delay: 1250 }} class="flex flex-col flex-1 px-4 pb-4 gap-4">        
+        <div transition:fly={{ y: 100, duration: 1500, delay: 1250 }} class="flex flex-col flex-1 gap-4">        
             <div class="flex gap-4 flex-1">
                 {#if isUserAllowed}
                     <div class="flex flex-col self-start border border-slate-200 rounded-lg w-[22rem] order-2 shadow-lg">

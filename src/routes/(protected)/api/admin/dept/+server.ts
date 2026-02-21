@@ -1,8 +1,8 @@
-import { error, json } from '@sveltejs/kit'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 import { pecahArray, prisma, prismaErrorHandler } from '@lib/utils'
 import { v4 } from 'uuid'
 
-export async function GET({ url }) {
+export const GET: RequestHandler = async ({ url }) => {
     try {
         const page = Number(url.searchParams.get('_page')) || 1
         const limit = Number(url.searchParams.get('_limit')) || 10
@@ -12,7 +12,7 @@ export async function GET({ url }) {
         const search = url.searchParams.get('_search') ?? ""
 
         const status = await prisma.$transaction(async (tx) => {
-            const items: Dept = await tx.$queryRawUnsafe(`
+            const items = await tx.$queryRawUnsafe(`
                 SELECT * FROM dept 
                 WHERE (dept_code like ? OR name like ? OR status like ?)
                 ORDER by ${sort} ${order}
@@ -33,7 +33,7 @@ export async function GET({ url }) {
     }
 }
 
-export async function POST({ request, locals }) {
+export const POST: RequestHandler = async ({ request, locals }) => {
     try {
         const data = await request.json()
         const { userProfile } = locals

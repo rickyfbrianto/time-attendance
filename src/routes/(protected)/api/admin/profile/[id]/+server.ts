@@ -1,7 +1,7 @@
-import { error, json } from '@sveltejs/kit'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 import { pecahArray, prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function GET({ params }) {
+export const GET: RequestHandler<{ id: string }> = async ({ params }) => {
     const { id } = params
     const req = await prisma.profile.findUnique({
         where: { profile_id: id }
@@ -9,7 +9,7 @@ export async function GET({ params }) {
     return json(req)
 }
 
-export async function DELETE({ params, locals }) {
+export const DELETE: RequestHandler<{ id: string }> = async ({ params, locals }) => {
     try {
         const { id } = params
         const { userProfile } = locals
@@ -20,7 +20,7 @@ export async function DELETE({ params, locals }) {
             },
             where: { profile_id: id }
         })
-        return json({ message: "Profile successfully deleted" });
+        return json({ message: "Profile successfully deleted (Non Active)" });
     } catch (err) {
         error(500, prismaErrorHandler(err))
     }

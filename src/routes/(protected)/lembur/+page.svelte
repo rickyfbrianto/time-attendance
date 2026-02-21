@@ -707,7 +707,7 @@
     }
 
     $effect(()=>{
-        tableSPL.load(async (state:State) => {
+        tableSPL.load(async (state) => {
             try {           
                 const req = await fetch(`${base}/api/lembur/spl?${getParams(state)}&dept=${formSPL.dept}&payroll=${formSPL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -719,7 +719,7 @@
             }
         })
 
-        tableSPLApproval1.load(async (state:State) => {
+        tableSPLApproval1.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/lembur/spl/approve1?${getParams(state)}&payroll=${user.payroll}`)
                 const {items, totalItems} = await req.json()
@@ -730,7 +730,7 @@
             }
         })
         
-        tableSRL.load(async (state:State) => {
+        tableSRL.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/lembur/srl?${getParams(state)}&payroll=${formSRL.payroll}&start_date=${modeLembur.periode.start}&end_date=${modeLembur.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -742,7 +742,7 @@
             }
         })
 
-        tableSRLApproval1.load(async (state:State) => {
+        tableSRLApproval1.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/lembur/srl/approve1?${getParams(state)}&payroll=${user.payroll}`)
                 const {items, totalItems} = await req.json()
@@ -753,7 +753,7 @@
             }
         })
 
-        tableSRLApproval2.load(async (state:State) => {
+        tableSRLApproval2.load(async (state) => {
             try {
                 const req = await fetch(`${base}/api/lembur/srl/approve2?${getParams(state)}&payroll=${user.payroll}`)
                 const {items, totalItems} = await req.json()

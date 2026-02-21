@@ -1,5 +1,5 @@
-import { formatTanggal, formatTanggalISO, pecahArray, prismaErrorHandler } from "@lib/utils";
-import { error, json } from "@sveltejs/kit";
+import { formatTanggal, pecahArray, prismaErrorHandler } from "@lib/utils";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { extname } from "node:path";
 import { v4 as uuid4 } from "uuid";
 import { writeFile } from 'fs/promises'
@@ -7,8 +7,8 @@ import path from 'path'
 import { prisma } from '@lib/utils.js'
 import { eachDayOfInterval, format, getDay } from "date-fns";
 
-export async function GET({ url }) {
-    try {
+export const GET: RequestHandler<{ id: string }> = async ({ url }) => {
+    // try {
         const page = Number(url.searchParams.get('_page')) || 1
         const limit = Number(url.searchParams.get('_limit')) || 10
         const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -58,12 +58,13 @@ export async function GET({ url }) {
         })
 
         return json(status)
-    } catch (error) {
-        console.log("err catch", error);
-        return { error }
-    }
+    // } catch (error) {
+    //     console.log("err catch", error);
+    //     return { error }
+    // }
 }
 
+// export const POST: RequestHandler = async ({ request, locals }) => {
 export async function POST({ request, locals }) {
     try {
         const attendance_id = uuid4()
@@ -87,7 +88,8 @@ export async function POST({ request, locals }) {
             // }
 
             const getAttendance = await tx.attendance.findFirst({
-                where: { attendance_id: data.get('attendance_id') }
+                // where: { attendance_id: data.get('attendance_id') }
+                where: { attendance_id: data.get('attendance_id')}
             })
 
             if (!getAttendance) {

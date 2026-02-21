@@ -1,7 +1,7 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function GET({ params }) {
+export const GET: RequestHandler<{ id: string }> = async ({ params }) => {
     const { id } = params
     const req = await prisma.$queryRawUnsafe(`
         SELECT skpd.*, e.name, e.user_id_machine, e.position, e.location, sd.description, d.name as dept, 
@@ -18,7 +18,7 @@ export async function GET({ params }) {
     return json(req[0])
 }
 
-export async function DELETE({ params }) {
+export const DELETE: RequestHandler<{ id: string }> = async ({ params, locals }) => {
     try {
         const status = await prisma.$transaction(async tx => {
             const { id } = params

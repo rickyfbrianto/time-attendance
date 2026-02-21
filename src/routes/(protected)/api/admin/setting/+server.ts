@@ -1,5 +1,5 @@
 import { pecahArray, prismaErrorHandler } from '@lib/utils';
-import { error, json } from '@sveltejs/kit'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 import { prisma } from '@lib/utils.js'
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
     }
 }
 
-export async function POST({ request, locals }) {
+export const POST: RequestHandler = async ({ request, locals }) => {
     try {
         const data = await request.json()
         const { userProfile } = locals

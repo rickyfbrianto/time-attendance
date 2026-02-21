@@ -1,7 +1,7 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function GET({ params }) {
+export const GET: RequestHandler<{ id: string }> = async ({ params }) => {
     const { id } = params
     const req = await prisma.sppd.findUnique({
         select: {
@@ -46,7 +46,7 @@ export async function GET({ params }) {
     return json(req)
 }
 
-export async function DELETE({ params }) {
+export const DELETE: RequestHandler<{ id: string }> = async ({ params }) => {
     try {
         const { id } = params
         await prisma.sppd.delete({

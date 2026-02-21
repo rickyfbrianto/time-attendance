@@ -8,7 +8,7 @@
 	import MyInput from '$/lib/components/MyInput.svelte';
     import axios from 'axios';
 	import { formatTanggal, pecahArray, generatePeriode, getParams, dataTahun, dataBulan, namaHari, capitalEachWord } from '$/lib/utils.js';
-	import { format, getYear, getMonth, differenceInDays, set, getDay } from 'date-fns';
+	import { format, getYear, differenceInDays, set, getDay } from 'date-fns';
     import { CalendarWeekSolid } from 'flowbite-svelte-icons';
     import {z} from 'zod'
     import {fromZodError} from 'zod-validation-error'
@@ -21,7 +21,6 @@
 	import jsPDF from 'jspdf';
     import { applyPlugin } from 'jspdf-autotable'
 	import { goto, invalidate } from '$app/navigation';
-	import { dataStore } from '@lib/store/appstore.js';
 	import { base } from '$app/paths';
 
     const rowsPerPage = 10
@@ -423,7 +422,7 @@
     }
     
     $effect(()=>{
-        tableCuti.load(async (state:State) =>{
+        tableCuti.load(async (state) =>{
             try {
                 const req = await fetch(`${base}/api/cuti?${getParams(state)}&payroll=${user.payroll}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                 if(!req.ok) throw new Error('Gagal mengambil data')
@@ -436,7 +435,7 @@
         })
 
         if (user.level > 1){
-            tableApprovalCuti.load(async (state:State) =>{
+            tableApprovalCuti.load(async (state) =>{
                 try {
                     const req = await fetch(`${base}/api/cuti/approve?${getParams(state)}&payroll=${user.payroll}&dept=${user?.department}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
@@ -450,7 +449,7 @@
         }
 
         if (user.user_type == 'HR'){
-            tableListCuti.load(async (state:State) =>{
+            tableListCuti.load(async (state) =>{
                 try {
                     const req = await fetch(`${base}/api/cuti/list?${getParams(state)}&start_date=${modeCuti.periode.start}&end_date=${modeCuti.periode.end}`)
                     if(!req.ok) throw new Error('Gagal mengambil data')
@@ -510,13 +509,13 @@
         </div>
 
         <div class="flex flex-wrap w-full items-start gap-4">
-            {#each $dataStore.dashboardIjinCuti as {title, value, icon: Icon}}
+            {#each data.user_cuti as {title, value}}
                 <button class={`flex-1 flex flex-col min-w-[8rem] items-start border-[2px] border-slate-200 p-2 px-4 rounded-lg overflow-hidden overflow-ellipsis whitespace-nowrap cursor-pointer`}
                     onclick={() => {
                         if(parseInt(value) > 0 && !['Hak Cuti', 'Sisa Cuti'].includes(title) ) handleDetailHeader(title)}}>
                     <span class="text-[.9rem] font-semibold">{title}</span>
                     <div class="flex justify-between items-center gap-2">
-                        <Icon size={16}/>
+                        <Calendar size={16}/>
                         <span class='text-[1.1rem] font-bold'>{value}</span>
                     </div>
                 </button>

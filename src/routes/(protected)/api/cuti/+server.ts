@@ -1,4 +1,4 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { formatTanggal, formatTanggalISO, prismaErrorHandler, } from "@lib/utils";
 import { prisma } from '@lib/utils.js'
 import { eachDayOfInterval, format, getDay, getYear } from "date-fns";
@@ -7,7 +7,7 @@ import path from 'path'
 import { extname } from "node:path";
 import { writeFile } from 'fs/promises'
 
-export async function GET({ url }) {
+export const GET: RequestHandler = async ({ url }) => {
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -37,7 +37,7 @@ export async function GET({ url }) {
     return json(status)
 }
 
-export async function POST({ request }) {
+export const POST: RequestHandler = async ({ request }) => {
     try {
         const data = await request.formData();
         const attachment = data.get('attachment')

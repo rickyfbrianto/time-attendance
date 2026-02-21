@@ -1,11 +1,11 @@
-import { error, json } from '@sveltejs/kit'
+import { error, json, type RequestHandler } from '@sveltejs/kit'
 import { prismaErrorHandler } from "@lib/utils";
 import { extname } from "node:path";
 import { writeFileSync } from 'fs'
 import path from 'path'
 import { prisma } from '@lib/utils.js'
 
-export async function GET({ locals, url }) {
+export const GET: RequestHandler = async ({ url }) => {
     const payroll = url.searchParams.get('payroll') as string
 
     const data = await prisma.employee.findFirst({
@@ -24,7 +24,7 @@ export async function GET({ locals, url }) {
     return json({ user: data })
 }
 
-export async function POST({ request }) {
+export const POST: RequestHandler = async ({ request }) => {
     try {
         const data = await request.formData()
         const signature = data.get('signature')

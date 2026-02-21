@@ -1,7 +1,7 @@
 import { prisma, formatTanggal, formatTanggalISO, capitalEachWord, prismaErrorHandler } from "@lib/utils";
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 
-export async function POST({ request, locals }) {
+export const POST: RequestHandler = async ({ request, locals }) => {
     try {
         const data = await request.json()
 

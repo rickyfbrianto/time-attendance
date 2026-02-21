@@ -61,13 +61,13 @@
                 <MyLoading message="Verifikasi Masuk"/>
                 {/if}
                 {#if formLoginState.error}
-                    <Alert border color="red" class='flex gap-2 items-center text-[1.2rem] font-bold'>
+                    <Alert border color="red" class='flex gap-2 items-center text-[1rem] font-bold'>
                         <CircleAlert size={16}/>
                         {formLoginState.error}
                     </Alert>
                 {/if}
                 {#if formLoginState.success}
-                    <Alert border color="green" class='flex gap-2 items-center text-[1.2rem] font-bold'>
+                    <Alert border color="green" class='flex gap-2 items-center text-[1rem] font-bold'>
                         <Check size={16}/>
                         {formLoginState.success}
                     </Alert>

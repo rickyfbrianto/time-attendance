@@ -1,7 +1,7 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { prisma, prismaErrorHandler } from '@lib/utils.js'
 
-export async function DELETE({params}){
+export const DELETE: RequestHandler<{ id: string }> = async ({ params }) => {
     try {
         const {id} = params
         await prisma.ijin.delete({

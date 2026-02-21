@@ -1,10 +1,10 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { pecahArray, prisma, prismaErrorHandler } from '@lib/utils.js'
 import { unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-export async function DELETE({ params, locals }) {
+export const DELETE: RequestHandler<{ id: string }> = async ({ params, locals }) => {
     try {
         const { id } = params
         const { userProfile } = locals

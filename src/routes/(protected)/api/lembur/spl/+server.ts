@@ -1,10 +1,10 @@
-import { error, json } from "@sveltejs/kit";
+import { error, json, type RequestHandler } from "@sveltejs/kit";
 import { formatTanggalISO, pecahArray, prismaErrorHandler } from "@lib/utils";
 import { v4 as uuid4 } from "uuid";
 import { prisma } from '@lib/utils.js'
 import { format, subMonths } from "date-fns";
 
-export async function GET({ url }) {
+export const GET: RequestHandler = async ({ url }) => {
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page
@@ -41,7 +41,7 @@ export async function GET({ url }) {
     return json(status)
 }
 
-export async function POST({ request, locals }) {
+export const POST: RequestHandler = async ({ request, locals }) => {
     try {
         const data = await request.json();
         const { userProfile } = locals

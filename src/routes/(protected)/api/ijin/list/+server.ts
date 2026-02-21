@@ -1,7 +1,7 @@
-import { error, json } from "@sveltejs/kit";
+import { json, type RequestHandler } from "@sveltejs/kit";
 import { prisma } from '@lib/utils.js'
 
-export async function GET({ url }) {
+export const GET: RequestHandler = async ({ url }) => {
     const page = Number(url.searchParams.get('_page')) || 1
     const limit = Number(url.searchParams.get('_limit')) || 10
     const offset = Number(url.searchParams.get('_offset')) || (page - 1) * page

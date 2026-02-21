@@ -8,3 +8,4 @@ Content-Type: application/json
 ###
 GET http://localhost:5000/auth/202207
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMDIyMDciLCJlbWFpbCI6InJpY2t5X3Rlc0BzYWdhdHJhZGUuY28uaWQiLCJpYXQiOjE3NjExODcwNjMsImV4cCI6MTc2MTE4NzY2M30.gqldAkf2LVA111INKLtQ_1h91L0xL58WFhFVWJUJSOs
+
